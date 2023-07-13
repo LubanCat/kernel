@@ -226,15 +226,18 @@
 		default-brightness-level = <200>;
 	};
 
-	wireless_wlan: wireless-wlan {
-		compatible = "wlan-platdata";
-		wifi_chip_type = "rtl8821cu";
+	wifi_usb: wifi-usb {
+		compatible = "regulator-fixed";
+		regulator-name = "wifi_usb";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&wifi_poweren_gpio>;
-		WIFI,poweren_gpio = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
-		status = "okay";
+		pinctrl-0 = <&wifi_poweren_gpio>;		
+		regulator-always-on;
+		enable-active-low;
+		gpio = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
 	};
-	
+
 	test-power {
 		status = "okay";
 	};
@@ -852,7 +855,7 @@
 
 	wireless-wlan {
 		wifi_poweren_gpio: wifi-poweren-gpio {
-			rockchip,pins = <0 RK_PC1 RK_FUNC_GPIO &pcfg_output_low>;
+			rockchip,pins = <0 RK_PC1 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
