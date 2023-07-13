@@ -1492,56 +1492,55 @@ static void __exit rtw_drv_halt(void)
 	rtw_mstat_dump(RTW_DBGDUMP);
 }
 
-// module_init(rtw_drv_entry);
-// module_exit(rtw_drv_halt);
+module_init(rtw_drv_entry);
+module_exit(rtw_drv_halt);
 
-#include "rtw_version.h"
-#include <linux/rfkill-wlan.h>
-extern int get_wifi_chip_type(void);
-extern int rockchip_wifi_power(int on);
-extern int rockchip_wifi_set_carddetect(int val);
+// #include "rtw_version.h"
+// #include <linux/rfkill-wlan.h>
+// extern int get_wifi_chip_type(void);
+// extern int rockchip_wifi_power(int on);
+// extern int rockchip_wifi_set_carddetect(int val);
 
-int rockchip_wifi_init_module_rtkwifi(void)
-{
-    printk("\n");
-    printk("=======================================================\n");
-    printk("==== Launching Wi-Fi driver! (Powered by Rockchip) ====\n");
-    printk("=======================================================\n");
-    printk("Realtek 8821CU USB WiFi driver (Powered by Rockchip,Ver %s) init.\n", DRIVERVERSION);
+// int rockchip_wifi_init_module_rtkwifi(void)
+// {
+//     printk("\n");
+//     printk("=======================================================\n");
+//     printk("==== Launching Wi-Fi driver! (Powered by Rockchip) ====\n");
+//     printk("=======================================================\n");
+//     printk("Realtek 8821CU USB WiFi driver (Powered by Rockchip,Ver %s) init.\n", DRIVERVERSION);
 
-    rockchip_wifi_power(0);
-	msleep(200);
-    rockchip_wifi_power(1);
-    rockchip_wifi_set_carddetect(1);    
+//     rockchip_wifi_power(0);
+//     rockchip_wifi_power(1);
+//     rockchip_wifi_set_carddetect(1);    
     
-    return rtw_drv_entry();
+//     return rtw_drv_entry();
 
-}
+// }
 
-void rockchip_wifi_exit_module_rtkwifi(void)
-{
-    printk("\n");
-    printk("=======================================================\n");
-    printk("==== Dislaunching Wi-Fi driver! (Powered by Rockchip) ====\n");
-    printk("=======================================================\n");
-    printk("Realtek 8821CU USB WiFi driver (Powered by Rockchip,Ver %s) init.\n", DRIVERVERSION);
+// void rockchip_wifi_exit_module_rtkwifi(void)
+// {
+//     printk("\n");
+//     printk("=======================================================\n");
+//     printk("==== Dislaunching Wi-Fi driver! (Powered by Rockchip) ====\n");
+//     printk("=======================================================\n");
+//     printk("Realtek 8821CU USB WiFi driver (Powered by Rockchip,Ver %s) init.\n", DRIVERVERSION);
 
-    rtw_drv_halt();
+//     rtw_drv_halt();
     
-    rockchip_wifi_set_carddetect(0);
-    rockchip_wifi_power(0);
+//     rockchip_wifi_set_carddetect(0);
+//     rockchip_wifi_power(0);
 
-}
+// }
 
-#ifdef CONFIG_WIFI_BUILD_MODULE
-module_init(rockchip_wifi_init_module_rtkwifi);
-module_exit(rockchip_wifi_exit_module_rtkwifi);
-#else
-#ifdef CONFIG_WIFI_LOAD_DRIVER_WHEN_KERNEL_BOOTUP
-late_initcall(rockchip_wifi_init_module_rtkwifi);
-module_exit(rockchip_wifi_exit_module_rtkwifi);
-#else
-EXPORT_SYMBOL(rockchip_wifi_init_module_rtkwifi);
-EXPORT_SYMBOL(rockchip_wifi_exit_module_rtkwifi);
-#endif
-#endif
+// #ifdef CONFIG_WIFI_BUILD_MODULE
+// module_init(rockchip_wifi_init_module_rtkwifi);
+// module_exit(rockchip_wifi_exit_module_rtkwifi);
+// #else
+// #ifdef CONFIG_WIFI_LOAD_DRIVER_WHEN_KERNEL_BOOTUP
+// late_initcall(rockchip_wifi_init_module_rtkwifi);
+// module_exit(rockchip_wifi_exit_module_rtkwifi);
+// #else
+// EXPORT_SYMBOL(rockchip_wifi_init_module_rtkwifi);
+// EXPORT_SYMBOL(rockchip_wifi_exit_module_rtkwifi);
+// #endif
+// #endif
