@@ -166,59 +166,60 @@
 		vin-supply = <&vdd_5v>;
 	};
 
-#if 0
-	mipi_dsi0_power: mipi-dsi0-power-regulator {
-		compatible = "regulator-fixed";
-		enable-active-high;
-		gpio = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&mipi_dsi0_pwr_en>;
-		regulator-name = "mipi_dsi0_power";
-		regulator-always-on;
-	};
+// #if 0
+// 	mipi_dsi0_power: mipi-dsi0-power-regulator {
+// 		compatible = "regulator-fixed";
+// 		enable-active-high;
+// 		gpio = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+// 		pinctrl-names = "default";
+// 		pinctrl-0 = <&mipi_dsi0_pwr_en>;
+// 		regulator-name = "mipi_dsi0_power";
+// 		regulator-always-on;
+// 	};
 
-	vdd_cam_5v: vdd-cam-5v-regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "vdd_cam_5v";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio3 RK_PA4 GPIO_ACTIVE_HIGH>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&cam_pwr_en>;
-		enable-active-high;
-		regulator-always-on;
-	};
+// 	vdd_cam_5v: vdd-cam-5v-regulator {
+// 		compatible = "regulator-fixed";
+// 		regulator-name = "vdd_cam_5v";
+// 		regulator-min-microvolt = <3300000>;
+// 		regulator-max-microvolt = <3300000>;
+// 		gpio = <&gpio3 RK_PA4 GPIO_ACTIVE_HIGH>;
+// 		pinctrl-names = "default";
+// 		pinctrl-0 = <&cam_pwr_en>;
+// 		enable-active-high;
+// 		regulator-always-on;
+// 	};
 
-	cam_dovdd: cam-dovdd {
-		compatible = "regulator-fixed";
-		regulator-name = "cam_dovdd";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		vin-supply = <&vdd_cam_5v>;
-	};
+// 	cam_dovdd: cam-dovdd {
+// 		compatible = "regulator-fixed";
+// 		regulator-name = "cam_dovdd";
+// 		regulator-always-on;
+// 		regulator-boot-on;
+// 		regulator-min-microvolt = <1800000>;
+// 		regulator-max-microvolt = <1800000>;
+// 		vin-supply = <&vdd_cam_5v>;
+// 	};
 
-	cam_avdd: cam-avdd {
-		compatible = "regulator-fixed";
-		regulator-name = "cam_avdd";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <2800000>;
-		regulator-max-microvolt = <2800000>;
-		vin-supply = <&vdd_cam_5v>;
-	};
+// 	cam_avdd: cam-avdd {
+// 		compatible = "regulator-fixed";
+// 		regulator-name = "cam_avdd";
+// 		regulator-always-on;
+// 		regulator-boot-on;
+// 		regulator-min-microvolt = <2800000>;
+// 		regulator-max-microvolt = <2800000>;
+// 		vin-supply = <&vdd_cam_5v>;
+// 	};
 
-	cam_dvdd: cam-dvdd {
-		compatible = "regulator-fixed";
-		regulator-name = "cam_dvdd";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <1200000>;
-		regulator-max-microvolt = <1200000>;
-		vin-supply = <&vdd_cam_5v>;
-	};
-#endif 0
+// 	cam_dvdd: cam-dvdd {
+// 		compatible = "regulator-fixed";
+// 		regulator-name = "cam_dvdd";
+// 		regulator-always-on;
+// 		regulator-boot-on;
+// 		regulator-min-microvolt = <1200000>;
+// 		regulator-max-microvolt = <1200000>;
+// 		vin-supply = <&vdd_cam_5v>;
+// 	};
+
+// #endif 0
 
 	leds: leds {
 		status = "okay";
@@ -337,7 +338,53 @@
 			sound-dai = <&hdmi>;
 		};
 	};
+
+	sdio_pwrseq: sdio-pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		clocks = <&rk809 1>;
+		clock-names = "ext_clock";
+		pinctrl-names = "default";
+		pinctrl-0 = <&wifi_enable_h>;
+
+			/*
+		 * On the module itself this is one of these (depending
+		 * on the actual card populated):
+		 * - SDIO_RESET_L_WL_REG_ON
+		 * - PDN (power down when low)
+		 */
+		reset-gpios = <&gpio0 RK_PC5 GPIO_ACTIVE_LOW>;
+
+	};
+
+	wireless_wlan: wireless-wlan {
+		compatible = "wlan-platdata";
+		clocks = <&rk809 1>;
+		clock-names = "clk_wifi";
+		rockchip,grf = <&grf>;
+		wifi_chip_type = "rtl8189es";
+		pinctrl-names = "default";
+		pinctrl-0 = <&wifi_host_wake_irq>;
+		WIFI,host_wake_irq = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
 };
+
+&sdmmc1 {
+	max-frequency = <150000000>;
+	supports-sdio;
+	bus-width = <4>;
+	disable-wp;
+	cap-sd-highspeed;
+	cap-sdio-irq;
+	keep-power-in-suspend;
+	pinctrl-names = "default";
+	pinctrl-0 = <&sdmmc1_bus4 &sdmmc1_cmd &sdmmc1_clk>;
+	sd-uhs-sdr104;
+	mmc-pwrseq = <&sdio_pwrseq>;
+	non-removable;
+	status = "okay";
+};
+
 
 &saradc {
 	vref-supply = <&vcca_1v8>;
@@ -701,7 +748,6 @@
 			status = "okay";
 		};
 	};
-
 };
 
 &i2s0_8ch {
@@ -964,7 +1010,7 @@
 /* mini pcie */
 &pcie2x1 {
 	reset-gpios = <&gpio0 RK_PB6 GPIO_ACTIVE_HIGH>;
-	disable-gpios = <&gpio0 RK_PB7 GPIO_ACTIVE_HIGH>;
+	disable-gpios = <&gpio0 RK_PB2 GPIO_ACTIVE_HIGH>;
 	vpcie3v3-supply = <&mini_pcie_3v3>;
 	status = "okay";
 };
@@ -1058,6 +1104,18 @@
 	leds {
 		sys_status_led_pin: sys-status-led-pin {
 			rockchip,pins = <0 RK_PC7 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	sdio-pwrseq {
+		wifi_enable_h: wifi-enable-h {
+			rockchip,pins = <0 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	wireless-wlan {
+		wifi_host_wake_irq: wifi-host-wake-irq {
+			rockchip,pins = <0 RK_PC6 RK_FUNC_GPIO &pcfg_pull_down>;
 		};
 	};
 };
