@@ -140,6 +140,7 @@ dtb-$(CONFIG_CPU_RK3399) += \
 dtb-$(CONFIG_CPU_RK3568) += \
 	rk3566-lubancat-0.dtb \
 	rk3566-lubancat-1.dtb \
+	rk3566-lubancat-1h.dtb \
 	rk3566-lubancat-1n.dtb \
 	rk3566-lubancat-1io.dtb \
 	rk3568-lubancat-2.dtb \
