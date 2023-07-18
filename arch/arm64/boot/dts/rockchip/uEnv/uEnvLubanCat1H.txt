@@ -1,0 +1,29 @@
+uname_r=4.19.232
+size=0x1000000
+cmdline="earlyprintk console=ttyFIQ0 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
+
+enable_uboot_overlays=1
+#overlay_start
+
+#mini-pcie 5G modules
+#dtoverlay=/dtb/overlay/rk356x-lubancat-pcie2x1-disabled-overlay.dtbo
+#dsi0-vp0
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-in-vp0-7.0-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-in-vp0-10.1-800x1280-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-in-vp0-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-in-vp0-rpi-overlay.dtbo
+#edp-in-vp0
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-edp-in-vp0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-edp-touch-overlay.dtbo
+#cam0(mipi-csi0)
+#dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-sc132gs-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov5647-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov5648-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov8858-overlay.dtbo
+#cam1(mipi-csi1)
+#dtoverlay=/dtb/overlay/rk356x-lubancat-csi1-sc132gs-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk356x-lubancat-csi1-ov5647-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk356x-lubancat-csi1-ov5648-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk356x-lubancat-csi1-ov8858-overlay.dtbo
+
+#overlay_end
