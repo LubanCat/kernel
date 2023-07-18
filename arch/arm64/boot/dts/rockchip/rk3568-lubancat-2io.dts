@@ -713,7 +713,7 @@
 		reg = <0x32>;
 		pinctrl-0 = <&rx8010_irq>;
 		interrupt-parent = <&gpio0>;
-		interrupts = <8 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <PB0 IRQ_TYPE_LEVEL_LOW>;
 		status = "okay";
 	};
 };
@@ -931,7 +931,7 @@
 
 	rx8010 {
 		rx8010_irq: rx8010-irq {
-			rockchip,pins = <0 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
+			rockchip,pins = <0 RK_PB0 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
