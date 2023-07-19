@@ -13,7 +13,7 @@
 #include <dt-bindings/display/drm_mipi_dsi.h>
 #include <dt-bindings/display/rockchip_vop.h>
 #include <dt-bindings/sensor-dev.h>
-#include "rk3568.dtsi"
+#include "rk3566.dtsi"
 
 //HDMI输出
 #include "rk3566-lubancat-hdmi.dtsi" 
@@ -1143,25 +1143,12 @@
 	status = "okay";
 };
 
-/* MULTI_PHY0 For SATA0, USB3.0 OTG Only USB2.0 */
-&combphy0_us {
-	status = "okay";
-};
-
+/* USB3.0 OTG Only USB2.0 */
 &usbdrd30 {
 	status = "okay";
 };
 
 &usbdrd_dwc3 {
-	phys = <&u2phy0_otg>;
-	phy-names = "usb2-phy";
-	extcon = <&usb2phy0>;
-	maximum-speed = "high-speed";
-	snps,dis_u2_susphy_quirk;
-	status = "okay";	
-};
-
-&sata0 {
 	status = "okay";
 };
 
