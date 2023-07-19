@@ -787,7 +787,7 @@ static void rk817_shutdown_prepare(void)
 	/* close int when power off */
 	regmap_update_bits(rk808->regmap,
 			   RK817_INT_STS_MSK_REG0,
-			   0xff, 0xff);
+			   0xff, 0xdf);
 	regmap_update_bits(rk808->regmap,
 			   RK817_INT_STS_MSK_REG1,
 			   0xff, 0xff);
@@ -796,7 +796,7 @@ static void rk817_shutdown_prepare(void)
 			   0xff, 0xff);
 	regmap_update_bits(rk808->regmap,
 			   RK817_RTC_INT_REG,
-			   (0x3 << 2), (0x0 << 2));
+			   (0x1 << 2), (0x0 << 2));
 
 	dev_info(&rk808_i2c_client->dev, "disabled int when device shutdown!\n");
 
