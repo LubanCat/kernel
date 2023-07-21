@@ -428,6 +428,12 @@ config USB_NET_CDC_SUBSET
 	  commonly not being able to handle certain events (like replugging
 	  the host on the other end) very well.  Also, these devices will
 	  not generally have permanently assigned Ethernet addresses.
+	  
+config USB_NET_GOBI
+        tristate "Qualcomm Gobi"
+        depends on USB_USBNET
+        help
+          Choose this option if you have a Qualcomm Gobi 2000 cellular modem.
 
 config USB_ALI_M5632
 	bool "ALi M5632 based 'USB 2.0 Data Link' cables"
