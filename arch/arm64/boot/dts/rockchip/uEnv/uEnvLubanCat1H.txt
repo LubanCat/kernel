@@ -12,9 +12,10 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-in-vp0-10.1-800x1280-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-in-vp0-1080p-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-in-vp0-rpi-overlay.dtbo
-#edp-in-vp0
-#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-edp-in-vp0-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-edp-touch-overlay.dtbo
+#edp-or-lvds-in-vp0
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1h-edp-in-vp0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1h-lvds-10.1-in-vp0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1h-lvds-edp-touch-overlay.dtbo
 #cam0(mipi-csi0)
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-sc132gs-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov5647-overlay.dtbo

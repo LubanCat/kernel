@@ -286,22 +286,22 @@
 
 //cam1-gpio-setting
 &cam1_ov5647 {
-    pwdn-gpios = <&gpio3 RK_PC4 GPIO_ACTIVE_LOW>;
+    pwdn-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_LOW>;
 };
 
 &cam1_ov5648 {
-	pwdn-gpios = <&gpio3 RK_PC4 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_LOW>;
+	pwdn-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_LOW>;
 };
 
 &cam1_ov8858 {
-	pwdn-gpios = <&gpio3 RK_PC4 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	pwdn-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_HIGH>;
 };
 
 &cam1_sc132gs {
-	pwdn-gpios = <&gpio3 RK_PC4 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	pwdn-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_HIGH>;
 };
 
 // mipi dsi0 gpio set

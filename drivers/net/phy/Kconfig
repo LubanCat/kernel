@@ -339,10 +339,10 @@ config INTEL_XWAY_PHY
 	  PEF 7061, PEF 7071 and PEF 7072 or integrated into the Intel
 	  SoCs xRX200, xRX300, xRX330, xRX350 and xRX550.
 
-config JLSEMI_JL2XX1_PHY
-	tristate "JLSemi JL2XX1 PHYs"
+config JLSEMI_PHY
+	tristate "JLSemi PHYs"
 	---help---
-	  Currently supports the JLSemi jl2xx1 PHYs.
+	  Currently supports the JLSemi PHYs.
 
 config LSI_ET1011C_PHY
 	tristate "LSI ET1011C PHY"

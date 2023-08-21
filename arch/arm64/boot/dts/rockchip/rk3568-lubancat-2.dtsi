@@ -272,19 +272,6 @@
 		io-channels = <&saradc 1>;
 	};
 
-	fan: pwm-fan {
-		compatible = "pwm-fan";
-		#cooling-cells = <2>;
-		pwms = <&pwm0 0 500000 0>;
-		cooling-levels = <0 100 150 200 255>;
-		rockchip,temp-trips = <
-			50000	1
-			55000	2
-			60000	3
-			65000	4
-		>;
-	};
-
 	backlight: backlight {
 		status = "okay";
 		compatible = "pwm-backlight";

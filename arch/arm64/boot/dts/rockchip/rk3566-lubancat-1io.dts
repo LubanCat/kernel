@@ -575,9 +575,20 @@
     status = "okay";
 };
 
+&i2c2 {
+    status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c2m1_xfer>;
+};
+
+&i2c3 {
+    status = "okay";
+};
+
 &pwm4 {
     status = "okay";
 };
+
 
 &pwm5 {
     status = "okay";
@@ -645,6 +656,18 @@
 &uart6 {
     status = "okay";
 };
+
+&uart7 {
+    status = "okay";
+};
+
+
+&uart9 {
+    status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart9m1_xfer>;
+};
+
 
 
 /* USB OTG/USB Host_1 USB 2.0 Comb */
