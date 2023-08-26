@@ -22,7 +22,7 @@
 	专用镜像如果要开启MIPI屏幕支持，按屏幕型号开启2-4
 	以下4个配置互斥，不可同时开启
 */
-#include "rk3566-lubancat-hdmi.dtsi" //HDMI输出
+//#include "rk3566-lubancat-hdmi.dtsi" //HDMI输出
 // #include "rk3566-lubancat-dsi0-ebf410125_720p.dtsi" //野火5.5寸 720P
 // #include "rk3566-lubancat-dsi0-ebf410125_1080p.dtsi" //野火5.5寸 1080P
 // #include "rk3566-lubancat-dsi0-rpi.dtsi" //树莓派 5寸 800x480

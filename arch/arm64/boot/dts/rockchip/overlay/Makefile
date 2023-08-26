@@ -79,7 +79,8 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3568-lubancat-dsi0-rpi-overlay.dtbo \
 	rk3568-lubancat-edp-touch-overlay.dtbo \
 	rk3568-lubancat-hdmi-disabled-overlay.dtbo \
-	rk3568-lubancat-msata-overlay.dtbo
+	rk3568-lubancat-msata-overlay.dtbo \
+	lcd_fbtft_ili9341.dtbo
 	
 
 endif

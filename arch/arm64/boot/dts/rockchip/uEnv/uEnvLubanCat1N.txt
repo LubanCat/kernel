@@ -2,6 +2,7 @@ uname_r=4.19.232
 size=0x1000000
 cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
 
+dtoverlay=/dtb/overlay/lcd_fbtft_ili9341.dtbo
 
 enable_uboot_overlays=1
 #overlay_start
