@@ -950,23 +950,24 @@ _mali_osk_errcode_t _mali_osk_notification_queue_dequeue(_mali_osk_notification_
 
 /** @brief Initialize a timer
  *
- * Allocates resources for a new timer, and initializes them. This does not
- * start the timer.
- *
- * @return a pointer to the allocated timer object, or NULL on failure.
+ * Initializes a given timer instance.
+ * This does not start the timer.
+
+ * @param tim the timer to init.
+ * @param callback the callback that would be called when 'tim' times out.
  */
-_mali_osk_timer_t *_mali_osk_timer_init(_mali_osk_timer_callback_t callback);
+void _mali_osk_timer_init(_mali_osk_timer_t *tim, _mali_osk_timer_callback_t callback);
 
 /** @brief Start a timer
  *
  * It is an error to start a timer without setting the callback via
- * _mali_osk_timer_setcallback().
+ * _mali_osk_timer_init().
  *
  * It is an error to use this to start an already started timer.
  *
  * The timer will expire in \a ticks_to_expire ticks, at which point, the
  * callback function will be invoked with the callback-specific data,
- * as registered by _mali_osk_timer_setcallback().
+ * as registered by _mali_osk_timer_init().
  *
  * @param tim the timer to start
  * @param ticks_to_expire the amount of time in ticks for the timer to run
@@ -980,11 +981,11 @@ void _mali_osk_timer_add(_mali_osk_timer_t *tim, unsigned long ticks_to_expire);
  * stopped. If \a ticks_to_expire 0 the timer fires immediately.
  *
  * It is an error to modify a timer without setting the callback via
- *  _mali_osk_timer_setcallback().
+ *  _mali_osk_timer_init().
  *
  * The timer will expire at \a ticks_to_expire from the time of the call, at
  * which point, the callback function will be invoked with the
- * callback-specific data, as set by _mali_osk_timer_setcallback().
+ * callback-specific data, as set by _mali_osk_timer_init().
  *
  * @param tim the timer to modify, and start if necessary
  * @param ticks_to_expire the \em absolute time in ticks at which this timer
@@ -1033,34 +1034,6 @@ void _mali_osk_timer_del_async(_mali_osk_timer_t *tim);
  * @return MALI_TRUE if time is active, MALI_FALSE if it is not active
  */
 mali_bool _mali_osk_timer_pending(_mali_osk_timer_t *tim);
-
-/** @brief Set a timer's callback parameters.
- *
- * This must be called at least once before a timer is started/modified.
- *
- * After a timer has been stopped or expires, the callback remains set. This
- * means that restarting the timer will call the same function with the same
- * parameters on expiry.
- *
- * @param tim the timer to set callback on.
- * @param callback Function to call when timer expires
- * @param data Function-specific data to supply to the function on expiry.
- */
-void _mali_osk_timer_setcallback(_mali_osk_timer_t *tim, _mali_osk_timer_callback_t callback, void *data);
-
-/** @brief Terminate a timer, and deallocate resources.
- *
- * The timer must first be stopped by calling _mali_osk_timer_del().
- *
- * It is a programming error for _mali_osk_timer_term() to be called on:
- * - timer that is currently running
- * - a timer that is currently executing its callback.
- *
- * @param tim the timer to deallocate.
- */
-void _mali_osk_timer_term(_mali_osk_timer_t *tim);
-/** @} */ /* end group _mali_osk_timer */
-
 
 /** @defgroup _mali_osk_time OSK Time functions
  *

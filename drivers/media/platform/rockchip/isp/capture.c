@@ -364,9 +364,10 @@ void rkisp_config_dmatx_valid_buf(struct rkisp_device *dev)
 			continue;
 		for (j = RKISP_STREAM_DMATX0; j < RKISP_MAX_STREAM; j++) {
 			stream = &isp->cap_dev.stream[j];
-			if (!stream->linked || stream->u.dmatx.is_config)
+			if (!stream->linked || stream->curr_buf || stream->next_buf)
 				continue;
-			mi_set_y_addr(stream, hw->dummy_buf.dma_addr);
+			if (!rkisp_read(dev, stream->config->mi.y_base_ad_init, true))
+				mi_set_y_addr(stream, hw->dummy_buf.dma_addr);
 		}
 	}
 }
@@ -1082,6 +1083,9 @@ static const struct v4l2_file_operations rkisp_fops = {
 	.unlocked_ioctl = video_ioctl2,
 	.poll = vb2_fop_poll,
 	.mmap = vb2_fop_mmap,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl32 = video_ioctl2,
+#endif
 };
 
 /*

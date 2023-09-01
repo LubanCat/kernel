@@ -84,16 +84,19 @@
 	};
 };
 
+&bt_sound {
+	status = "disabled";
+	simple-audio-card,cpu {
+		sound-dai = <&i2s2_2ch>;
+	};
+};
+
 &combphy0_us {
 	status = "okay";
 };
 
-&combphy1_usq {
-	rockchip,sgmii-mac-sel = <0>;
-	status = "okay";
-};
-
 &combphy2_psq {
+	rockchip,sgmii-mac-sel = <0>;
 	status = "okay";
 };
 
@@ -216,7 +219,7 @@
 	pinctrl-0 = <&gmac0_miim>;
 
 	power-domains = <&power RK3568_PD_PIPE>;
-	phys = <&combphy1_usq PHY_TYPE_SGMII>;
+	phys = <&combphy2_psq PHY_TYPE_SGMII>;
 	phy-handle = <&sgmii_phy>;
 
 	status = "okay";
@@ -360,6 +363,12 @@
 	status = "disabled";
 };
 
+&i2s2_2ch {
+	pinctrl-0 = <&i2s2m0_sclktx &i2s2m0_lrcktx &i2s2m0_sdi &i2s2m0_sdo>;
+	rockchip,bclk-fs = <32>;
+	status = "disabled";
+};
+
 &mdio0 {
 	sgmii_phy: phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
@@ -471,10 +480,6 @@
 &route_dsi0 {
 	status = "okay";
 	connect = <&vp1_out_dsi0>;
-};
-
-&sata2 {
-	status = "okay";
 };
 
 &sdmmc2 {

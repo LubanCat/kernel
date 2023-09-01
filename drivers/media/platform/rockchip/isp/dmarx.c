@@ -443,8 +443,7 @@ static int dmarx_frame_end(struct rkisp_stream *stream)
 		list_del(&stream->curr_buf->queue);
 	}
 
-	if (stream->streaming)
-		stream->ops->update_mi(stream);
+	stream->ops->update_mi(stream);
 	spin_unlock_irqrestore(&stream->vbq_lock, lock_flags);
 	return 0;
 }
@@ -546,7 +545,7 @@ static void rkisp_buf_queue(struct vb2_buffer *vb)
 		    isp_fmt->fmt_type == FMT_BAYER &&
 		    stream->id == RKISP_STREAM_RAWRD2) {
 			u32 line = pixm->plane_fmt[0].bytesperline;
-			u32 val = 8;
+			u32 val = RKMODULE_EXTEND_LINE;
 
 			vaddr += line * (pixm->height - 2);
 			while (val) {
@@ -786,6 +785,9 @@ static const struct v4l2_file_operations rkisp_fops = {
 	.unlocked_ioctl = video_ioctl2,
 	.poll = vb2_fop_poll,
 	.mmap = vb2_fop_mmap,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl32 = video_ioctl2,
+#endif
 };
 
 static int rkisp_try_fmt_vid_out_mplane(struct file *file, void *fh,

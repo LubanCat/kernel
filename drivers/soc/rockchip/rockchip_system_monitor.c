@@ -68,6 +68,7 @@ struct system_monitor {
 	int temp_hysteresis;
 	unsigned int delay;
 	bool is_temp_offline;
+	bool boosted;
 };
 
 static unsigned long system_status;
@@ -288,6 +289,7 @@ static void rockchip_update_video_info(void)
 {
 	struct video_info *video_info;
 	unsigned int max_res = 0, max_stream_bitrate = 0, res = 0;
+	unsigned int max_video_framerate = 0;
 
 	mutex_lock(&video_info_mutex);
 	if (list_empty(&video_info_list)) {
@@ -302,6 +304,8 @@ static void rockchip_update_video_info(void)
 			max_res = res;
 		if (video_info->streamBitrate > max_stream_bitrate)
 			max_stream_bitrate = video_info->streamBitrate;
+		if (video_info->videoFramerate > max_video_framerate)
+			max_video_framerate = video_info->videoFramerate;
 	}
 	mutex_unlock(&video_info_mutex);
 
@@ -310,8 +314,9 @@ static void rockchip_update_video_info(void)
 	} else {
 		if (max_stream_bitrate == 10)
 			rockchip_set_system_status(SYS_STATUS_VIDEO_4K_10B);
-		else
-			rockchip_set_system_status(SYS_STATUS_VIDEO_4K);
+		if (max_video_framerate == 60)
+			rockchip_set_system_status(SYS_STATUS_VIDEO_4K_60P);
+		rockchip_set_system_status(SYS_STATUS_VIDEO_4K);
 	}
 }
 
@@ -737,6 +742,20 @@ int rockchip_monitor_cpu_high_temp_adjust(struct monitor_dev_info *info,
 }
 EXPORT_SYMBOL(rockchip_monitor_cpu_high_temp_adjust);
 
+void rockchip_monitor_set_boosted(void)
+{
+	if (system_monitor)
+		system_monitor->boosted = true;
+}
+EXPORT_SYMBOL(rockchip_monitor_set_boosted);
+
+void rockchip_monitor_clear_boosted(void)
+{
+	if (system_monitor)
+		system_monitor->boosted = false;
+}
+EXPORT_SYMBOL(rockchip_monitor_clear_boosted);
+
 static int rockchip_monitor_update_devfreq(struct devfreq *df)
 {
 	int ret = 0;
@@ -764,6 +783,8 @@ int rockchip_monitor_dev_low_temp_adjust(struct monitor_dev_info *info,
 	if (info->devp && info->devp->data) {
 		df = (struct devfreq *)info->devp->data;
 		rockchip_monitor_update_devfreq(df);
+	} else if (info->devp && info->devp->low_temp_adjust_volt) {
+		info->devp->low_temp_adjust_volt(info);
 	}
 
 	return 0;
@@ -1120,7 +1141,7 @@ rockchip_system_monitor_register(struct device *dev,
 
 	monitor_set_freq_table(dev, info);
 
-	if (info->devp->type == MONITOR_TPYE_DEV) {
+	if (info->devp->type == MONITOR_TPYE_DEV && info->devp->data) {
 		info->devfreq_nb.notifier_call =
 			system_monitor_devfreq_notifier_call;
 		devfreq = (struct devfreq *)info->devp->data;
@@ -1154,11 +1175,12 @@ void rockchip_system_monitor_unregister(struct monitor_dev_info *info)
 	list_del(&info->node);
 	up_write(&mdev_list_sem);
 
-	devfreq = (struct devfreq *)info->devp->data;
-	if (info->devp->type == MONITOR_TPYE_DEV)
+	if (info->devp->type == MONITOR_TPYE_DEV && info->devp->data) {
+		devfreq = (struct devfreq *)info->devp->data;
 		devm_devfreq_unregister_notifier(info->dev, devfreq,
 						 &info->devfreq_nb,
 						 DEVFREQ_TRANSITION_NOTIFIER);
+	}
 
 	kfree(info->low_temp_adjust_table);
 	kfree(info->opp_table);
@@ -1413,7 +1435,8 @@ static int rockchip_monitor_cpufreq_policy_notifier(struct notifier_block *nb,
 			if (limit_freq > info->wide_temp_limit / 1000)
 				limit_freq = info->wide_temp_limit / 1000;
 		}
-		if (info->status_max_limit &&
+		if (!system_monitor->boosted &&
+		    info->status_max_limit &&
 		    limit_freq > info->status_max_limit)
 			limit_freq = info->status_max_limit;
 

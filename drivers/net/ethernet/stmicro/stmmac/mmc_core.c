@@ -139,6 +139,7 @@ void dwmac_mmc_ctrl(void __iomem *mmcaddr, unsigned int mode)
 	pr_debug("stmmac: MMC ctrl register (offset 0x%x): 0x%08x\n",
 		 MMC_CNTRL, value);
 }
+EXPORT_SYMBOL(dwmac_mmc_ctrl);
 
 /* To mask all all interrupts.*/
 void dwmac_mmc_intr_all_mask(void __iomem *mmcaddr)
@@ -147,6 +148,7 @@ void dwmac_mmc_intr_all_mask(void __iomem *mmcaddr)
 	writel(MMC_DEFAULT_MASK, mmcaddr + MMC_TX_INTR_MASK);
 	writel(MMC_DEFAULT_MASK, mmcaddr + MMC_RX_IPC_INTR_MASK);
 }
+EXPORT_SYMBOL(dwmac_mmc_intr_all_mask);
 
 /* This reads the MAC core counters (if actaully supported).
  * by default the MMC core is programmed to reset each

@@ -30,6 +30,11 @@ config ROCKCHIP_MPP_RKVENC
 	help
 	  rockchip mpp rkv combo encoder.
 
+config ROCKCHIP_MPP_RKVENC2
+	bool "RKV encoder v2 device driver"
+	help
+	  rockchip mpp rkv combo encoder v2.
+
 config ROCKCHIP_MPP_VDPU1
 	bool "VPU decoder v1 device driver"
 	help
@@ -59,5 +64,10 @@ config ROCKCHIP_MPP_JPGDEC
 	bool "RKV jpeg decoder v1 device driver"
 	help
 	  rockchip mpp rkv jpeg decoder.
+
+config ROCKCHIP_MPP_VDPP
+	bool "VDPP device driver"
+	help
+	  rockchip vdpp.
 
 endif

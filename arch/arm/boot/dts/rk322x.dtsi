@@ -1032,6 +1032,7 @@
 		reg-io-width = <4>;
 		interrupts = <GIC_SPI 35 IRQ_TYPE_LEVEL_HIGH>,
 			     <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "hdmi", "hdmi_wakeup";
 		clocks = <&cru SCLK_HDMI_HDCP>, <&cru PCLK_HDMI_CTRL>,
 			 <&cru SCLK_HDMI_CEC>;
 		clock-names = "isfr", "iahb", "cec";

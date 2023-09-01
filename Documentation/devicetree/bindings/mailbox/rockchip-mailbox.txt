@@ -17,6 +17,10 @@ Required properties:
  - #mbox-cells: Common mailbox binding property to identify the number
 	of cells required for the mailbox specifier. Should be 1
 
+Optional properties :
+
+ - rockchip,txpoll-period-ms: TX Done polling interval in milliseconds.
+
 Example:
 --------
 

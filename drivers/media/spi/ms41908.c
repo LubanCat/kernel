@@ -289,6 +289,7 @@ static int set_motor_running_status(struct motor_dev *motor,
 	}
 	ext_dev->is_running = true;
 	reinit_completion(&ext_dev->complete);
+	reinit_completion(&ext_dev->complete_out);
 
 	if (ext_dev->is_dir_opp) {
 		if (pos > ext_dev->last_pos) {
@@ -1239,7 +1240,6 @@ static void wait_for_motor_stop(struct motor_dev *motor, struct ext_dev *dev)
 	unsigned long ret = 0;
 
 	if (dev->is_running) {
-		reinit_completion(&dev->complete_out);
 		ret = wait_for_completion_timeout(&dev->complete_out, 10 * HZ);
 		if (ret == 0)
 			dev_info(&motor->spi->dev,
@@ -2560,8 +2560,9 @@ static void dev_param_init(struct motor_dev *motor)
 					       (motor->piris->run_data.psum * 24);
 		motor->piris->is_running = false;
 		dev_info(&motor->spi->dev,
-			 "piris vd_fz_period_us %u, inict %d\n",
+			 "piris vd_fz_period_us %u, psum %d, inict %d\n",
 			 motor->vd_fz_period_us,
+			 motor->piris->run_data.psum,
 			 motor->piris->run_data.intct);
 	}
 	if (motor->is_use_focus) {
@@ -2580,8 +2581,9 @@ static void dev_param_init(struct motor_dev *motor)
 		motor->focus->is_running = false;
 		motor->focus->reback_ctrl = false;
 		dev_info(&motor->spi->dev,
-			 "focus vd_fz_period_us %u, inict %d\n",
+			 "focus vd_fz_period_us %u, psum %d, inict %d\n",
 			 motor->vd_fz_period_us,
+			 motor->focus->run_data.psum,
 			 motor->focus->run_data.intct);
 		if (motor->focus->reback != 0) {
 			motor->focus->cur_back_delay = 0;
@@ -2619,7 +2621,6 @@ static void dev_param_init(struct motor_dev *motor)
 		motor->zoom->mv_tim.vcm_end_t = ns_to_timeval(ktime_get_ns());
 		init_completion(&motor->zoom->complete);
 		init_completion(&motor->zoom->complete_out);
-		motor->vd_fz_period_us = VD_FZ_US;
 		motor->zoom->run_data.psum = motor->vd_fz_period_us *
 					     motor->zoom->start_up_speed * 8 / 1000000;
 		motor->zoom->run_data.intct = 27 * motor->vd_fz_period_us /
@@ -2653,8 +2654,9 @@ static void dev_param_init(struct motor_dev *motor)
 			motor->zoom->reback_move_time_us = reback_vd_cnt * (motor->vd_fz_period_us + 500);
 		}
 		dev_info(&motor->spi->dev,
-			 "zoom vd_fz_period_us %u, inict %d\n",
+			 "zoom vd_fz_period_us %u, psum %d, inict %d\n",
 			 motor->vd_fz_period_us,
+			 motor->zoom->run_data.psum,
 			 motor->zoom->run_data.intct);
 	}
 	if (motor->is_use_zoom1) {
@@ -2666,7 +2668,6 @@ static void dev_param_init(struct motor_dev *motor)
 		motor->zoom1->mv_tim.vcm_end_t = ns_to_timeval(ktime_get_ns());
 		init_completion(&motor->zoom1->complete);
 		init_completion(&motor->zoom1->complete_out);
-		motor->vd_fz_period_us = VD_FZ_US;
 		motor->zoom1->run_data.psum = motor->vd_fz_period_us *
 					      motor->zoom1->start_up_speed * 8 / 1000000;
 		motor->zoom1->run_data.intct = 27 * motor->vd_fz_period_us /
@@ -2674,8 +2675,9 @@ static void dev_param_init(struct motor_dev *motor)
 		motor->zoom1->is_running = false;
 		motor->zoom1->reback_ctrl = false;
 		dev_info(&motor->spi->dev,
-			 "zoom1 vd_fz_period_us %u, inict %d\n",
+			 "zoom1 vd_fz_period_us %u, psum %d, inict %d\n",
 			 motor->vd_fz_period_us,
+			 motor->zoom1->run_data.psum,
 			 motor->zoom1->run_data.intct);
 	}
 

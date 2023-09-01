@@ -156,6 +156,7 @@ struct rockchip_dmcfreq {
 	unsigned long video_1080p_rate;
 	unsigned long video_4k_rate;
 	unsigned long video_4k_10b_rate;
+	unsigned long video_4k_60p_rate;
 	unsigned long performance_rate;
 	unsigned long hdmi_rate;
 	unsigned long idle_rate;
@@ -1765,6 +1766,79 @@ static __maybe_unused int rk3399_dmc_init(struct platform_device *pdev,
 	return 0;
 }
 
+static __maybe_unused int rk3528_dmc_init(struct platform_device *pdev,
+					  struct rockchip_dmcfreq *dmcfreq)
+{
+	struct arm_smccc_res res;
+	int ret;
+	int complt_irq;
+	u32 complt_hwirq;
+	struct irq_data *complt_irq_data;
+
+	res = sip_smc_dram(0, 0, ROCKCHIP_SIP_CONFIG_DRAM_GET_VERSION);
+	dev_notice(&pdev->dev, "current ATF version 0x%lx\n", res.a1);
+	if (res.a0 || res.a1 < 0x100) {
+		dev_err(&pdev->dev, "trusted firmware need update to V1.00 and above.\n");
+		return -ENXIO;
+	}
+
+	/*
+	 * first 4KB is used for interface parameters
+	 * after 4KB is dts parameters
+	 * request share memory size 4KB * 2
+	 */
+	res = sip_smc_request_share_mem(2, SHARE_PAGE_TYPE_DDR);
+	if (res.a0 != 0) {
+		dev_err(&pdev->dev, "no ATF memory for init\n");
+		return -ENOMEM;
+	}
+	ddr_psci_param = (struct share_params *)res.a1;
+	/* Clear ddr_psci_param, size is 4KB * 2 */
+	memset_io(ddr_psci_param, 0x0, 4096 * 2);
+
+	wait_ctrl.dcf_en = 0;
+
+	init_waitqueue_head(&wait_ctrl.wait_wq);
+	wait_ctrl.wait_en = 1;
+	wait_ctrl.wait_time_out_ms = 17 * 5;
+
+	complt_irq = platform_get_irq_byname(pdev, "complete");
+	if (complt_irq < 0) {
+		dev_err(&pdev->dev, "no IRQ for complt_irq: %d\n", complt_irq);
+		return complt_irq;
+	}
+	wait_ctrl.complt_irq = complt_irq;
+
+	ret = devm_request_irq(&pdev->dev, complt_irq, wait_dcf_complete_irq,
+			       0, dev_name(&pdev->dev), &wait_ctrl);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "cannot request complt_irq\n");
+		return ret;
+	}
+	disable_irq(complt_irq);
+
+	complt_irq_data = irq_get_irq_data(complt_irq);
+	complt_hwirq = irqd_to_hwirq(complt_irq_data);
+	ddr_psci_param->complt_hwirq = complt_hwirq;
+
+	res = sip_smc_dram(SHARE_PAGE_TYPE_DDR, 0, ROCKCHIP_SIP_CONFIG_DRAM_INIT);
+	if (res.a0) {
+		dev_err(&pdev->dev, "rockchip_sip_config_dram_init error:%lx\n", res.a0);
+		return -ENOMEM;
+	}
+
+	ret = rockchip_get_freq_info(dmcfreq);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "cannot get frequency info\n");
+		return ret;
+	}
+	dmcfreq->is_set_rate_direct = true;
+
+	dmcfreq->set_auto_self_refresh = rockchip_ddr_set_auto_self_refresh;
+
+	return 0;
+}
+
 static __maybe_unused int rk3568_dmc_init(struct platform_device *pdev,
 					  struct rockchip_dmcfreq *dmcfreq)
 {
@@ -1945,6 +2019,9 @@ static const struct of_device_id rockchip_dmcfreq_of_match[] = {
 #endif
 #ifdef CONFIG_CPU_RK3399
 	{ .compatible = "rockchip,rk3399-dmc", .data = rk3399_dmc_init },
+#endif
+#ifdef CONFIG_CPU_RK3528
+	{ .compatible = "rockchip,rk3528-dmc", .data = rk3528_dmc_init },
 #endif
 #ifdef CONFIG_CPU_RK3568
 	{ .compatible = "rockchip,rk3568-dmc", .data = rk3568_dmc_init },
@@ -2222,6 +2299,11 @@ static int rockchip_get_system_status_level(struct device_node *np,
 			dev_info(dmcfreq->dev, "video_4k_10b_rate = %ld\n",
 				 dmcfreq->video_4k_10b_rate);
 			break;
+		case SYS_STATUS_VIDEO_4K_60P:
+			dmcfreq->video_4k_60p_rate = rockchip_freq_level_2_rate(dmcfreq, level);
+			dev_info(dmcfreq->dev, "video_4k_60p_rate = %ld\n",
+				 dmcfreq->video_4k_60p_rate);
+			break;
 		case SYS_STATUS_PERFORMANCE:
 			dmcfreq->performance_rate = rockchip_freq_level_2_rate(dmcfreq, level);
 			dev_info(dmcfreq->dev, "performance_rate = %ld\n",
@@ -2337,6 +2419,11 @@ static int rockchip_dmcfreq_system_status_notifier(struct notifier_block *nb,
 	if (dmcfreq->video_4k_10b_rate && (status & SYS_STATUS_VIDEO_4K_10B)) {
 		if (dmcfreq->video_4k_10b_rate > target_rate)
 			target_rate = dmcfreq->video_4k_10b_rate;
+	}
+
+	if (dmcfreq->video_4k_60p_rate && (status & SYS_STATUS_VIDEO_4K_60P)) {
+		if (dmcfreq->video_4k_60p_rate > target_rate)
+			target_rate = dmcfreq->video_4k_60p_rate;
 	}
 
 	if (dmcfreq->video_1080p_rate && (status & SYS_STATUS_VIDEO_1080P)) {
@@ -2978,8 +3065,16 @@ static int rockchip_dmcfreq_add_devfreq(struct rockchip_dmcfreq *dmcfreq)
 	return 0;
 }
 
+static int rockchip_dmcfreq_low_temp_adjust_volt(struct monitor_dev_info *mdev_info)
+{
+	struct rockchip_dmcfreq *dmcfreq = dev_get_drvdata(mdev_info->dev);
+
+	return rockchip_dmcfreq_set_volt_only(dmcfreq);
+}
+
 static struct monitor_dev_profile dmc_mdevp = {
 	.type = MONITOR_TPYE_DEV,
+	.low_temp_adjust_volt = rockchip_dmcfreq_low_temp_adjust_volt,
 	.low_temp_adjust = rockchip_monitor_dev_low_temp_adjust,
 	.high_temp_adjust = rockchip_monitor_dev_high_temp_adjust,
 };
@@ -2988,14 +3083,15 @@ static void rockchip_dmcfreq_register_notifier(struct rockchip_dmcfreq *dmcfreq)
 {
 	int ret;
 
-	if (vop_register_dmc())
-		dev_err(dmcfreq->dev, "fail to register notify to vop.\n");
+	if (dmcfreq->system_status_en || dmcfreq->auto_freq_en) {
+		if (vop_register_dmc())
+			dev_err(dmcfreq->dev, "fail to register notify to vop.\n");
 
-	dmcfreq->status_nb.notifier_call =
-		rockchip_dmcfreq_system_status_notifier;
-	ret = rockchip_register_system_status_notifier(&dmcfreq->status_nb);
-	if (ret)
-		dev_err(dmcfreq->dev, "failed to register system_status nb\n");
+		dmcfreq->status_nb.notifier_call = rockchip_dmcfreq_system_status_notifier;
+		ret = rockchip_register_system_status_notifier(&dmcfreq->status_nb);
+		if (ret)
+			dev_err(dmcfreq->dev, "failed to register system_status nb\n");
+	}
 
 	dmc_mdevp.data = dmcfreq->devfreq;
 	dmcfreq->mdev_info = rockchip_system_monitor_register(dmcfreq->dev,
@@ -3279,14 +3375,15 @@ static int rockchip_dmcfreq_probe(struct platform_device *pdev)
 		return ret;
 
 	rockchip_dmcfreq_parse_dt(data);
+	platform_set_drvdata(pdev, data);
 	if (!data->system_status_en && !data->auto_freq_en) {
 		dev_info(dev, "don't add devfreq feature\n");
+		rockchip_dmcfreq_register_notifier(data);
 		return rockchip_dmcfreq_set_volt_only(data);
 	}
 
 	pm_qos_add_request(&pm_qos, PM_QOS_CPU_DMA_LATENCY,
 			   PM_QOS_DEFAULT_VALUE);
-	platform_set_drvdata(pdev, data);
 
 	ret = devfreq_add_governor(&devfreq_dmc_ondemand);
 	if (ret)
@@ -3323,10 +3420,12 @@ static __maybe_unused int rockchip_dmcfreq_suspend(struct device *dev)
 	if (ret)
 		return ret;
 
-	ret = devfreq_suspend_device(dmcfreq->devfreq);
-	if (ret < 0) {
-		dev_err(dev, "failed to suspend the devfreq devices\n");
-		return ret;
+	if (dmcfreq->devfreq) {
+		ret = devfreq_suspend_device(dmcfreq->devfreq);
+		if (ret < 0) {
+			dev_err(dev, "failed to suspend the devfreq devices\n");
+			return ret;
+		}
 	}
 
 	return 0;
@@ -3344,11 +3443,14 @@ static __maybe_unused int rockchip_dmcfreq_resume(struct device *dev)
 	if (ret)
 		return ret;
 
-	ret = devfreq_resume_device(dmcfreq->devfreq);
-	if (ret < 0) {
-		dev_err(dev, "failed to resume the devfreq devices\n");
-		return ret;
+	if (dmcfreq->devfreq) {
+		ret = devfreq_resume_device(dmcfreq->devfreq);
+		if (ret < 0) {
+			dev_err(dev, "failed to resume the devfreq devices\n");
+			return ret;
+		}
 	}
+
 	return ret;
 }
 

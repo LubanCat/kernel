@@ -34,6 +34,7 @@
 #include <linux/regmap.h>
 #include <linux/reset.h>
 #include <linux/resource.h>
+#include <linux/rfkill-wlan.h>
 #include <linux/signal.h>
 #include <linux/types.h>
 #include <linux/uaccess.h>
@@ -42,6 +43,7 @@
 #include "pcie-designware.h"
 #include "../../pci.h"
 #include "../rockchip-pcie-dma.h"
+#include "pcie-dw-dmatest.h"
 
 enum rk_pcie_device_mode {
 	RK_PCIE_EP_TYPE,
@@ -52,6 +54,8 @@ struct reset_bulk_data	{
 	const char *id;
 	struct reset_control *rst;
 };
+
+#define RK_PCIE_DBG			0
 
 #define PCIE_DMA_OFFSET			0x380000
 
@@ -85,6 +89,8 @@ struct reset_bulk_data	{
 #define PCIE_DMA_RD_INT_MASK		0xa8
 #define PCIE_DMA_RD_INT_CLEAR		0xac
 
+#define PCIE_DMA_CHANEL_MAX_NUM		2
+
 /* Parameters for the waiting for iATU enabled routine */
 #define LINK_WAIT_IATU_MIN		9000
 #define LINK_WAIT_IATU_MAX		10000
@@ -117,7 +123,6 @@ struct reset_bulk_data	{
 #define PCIE_CLIENT_DBG_FIFO_STATUS	0x350
 #define PCIE_CLIENT_DBG_TRANSITION_DATA	0xffff0000
 #define PCIE_CLIENT_DBF_EN		0xffff0003
-#define RK_PCIE_DBG			0
 
 #define PCIE_PHY_LINKUP			BIT(0)
 #define PCIE_DATA_LINKUP		BIT(1)
@@ -144,7 +149,7 @@ struct rk_pcie {
 	unsigned int			clk_cnt;
 	struct reset_bulk_data		*rsts;
 	struct gpio_desc		*rst_gpio;
-	struct gpio_desc		*dis_gpio;
+	struct gpio_desc		*prsnt_gpio;
 	phys_addr_t			mem_start;
 	size_t				mem_size;
 	struct pcie_port		pp;
@@ -152,16 +157,20 @@ struct rk_pcie {
 	struct regmap			*pmu_grf;
 	struct dma_trx_obj		*dma_obj;
 	bool				in_suspend;
+	bool                            skip_scan_in_resume;
 	bool				is_rk1808;
 	bool				is_signal_test;
 	bool				bifurcation;
 	struct regulator		*vpcie3v3;
 	struct irq_domain		*irq_domain;
 	raw_spinlock_t			intx_lock;
+	struct dentry			*debugfs;
+	u32				msi_vector_num;
 };
 
 struct rk_pcie_of_data {
 	enum rk_pcie_device_mode	mode;
+	u32 msi_vector_num;
 };
 
 #define to_rk_pcie(x)	dev_get_drvdata((x)->dev)
@@ -407,8 +416,7 @@ static int rk_pcie_link_up(struct dw_pcie *pci)
 			return 1;
 	} else {
 		val = rk_pcie_readl_apb(rk_pcie, PCIE_CLIENT_LTSSM_STATUS);
-		if ((val & (RDLH_LINKUP | SMLH_LINKUP)) == 0x30000 &&
-		    (val & GENMASK(5, 0)) == 0x11)
+		if ((val & (RDLH_LINKUP | SMLH_LINKUP)) == 0x30000)
 			return 1;
 	}
 
@@ -450,10 +458,16 @@ static void rk_pcie_debug_dump(struct rk_pcie *rk_pcie)
 
 static int rk_pcie_establish_link(struct dw_pcie *pci)
 {
-	int retries;
+	int retries, power;
 	struct rk_pcie *rk_pcie = to_rk_pcie(pci);
+	bool std_rc = rk_pcie->mode == RK_PCIE_RC_TYPE && !rk_pcie->dma_obj;
 
-	if (dw_pcie_link_up(pci)) {
+	/*
+	 * For standard RC, even if the link has been setup by firmware,
+	 * we still need to reset link as we need to remove all resource info
+	 * from devices, for instance BAR, as it wasn't assigned by kernel.
+	 */
+	if (dw_pcie_link_up(pci) && !std_rc) {
 		dev_err(pci->dev, "link is already up\n");
 		return 0;
 	}
@@ -469,6 +483,21 @@ static int rk_pcie_establish_link(struct dw_pcie *pci)
 	rk_pcie_enable_ltssm(rk_pcie);
 
 	/*
+	 * In resume routine, function devices' resume function must be late after
+	 * controllers'. Some devices, such as Wi-Fi, need special IO setting before
+	 * finishing training. So there must be timeout here. These kinds of devices
+	 * need rescan devices by its driver when used. So no need to waste time waiting
+	 * for training pass.
+	 */
+	if (rk_pcie->in_suspend && rk_pcie->skip_scan_in_resume) {
+		rfkill_get_wifi_power_state(&power);
+		if (!power) {
+			gpiod_set_value_cansleep(rk_pcie->rst_gpio, 1);
+			return 0;
+		}
+	}
+
+	/*
 	 * PCIe requires the refclk to be stable for 100µs prior to releasing
 	 * PERST and T_PVPERL (Power stable to PERST# inactive) should be a
 	 * minimum of 100ms.  See table 2-4 in section 2.6.2 AC, the PCI Express
@@ -477,6 +506,12 @@ static int rk_pcie_establish_link(struct dw_pcie *pci)
 	 */
 	msleep(1000);
 	gpiod_set_value_cansleep(rk_pcie->rst_gpio, 1);
+
+	/*
+	 * Add this 1ms delay because we observe link is always up stably after it and
+	 * could help us save 20ms for scanning devices.
+	 */
+	 usleep_range(1000, 1100);
 
 	for (retries = 0; retries < 10; retries++) {
 		if (dw_pcie_link_up(pci)) {
@@ -505,11 +540,17 @@ static int rk_pcie_establish_link(struct dw_pcie *pci)
 	return rk_pcie->is_signal_test == true ? 0 : -EINVAL;
 }
 
-static int rk_pcie_host_init_dma_trx(struct rk_pcie *rk_pcie)
+static int rk_pcie_init_dma_trx(struct rk_pcie *rk_pcie)
 {
 	rk_pcie->dma_obj = rk_pcie_dma_obj_probe(rk_pcie->pci->dev);
 	if (IS_ERR(rk_pcie->dma_obj)) {
 		dev_err(rk_pcie->pci->dev, "failed to prepare dma object\n");
+		return -EINVAL;
+	}
+
+	rk_pcie->dma_obj = pcie_dw_dmatest_register(rk_pcie->pci->dev, true);
+	if (IS_ERR(rk_pcie->dma_obj)) {
+		dev_err(rk_pcie->pci->dev, "failed to prepare dmatest\n");
 		return -EINVAL;
 	}
 
@@ -666,34 +707,51 @@ static int rk_pcie_msi_host_init(struct pcie_port *pp)
 	return 0;
 }
 
+static void rk_pcie_msi_set_num_vectors(struct pcie_port *pp)
+{
+	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
+	struct rk_pcie *rk_pcie = to_rk_pcie(pci);
+
+	pp->num_vectors = rk_pcie->msi_vector_num;
+}
+
 static int rk_pcie_host_init(struct pcie_port *pp)
 {
 	int ret;
 	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
-	struct rk_pcie *rk_pcie = to_rk_pcie(pci);
-
-        if (!IS_ERR(rk_pcie->dis_gpio)) {
-		gpiod_set_value_cansleep(rk_pcie->dis_gpio, 1);
-        }
 
 	dw_pcie_setup_rc(pp);
 
 	ret = rk_pcie_establish_link(pci);
 
+	if (pp->msi_irq > 0)
+		dw_pcie_msi_init(pp);
+
 	return ret;
 }
 
-static const struct dw_pcie_host_ops rk_pcie_host_ops = {
+static struct dw_pcie_host_ops rk_pcie_host_ops = {
 	.host_init = rk_pcie_host_init,
-	.msi_host_init = rk_pcie_msi_host_init,
 };
 
-static int rk_add_pcie_port(struct rk_pcie *rk_pcie)
+static int rk_add_pcie_port(struct rk_pcie *rk_pcie, struct platform_device *pdev)
 {
 	int ret;
 	struct dw_pcie *pci = rk_pcie->pci;
 	struct pcie_port *pp = &pci->pp;
 	struct device *dev = pci->dev;
+
+	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+		pp->msi_irq = platform_get_irq_byname(pdev, "msi");
+		/* If msi_irq is invalid, use outband msi routine */
+		if (pp->msi_irq < 0) {
+			dev_info(dev, "use outband MSI support");
+			rk_pcie_host_ops.msi_host_init = rk_pcie_msi_host_init;
+		} else {
+			dev_info(dev, "max MSI vector is %d\n", rk_pcie->msi_vector_num);
+			rk_pcie_host_ops.set_num_vectors = rk_pcie_msi_set_num_vectors;
+		}
+	}
 
 	pp->ops = &rk_pcie_host_ops;
 
@@ -706,11 +764,6 @@ static int rk_add_pcie_port(struct rk_pcie *rk_pcie)
 		return ret;
 	}
 
-	ret = rk_pcie_host_init_dma_trx(rk_pcie);
-	if (ret) {
-		dev_err(dev, "failed to init host dma trx\n");
-		return ret;
-	}
 	return 0;
 }
 
@@ -757,12 +810,6 @@ static int rk_pcie_add_ep(struct rk_pcie *rk_pcie)
 	if (ret) {
 		dev_err(dev, "failed to establish pcie link\n");
 		return ret;
-	}
-
-	rk_pcie->dma_obj = rk_pcie_dma_obj_probe(dev);
-	if (IS_ERR(rk_pcie->dma_obj)) {
-		dev_err(dev, "failed to prepare dma object\n");
-		return -EINVAL;
 	}
 
 	return 0;
@@ -861,12 +908,9 @@ static int rk_pcie_resource_get(struct platform_device *pdev,
 		return PTR_ERR(rk_pcie->rst_gpio);
 	}
 
-	rk_pcie->dis_gpio = devm_gpiod_get_optional(&pdev->dev, "disable",
-						    GPIOD_OUT_LOW);
-	if (IS_ERR(rk_pcie->dis_gpio)) {
-		dev_err(&pdev->dev, "invalid disable-gpios property in node\n");
-		return PTR_ERR(rk_pcie->rst_gpio);
-	}
+	rk_pcie->prsnt_gpio = devm_gpiod_get_optional(&pdev->dev, "prsnt", GPIOD_IN);
+	if (IS_ERR_OR_NULL(rk_pcie->prsnt_gpio))
+		dev_info(&pdev->dev, "invalid prsnt-gpios property in node\n");
 
 	return 0;
 }
@@ -974,10 +1018,9 @@ static int rk_pcie_reset_grant_ctrl(struct rk_pcie *rk_pcie,
 	return ret;
 }
 
-static void rk_pcie_start_dma_rd(struct dma_trx_obj *obj, int ctr_off)
+static void rk_pcie_start_dma_rd(struct dma_trx_obj *obj, struct dma_table *cur, int ctr_off)
 {
 	struct rk_pcie *rk_pcie = dev_get_drvdata(obj->dev);
-	struct dma_table *cur = obj->cur;
 
 	dw_pcie_writel_dbi(rk_pcie->pci, PCIE_DMA_OFFSET + PCIE_DMA_RD_ENB,
 			   cur->enb.asdword);
@@ -999,10 +1042,9 @@ static void rk_pcie_start_dma_rd(struct dma_trx_obj *obj, int ctr_off)
 			   cur->start.asdword);
 }
 
-static void rk_pcie_start_dma_wr(struct dma_trx_obj *obj, int ctr_off)
+static void rk_pcie_start_dma_wr(struct dma_trx_obj *obj, struct dma_table *cur, int ctr_off)
 {
 	struct rk_pcie *rk_pcie = dev_get_drvdata(obj->dev);
-	struct dma_table *cur = obj->cur;
 
 	dw_pcie_writel_dbi(rk_pcie->pci, PCIE_DMA_OFFSET + PCIE_DMA_WR_ENB,
 			   cur->enb.asdword);
@@ -1026,17 +1068,17 @@ static void rk_pcie_start_dma_wr(struct dma_trx_obj *obj, int ctr_off)
 			   cur->start.asdword);
 }
 
-static void rk_pcie_start_dma_dwc(struct dma_trx_obj *obj)
+static void rk_pcie_start_dma_dwc(struct dma_trx_obj *obj, struct dma_table *table)
 {
-	int dir = obj->cur->dir;
-	int chn = obj->cur->chn;
+	int dir = table->dir;
+	int chn = table->chn;
 
 	int ctr_off = PCIE_DMA_OFFSET + chn * 0x200;
 
 	if (dir == DMA_FROM_BUS)
-		rk_pcie_start_dma_rd(obj, ctr_off);
+		rk_pcie_start_dma_rd(obj, table, ctr_off);
 	else if (dir == DMA_TO_BUS)
-		rk_pcie_start_dma_wr(obj, ctr_off);
+		rk_pcie_start_dma_wr(obj, table, ctr_off);
 }
 
 static void rk_pcie_config_dma_dwc(struct dma_table *table)
@@ -1063,76 +1105,50 @@ static void rk_pcie_config_dma_dwc(struct dma_table *table)
 	table->start.chnl = table->chn;
 }
 
-static inline void
-rk_pcie_handle_dma_interrupt(struct rk_pcie *rk_pcie)
-{
-	struct dma_trx_obj *obj = rk_pcie->dma_obj;
-	struct dma_table *cur;
-
-	if (!obj)
-		return;
-
-	cur = obj->cur;
-	if (!cur) {
-		pr_err("no pcie dma table\n");
-		return;
-	}
-
-	obj->dma_free = true;
-	obj->irq_num++;
-
-	if (cur->dir == DMA_TO_BUS) {
-		if (list_empty(&obj->tbl_list)) {
-			if (obj->dma_free &&
-			    obj->loop_count >= obj->loop_count_threshold)
-				complete(&obj->done);
-		}
-	}
-}
-
 static irqreturn_t rk_pcie_sys_irq_handler(int irq, void *arg)
 {
 	struct rk_pcie *rk_pcie = arg;
-	u32 chn = 0;
+	u32 chn;
 	union int_status status;
 	union int_clear clears;
 	u32 reg, val;
 
 	status.asdword = dw_pcie_readl_dbi(rk_pcie->pci, PCIE_DMA_OFFSET +
 					   PCIE_DMA_WR_INT_STATUS);
+	for (chn = 0; chn < PCIE_DMA_CHANEL_MAX_NUM; chn++) {
+		if (status.donesta & BIT(chn)) {
+			clears.doneclr = 0x1 << chn;
+			dw_pcie_writel_dbi(rk_pcie->pci, PCIE_DMA_OFFSET +
+					PCIE_DMA_WR_INT_CLEAR, clears.asdword);
+			if (rk_pcie->dma_obj && rk_pcie->dma_obj->cb)
+				rk_pcie->dma_obj->cb(rk_pcie->dma_obj, chn, DMA_TO_BUS);
+		}
 
-	if (rk_pcie->dma_obj && rk_pcie->dma_obj->cur)
-		chn = rk_pcie->dma_obj->cur->chn;
-
-	if (status.donesta & BIT(chn)) {
-		clears.doneclr = 0x1 << chn;
-		dw_pcie_writel_dbi(rk_pcie->pci, PCIE_DMA_OFFSET +
-				   PCIE_DMA_WR_INT_CLEAR, clears.asdword);
-		rk_pcie_handle_dma_interrupt(rk_pcie);
-	}
-
-	if (status.abortsta & BIT(chn)) {
-		dev_err(rk_pcie->pci->dev, "%s, abort\n", __func__);
-		clears.abortclr = 0x1 << chn;
-		dw_pcie_writel_dbi(rk_pcie->pci, PCIE_DMA_OFFSET +
-				   PCIE_DMA_WR_INT_CLEAR, clears.asdword);
+		if (status.abortsta & BIT(chn)) {
+			dev_err(rk_pcie->pci->dev, "%s, abort\n", __func__);
+			clears.abortclr = 0x1 << chn;
+			dw_pcie_writel_dbi(rk_pcie->pci, PCIE_DMA_OFFSET +
+					PCIE_DMA_WR_INT_CLEAR, clears.asdword);
+		}
 	}
 
 	status.asdword = dw_pcie_readl_dbi(rk_pcie->pci, PCIE_DMA_OFFSET +
 					   PCIE_DMA_RD_INT_STATUS);
+	for (chn = 0; chn < PCIE_DMA_CHANEL_MAX_NUM; chn++) {
+		if (status.donesta & BIT(chn)) {
+			clears.doneclr = 0x1 << chn;
+			dw_pcie_writel_dbi(rk_pcie->pci, PCIE_DMA_OFFSET +
+					PCIE_DMA_RD_INT_CLEAR, clears.asdword);
+			if (rk_pcie->dma_obj && rk_pcie->dma_obj->cb)
+				rk_pcie->dma_obj->cb(rk_pcie->dma_obj, chn, DMA_FROM_BUS);
+		}
 
-	if (status.donesta & BIT(chn)) {
-		clears.doneclr = 0x1 << chn;
-		dw_pcie_writel_dbi(rk_pcie->pci, PCIE_DMA_OFFSET +
-				   PCIE_DMA_RD_INT_CLEAR, clears.asdword);
-		rk_pcie_handle_dma_interrupt(rk_pcie);
-	}
-
-	if (status.abortsta & BIT(chn)) {
-		dev_err(rk_pcie->pci->dev, "%s, abort\n", __func__);
-		clears.abortclr = 0x1 << chn;
-		dw_pcie_writel_dbi(rk_pcie->pci, PCIE_DMA_OFFSET +
-				   PCIE_DMA_RD_INT_CLEAR, clears.asdword);
+		if (status.abortsta & BIT(chn)) {
+			dev_err(rk_pcie->pci->dev, "%s, abort\n", __func__);
+			clears.abortclr = 0x1 << chn;
+			dw_pcie_writel_dbi(rk_pcie->pci, PCIE_DMA_OFFSET +
+					PCIE_DMA_RD_INT_CLEAR, clears.asdword);
+		}
 	}
 
 	reg = rk_pcie_readl_apb(rk_pcie, PCIE_CLIENT_INTR_STATUS_MISC);
@@ -1180,6 +1196,11 @@ static const struct rk_pcie_of_data rk_pcie_ep_of_data = {
 	.mode = RK_PCIE_EP_TYPE,
 };
 
+static const struct rk_pcie_of_data rk3528_pcie_rc_of_data = {
+	.mode = RK_PCIE_RC_TYPE,
+	.msi_vector_num = 8,
+};
+
 static const struct of_device_id rk_pcie_of_match[] = {
 	{
 		.compatible = "rockchip,rk1808-pcie",
@@ -1188,6 +1209,10 @@ static const struct of_device_id rk_pcie_of_match[] = {
 	{
 		.compatible = "rockchip,rk1808-pcie-ep",
 		.data = &rk_pcie_ep_of_data,
+	},
+	{
+		.compatible = "rockchip,rk3528-pcie",
+		.data = &rk3528_pcie_rc_of_data,
 	},
 	{
 		.compatible = "rockchip,rk3568-pcie",
@@ -1373,6 +1398,181 @@ static int rk_pcie_disable_power(struct rk_pcie *rk_pcie)
 	return ret;
 }
 
+static int rk_pci_find_capability(struct rk_pcie *rk_pcie, int cap)
+{
+	u32 header;
+	int ttl;
+	int start = 0;
+	int pos = PCI_CFG_SPACE_SIZE;
+
+	/* minimum 8 bytes per capability */
+	ttl = (PCI_CFG_SPACE_EXP_SIZE - PCI_CFG_SPACE_SIZE) / 8;
+
+	header = dw_pcie_readl_dbi(rk_pcie->pci, pos);
+
+	/*
+	 * If we have no capabilities, this is indicated by cap ID,
+	 * cap version and next pointer all being 0.
+	 */
+	if (header == 0)
+		return 0;
+
+	while (ttl-- > 0) {
+		if (PCI_EXT_CAP_ID(header) == cap && pos != start)
+			return pos;
+
+		pos = PCI_EXT_CAP_NEXT(header);
+		if (pos < PCI_CFG_SPACE_SIZE)
+			break;
+
+		header = dw_pcie_readl_dbi(rk_pcie->pci, pos);
+		if (!header)
+			break;
+	}
+
+	return 0;
+}
+
+#define RAS_DES_EVENT(ss, v) \
+do { \
+	dw_pcie_writel_dbi(pcie->pci, cap_base + 8, v); \
+	seq_printf(s, ss "0x%x\n", dw_pcie_readl_dbi(pcie->pci, cap_base + 0xc)); \
+} while (0)
+
+static int rockchip_pcie_rasdes_show(struct seq_file *s, void *unused)
+{
+	struct rk_pcie *pcie = s->private;
+	int cap_base;
+
+	cap_base = rk_pci_find_capability(pcie, PCI_EXT_CAP_ID_VNDR);
+	if (!cap_base) {
+		dev_err(pcie->pci->dev, "Not able to find RASDES CAP!\n");
+		return 0;
+	}
+
+	RAS_DES_EVENT("EBUF Overflow: ", 0);
+	RAS_DES_EVENT("EBUF Under-run: ", 0x0010000);
+	RAS_DES_EVENT("Decode Error: ", 0x0020000);
+	RAS_DES_EVENT("Running Disparity Error: ", 0x0030000);
+	RAS_DES_EVENT("SKP OS Parity Error: ", 0x0040000);
+	RAS_DES_EVENT("SYNC Header Error: ", 0x0050000);
+	RAS_DES_EVENT("CTL SKP OS Parity Error: ", 0x0060000);
+	RAS_DES_EVENT("Detect EI Infer: ", 0x1050000);
+	RAS_DES_EVENT("Receiver Error: ", 0x1060000);
+	RAS_DES_EVENT("Rx Recovery Request: ", 0x1070000);
+	RAS_DES_EVENT("N_FTS Timeout: ", 0x1080000);
+	RAS_DES_EVENT("Framing Error: ", 0x1090000);
+	RAS_DES_EVENT("Deskew Error: ", 0x10a0000);
+	RAS_DES_EVENT("BAD TLP: ", 0x2000000);
+	RAS_DES_EVENT("LCRC Error: ", 0x2010000);
+	RAS_DES_EVENT("BAD DLLP: ", 0x2020000);
+	RAS_DES_EVENT("Replay Number Rollover: ", 0x2030000);
+	RAS_DES_EVENT("Replay Timeout: ", 0x2040000);
+	RAS_DES_EVENT("Rx Nak DLLP: ", 0x2050000);
+	RAS_DES_EVENT("Tx Nak DLLP: ", 0x2060000);
+	RAS_DES_EVENT("Retry TLP: ", 0x2070000);
+	RAS_DES_EVENT("FC Timeout: ", 0x3000000);
+	RAS_DES_EVENT("Poisoned TLP: ", 0x3010000);
+	RAS_DES_EVENT("ECRC Error: ", 0x3020000);
+	RAS_DES_EVENT("Unsupported Request: ", 0x3030000);
+	RAS_DES_EVENT("Completer Abort: ", 0x3040000);
+	RAS_DES_EVENT("Completion Timeout: ", 0x3050000);
+
+	return 0;
+}
+
+static int rockchip_pcie_rasdes_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, rockchip_pcie_rasdes_show,
+			   inode->i_private);
+}
+
+static ssize_t rockchip_pcie_rasdes_write(struct file *file,
+				       const char __user *ubuf,
+				       size_t count, loff_t *ppos)
+{
+	struct seq_file *s = file->private_data;
+	struct rk_pcie *pcie = s->private;
+	char buf[32];
+	int cap_base;
+
+	if (copy_from_user(&buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
+		return -EFAULT;
+
+	cap_base = rk_pci_find_capability(pcie, PCI_EXT_CAP_ID_VNDR);
+	if (!cap_base) {
+		dev_err(pcie->pci->dev, "Not able to find RASDES CAP!\n");
+		return 0;
+	}
+
+	if (!strncmp(buf, "enable", 6))	{
+		dev_info(pcie->pci->dev, "RAS DES Event: Enable ALL!\n");
+		dw_pcie_writel_dbi(pcie->pci, cap_base + 8, 0x1c);
+		dw_pcie_writel_dbi(pcie->pci, cap_base + 8, 0x3);
+	} else if (!strncmp(buf, "disable", 7)) {
+		dev_info(pcie->pci->dev, "RAS DES Event: disable ALL!\n");
+		dw_pcie_writel_dbi(pcie->pci, cap_base + 8, 0x14);
+	} else if (!strncmp(buf, "clear", 5)) {
+		dev_info(pcie->pci->dev, "RAS DES Event: Clear ALL!\n");
+		dw_pcie_writel_dbi(pcie->pci, cap_base + 8, 0x3);
+	} else {
+		dev_info(pcie->pci->dev, "Not support command!\n");
+	}
+
+	return count;
+}
+
+static const struct file_operations rockchip_pcie_rasdes_ops = {
+	.owner = THIS_MODULE,
+	.open = rockchip_pcie_rasdes_open,
+	.read = seq_read,
+	.write = rockchip_pcie_rasdes_write,
+};
+
+static int rockchip_pcie_fifo_show(struct seq_file *s, void *data)
+{
+	struct rk_pcie *pcie = (struct rk_pcie *)dev_get_drvdata(s->private);
+	u32 loop;
+
+	seq_printf(s, "ltssm = 0x%x\n",
+		   rk_pcie_readl_apb(pcie, PCIE_CLIENT_LTSSM_STATUS));
+	for (loop = 0; loop < 64; loop++)
+		seq_printf(s, "fifo_status = 0x%x\n",
+			   rk_pcie_readl_apb(pcie, PCIE_CLIENT_DBG_FIFO_STATUS));
+
+	return 0;
+}
+
+static void rockchip_pcie_debugfs_exit(struct rk_pcie *pcie)
+{
+	debugfs_remove_recursive(pcie->debugfs);
+	pcie->debugfs = NULL;
+}
+
+static int rockchip_pcie_debugfs_init(struct rk_pcie *pcie)
+{
+	struct dentry *file;
+
+	pcie->debugfs = debugfs_create_dir(dev_name(pcie->pci->dev), NULL);
+	if (!pcie->debugfs)
+		return -ENOMEM;
+
+	debugfs_create_devm_seqfile(pcie->pci->dev, "dumpfifo",
+				    pcie->debugfs,
+				    rockchip_pcie_fifo_show);
+	file = debugfs_create_file("err_event", 0644, pcie->debugfs,
+				   pcie, &rockchip_pcie_rasdes_ops);
+	if (!file)
+		goto remove;
+
+	return 0;
+
+remove:
+	rockchip_pcie_debugfs_exit(pcie);
+
+	return -ENOMEM;
+}
+
 static int rk_pcie_really_probe(void *p)
 {
 	struct platform_device *pdev = p;
@@ -1385,28 +1585,35 @@ static int rk_pcie_really_probe(void *p)
 	enum rk_pcie_device_mode mode;
 	struct device_node *np = pdev->dev.of_node;
 	struct platform_driver *drv = to_platform_driver(dev->driver);
-	u32 val;
+	u32 val = 0;
 	int irq;
 
 	match = of_match_device(rk_pcie_of_match, dev);
-	if (!match)
-		return -EINVAL;
+	if (!match) {
+		ret = -EINVAL;
+		goto release_driver;
+	}
 
 	data = (struct rk_pcie_of_data *)match->data;
 	mode = (enum rk_pcie_device_mode)data->mode;
 
 	rk_pcie = devm_kzalloc(dev, sizeof(*rk_pcie), GFP_KERNEL);
-	if (!rk_pcie)
-		return -ENOMEM;
+	if (!rk_pcie) {
+		ret = -ENOMEM;
+		goto release_driver;
+	}
 
 	pci = devm_kzalloc(dev, sizeof(*pci), GFP_KERNEL);
-	if (!pci)
-		return -ENOMEM;
+	if (!pci) {
+		ret = -ENOMEM;
+		goto release_driver;
+	}
 
 	pci->dev = dev;
 	pci->ops = &dw_pcie_ops;
 
 	rk_pcie->mode = mode;
+	rk_pcie->msi_vector_num = data->msi_vector_num;
 	rk_pcie->pci = pci;
 
 	if (of_device_is_compatible(np, "rockchip,rk1808-pcie") ||
@@ -1421,20 +1628,38 @@ static int rk_pcie_really_probe(void *p)
 	ret = rk_pcie_resource_get(pdev, rk_pcie);
 	if (ret) {
 		dev_err(dev, "resource init failed\n");
-		return ret;
+		goto release_driver;
 	}
 
+	if (!IS_ERR_OR_NULL(rk_pcie->prsnt_gpio)) {
+		if (!gpiod_get_value(rk_pcie->prsnt_gpio)) {
+			ret = -ENODEV;
+			goto release_driver;
+		}
+	}
+
+retry_regulator:
 	/* DON'T MOVE ME: must be enable before phy init */
 	rk_pcie->vpcie3v3 = devm_regulator_get_optional(dev, "vpcie3v3");
 	if (IS_ERR(rk_pcie->vpcie3v3)) {
-		if (PTR_ERR(rk_pcie->vpcie3v3) != -ENODEV)
-			return PTR_ERR(rk_pcie->vpcie3v3);
+		if (PTR_ERR(rk_pcie->vpcie3v3) != -ENODEV) {
+			if (IS_ENABLED(CONFIG_PCIE_RK_THREADED_INIT)) {
+				/* Deferred but in threaded context for most 10s */
+				msleep(20);
+				if (++val < 500)
+					goto retry_regulator;
+			}
+
+			ret = PTR_ERR(rk_pcie->vpcie3v3);
+			goto release_driver;
+		}
+
 		dev_info(dev, "no vpcie3v3 regulator found\n");
 	}
 
 	ret = rk_pcie_enable_power(rk_pcie);
 	if (ret)
-		return ret;
+		goto release_driver;
 
 	ret = rk_pcie_phy_init(rk_pcie);
 	if (ret) {
@@ -1445,13 +1670,13 @@ static int rk_pcie_really_probe(void *p)
 	ret = rk_pcie_reset_control_release(rk_pcie);
 	if (ret) {
 		dev_err(dev, "reset control init failed\n");
-		goto disable_vpcie3v3;
+		goto disable_phy;
 	}
 
 	ret = rk_pcie_request_sys_irq(rk_pcie, pdev);
 	if (ret) {
 		dev_err(dev, "pcie irq init failed\n");
-		goto disable_vpcie3v3;
+		goto disable_phy;
 	}
 
 	platform_set_drvdata(pdev, rk_pcie);
@@ -1459,7 +1684,7 @@ static int rk_pcie_really_probe(void *p)
 	ret = rk_pcie_clk_init(rk_pcie);
 	if (ret) {
 		dev_err(dev, "clock init failed\n");
-		goto disable_vpcie3v3;
+		goto disable_phy;
 	}
 
 	dw_pcie_dbi_ro_wr_en(pci);
@@ -1482,9 +1707,9 @@ static int rk_pcie_really_probe(void *p)
 			/* Unmask all legacy interrupt from INTA~INTD  */
 			rk_pcie_writel_apb(rk_pcie, PCIE_CLIENT_INTR_MASK_LEGACY,
 					   UNMASK_ALL_LEGACY_INT);
+		} else {
+			dev_info(dev, "missing legacy IRQ resource\n");
 		}
-
-		dev_info(dev, "missing legacy IRQ resource\n");
 	}
 
 	/* Set PCIe mode */
@@ -1506,9 +1731,13 @@ static int rk_pcie_really_probe(void *p)
 		rk_pcie->is_signal_test = true;
 	}
 
+	/* Skip waiting for training to pass in system PM routine */
+	if (device_property_read_bool(dev, "rockchip,skip-scan-in-resume"))
+		rk_pcie->skip_scan_in_resume = true;
+
 	switch (rk_pcie->mode) {
 	case RK_PCIE_RC_TYPE:
-		ret = rk_add_pcie_port(rk_pcie);
+		ret = rk_add_pcie_port(rk_pcie, pdev);
 		break;
 	case RK_PCIE_EP_TYPE:
 		ret = rk_pcie_add_ep(rk_pcie);
@@ -1520,6 +1749,12 @@ static int rk_pcie_really_probe(void *p)
 
 	if (ret)
 		goto remove_irq_domain;
+
+	ret = rk_pcie_init_dma_trx(rk_pcie);
+	if (ret) {
+		dev_err(dev, "failed to add dma extension\n");
+		return ret;
+	}
 
 	if (rk_pcie->dma_obj) {
 		rk_pcie->dma_obj->start_dma_func = rk_pcie_start_dma_dwc;
@@ -1538,29 +1773,57 @@ static int rk_pcie_really_probe(void *p)
 	device_init_wakeup(dev, true);
 	drv->driver.pm = &rockchip_dw_pcie_pm_ops;
 
+	if (IS_ENABLED(CONFIG_DEBUG_FS)) {
+		ret = rockchip_pcie_debugfs_init(rk_pcie);
+		if (ret < 0)
+			dev_err(dev, "failed to setup debugfs: %d\n", ret);
+
+		/* Enable RASDES Error event by default */
+		val = rk_pci_find_capability(rk_pcie, PCI_EXT_CAP_ID_VNDR);
+		if (!val) {
+			dev_err(dev, "Not able to find RASDES CAP!\n");
+			return 0;
+		}
+
+		dw_pcie_writel_dbi(rk_pcie->pci, val + 8, 0x1c);
+		dw_pcie_writel_dbi(rk_pcie->pci, val + 8, 0x3);
+	}
+
 	return 0;
 
 remove_irq_domain:
 	if (rk_pcie->irq_domain)
 		irq_domain_remove(rk_pcie->irq_domain);
+disable_phy:
+	phy_power_off(rk_pcie->phy);
+	phy_exit(rk_pcie->phy);
 deinit_clk:
 	rk_pcie_clk_deinit(rk_pcie);
 disable_vpcie3v3:
 	rk_pcie_disable_power(rk_pcie);
+
+release_driver:
+	if (IS_ENABLED(CONFIG_PCIE_RK_THREADED_INIT))
+		device_release_driver(dev);
 
 	return ret;
 }
 
 static int rk_pcie_probe(struct platform_device *pdev)
 {
-	struct task_struct *tsk;
+	if (IS_ENABLED(CONFIG_PCIE_RK_THREADED_INIT)) {
+		struct task_struct *tsk;
 
-	tsk = kthread_run(rk_pcie_really_probe, pdev, "rk-pcie");
-	if (IS_ERR(tsk)) {
-		dev_err(&pdev->dev, "start rk-pcie thread failed\n");
-		return PTR_ERR(tsk);
+		tsk = kthread_run(rk_pcie_really_probe, pdev, "rk-pcie");
+		if (IS_ERR(tsk)) {
+			dev_err(&pdev->dev, "start rk-pcie thread failed\n");
+			return PTR_ERR(tsk);
+		}
+
+		return 0;
 	}
-	return 0;
+
+	return rk_pcie_really_probe(pdev);
 }
 
 static int __maybe_unused rockchip_dw_pcie_suspend(struct device *dev)
@@ -1663,6 +1926,9 @@ std_rc_done:
 		if (ret)
 			goto err;
 	}
+
+	if (rk_pcie->pci->pp.msi_irq > 0)
+		dw_pcie_msi_init(&rk_pcie->pci->pp);
 
 	return 0;
 err:

@@ -135,6 +135,7 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_RK3228
 	select SND_SOC_RK3308
 	select SND_SOC_RK3328
+	select SND_SOC_RK3528
 	select SND_SOC_RK817 if I2C
 	select SND_SOC_RT274 if I2C
 	select SND_SOC_RT286 if I2C
@@ -839,6 +840,10 @@ config SND_SOC_RK3308
 config SND_SOC_RK3328
 	select REGMAP_MMIO
 	tristate "Rockchip RK3328 CODEC"
+
+config SND_SOC_RK3528
+	select REGMAP_MMIO
+	tristate "Rockchip RK3528 CODEC"
 
 config SND_SOC_RK630
 	tristate "Rockchip RK630 CODEC"

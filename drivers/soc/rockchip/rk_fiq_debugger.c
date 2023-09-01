@@ -45,14 +45,14 @@
 #ifdef CONFIG_FIQ_DEBUGGER_TRUST_ZONE
 #include <linux/rockchip/rockchip_sip.h>
 #endif
-
-#define UART_USR	0x1f	/* In: UART Status Register */
+#define UART_USR			0x1f /* In: UART Status Register */
 #define UART_USR_RX_FIFO_FULL		0x10 /* Receive FIFO full */
 #define UART_USR_RX_FIFO_NOT_EMPTY	0x08 /* Receive FIFO not empty */
 #define UART_USR_TX_FIFO_EMPTY		0x04 /* Transmit FIFO empty */
 #define UART_USR_TX_FIFO_NOT_FULL	0x02 /* Transmit FIFO not full */
 #define UART_USR_BUSY			0x01 /* UART busy indicator */
 #define UART_SRR			0x22 /* software reset register */
+#define RK_UART_RFL			0x21 /* UART Receive Fifo Level Register */
 
 struct rk_fiq_debugger {
 	int irq;
@@ -150,7 +150,7 @@ static int debug_port_init(struct platform_device *pdev)
 
 static int debug_getc(struct platform_device *pdev)
 {
-	unsigned int lsr;
+	unsigned int lsr, usr, rfl, iir;
 	struct rk_fiq_debugger *t;
 	unsigned int temp;
 	static unsigned int n;
@@ -160,8 +160,22 @@ static int debug_getc(struct platform_device *pdev)
 	/*
 	 * Clear uart interrupt status
 	 */
-	rk_fiq_read(t, UART_USR);
+	iir = rk_fiq_read(t, UART_IIR);
+	usr = rk_fiq_read(t, UART_USR);
 	lsr = rk_fiq_read_lsr(t);
+
+	/*
+	 * There are ways to get Designware-based UARTs into a state where
+	 * they are asserting UART_IIR_RX_TIMEOUT but there is no actual
+	 * data available.  If we see such a case then we'll do a bogus
+	 * read.  If we don't do this then the "RX TIMEOUT" interrupt will
+	 * fire forever.
+	 */
+	if ((iir & 0x3f) == UART_IIR_RX_TIMEOUT) {
+		rfl = rk_fiq_read(t, RK_UART_RFL);
+		if (!(lsr & (UART_LSR_DR | UART_LSR_BI)) && !(usr & 0x1) && (rfl == 0))
+			rk_fiq_read(t, UART_RX);
+	}
 
 	if (lsr & UART_LSR_DR) {
 		temp = rk_fiq_read(t, UART_RX);
@@ -215,22 +229,32 @@ static void debug_flush(struct platform_device *pdev)
 
 #ifdef CONFIG_RK_CONSOLE_THREAD
 #define FIFO_SIZE SZ_64K
-#define LINE_MAX 1024
+#define TTY_FIFO_SIZE SZ_64K
 static DEFINE_KFIFO(fifo, unsigned char, FIFO_SIZE);
-static char console_buf[LINE_MAX]; /* avoid FRAME WARN */
-static bool console_thread_stop;
+static DEFINE_KFIFO(tty_fifo, unsigned char, TTY_FIFO_SIZE);
+static bool console_thread_stop; /* write on console_write */
+static bool console_thread_running; /* write on console_thread */
 static unsigned int console_dropped_messages;
+
+static int write_room(struct platform_device *pdev)
+{
+	return (TTY_FIFO_SIZE - kfifo_len(&tty_fifo));
+}
 
 static void console_putc(struct platform_device *pdev, unsigned int c)
 {
 	struct rk_fiq_debugger *t;
-	unsigned int count = 500;
+	unsigned int count = 2;		/* loop 2 times is enough */
+	unsigned long us = 400;		/* the time to send 60 byte for baudrate 1500000 */
 
 	t = container_of(dev_get_platdata(&pdev->dev), typeof(*t), pdata);
 
+	if (t->baudrate == 115200)
+		us = 5160;	/* the time to send 60 byte for baudrate 115200 */
+
 	while (!(rk_fiq_read(t, UART_USR) & UART_USR_TX_FIFO_NOT_FULL) &&
 	       count--)
-		usleep_range(200, 210);
+		usleep_range(us, us + us / 20);
 
 	rk_fiq_write(t, c, UART_TX);
 }
@@ -238,12 +262,16 @@ static void console_putc(struct platform_device *pdev, unsigned int c)
 static void console_flush(struct platform_device *pdev)
 {
 	struct rk_fiq_debugger *t;
-	unsigned int count = 500;
+	unsigned int count = 2;		/* loop 2 times is enough */
+	unsigned long us = 428;		/* the time to send 64 byte for baudrate 1500000 */
 
 	t = container_of(dev_get_platdata(&pdev->dev), typeof(*t), pdata);
 
+	if (t->baudrate == 115200)
+		us = 5500;	/* the time to send 64 byte for baudrate 115200 */
+
 	while (!(rk_fiq_read_lsr(t) & UART_LSR_TEMT) && count--)
-		usleep_range(200, 210);
+		usleep_range(us, us + us / 20);
 }
 
 static void console_put(struct platform_device *pdev,
@@ -266,33 +294,79 @@ static void debug_put(struct platform_device *pdev,
 	}
 }
 
+static void wake_up_console_thread(struct task_struct *console_task)
+{
+	/*
+	 * Avoid dead lock on console_task->pi_lock and console_lock
+	 * when call printk() in try_to_wake_up().
+	 *
+	 * cpu0 hold console_lock, then try lock pi_lock fail:
+	 *   printk()->vprintk_emit()->console_unlock()->try_to_wake_up()
+	 *   ->lock(pi_lock)->deadlock
+	 *
+	 * cpu1 hold pi_lock, then try lock console_lock fail:
+	 *   console_thread()->console_put()->usleep_range()->run_hrtimer()
+	 *   ->hrtimer_wakeup()->try_to_wake_up()[hold_pi_lock]->printk()
+	 *   ->vprintk_emit()->console_trylock_spining()->cpu_relax()->deadlock
+	 *
+	 * if cpu0 does not hold console_lock, cpu1 also deadlock on pi_lock:
+	 *   ...->hrtimer_wakeup()->try_to_wake_up()[hold_pi_lock]->printk()
+	 *   ->vprintk_emit()->console_unlock()->try_to_wake_up()
+	 *   ->lock(pi_lock)->deadlock
+	 *
+	 * so when console_task is running on usleep_range(), printk()
+	 * should not wakeup console_task to avoid lock(pi_lock) again,
+	 * as run_hrtimer() will wakeup console_task later.
+	 * console_thread_running==false guarantee that console_task
+	 * is not running on usleep_range().
+	 */
+	if (!READ_ONCE(console_thread_running))
+		wake_up_process(console_task);
+}
+
 static int console_thread(void *data)
 {
 	struct platform_device *pdev = data;
-	char *buf = console_buf;
-	unsigned int len;
+	char buf[64], c = 0;
+	unsigned int len = 0, len_tty = 0;
 
 	while (1) {
 		unsigned int dropped;
 
 		set_current_state(TASK_INTERRUPTIBLE);
-		if (kfifo_is_empty(&fifo))
+		if (console_thread_stop || (kfifo_is_empty(&fifo) && kfifo_is_empty(&tty_fifo))) {
+			smp_store_mb(console_thread_running, false);
 			schedule();
+			smp_store_mb(console_thread_running, true);
+		}
 		if (kthread_should_stop())
 			break;
 		set_current_state(TASK_RUNNING);
-		while (!console_thread_stop) {
-			len = kfifo_out(&fifo, buf, LINE_MAX);
-			if (!len)
-				break;
-			console_put(pdev, buf, len);
+
+		while (!console_thread_stop && (!kfifo_is_empty(&fifo) || !kfifo_is_empty(&tty_fifo))) {
+			while (!console_thread_stop && kfifo_get(&fifo, &c)) {
+				console_put(pdev, &c, 1);
+				if (c == '\n')
+					break;
+			}
+
+			while (!console_thread_stop && kfifo_get(&tty_fifo, &c)) {
+				console_putc(pdev, c);
+				len_tty++;
+				if (c == '\n')
+					break;
+			}
 		}
+
+		if (len_tty > 0)
+			fiq_tty_wake_up(pdev);
+		len_tty = 0;
+
 		dropped = console_dropped_messages;
 		if (dropped && !console_thread_stop) {
 			console_dropped_messages = 0;
 			smp_wmb();
-			len = snprintf(buf, LINE_MAX,
-				       "** %u console messages dropped **\n",
+			len = sprintf(buf, "** %u console messages dropped **\n",
 				       dropped);
 			console_put(pdev, buf, len);
 		}
@@ -328,18 +402,37 @@ static void console_write(struct platform_device *pdev, const char *s, unsigned 
 	} else if (count) {
 		unsigned int ret = 0;
 
-		if (kfifo_len(&fifo) + count < FIFO_SIZE)
+		if (kfifo_len(&fifo) + count <= FIFO_SIZE)
 			ret = kfifo_in(&fifo, s, count);
 		if (!ret) {
 			console_dropped_messages++;
 			smp_wmb();
 		} else {
-			wake_up_process(t->console_task);
+			wake_up_console_thread(t->console_task);
 		}
 	}
 }
-#endif
 
+static int tty_write(struct platform_device *pdev, const char *s, int count)
+{
+	unsigned int ret = 0;
+	struct rk_fiq_debugger *t;
+
+	if (console_thread_stop)
+		return count;
+	t = container_of(dev_get_platdata(&pdev->dev), typeof(*t), pdata);
+
+	if (count > 0) {
+		if (kfifo_len(&tty_fifo) + count <= TTY_FIFO_SIZE)
+			ret = kfifo_in(&tty_fifo, s, count);
+
+		if (ret <= 0)
+			return 0;
+		wake_up_console_thread(t->console_task);
+	}
+	return count;
+}
+#endif
 
 static void fiq_enable(struct platform_device *pdev, unsigned int irq, bool on)
 {
@@ -371,7 +464,7 @@ int sdei_fiq_debugger_is_enabled(void)
 	return rk_fiq_sdei.fiq_en;
 }
 
-int fiq_sdei_event_callback(u32 event, struct pt_regs *regs, void *arg)
+static int fiq_sdei_event_callback(u32 event, struct pt_regs *regs, void *arg)
 {
 	int cpu_id = get_logical_index(read_cpuid_mpidr() &
 				       MPIDR_HWID_BITMASK);
@@ -380,7 +473,7 @@ int fiq_sdei_event_callback(u32 event, struct pt_regs *regs, void *arg)
 	return 0;
 }
 
-void rk_fiq_sdei_event_sw_cpu(int wait_disable)
+static void rk_fiq_sdei_event_sw_cpu(int wait_disable)
 {
 	unsigned long affinity;
 	int cnt = 100000;
@@ -402,7 +495,7 @@ void rk_fiq_sdei_event_sw_cpu(int wait_disable)
 	rk_fiq_sdei.cur_cpu = rk_fiq_sdei.sw_cpu;
 }
 
-int fiq_sdei_sw_cpu_event_callback(u32 event, struct pt_regs *regs, void *arg)
+static int fiq_sdei_sw_cpu_event_callback(u32 event, struct pt_regs *regs, void *arg)
 {
 	int cnt = 10000;
 	int ret = 0;
@@ -454,7 +547,7 @@ static int fiq_dbg_sdei_cpu_off_migrate_fiq(unsigned int cpu)
 	int cnt = 10000;
 
 	if (rk_fiq_sdei.cur_cpu == cpu) {
-		target_cpu = cpumask_first(cpu_online_mask);
+		target_cpu = cpumask_any_but(cpu_online_mask, cpu);
 		_rk_fiq_dbg_sdei_switch_cpu(target_cpu, 1);
 
 		while (rk_fiq_sdei.cur_cpu == cpu && cnt) {
@@ -495,6 +588,7 @@ static struct notifier_block fiq_dbg_sdei_pm_nb = {
 static int fiq_debugger_sdei_enable(struct rk_fiq_debugger *t)
 {
 	int ret, cpu, i;
+	int is_dyn_event = false;
 
 	ret = sip_fiq_debugger_sdei_get_event_id(&rk_fiq_sdei.event_id,
 						 &rk_fiq_sdei.cpu_sw_event_id,
@@ -503,6 +597,17 @@ static int fiq_debugger_sdei_enable(struct rk_fiq_debugger *t)
 	if (ret) {
 		pr_err("%s: get event id error!\n", __func__);
 		return ret;
+	}
+
+	/* If we can't get a valid fiq event, use dynamic event instead */
+	if (rk_fiq_sdei.event_id == 0) {
+		ret = sdei_interrupt_bind(serial_hwirq, &rk_fiq_sdei.event_id);
+		if (ret) {
+			pr_err("%s: bind intr:%d error!\n", __func__, serial_hwirq);
+			return ret;
+		}
+
+		is_dyn_event = true;
 	}
 
 	ret = cpuhp_setup_state_nocalls(CPUHP_AP_ONLINE_DYN,
@@ -583,6 +688,9 @@ err:
 	unregister_pm_notifier(&fiq_dbg_sdei_pm_nb);
 	sdei_event_unregister(rk_fiq_sdei.event_id);
 
+	if (is_dyn_event)
+		sdei_interrupt_release(rk_fiq_sdei.event_id);
+
 	return ret;
 }
 
@@ -604,7 +712,7 @@ static void rk_fiq_debugger_enable_debug(struct platform_device *pdev, bool val)
 	sip_fiq_debugger_enable_debug(val);
 }
 
-static void fiq_debugger_uart_irq_tf(struct pt_regs *_pt_regs, u64 cpu)
+static void fiq_debugger_uart_irq_tf(struct pt_regs *_pt_regs, unsigned long cpu)
 {
 	fiq_debugger_fiq(_pt_regs, cpu);
 }
@@ -652,7 +760,7 @@ static int fiq_debugger_cpu_offine_migrate_fiq(unsigned int cpu)
 
 	if ((sip_fiq_debugger_is_enabled()) &&
 	    (sip_fiq_debugger_get_target_cpu() == cpu)) {
-		target_cpu = cpumask_first(cpu_online_mask);
+		target_cpu = cpumask_any_but(cpu_online_mask, cpu);
 		sip_fiq_debugger_switch_cpu(target_cpu);
 	}
 
@@ -730,9 +838,9 @@ exit:
 }
 #endif
 
-void rk_serial_debug_init(void __iomem *base, phys_addr_t phy_base,
-			  int irq, int signal_irq,
-			  int wakeup_irq, unsigned int baudrate)
+static void rk_serial_debug_init(void __iomem *base, phys_addr_t phy_base,
+				 int irq, int signal_irq,
+				 int wakeup_irq, unsigned int baudrate)
 {
 	struct rk_fiq_debugger *t = NULL;
 	struct platform_device *pdev = NULL;
@@ -831,8 +939,11 @@ void rk_serial_debug_init(void __iomem *base, phys_addr_t phy_base,
 
 #ifdef CONFIG_RK_CONSOLE_THREAD
 	t->console_task = kthread_run(console_thread, pdev, "kconsole");
-	if (!IS_ERR(t->console_task))
+	if (!IS_ERR(t->console_task)) {
 		t->pdata.console_write = console_write;
+		t->pdata.tty_write = tty_write;
+		t->pdata.write_room = write_room;
+	}
 #endif
 
 	pdev->name = "fiq_debugger";
@@ -854,7 +965,7 @@ out2:
 	kfree(t);
 }
 
-void rk_serial_debug_init_dummy(void)
+static void rk_serial_debug_init_dummy(void)
 {
 	struct rk_fiq_debugger *t = NULL;
 	struct platform_device *pdev = NULL;

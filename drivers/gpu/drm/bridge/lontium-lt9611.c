@@ -93,6 +93,8 @@ static struct lt9611_mode lt9611_modes[] = {
 	{ 1920, 1080, 60, 4, 1 }, /* 1080P 24bit 60Hz 4lane 1port */
 	{ 1920, 1080, 30, 3, 1 }, /* 1080P 24bit 30Hz 3lane 1port */
 	{ 1920, 1080, 24, 3, 1 },
+	{ 1280, 720, 60, 4, 1 },
+	{ 1280, 720, 30, 4, 1 },
 	{ 720, 480, 60, 4, 1 },
 	{ 720, 576, 50, 2, 1 },
 	{ 640, 480, 60, 2, 1 },
@@ -228,8 +230,14 @@ static void lt9611_pcr_setup(struct lt9611 *lt9611, const struct drm_display_mod
 	case 640:
 		regmap_write(lt9611->regmap, 0x8326, 0x14);
 		break;
+	case 1280:
+		regmap_write(lt9611->regmap, 0x8326, 0x1c);
+		break;
 	case 1920:
-		regmap_write(lt9611->regmap, 0x8326, 0x37);
+		if (drm_mode_vrefresh(mode) == 30)
+			regmap_write(lt9611->regmap, 0x8326, 0x1c);
+		else
+			regmap_write(lt9611->regmap, 0x8326, 0x37);
 		break;
 	case 3840:
 		regmap_multi_reg_write(lt9611->regmap, reg_cfg2, ARRAY_SIZE(reg_cfg2));

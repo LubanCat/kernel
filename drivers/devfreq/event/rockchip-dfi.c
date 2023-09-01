@@ -56,6 +56,10 @@
 #define RK3368_DFI_EN			(0x30003 << 5)
 #define RK3368_DFI_DIS			(0x30000 << 5)
 
+#define RK3528_PMUGRF_OFFSET		0x70000
+#define RK3528_PMUGRF_OS_REG18		0x248
+#define RK3528_PMUGRF_OS_REG19		0x24c
+
 #define MAX_DMC_NUM_CH			2
 #define READ_DRAMTYPE_INFO(n)		(((n) >> 13) & 0x7)
 #define READ_CH_INFO(n)			(((n) >> 28) & 0x3)
@@ -111,6 +115,7 @@ struct rockchip_dfi {
 	struct regmap *regmap_pmugrf;
 	struct clk *clk;
 	u32 dram_type;
+	u32 count_rate;
 	/*
 	 * available mask, 1: available, 0: not available
 	 * each bit represent a channel
@@ -377,8 +382,12 @@ static int rockchip_dfi_get_busier_ch(struct devfreq_event_dev *edev)
 	u32 tmp, max = 0;
 	u32 i, busier_ch = 0;
 	void __iomem *dfi_regs = info->regs;
+	u32 count_rate = 1;
 
 	rockchip_dfi_stop_hardware_counter(edev);
+
+	if (info->count_rate)
+		count_rate = info->count_rate;
 
 	/* Find out which channel is busier */
 	for (i = 0; i < MAX_DMC_NUM_CH; i++) {
@@ -386,7 +395,7 @@ static int rockchip_dfi_get_busier_ch(struct devfreq_event_dev *edev)
 			continue;
 
 		info->ch_usage[i].total = readl_relaxed(dfi_regs +
-				DDRMON_CH0_COUNT_NUM + i * 20);
+				DDRMON_CH0_COUNT_NUM + i * 20) * count_rate;
 
 		/* LPDDR4 and LPDDR4X BL = 16,other DDR type BL = 8 */
 		tmp = readl_relaxed(dfi_regs +
@@ -639,6 +648,41 @@ static __maybe_unused __init int rk3328_dfi_init(struct platform_device *pdev,
 	return 0;
 }
 
+static __maybe_unused __init int rk3528_dfi_init(struct platform_device *pdev,
+						 struct rockchip_dfi *data,
+						 struct devfreq_event_desc *desc)
+{
+	struct device_node *np = pdev->dev.of_node, *node;
+	struct resource *res;
+	u32 val_18, val_19;
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	data->regs = devm_ioremap_resource(&pdev->dev, res);
+	if (IS_ERR(data->regs))
+		return PTR_ERR(data->regs);
+
+	node = of_parse_phandle(np, "rockchip,grf", 0);
+	if (node) {
+		data->regmap_grf = syscon_node_to_regmap(node);
+		if (IS_ERR(data->regmap_grf))
+			return PTR_ERR(data->regmap_grf);
+	}
+
+	regmap_read(data->regmap_grf, RK3528_PMUGRF_OFFSET + RK3528_PMUGRF_OS_REG18, &val_18);
+	regmap_read(data->regmap_grf, RK3528_PMUGRF_OFFSET + RK3528_PMUGRF_OS_REG19, &val_19);
+	if (READ_SYSREG_VERSION(val_19) >= 0x3)
+		data->dram_type = READ_DRAMTYPE_INFO_V3(val_18, val_19);
+	else
+		data->dram_type = READ_DRAMTYPE_INFO(val_18);
+	data->count_rate = 2;
+	data->ch_msk = 1;
+	data->clk = NULL;
+
+	desc->ops = &rockchip_dfi_ops;
+
+	return 0;
+}
+
 static const struct of_device_id rockchip_dfi_id_match[] = {
 #ifdef CONFIG_CPU_PX30
 	{ .compatible = "rockchip,px30-dfi", .data = px30_dfi_init },
@@ -660,6 +704,9 @@ static const struct of_device_id rockchip_dfi_id_match[] = {
 #endif
 #ifdef CONFIG_CPU_RK3399
 	{ .compatible = "rockchip,rk3399-dfi", .data = rockchip_dfi_init },
+#endif
+#ifdef CONFIG_CPU_RK3528
+	{ .compatible = "rockchip,rk3528-dfi", .data = rk3528_dfi_init },
 #endif
 #ifdef CONFIG_CPU_RK3568
 	{ .compatible = "rockchip,rk3568-dfi", .data = px30_dfi_init },

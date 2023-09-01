@@ -793,7 +793,6 @@ struct sk_buff {
 	__u8			tc_redirected:1;
 	__u8			tc_from_ingress:1;
 #endif
-	__u8 			fast_forwarded:1;
 #ifdef CONFIG_TLS_DEVICE
 	__u8			decrypted:1;
 #endif

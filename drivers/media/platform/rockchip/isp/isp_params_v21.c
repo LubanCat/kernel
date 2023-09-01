@@ -2647,6 +2647,8 @@ isp_dhaz_config(struct rkisp_isp_params_vdev *params_vdev,
 		 (arg->hpara_en & 0x1) << 12 |
 		 (arg->hist_en & 0x1) << 8 |
 		 (arg->dc_en & 0x1) << 4;
+	if (!params_vdev->dev->hw_dev->is_single)
+		value |= ISP21_SELF_FORCE_UPD;
 	rkisp_iowrite32(params_vdev, value, ISP21_DHAZ_CTRL);
 
 	value = ISP2X_PACK_4BYTE(arg->dc_min_th, arg->dc_max_th,
@@ -3647,6 +3649,7 @@ void __isp_isr_meas_config(struct rkisp_isp_params_vdev *params_vdev,
 		(struct rkisp_isp_params_v21_ops *)params_vdev->priv_ops;
 	u64 module_cfg_update = new_params->module_cfg_update;
 
+	params_vdev->cur_frame_id = new_params->frame_id;
 	if (type == RKISP_PARAMS_SHD)
 		return;
 

@@ -17,7 +17,7 @@
 #include <drm/drm_gem.h>
 #include <drm/drm_vma_manager.h>
 
-#include <linux/dma-buf-cache.h>
+#include <linux/dma-buf.h>
 #include <linux/genalloc.h>
 #include <linux/iommu.h>
 #include <linux/pagemap.h>
@@ -38,7 +38,7 @@ static int rockchip_gem_iommu_map(struct rockchip_gem_object *rk_obj)
 {
 	struct drm_device *drm = rk_obj->base.dev;
 	struct rockchip_drm_private *private = drm->dev_private;
-	int prot = IOMMU_READ | IOMMU_WRITE | IOMMU_TLB_SHOT_ENTIRE;
+	int prot = IOMMU_READ | IOMMU_WRITE;
 	ssize_t ret;
 
 	mutex_lock(&private->mm_lock);
@@ -62,6 +62,11 @@ static int rockchip_gem_iommu_map(struct rockchip_gem_object *rk_obj)
 		ret = -ENOMEM;
 		goto err_remove_node;
 	}
+
+#ifdef CONFIG_IOMMU_API
+	if (private->domain->ops->flush_iotlb_all)
+		private->domain->ops->flush_iotlb_all(private->domain);
+#endif
 
 	rk_obj->size = ret;
 
@@ -128,6 +133,37 @@ out:
 	return ERR_PTR(ret);
 }
 
+static struct page **get_pages(struct drm_gem_object *obj)
+{
+	if (IS_ENABLED(CONFIG_DMABUF_PAGE_POOL)) {
+		struct drm_device *drm = obj->dev;
+		struct rockchip_drm_private *priv = drm->dev_private;
+		struct dmabuf_page_pool *pool = priv->page_pools;
+
+		return dmabuf_page_pool_alloc_pages_array(pool,
+							  obj->size >>
+							  PAGE_SHIFT);
+	}
+
+	return drm_gem_get_pages(obj);
+}
+
+static void put_pages(struct drm_gem_object *obj, struct page **pages,
+		      bool dirty, bool accessed)
+{
+	if (IS_ENABLED(CONFIG_DMABUF_PAGE_POOL)) {
+		struct drm_device *drm = obj->dev;
+		struct rockchip_drm_private *priv = drm->dev_private;
+		struct dmabuf_page_pool *pool = priv->page_pools;
+
+		return dmabuf_page_pool_free_pages_array(pool, pages,
+							 obj->size >>
+							 PAGE_SHIFT);
+	}
+
+	return drm_gem_put_pages(obj, pages, dirty, accessed);
+}
+
 static int rockchip_gem_get_pages(struct rockchip_gem_object *rk_obj)
 {
 	struct drm_device *drm = rk_obj->base.dev;
@@ -150,7 +186,7 @@ static int rockchip_gem_get_pages(struct rockchip_gem_object *rk_obj)
 	for (i = 0; i < PG_ROUND; i++)
 		INIT_LIST_HEAD(&lists[i]);
 
-	pages = drm_gem_get_pages(&rk_obj->base);
+	pages = get_pages(&rk_obj->base);
 	if (IS_ERR(pages))
 		return PTR_ERR(pages);
 
@@ -254,7 +290,8 @@ err_put_list:
 	rockchip_gem_free_list(lists);
 	kvfree(dst_pages);
 err_put_pages:
-	drm_gem_put_pages(&rk_obj->base, rk_obj->pages, false, false);
+	put_pages(&rk_obj->base, rk_obj->pages, false, false);
+	rk_obj->pages = NULL;
 	return ret;
 }
 
@@ -262,7 +299,9 @@ static void rockchip_gem_put_pages(struct rockchip_gem_object *rk_obj)
 {
 	sg_free_table(rk_obj->sgt);
 	kfree(rk_obj->sgt);
-	drm_gem_put_pages(&rk_obj->base, rk_obj->pages, true, true);
+	rk_obj->sgt = NULL;
+	put_pages(&rk_obj->base, rk_obj->pages, true, true);
+	rk_obj->pages = NULL;
 }
 
 static inline void *drm_calloc_large(size_t nmemb, size_t size);
@@ -425,6 +464,11 @@ static void rockchip_gem_free_secure(struct rockchip_gem_object *rk_obj)
 		      rk_obj->base.size);
 }
 
+static inline bool is_vop_enabled(void)
+{
+	return (IS_ENABLED(CONFIG_ROCKCHIP_VOP) || IS_ENABLED(CONFIG_ROCKCHIP_VOP2));
+}
+
 static int rockchip_gem_alloc_buf(struct rockchip_gem_object *rk_obj,
 				  bool alloc_kmap)
 {
@@ -433,7 +477,7 @@ static int rockchip_gem_alloc_buf(struct rockchip_gem_object *rk_obj,
 	struct rockchip_drm_private *private = drm->dev_private;
 	int ret = 0;
 
-	if (!private->domain)
+	if (!private->domain && is_vop_enabled())
 		rk_obj->flags |= ROCKCHIP_BO_CONTIG;
 
 	if (rk_obj->flags & ROCKCHIP_BO_SECURE) {
@@ -473,7 +517,7 @@ static int rockchip_gem_alloc_buf(struct rockchip_gem_object *rk_obj,
 		ret = rockchip_gem_iommu_map(rk_obj);
 		if (ret < 0)
 			goto err_free;
-	} else {
+	} else if (is_vop_enabled()) {
 		WARN_ON(!rk_obj->dma_handle);
 		rk_obj->dma_addr = rk_obj->dma_handle;
 	}
@@ -703,20 +747,6 @@ err_free_rk_obj:
 	return ERR_PTR(ret);
 }
 
-static void rockchip_gem_destroy(struct drm_gem_object *obj, struct sg_table *sg)
-{
-	struct dma_buf_attachment *attach;
-	struct dma_buf *dma_buf;
-
-	attach = obj->import_attach;
-	if (sg)
-		dma_buf_unmap_attachment(attach, sg, DMA_BIDIRECTIONAL);
-	dma_buf = attach->dmabuf;
-	dma_buf_detach(attach->dmabuf, attach);
-	/* remove the reference */
-	dma_buf_put(dma_buf);
-}
-
 /*
  * rockchip_gem_free_object - (struct drm_driver)->gem_free_object_unlocked
  * callback function
@@ -735,13 +765,7 @@ void rockchip_gem_free_object(struct drm_gem_object *obj)
 				     rk_obj->sgt->nents, DMA_BIDIRECTIONAL);
 		}
 		drm_free_large(rk_obj->pages);
-#if defined(CONFIG_DMABUF_CACHE)
-		/*
-		 * The dma_buf_unmap_attachment and dma_buf_detach will be re-defined if
-		 * CONFIG_DMABUF_CACHE is enabled.
-		 */
-		rockchip_gem_destroy(obj, rk_obj->sgt);
-#elif !defined(CONFIG_ARCH_ROCKCHIP)
+#ifndef CONFIG_ARCH_ROCKCHIP
 		drm_prime_gem_destroy(obj, rk_obj->sgt);
 #endif
 	} else {
@@ -805,7 +829,7 @@ int rockchip_gem_dumb_create(struct drm_file *file_priv,
 			     struct drm_mode_create_dumb *args)
 {
 	struct rockchip_gem_object *rk_obj;
-	int min_pitch = DIV_ROUND_UP(args->width * args->bpp, 8);
+	u32 min_pitch = args->width * DIV_ROUND_UP(args->bpp, 8);
 
 	/*
 	 * align to 64 bytes since Mali requires it.

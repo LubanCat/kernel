@@ -46,7 +46,7 @@
 
 static inline int is_dma_buf_file(struct file *);
 
-#if !defined(CONFIG_DMABUF_CACHE)
+#ifdef CONFIG_ARCH_ROCKCHIP
 struct dma_buf_callback {
 	struct list_head list;
 	void (*callback)(void *);
@@ -80,7 +80,7 @@ static char *dmabuffs_dname(struct dentry *dentry, char *buffer, int buflen)
 static void dma_buf_release(struct dentry *dentry)
 {
 	struct dma_buf *dmabuf;
-#if !defined(CONFIG_DMABUF_CACHE)
+#ifdef CONFIG_ARCH_ROCKCHIP
 	struct dma_buf_callback *cb, *tmp;
 #endif
 	int dtor_ret = 0;
@@ -101,7 +101,7 @@ static void dma_buf_release(struct dentry *dentry)
 	 */
 	BUG_ON(dmabuf->cb_shared.active || dmabuf->cb_excl.active);
 
-#if !defined(CONFIG_DMABUF_CACHE)
+#ifdef CONFIG_ARCH_ROCKCHIP
 	mutex_lock(&dmabuf->release_lock);
 	list_for_each_entry_safe(cb, tmp, &dmabuf->release_callbacks, list) {
 		if (cb->callback)
@@ -172,6 +172,10 @@ static int dma_buf_mmap_internal(struct file *file, struct vm_area_struct *vma)
 		return -EINVAL;
 
 	dmabuf = file->private_data;
+
+	/* check if buffer supports mmap */
+	if (!dmabuf->ops->mmap)
+		return -EINVAL;
 
 	/* check for overflowing the buffer's size */
 	if (vma->vm_pgoff + vma_pages(vma) >
@@ -563,7 +567,7 @@ err_alloc_file:
 	return file;
 }
 
-#if !defined(CONFIG_DMABUF_CACHE)
+#ifdef CONFIG_ARCH_ROCKCHIP
 void *dma_buf_get_release_callback_data(struct dma_buf *dmabuf,
 					void (*callback)(void *))
 {
@@ -672,9 +676,7 @@ struct dma_buf *dma_buf_export(const struct dma_buf_export_info *exp_info)
 			  || !exp_info->ops
 			  || !exp_info->ops->map_dma_buf
 			  || !exp_info->ops->unmap_dma_buf
-			  || !exp_info->ops->release
-			  || !exp_info->ops->map
-			  || !exp_info->ops->mmap)) {
+			  || !exp_info->ops->release)) {
 		return ERR_PTR(-EINVAL);
 	}
 
@@ -718,7 +720,7 @@ struct dma_buf *dma_buf_export(const struct dma_buf_export_info *exp_info)
 	spin_lock_init(&dmabuf->name_lock);
 	INIT_LIST_HEAD(&dmabuf->attachments);
 
-#if !defined(CONFIG_DMABUF_CACHE)
+#ifdef CONFIG_ARCH_ROCKCHIP
 	mutex_init(&dmabuf->release_lock);
 	INIT_LIST_HEAD(&dmabuf->release_callbacks);
 #endif
@@ -1255,6 +1257,10 @@ int dma_buf_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma,
 	int ret;
 
 	if (WARN_ON(!dmabuf || !vma))
+		return -EINVAL;
+
+	/* check if buffer supports mmap */
+	if (!dmabuf->ops->mmap)
 		return -EINVAL;
 
 	/* check for offset overflow */

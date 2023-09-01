@@ -158,6 +158,11 @@ static const struct __extcon_info {
 		.id = EXTCON_DISP_HDMI,
 		.name = "HDMI",
 	},
+	[EXTCON_DISP_HDMI_AUDIO] = {
+		.type = EXTCON_TYPE_DISP,
+		.id = EXTCON_DISP_HDMI_AUDIO,
+		.name = "HDMI-AUDIO",
+	},
 	[EXTCON_DISP_MHL] = {
 		.type = EXTCON_TYPE_DISP,
 		.id = EXTCON_DISP_MHL,

@@ -982,6 +982,7 @@
 	pwm0: pwm@ff200000 {
 		compatible = "rockchip,px30-pwm", "rockchip,rk3328-pwm";
 		reg = <0x0 0xff200000 0x0 0x10>;
+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
 		#pwm-cells = <3>;
 		pinctrl-names = "active";
 		pinctrl-0 = <&pwm0_pin>;
@@ -993,6 +994,7 @@
 	pwm1: pwm@ff200010 {
 		compatible = "rockchip,px30-pwm", "rockchip,rk3328-pwm";
 		reg = <0x0 0xff200010 0x0 0x10>;
+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
 		#pwm-cells = <3>;
 		pinctrl-names = "active";
 		pinctrl-0 = <&pwm1_pin>;
@@ -1004,6 +1006,7 @@
 	pwm2: pwm@ff200020 {
 		compatible = "rockchip,px30-pwm", "rockchip,rk3328-pwm";
 		reg = <0x0 0xff200020 0x0 0x10>;
+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
 		#pwm-cells = <3>;
 		pinctrl-names = "active";
 		pinctrl-0 = <&pwm2_pin>;
@@ -1015,6 +1018,8 @@
 	pwm3: pwm@ff200030 {
 		compatible = "rockchip,px30-pwm", "rockchip,rk3328-pwm";
 		reg = <0x0 0xff200030 0x0 0x10>;
+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 89 IRQ_TYPE_LEVEL_HIGH>;
 		#pwm-cells = <3>;
 		pinctrl-names = "active";
 		pinctrl-0 = <&pwm3_pin>;
@@ -1026,6 +1031,7 @@
 	pwm4: pwm@ff208000 {
 		compatible = "rockchip,px30-pwm", "rockchip,rk3328-pwm";
 		reg = <0x0 0xff208000 0x0 0x10>;
+		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
 		#pwm-cells = <3>;
 		pinctrl-names = "active";
 		pinctrl-0 = <&pwm4_pin>;
@@ -1037,6 +1043,7 @@
 	pwm5: pwm@ff208010 {
 		compatible = "rockchip,px30-pwm", "rockchip,rk3328-pwm";
 		reg = <0x0 0xff208010 0x0 0x10>;
+		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
 		#pwm-cells = <3>;
 		pinctrl-names = "active";
 		pinctrl-0 = <&pwm5_pin>;
@@ -1048,6 +1055,7 @@
 	pwm6: pwm@ff208020 {
 		compatible = "rockchip,px30-pwm", "rockchip,rk3328-pwm";
 		reg = <0x0 0xff208020 0x0 0x10>;
+		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
 		#pwm-cells = <3>;
 		pinctrl-names = "active";
 		pinctrl-0 = <&pwm6_pin>;
@@ -1059,6 +1067,8 @@
 	pwm7: pwm@ff208030 {
 		compatible = "rockchip,px30-pwm", "rockchip,rk3328-pwm";
 		reg = <0x0 0xff208030 0x0 0x10>;
+		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 90 IRQ_TYPE_LEVEL_HIGH>;
 		#pwm-cells = <3>;
 		pinctrl-names = "active";
 		pinctrl-0 = <&pwm7_pin>;
@@ -1720,6 +1730,7 @@
 		clock-names = "aclk", "iface";
 		power-domains = <&power PX30_PD_VO>;
 		#iommu-cells = <0>;
+		rockchip,disable-device-link-resume;
 		status = "disabled";
 	};
 
@@ -1766,6 +1777,7 @@
 		clock-names = "aclk", "iface";
 		power-domains = <&power PX30_PD_VO>;
 		#iommu-cells = <0>;
+		rockchip,disable-device-link-resume;
 		status = "disabled";
 	};
 

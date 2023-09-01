@@ -19,6 +19,8 @@
 	thunder_boot_mmc: thunder-boot-mmc {
 		compatible = "rockchip,thunder-boot-mmc";
 		reg = <0xffc50000 0x4000>;
+		clocks = <&cru HCLK_EMMC>, <&cru CLK_EMMC>;
+		clock-names = "biu", "ciu";
 		memory-region-src = <&ramdisk_c>;
 		memory-region-dst = <&ramdisk_r>;
 		memory-region-idmac = <&mmc_idmac>;
@@ -26,6 +28,11 @@
 };
 
 &emmc {
+	/delete-property/ power-domains;
 	memory-region-ecsd = <&mmc_ecsd>;
 	post-power-on-delay-ms = <0>;
+};
+
+&power {
+	/delete-node/ pd_nvm@RV1126_PD_NVM;
 };

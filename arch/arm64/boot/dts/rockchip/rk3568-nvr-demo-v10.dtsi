@@ -35,13 +35,23 @@
 		compatible = "simple-audio-card";
 		simple-audio-card,format = "i2s";
 		simple-audio-card,mclk-fs = <256>;
-		simple-audio-card,name = "rockchip,i2s1-sound";
+		simple-audio-card,name = "rockchip-i2s1";
 		simple-audio-card,cpu {
 			sound-dai = <&i2s1_8ch>;
 		};
 		simple-audio-card,codec {
 			sound-dai = <&es8311>;
 		};
+	};
+
+	rk618_hdmi_sound: rk618-hdmi-sound {
+		status = "okay";
+		compatible = "rockchip,hdmi";
+		rockchip,mclk-fs = <128>;
+		rockchip,card-name = "rk618-hdmi";
+		rockchip,cpu = <&spdif_8ch>;
+		rockchip,codec = <&rk618_hdmi>;
+		rockchip,jack-det;
 	};
 
 	vcc2v5_sys: vcc2v5-ddr {
@@ -230,7 +240,7 @@
 			status = "okay";
 		};
 
-		hdmi {
+		rk618_hdmi: hdmi {
 			compatible = "rockchip,rk618-hdmi";
 			clocks = <&clock HDMI_CLK>;
 			clock-names = "hdmi";
@@ -238,6 +248,8 @@
 			assigned-clock-parents = <&clock VIF0_CLK>;
 			interrupt-parent = <&gpio0>;
 			interrupts = <8 IRQ_TYPE_LEVEL_HIGH>;
+			rockchip,format = "spdif";
+			#sound-dai-cells = <0>;
 			status = "okay";
 
 			ports {
@@ -418,6 +430,20 @@
 
 &sata2 {
 	status = "okay";
+};
+
+&spdif_out {
+	status = "disabled";
+};
+
+&spdif_sound {
+	status = "disabled";
+};
+
+&spdif_8ch {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&spdifm1_tx>;
 };
 
 &pinctrl {

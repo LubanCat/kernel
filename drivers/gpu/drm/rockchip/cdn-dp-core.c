@@ -337,7 +337,7 @@ static int cdn_dp_connector_mode_valid(struct drm_connector *connector,
 		break;
 	}
 
-	if (!IS_ALIGNED(mode->hdisplay * bpc * 3, 32))
+	if (!IS_ALIGNED(mode->hdisplay * bpc, 8))
 		return MODE_H_ILLEGAL;
 
 	requested = mode->clock * bpc * 3 / 1000;
@@ -729,6 +729,8 @@ out:
 static void cdn_dp_encoder_disable(struct drm_encoder *encoder)
 {
 	struct cdn_dp_device *dp = encoder_to_dp(encoder);
+	struct drm_crtc *crtc = encoder->crtc;
+	struct rockchip_crtc_state *s = to_rockchip_crtc_state(crtc->state);
 	int ret;
 
 	mutex_lock(&dp->lock);
@@ -752,6 +754,8 @@ static void cdn_dp_encoder_disable(struct drm_encoder *encoder)
 	 */
 	if (!dp->connected && cdn_dp_connected_port(dp))
 		schedule_work(&dp->event_work);
+
+	s->output_if &= ~VOP_OUTPUT_IF_DP0;
 }
 
 static int cdn_dp_encoder_atomic_check(struct drm_encoder *encoder,
@@ -773,6 +777,7 @@ static int cdn_dp_encoder_atomic_check(struct drm_encoder *encoder,
 	}
 
 	s->output_mode = ROCKCHIP_OUT_MODE_AAAA;
+	s->output_if |= VOP_OUTPUT_IF_DP0;
 	s->output_type = DRM_MODE_CONNECTOR_DisplayPort;
 	s->tv_state = &conn_state->tv;
 	s->eotf = TRADITIONAL_GAMMA_SDR;

@@ -38,6 +38,12 @@ Optional Properties:
   execute tuning when needed. If not specified, the host will do tuning
   for 360 times, namely tuning for each degree.
 
+* pinctrl-names: should be "default" or "normal" combined with "idle". For
+  SDIO or eMMC devices, recommend to use "default". For SD/MMC cards, recommend
+  to use "normal" combined with "idle" to prevent power leak if vqmmc can't be
+  powered off. "normal" state is the same as "default" state, but "idle" state
+  should define the clk/cmd/data line to be pulled down or pulled none.
+
 Example:
 
 	rkdwmmc0@12200000 {
@@ -47,3 +53,30 @@ Example:
 		#address-cells = <1>;
 		#size-cells = <0>;
 	};
+
+	/* "default" pinctrl */
+	&rkdwmmc0{
+		...
+		pinctrl-names = "default"
+		pinctrl-0 = <&sdmmc0_clk &sdmmc0_cmd &sdmmc0_det &sdmmc0_bus4>;
+		...
+	};
+
+	/* "normal" combined with "idle" pinctrl */
+	sdmmc_idle_gpios: sdmmc-idle-gpios {
+		rockchip,pins =
+			<3 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>,
+			<3 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>,
+			<3 RK_PA4 RK_FUNC_GPIO &pcfg_pull_none>,
+			<3 RK_PA5 RK_FUNC_GPIO &pcfg_pull_none>,
+			<3 RK_PA6 RK_FUNC_GPIO &pcfg_pull_none>,
+			<3 RK_PA7 RK_FUNC_GPIO &pcfg_pull_none>;
+	};
+
+	&rkdwmmc0{
+		...
+		pinctrl-names = "normal", "idle";
+		pinctrl-0 = <&sdmmc0_clk &sdmmc0_cmd &sdmmc0_det &sdmmc0_bus4>;
+		pinctrl-1 = <&sdmmc_idle_gpios &sdmmc0_det>;
+		...
+	}

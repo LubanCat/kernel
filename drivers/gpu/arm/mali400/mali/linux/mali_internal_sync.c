@@ -77,7 +77,7 @@ static void mali_internal_fence_check_cb_func(struct dma_fence *fence, struct dm
 	struct mali_internal_sync_fence_waiter *waiter;
 #endif
 	struct mali_internal_sync_fence *sync_fence;
-	int ret;
+	int ret = 0;
 	MALI_DEBUG_ASSERT_POINTER(cb);
 	MALI_IGNORE(fence);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0)
@@ -92,7 +92,11 @@ static void mali_internal_fence_check_cb_func(struct dma_fence *fence, struct dm
 	if (ret)
 		wake_up_all(&sync_fence->wq);
 #else
-	ret = sync_fence->fence->ops->signaled(sync_fence->fence);
+	if (!sync_fence)
+		return;
+
+	if ((sync_fence->fence) && (sync_fence->fence->ops) && (sync_fence->fence->ops->signaled))
+		ret = sync_fence->fence->ops->signaled(sync_fence->fence);
 
 	if (0 > ret)
 		MALI_PRINT_ERROR(("Mali internal sync:Failed to wait fence  0x%x for sync_fence 0x%x.\n", fence, sync_fence));
@@ -682,7 +686,7 @@ static void mali_internal_fence_release(struct fence *fence)
 
 
 	spin_lock_irqsave(fence->lock, flags);
-	if (WARN_ON_ONCE(!list_empty(&sync_pt->sync_pt_list)))
+	if (!list_empty(&sync_pt->sync_pt_list))
 		list_del(&sync_pt->sync_pt_list);
 	spin_unlock_irqrestore(fence->lock, flags);
 

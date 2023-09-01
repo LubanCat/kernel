@@ -439,6 +439,7 @@ static int rkvenc_run(struct mpp_dev *mpp,
 		int i;
 		struct mpp_request *req;
 		u32 reg_en = mpp_task->hw_info->reg_en;
+		u32 timing_en = mpp->srv->timing_en;
 
 		/*
 		 * Tips: ensure osd plt clock is 0 before setting register,
@@ -466,11 +467,20 @@ static int rkvenc_run(struct mpp_dev *mpp,
 				rkvenc_write_req_backward(mpp, task->reg, s, e, reg_en);
 			}
 		}
+
+		/* flush tlb before starting hardware */
+		mpp_iommu_flush_tlb(mpp->iommu_info);
+
 		/* init current task */
 		mpp->cur_task = mpp_task;
+
+		mpp_task_run_begin(mpp_task, timing_en, MPP_WORK_TIMEOUT_DELAY);
+
 		/* Flush the register before the start the device */
 		wmb();
 		mpp_write(mpp, RKVENC_ENC_START_BASE, task->reg[reg_en]);
+
+		mpp_task_run_end(mpp_task, timing_en);
 	} break;
 	case RKVENC_MODE_LINKTABLE_FIX:
 	case RKVENC_MODE_LINKTABLE_UPDATE:
@@ -802,6 +812,10 @@ static int rkvenc_procfs_init(struct mpp_dev *mpp)
 		enc->procfs = NULL;
 		return -EIO;
 	}
+
+	/* for common mpp_dev options */
+	mpp_procfs_create_common(enc->procfs, mpp);
+
 	/* for debug */
 	mpp_procfs_create_u32("aclk", 0644,
 			      enc->procfs, &enc->aclk_info.debug_rate_hz);
@@ -1264,7 +1278,7 @@ static int rkvenc_reset(struct mpp_dev *mpp)
 	mpp_write(mpp, RKVENC_INT_STATUS_BASE, 0);
 	/* cru reset */
 	if (enc->rst_a && enc->rst_h && enc->rst_core) {
-		rockchip_pmu_idle_request(mpp->dev, true);
+		mpp_pmu_idle_request(mpp, true);
 		mpp_safe_reset(enc->rst_a);
 		mpp_safe_reset(enc->rst_h);
 		mpp_safe_reset(enc->rst_core);
@@ -1272,7 +1286,7 @@ static int rkvenc_reset(struct mpp_dev *mpp)
 		mpp_safe_unreset(enc->rst_a);
 		mpp_safe_unreset(enc->rst_h);
 		mpp_safe_unreset(enc->rst_core);
-		rockchip_pmu_idle_request(mpp->dev, false);
+		mpp_pmu_idle_request(mpp, false);
 	}
 #ifdef CONFIG_PM_DEVFREQ
 	if (enc->devfreq)

@@ -85,6 +85,7 @@
 #define EXTCON_DISP_VGA		43	/* Video Graphics Array */
 #define EXTCON_DISP_DP		44	/* Display Port */
 #define EXTCON_DISP_HMD		45	/* Head-Mounted Display */
+#define EXTCON_DISP_HDMI_AUDIO	46	/* High-Definition Multimedia Interface Audio */
 
 /* Miscellaneous external connector */
 #define EXTCON_DOCK		60

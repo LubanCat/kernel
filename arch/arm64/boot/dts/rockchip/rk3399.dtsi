@@ -290,6 +290,7 @@
 		       <&pcie_phy 2>, <&pcie_phy 3>;
 		phy-names = "pcie-phy-0", "pcie-phy-1",
 			    "pcie-phy-2", "pcie-phy-3";
+		power-domains = <&power RK3399_PD_PERIHP>;
 		ranges = <0x83000000 0x0 0xfa000000 0x0 0xfa000000 0x0 0x1e00000
 			  0x81000000 0x0 0xfbe00000 0x0 0xfbe00000 0x0 0x100000>;
 		resets = <&cru SRST_PCIE_CORE>, <&cru SRST_PCIE_MGMT>,
@@ -445,6 +446,16 @@
 		phy-names = "usb";
 		power-domains = <&power RK3399_PD_PERIHP>;
 		status = "disabled";
+	};
+
+	debug: debug@fe430000 {
+		compatible = "rockchip,debug";
+		reg = <0x0 0xfe430000 0x0 0x1000>,
+		      <0x0 0xfe432000 0x0 0x1000>,
+		      <0x0 0xfe434000 0x0 0x1000>,
+		      <0x0 0xfe436000 0x0 0x1000>,
+		      <0x0 0xfe610000 0x0 0x1000>,
+		      <0x0 0xfe710000 0x0 0x1000>;
 	};
 
 	usbdrd3_0: usb@fe800000 {
@@ -2044,7 +2055,9 @@
 	hdmi: hdmi@ff940000 {
 		compatible = "rockchip,rk3399-dw-hdmi";
 		reg = <0x0 0xff940000 0x0 0x20000>;
-		interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH 0>;
+		interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH 0>,
+			     <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH 0>;
+		interrupt-names = "hdmi", "hdmi_wakeup";
 		clocks = <&cru PCLK_HDMI_CTRL>,
 			 <&cru SCLK_HDMI_SFR>,
 			 <&cru PLL_VPLL>,
@@ -2298,6 +2311,29 @@
 	nocp_vio1_msch1: nocp-vio1-msch1@ffa8f800 {
 		compatible = "rockchip,rk3399-nocp";
 		reg = <0x0 0xffa8f800 0x0 0x400>;
+	};
+
+	cci: cci@ffb00000 {
+		compatible = "arm,cci-500";
+		reg = <0x0 0xffb00000 0x0 0x10000>;
+		ranges = <0x0 0x0 0xffb00000 0xa0000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		status = "disabled";
+
+		cci_pmu: pmu@10000 {
+			compatible = "arm,cci-500-pmu,r0";
+			reg = <0x10000 0x80000>;
+			interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_HIGH 0>,
+				     <GIC_SPI 79 IRQ_TYPE_LEVEL_HIGH 0>,
+				     <GIC_SPI 79 IRQ_TYPE_LEVEL_HIGH 0>,
+				     <GIC_SPI 79 IRQ_TYPE_LEVEL_HIGH 0>,
+				     <GIC_SPI 79 IRQ_TYPE_LEVEL_HIGH 0>,
+				     <GIC_SPI 79 IRQ_TYPE_LEVEL_HIGH 0>,
+				     <GIC_SPI 79 IRQ_TYPE_LEVEL_HIGH 0>,
+				     <GIC_SPI 79 IRQ_TYPE_LEVEL_HIGH 0>;
+			status = "disabled";
+		};
 	};
 
 	rockchip_system_monitor: rockchip-system-monitor {

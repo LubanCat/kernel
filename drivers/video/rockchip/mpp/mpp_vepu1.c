@@ -264,6 +264,7 @@ static int vepu_run(struct mpp_dev *mpp,
 	u32 i;
 	u32 reg_en;
 	struct vepu_task *task = to_vepu_task(mpp_task);
+	u32 timing_en = mpp->srv->timing_en;
 
 	mpp_debug_enter();
 
@@ -282,12 +283,21 @@ static int vepu_run(struct mpp_dev *mpp,
 
 		mpp_write_req(mpp, task->reg, s, e, reg_en);
 	}
+
+	/* flush tlb before starting hardware */
+	mpp_iommu_flush_tlb(mpp->iommu_info);
+
 	/* init current task */
 	mpp->cur_task = mpp_task;
+
+	mpp_task_run_begin(mpp_task, timing_en, MPP_WORK_TIMEOUT_DELAY);
+
 	/* Last, flush start registers */
 	wmb();
 	mpp_write(mpp, VEPU1_REG_ENC_EN,
 		  task->reg[reg_en] | VEPU1_ENC_START);
+
+	mpp_task_run_end(mpp_task, timing_en);
 
 	mpp_debug_leave();
 
@@ -555,6 +565,10 @@ static int vepu_procfs_init(struct mpp_dev *mpp)
 		enc->procfs = NULL;
 		return -EIO;
 	}
+
+	/* for common mpp_dev options */
+	mpp_procfs_create_common(enc->procfs, mpp);
+
 	mpp_procfs_create_u32("aclk", 0644,
 			      enc->procfs, &enc->aclk_info.debug_rate_hz);
 	mpp_procfs_create_u32("session_buffers", 0644,
@@ -656,13 +670,13 @@ static int vepu_reset(struct mpp_dev *mpp)
 
 	if (enc->rst_a && enc->rst_h) {
 		/* Don't skip this or iommu won't work after reset */
-		rockchip_pmu_idle_request(mpp->dev, true);
+		mpp_pmu_idle_request(mpp, true);
 		mpp_safe_reset(enc->rst_a);
 		mpp_safe_reset(enc->rst_h);
 		udelay(5);
 		mpp_safe_unreset(enc->rst_a);
 		mpp_safe_unreset(enc->rst_h);
-		rockchip_pmu_idle_request(mpp->dev, false);
+		mpp_pmu_idle_request(mpp, false);
 	}
 	mpp_write(mpp, VEPU1_REG_ENC_EN, 0);
 

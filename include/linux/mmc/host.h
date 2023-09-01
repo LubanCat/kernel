@@ -95,6 +95,9 @@ struct mmc_host_ops {
 			    int err);
 	void	(*pre_req)(struct mmc_host *host, struct mmc_request *req);
 	void	(*request)(struct mmc_host *host, struct mmc_request *req);
+	/* Submit one request to host in atomic context. */
+	int	(*request_atomic)(struct mmc_host *host,
+				  struct mmc_request *req);
 
 	/*
 	 * Avoid calling the next three functions too often or in a "fast
@@ -474,6 +477,9 @@ struct mmc_host {
 #ifdef CONFIG_MMC_CRYPTO
 	struct keyslot_manager	*ksm;
 #endif /* CONFIG_MMC_CRYPTO */
+
+	/* Host Software Queue support */
+	bool			hsq_enabled;
 
 	unsigned long		private[0] ____cacheline_aligned;
 };

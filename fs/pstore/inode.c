@@ -37,7 +37,7 @@
 #include <linux/spinlock.h>
 #include <linux/uaccess.h>
 
-#ifdef CONFIG_PSTORE_MCU_LOG
+#ifdef CONFIG_PSTORE_BOOT_LOG
 #include <linux/pstore_ram.h>
 #include <linux/io.h>
 #endif
@@ -144,7 +144,7 @@ static ssize_t pstore_file_read(struct file *file, char __user *userbuf,
 {
 	struct seq_file *sf = file->private_data;
 	struct pstore_private *ps = sf->private;
-#ifdef CONFIG_PSTORE_MCU_LOG
+#ifdef CONFIG_PSTORE_BOOT_LOG
 	struct pstore_record *record = ps->record;
 	struct ramoops_context *cxt = record->psi->data;
 	struct persistent_ram_zone *prz;
@@ -152,12 +152,12 @@ static ssize_t pstore_file_read(struct file *file, char __user *userbuf,
 	char *log_tmp;
 	size_t size, start, n;
 
-	if (ps->record->type == PSTORE_TYPE_MCU_LOG) {
+	if (ps->record->type == PSTORE_TYPE_BOOT_LOG) {
 
 		if (!cxt)
 			return count;
 
-		prz = cxt->mcu_przs[record->id];
+		prz = cxt->boot_przs[record->id];
 
 		if (!prz)
 			return count;
@@ -412,9 +412,9 @@ int pstore_mkfile(struct dentry *root, struct pstore_record *record)
 		scnprintf(name, sizeof(name), "powerpc-opal-%s-%llu",
 			  record->psi->name, record->id);
 		break;
-#ifdef CONFIG_PSTORE_MCU_LOG
-	case PSTORE_TYPE_MCU_LOG:
-		scnprintf(name, sizeof(name), "mcu-log-%llu", record->id);
+#ifdef CONFIG_PSTORE_BOOT_LOG
+	case PSTORE_TYPE_BOOT_LOG:
+		scnprintf(name, sizeof(name), "boot-log-%llu", record->id);
 		break;
 #endif
 	case PSTORE_TYPE_UNKNOWN:

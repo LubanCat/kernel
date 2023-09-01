@@ -1670,6 +1670,12 @@ static int vop_plane_atomic_check(struct drm_plane *plane,
 	vop = to_vop(crtc);
 	vop_data = vop->data;
 
+	if (VOP_MAJOR(vop->version) == 2 && is_alpha_support(fb->format->format) &&
+	    vop_plane_state->global_alpha != 0xff) {
+		DRM_ERROR("Pixel alpha and global alpha can't be enabled at the same time\n");
+		return -EINVAL;
+	}
+
 	if (state->src_w >> 16 < 4 || state->src_h >> 16 < 4 ||
 	    state->crtc_w < 4 || state->crtc_h < 4) {
 		DRM_ERROR("Invalid size: %dx%d->%dx%d, min size is 4x4\n",
