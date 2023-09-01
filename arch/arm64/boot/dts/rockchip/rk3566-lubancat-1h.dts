@@ -320,6 +320,15 @@
 			pinctrl-0 = <&red_led_pin>;
 		};
 
+		fan: fan {
+			label = "fan";
+			default-state = "on";
+			linux,default-trigger = "none";
+			gpios = <&gpio4 RK_PC0 GPIO_ACTIVE_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&fan_pin>;
+		};
+
 	};
 
 	rk809_sound: rk809-sound {
@@ -1400,6 +1409,9 @@
 		};
 		red_led_pin: red-led-pin {
 			rockchip,pins = <2 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+		fan_pin: fan-pin {
+			rockchip,pins = <4 RK_PC0 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
