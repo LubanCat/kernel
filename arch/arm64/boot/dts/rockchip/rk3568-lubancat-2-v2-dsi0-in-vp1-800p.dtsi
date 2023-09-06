@@ -295,7 +295,7 @@
 		reg = <0x5d>;
 		
 		/* enable it on android */
-		// touchscreen-inverted-y;
+		touchscreen-inverted-y;
 	};
 
 	gt928_dsi0: gt928@5d {
