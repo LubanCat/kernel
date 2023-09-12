@@ -7,6 +7,7 @@
 #include "rk3568-lubancat-2.dtsi"
 // 双摄像头
 #include "rk3568-lubancat-csi2-double.dtsi"
+#include "rk3568-lubancat-dsi.dtsi"
 
 // MIPI-DSI屏幕
 // MIPI-DSI0
