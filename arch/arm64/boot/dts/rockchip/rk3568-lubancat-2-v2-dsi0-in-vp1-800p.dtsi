@@ -289,14 +289,6 @@
 &i2c1 {
 	status = "okay";
 	clock-frequency = <100000>;
-	gt911_dsi0: gt911@5d {
-		status = "okay";
-		compatible = "goodix,gt911";
-		reg = <0x5d>;
-		
-		/* enable it on android */
-		touchscreen-inverted-y;
-	};
 
 	gt928_dsi0: gt928@5d {
 		status = "okay";
