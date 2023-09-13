@@ -3459,7 +3459,7 @@ exit_no_unlock:
 		wake_up(&_pno_state->get_batch_done);
 	}
 #else
-	if (waitqueue_active(&_pno_state->get_batch_done.wait))
+	if (swait_active(&_pno_state->get_batch_done.wait))
 		complete(&_pno_state->get_batch_done);
 #endif
 	return err;
