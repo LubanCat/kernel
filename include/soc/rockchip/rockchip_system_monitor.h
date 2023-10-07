@@ -103,13 +103,11 @@ struct monitor_dev_info {
 	bool is_high_temp;
 	bool is_low_temp_enabled;
 	bool is_status_freq_fixed;
-	bool boosted;
 };
 
 struct monitor_dev_profile {
 	enum monitor_dev_type type;
 	void *data;
-	int (*low_temp_adjust_volt)(struct monitor_dev_info *info);
 	int (*low_temp_adjust)(struct monitor_dev_info *info, bool is_low);
 	int (*high_temp_adjust)(struct monitor_dev_info *info, bool is_low);
 	struct cpumask allowed_cpus;
@@ -134,8 +132,6 @@ rockchip_system_monitor_adjust_cdev_state(struct thermal_cooling_device *cdev,
 					  int temp, unsigned long *state);
 int rockchip_monitor_opp_set_rate(struct monitor_dev_info *info,
 				  unsigned long target_freq);
-void rockchip_monitor_set_boosted(void);
-void rockchip_monitor_clear_boosted(void);
 #else
 static inline struct monitor_dev_info *
 rockchip_system_monitor_register(struct device *dev,
@@ -192,8 +188,6 @@ static inline int rockchip_monitor_opp_set_rate(struct monitor_dev_info *info,
 {
 	return 0;
 }
-static inline void rockchip_monitor_set_boosted(void) {};
-static inline void rockchip_monitor_set_boosted(void) {};
 #endif /* CONFIG_ROCKCHIP_SYSTEM_MONITOR */
 
 #endif

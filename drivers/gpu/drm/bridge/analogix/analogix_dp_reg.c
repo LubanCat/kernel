@@ -117,6 +117,8 @@ void analogix_dp_init_analog_param(struct analogix_dp_device *dp)
 	reg = CH3_AMP_400_MV | CH2_AMP_400_MV |
 		CH1_AMP_400_MV | CH0_AMP_400_MV;
 	analogix_dp_write(dp, ANALOGIX_DP_TX_AMP_TUNING_CTL, reg);
+
+	analogix_dp_write(dp, ANALOGIX_DP_AUX, 0x4);
 }
 
 void analogix_dp_init_interrupt(struct analogix_dp_device *dp)

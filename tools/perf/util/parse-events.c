@@ -223,15 +223,21 @@ struct tracepoint_path *tracepoint_id_to_path(u64 config)
 				path = zalloc(sizeof(*path));
 				if (!path)
 					return NULL;
-				if (asprintf(&path->system, "%.*s", MAX_EVENT_LENGTH, sys_dirent->d_name) < 0) {
+				path->system = malloc(MAX_EVENT_LENGTH);
+				if (!path->system) {
 					free(path);
 					return NULL;
 				}
-				if (asprintf(&path->name, "%.*s", MAX_EVENT_LENGTH, evt_dirent->d_name) < 0) {
+				path->name = malloc(MAX_EVENT_LENGTH);
+				if (!path->name) {
 					zfree(&path->system);
 					free(path);
 					return NULL;
 				}
+				strncpy(path->system, sys_dirent->d_name,
+					MAX_EVENT_LENGTH);
+				strncpy(path->name, evt_dirent->d_name,
+					MAX_EVENT_LENGTH);
 				return path;
 			}
 		}
@@ -1306,6 +1312,7 @@ int parse_events_add_pmu(struct parse_events_state *parse_state,
 int parse_events_multi_pmu_add(struct parse_events_state *parse_state,
 			       char *str, struct list_head **listp)
 {
+	struct list_head *head;
 	struct parse_events_term *term;
 	struct list_head *list;
 	struct perf_pmu *pmu = NULL;
@@ -1322,30 +1329,19 @@ int parse_events_multi_pmu_add(struct parse_events_state *parse_state,
 
 		list_for_each_entry(alias, &pmu->aliases, list) {
 			if (!strcasecmp(alias->name, str)) {
-				struct list_head *head;
-				char *config;
-
 				head = malloc(sizeof(struct list_head));
 				if (!head)
 					return -1;
 				INIT_LIST_HEAD(head);
-				config = strdup(str);
-				if (!config)
+				if (parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
+							   str, 1, false, &str, NULL) < 0)
 					return -1;
-				if (parse_events_term__num(&term,
-						   PARSE_EVENTS__TERM_TYPE_USER,
-						   config, 1, false, &config,
-						   NULL) < 0) {
-					free(list);
-					free(config);
-					return -1;
-				}
 				list_add_tail(&term->list, head);
 
 				if (!parse_events_add_pmu(parse_state, list,
 							  pmu->name, head,
 							  true, true)) {
-					pr_debug("%s -> %s/%s/\n", config,
+					pr_debug("%s -> %s/%s/\n", str,
 						 pmu->name, alias->str);
 					ok++;
 				}
@@ -1354,10 +1350,8 @@ int parse_events_multi_pmu_add(struct parse_events_state *parse_state,
 			}
 		}
 	}
-	if (!ok) {
-		free(list);
+	if (!ok)
 		return -1;
-	}
 	*listp = list;
 	return 0;
 }
@@ -2631,51 +2625,30 @@ int parse_events_term__sym_hw(struct parse_events_term **term,
 			      char *config, unsigned idx)
 {
 	struct event_symbol *sym;
-	char *str;
 	struct parse_events_term temp = {
 		.type_val  = PARSE_EVENTS__TERM_TYPE_STR,
 		.type_term = PARSE_EVENTS__TERM_TYPE_USER,
-		.config    = config,
+		.config    = config ?: (char *) "event",
 	};
 
-	if (!temp.config) {
-		temp.config = strdup("event");
-		if (!temp.config)
-			return -ENOMEM;
-	}
 	BUG_ON(idx >= PERF_COUNT_HW_MAX);
 	sym = &event_symbols_hw[idx];
 
-	str = strdup(sym->symbol);
-	if (!str)
-		return -ENOMEM;
-	return new_term(term, &temp, str, 0);
+	return new_term(term, &temp, (char *) sym->symbol, 0);
 }
 
 int parse_events_term__clone(struct parse_events_term **new,
 			     struct parse_events_term *term)
 {
-	char *str;
 	struct parse_events_term temp = {
 		.type_val  = term->type_val,
 		.type_term = term->type_term,
-		.config    = NULL,
+		.config    = term->config,
 		.err_term  = term->err_term,
 		.err_val   = term->err_val,
 	};
 
-	if (term->config) {
-		temp.config = strdup(term->config);
-		if (!temp.config)
-			return -ENOMEM;
-	}
-	if (term->type_val == PARSE_EVENTS__TERM_TYPE_NUM)
-		return new_term(new, &temp, NULL, term->val.num);
-
-	str = strdup(term->val.str);
-	if (!str)
-		return -ENOMEM;
-	return new_term(new, &temp, str, 0);
+	return new_term(new, &temp, term->val.str, term->val.num);
 }
 
 int parse_events_copy_term_list(struct list_head *old,

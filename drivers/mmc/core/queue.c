@@ -64,7 +64,7 @@ enum mmc_issue_type mmc_issue_type(struct mmc_queue *mq, struct request *req)
 {
 	struct mmc_host *host = mq->card->host;
 
-	if (mq->use_cqe && !host->hsq_enabled)
+	if (mq->use_cqe)
 		return mmc_cqe_issue_type(host, req);
 
 	if (req_op(req) == REQ_OP_READ || req_op(req) == REQ_OP_WRITE)
@@ -125,13 +125,11 @@ static enum blk_eh_timer_return mmc_mq_timed_out(struct request *req,
 {
 	struct request_queue *q = req->q;
 	struct mmc_queue *mq = q->queuedata;
-	struct mmc_card *card = mq->card;
-	struct mmc_host *host = card->host;
 	unsigned long flags;
 	bool ignore_tout;
 
 	spin_lock_irqsave(q->queue_lock, flags);
-	ignore_tout = mq->recovery_needed || !mq->use_cqe || host->hsq_enabled;
+	ignore_tout = mq->recovery_needed || !mq->use_cqe;
 	spin_unlock_irqrestore(q->queue_lock, flags);
 
 	return ignore_tout ? BLK_EH_RESET_TIMER : mmc_cqe_timed_out(req);
@@ -142,13 +140,12 @@ static void mmc_mq_recovery_handler(struct work_struct *work)
 	struct mmc_queue *mq = container_of(work, struct mmc_queue,
 					    recovery_work);
 	struct request_queue *q = mq->queue;
-	struct mmc_host *host = mq->card->host;
 
 	mmc_get_card(mq->card, &mq->ctx);
 
 	mq->in_recovery = true;
 
-	if (mq->use_cqe && !host->hsq_enabled)
+	if (mq->use_cqe)
 		mmc_blk_cqe_recovery(mq);
 	else
 		mmc_blk_mq_recovery(mq);
@@ -158,9 +155,6 @@ static void mmc_mq_recovery_handler(struct work_struct *work)
 	spin_lock_irq(q->queue_lock);
 	mq->recovery_needed = false;
 	spin_unlock_irq(q->queue_lock);
-
-	if (host->hsq_enabled)
-		host->cqe_ops->cqe_recovery_finish(host);
 
 	mmc_put_card(mq->card, &mq->ctx);
 
@@ -275,14 +269,6 @@ static blk_status_t mmc_mq_queue_rq(struct blk_mq_hw_ctx *hctx,
 		}
 		break;
 	case MMC_ISSUE_ASYNC:
-		/*
-		 * For MMC host software queue, we only allow 2 requests in
-		 * flight to avoid a long latency.
-		 */
-		if (host->hsq_enabled && mq->in_flight[issue_type] > 2) {
-			spin_unlock_irq(q->queue_lock);
-			return BLK_STS_RESOURCE;
-		}
 		break;
 	default:
 		/*
@@ -446,7 +432,7 @@ static int mmc_mq_init(struct mmc_queue *mq, struct mmc_card *card,
 	 * The queue depth for CQE must match the hardware because the request
 	 * tag is used to index the hardware queue.
 	 */
-	if (mq->use_cqe && !host->hsq_enabled)
+	if (mq->use_cqe)
 		q_depth = min_t(int, card->ext_csd.cmdq_depth, host->cqe_qdepth);
 	else
 		q_depth = MMC_QUEUE_DEPTH;

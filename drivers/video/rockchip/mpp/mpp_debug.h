@@ -48,13 +48,9 @@
 #define DEBUG_SRAM_INFO				0x00200000
 
 #define DEBUG_SESSION				0x00400000
-#define DEBUG_DEVICE				0x00800000
 
 #define PRINT_FUNCTION				0x80000000
 #define PRINT_LINE				0x40000000
-
-/* reuse old debug bit flag */
-#define DEBUG_PART_TIMING			0x00000080
 
 extern unsigned int mpp_dev_debug;
 

@@ -305,9 +305,6 @@ static int xhci_plat_probe(struct platform_device *pdev)
 					      "xhci-u2-broken-suspend"))
 			xhci->quirks |= XHCI_U2_BROKEN_SUSPEND;
 
-		if (device_property_read_bool(tmpdev, "quirk-skip-phy-init"))
-			xhci->quirks |= XHCI_SKIP_PHY_INIT;
-
 		device_property_read_u32(tmpdev, "imod-interval-ns",
 					 &xhci->imod_interval);
 	}
@@ -322,6 +319,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
 		ret = usb_phy_init(hcd->usb_phy);
 		if (ret)
 			goto put_usb3_hcd;
+		hcd->skip_phy_initialization = 1;
 	}
 
 	xhci->shared_hcd->usb_phy = devm_usb_get_phy(sysdev,
@@ -332,9 +330,6 @@ static int xhci_plat_probe(struct platform_device *pdev)
 			goto put_usb3_hcd;
 		xhci->shared_hcd->usb_phy = NULL;
 	}
-
-	if (xhci->quirks & XHCI_SKIP_PHY_INIT)
-		hcd->skip_phy_initialization = 1;
 
 	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
 	if (ret)

@@ -173,8 +173,6 @@ static void rockchip_rgb_encoder_enable(struct drm_encoder *encoder)
 static void rockchip_rgb_encoder_disable(struct drm_encoder *encoder)
 {
 	struct rockchip_rgb *rgb = encoder_to_rgb(encoder);
-	struct drm_crtc *crtc = encoder->crtc;
-	struct rockchip_crtc_state *s = to_rockchip_crtc_state(crtc->state);
 
 	if (rgb->panel) {
 		drm_panel_disable(rgb->panel);
@@ -188,13 +186,6 @@ static void rockchip_rgb_encoder_disable(struct drm_encoder *encoder)
 		rgb->funcs->disable(rgb);
 
 	pinctrl_pm_select_sleep_state(rgb->dev);
-
-	if (s->output_if & VOP_OUTPUT_IF_RGB)
-		s->output_if &= ~VOP_OUTPUT_IF_RGB;
-	else if (s->output_if & VOP_OUTPUT_IF_BT656)
-		s->output_if &= ~VOP_OUTPUT_IF_BT656;
-	else if (s->output_if & VOP_OUTPUT_IF_BT1120)
-		s->output_if &= ~VOP_OUTPUT_IF_BT1120;
 }
 
 static int
@@ -214,39 +205,39 @@ rockchip_rgb_encoder_atomic_check(struct drm_encoder *encoder,
 	switch (s->bus_format) {
 	case MEDIA_BUS_FMT_RGB666_1X18:
 		s->output_mode = ROCKCHIP_OUT_MODE_P666;
-		s->output_if |= VOP_OUTPUT_IF_RGB;
+		s->output_if = VOP_OUTPUT_IF_RGB;
 		break;
 	case MEDIA_BUS_FMT_RGB565_1X16:
 		s->output_mode = ROCKCHIP_OUT_MODE_P565;
-		s->output_if |= VOP_OUTPUT_IF_RGB;
+		s->output_if = VOP_OUTPUT_IF_RGB;
 		break;
 	case MEDIA_BUS_FMT_SRGB888_3X8:
 		s->output_mode = ROCKCHIP_OUT_MODE_S888;
-		s->output_if |= VOP_OUTPUT_IF_RGB;
+		s->output_if = VOP_OUTPUT_IF_RGB;
 		break;
 	case MEDIA_BUS_FMT_SRGB888_DUMMY_4X8:
 		s->output_mode = ROCKCHIP_OUT_MODE_S888_DUMMY;
-		s->output_if |= VOP_OUTPUT_IF_RGB;
+		s->output_if = VOP_OUTPUT_IF_RGB;
 		break;
 	case MEDIA_BUS_FMT_YUYV8_2X8:
 	case MEDIA_BUS_FMT_YVYU8_2X8:
 	case MEDIA_BUS_FMT_UYVY8_2X8:
 	case MEDIA_BUS_FMT_VYUY8_2X8:
 		s->output_mode = ROCKCHIP_OUT_MODE_BT656;
-		s->output_if |= VOP_OUTPUT_IF_BT656;
+		s->output_if = VOP_OUTPUT_IF_BT656;
 		break;
 	case MEDIA_BUS_FMT_YUYV8_1X16:
 	case MEDIA_BUS_FMT_YVYU8_1X16:
 	case MEDIA_BUS_FMT_UYVY8_1X16:
 	case MEDIA_BUS_FMT_VYUY8_1X16:
 		s->output_mode = ROCKCHIP_OUT_MODE_BT1120;
-		s->output_if |= VOP_OUTPUT_IF_BT1120;
+		s->output_if = VOP_OUTPUT_IF_BT1120;
 		break;
 	case MEDIA_BUS_FMT_RGB888_1X24:
 	case MEDIA_BUS_FMT_RGB666_1X24_CPADHI:
 	default:
 		s->output_mode = ROCKCHIP_OUT_MODE_P888;
-		s->output_if |= VOP_OUTPUT_IF_RGB;
+		s->output_if = VOP_OUTPUT_IF_RGB;
 		break;
 	}
 
@@ -370,7 +361,7 @@ static void rockchip_rgb_unbind(struct device *dev, struct device *master,
 	struct rockchip_rgb *rgb = dev_get_drvdata(dev);
 
 	if (rgb->sub_dev.connector)
-		rockchip_drm_unregister_sub_dev(&rgb->sub_dev);
+		rockchip_drm_register_sub_dev(&rgb->sub_dev);
 	if (rgb->panel) {
 		drm_panel_detach(rgb->panel);
 		drm_connector_cleanup(&rgb->connector);

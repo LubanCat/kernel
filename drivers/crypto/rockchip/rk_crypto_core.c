@@ -26,9 +26,6 @@
 #include "rk_crypto_v2.h"
 #include "rk_crypto_v3.h"
 #include "cryptodev_linux/rk_cryptodev.h"
-#include "procfs.h"
-
-#define CRYPTO_NAME	"rkcrypto"
 
 static struct rk_alg_ctx *rk_alg_ctx_cast(struct crypto_async_request *async_req)
 {
@@ -274,20 +271,15 @@ static void rk_crypto_irq_timer_handle(struct timer_list *t)
 	struct rk_crypto_dev *rk_dev = from_timer(rk_dev, t, timer);
 
 	rk_dev->err = -ETIMEDOUT;
-	rk_dev->stat.timeout_cnt++;
 	tasklet_schedule(&rk_dev->done_task);
 }
 
 static irqreturn_t rk_crypto_irq_handle(int irq, void *dev_id)
 {
 	struct rk_crypto_dev *rk_dev  = platform_get_drvdata(dev_id);
-	struct rk_alg_ctx *alg_ctx;
+	struct rk_alg_ctx *alg_ctx = rk_alg_ctx_cast(rk_dev->async_req);
 
 	spin_lock(&rk_dev->lock);
-
-	alg_ctx = rk_alg_ctx_cast(rk_dev->async_req);
-
-	rk_dev->stat.irq_cnt++;
 
 	if (alg_ctx->ops.irq_handle)
 		alg_ctx->ops.irq_handle(irq, dev_id);
@@ -318,7 +310,6 @@ static int rk_start_op(struct rk_crypto_dev *rk_dev)
 	/* fake calculations are used to trigger the Done Task */
 	if (alg_ctx->total == 0) {
 		CRYPTO_TRACE("fake done_task");
-		rk_dev->stat.fake_cnt++;
 		tasklet_schedule(&rk_dev->done_task);
 	}
 
@@ -342,20 +333,13 @@ static void rk_complete_op(struct rk_crypto_dev *rk_dev, int err)
 	disable_irq(rk_dev->irq);
 	del_timer(&rk_dev->timer);
 
-	rk_dev->stat.complete_cnt++;
-
-	if (err) {
-		rk_dev->stat.error_cnt++;
-		rk_dev->stat.last_error = err;
-		dev_err(rk_dev->dev, "complete_op err = %d\n", err);
-	}
-
 	if (!alg_ctx || !alg_ctx->ops.complete)
 		return;
 
 	alg_ctx->ops.complete(rk_dev->async_req, err);
 
-	rk_dev->async_req = NULL;
+	if (err)
+		dev_err(rk_dev->dev, "complete_op err = %d\n", err);
 
 	tasklet_schedule(&rk_dev->queue_task);
 }
@@ -368,17 +352,10 @@ static int rk_crypto_enqueue(struct rk_crypto_dev *rk_dev,
 
 	spin_lock_irqsave(&rk_dev->lock, flags);
 	ret = crypto_enqueue_request(&rk_dev->queue, async_req);
-
-	if (rk_dev->queue.qlen > rk_dev->stat.ever_queue_max)
-		rk_dev->stat.ever_queue_max = rk_dev->queue.qlen;
-
 	if (rk_dev->busy) {
-		rk_dev->stat.busy_cnt++;
 		spin_unlock_irqrestore(&rk_dev->lock, flags);
 		return ret;
 	}
-
-	rk_dev->stat.equeue_cnt++;
 	rk_dev->busy = true;
 	spin_unlock_irqrestore(&rk_dev->lock, flags);
 	tasklet_schedule(&rk_dev->queue_task);
@@ -392,22 +369,17 @@ static void rk_crypto_queue_task_cb(unsigned long data)
 	struct crypto_async_request *async_req, *backlog;
 	unsigned long flags;
 
-	spin_lock_irqsave(&rk_dev->lock, flags);
-	if (rk_dev->async_req) {
-		dev_err(rk_dev->dev, "%s: Unexpected crypto paths.\n", __func__);
-		goto exit;
-	}
-
 	rk_dev->err = 0;
-
+	spin_lock_irqsave(&rk_dev->lock, flags);
 	backlog   = crypto_get_backlog(&rk_dev->queue);
 	async_req = crypto_dequeue_request(&rk_dev->queue);
 
 	if (!async_req) {
 		rk_dev->busy = false;
-		goto exit;
+		spin_unlock_irqrestore(&rk_dev->lock, flags);
+		return;
 	}
-	rk_dev->stat.dequeue_cnt++;
+	spin_unlock_irqrestore(&rk_dev->lock, flags);
 
 	if (backlog) {
 		backlog->complete(backlog, -EINPROGRESS);
@@ -418,28 +390,12 @@ static void rk_crypto_queue_task_cb(unsigned long data)
 	rk_dev->err = rk_start_op(rk_dev);
 	if (rk_dev->err)
 		rk_complete_op(rk_dev, rk_dev->err);
-
-exit:
-	spin_unlock_irqrestore(&rk_dev->lock, flags);
 }
 
 static void rk_crypto_done_task_cb(unsigned long data)
 {
 	struct rk_crypto_dev *rk_dev = (struct rk_crypto_dev *)data;
-	struct rk_alg_ctx *alg_ctx;
-	unsigned long flags;
-
-	spin_lock_irqsave(&rk_dev->lock, flags);
-
-	if (!rk_dev->async_req) {
-		dev_err(rk_dev->dev, "done task receive invalid async_req\n");
-		spin_unlock_irqrestore(&rk_dev->lock, flags);
-		return;
-	}
-
-	alg_ctx = rk_alg_ctx_cast(rk_dev->async_req);
-
-	rk_dev->stat.done_cnt++;
+	struct rk_alg_ctx *alg_ctx = rk_alg_ctx_cast(rk_dev->async_req);
 
 	if (rk_dev->err)
 		goto exit;
@@ -455,12 +411,9 @@ static void rk_crypto_done_task_cb(unsigned long data)
 	if (rk_dev->err)
 		goto exit;
 
-	spin_unlock_irqrestore(&rk_dev->lock, flags);
-
 	return;
 exit:
 	rk_complete_op(rk_dev, rk_dev->err);
-	spin_unlock_irqrestore(&rk_dev->lock, flags);
 }
 
 static struct rk_crypto_algt *rk_crypto_find_algs(struct rk_crypto_dev *rk_dev,
@@ -547,8 +500,6 @@ static int rk_crypto_register(struct rk_crypto_dev *rk_dev)
 		if (err)
 			goto err_cipher_algs;
 
-		tmp_algs->valid_flag = true;
-
 		CRYPTO_TRACE("%s register OK!!!\n", *algs_name);
 	}
 
@@ -628,7 +579,7 @@ static void rk_crypto_action(void *data)
 }
 
 static char *crypto_no_sm_algs_name[] = {
-	"ecb(aes)", "cbc(aes)", "cfb(aes)", "ofb(aes)", "ctr(aes)", "gcm(aes)",
+	"ecb(aes)", "cbc(aes)", "cfb(aes)", "ofb(aes)", "ctr(aes)",
 	"ecb(des)", "cbc(des)", "cfb(des)", "ofb(des)",
 	"ecb(des3_ede)", "cbc(des3_ede)", "cfb(des3_ede)", "ofb(des3_ede)",
 	"sha1", "sha224", "sha256", "sha384", "sha512", "md5",
@@ -681,12 +632,6 @@ static const struct rk_crypto_soc_data rk3288_soc_data =
 static const struct of_device_id crypto_of_id_table[] = {
 
 #if IS_ENABLED(CONFIG_CRYPTO_DEV_ROCKCHIP_V3)
-	/* crypto v4 in belows same with crypto-v3*/
-	{
-		.compatible = "rockchip,crypto-v4",
-		.data = (void *)&cryto_v3_soc_data,
-	},
-
 	/* crypto v3 in belows */
 	{
 		.compatible = "rockchip,crypto-v3",
@@ -745,8 +690,6 @@ static int rk_crypto_probe(struct platform_device *pdev)
 		err = -ENOMEM;
 		goto err_crypto;
 	}
-
-	rk_dev->name = CRYPTO_NAME;
 
 	match = of_match_node(crypto_of_id_table, np);
 	soc_data = (struct rk_crypto_soc_data *)match->data;
@@ -875,8 +818,6 @@ static int rk_crypto_probe(struct platform_device *pdev)
 
 	rk_cryptodev_register_dev(rk_dev->dev, soc_data->crypto_ver);
 
-	rkcrypto_proc_init(rk_dev);
-
 	dev_info(dev, "%s Accelerator successfully registered\n", soc_data->crypto_ver);
 	return 0;
 
@@ -890,8 +831,6 @@ err_crypto:
 static int rk_crypto_remove(struct platform_device *pdev)
 {
 	struct rk_crypto_dev *rk_dev = platform_get_drvdata(pdev);
-
-	rkcrypto_proc_cleanup(rk_dev);
 
 	rk_cryptodev_unregister_dev(rk_dev->dev);
 

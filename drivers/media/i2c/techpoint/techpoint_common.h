@@ -65,7 +65,6 @@ enum techpoint_support_reso {
 	TECHPOINT_S_RESO_1080P_25,
 	TECHPOINT_S_RESO_720P_30,
 	TECHPOINT_S_RESO_1080P_30,
-	TECHPOINT_S_RESO_SD,
 	TECHPOINT_S_RESO_PAL,
 	TECHPOINT_S_RESO_NTSC,
 	TECHPOINT_S_RESO_NUMS,
@@ -132,7 +131,7 @@ struct techpoint {
 
 	enum techpoint_chips chip_id;
 	struct techpoint_video_modes *video_modes;
-	struct techpoint_video_modes *cur_video_mode;
+	const struct techpoint_video_modes *cur_video_mode;
 	u32 video_modes_num;
 	enum techpoint_input_type input_type;
 

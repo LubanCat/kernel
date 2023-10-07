@@ -76,8 +76,8 @@ struct ramoops_context {
 	struct persistent_ram_zone *cprz;	/* Console zone */
 	struct persistent_ram_zone **fprzs;	/* Ftrace zones */
 	struct persistent_ram_zone *mprz;	/* PMSG zone */
-#ifdef CONFIG_PSTORE_BOOT_LOG
-	struct persistent_ram_zone **boot_przs;	/* BOOT log zones */
+#ifdef CONFIG_PSTORE_MCU_LOG
+	struct persistent_ram_zone **mcu_przs;	/* MCU log zones */
 #endif
 	phys_addr_t phys_addr;
 	unsigned long size;
@@ -86,8 +86,8 @@ struct ramoops_context {
 	size_t console_size;
 	size_t ftrace_size;
 	size_t pmsg_size;
-#ifdef CONFIG_PSTORE_BOOT_LOG
-	size_t boot_log_size;
+#ifdef CONFIG_PSTORE_MCU_LOG
+	size_t mcu_log_size;
 #endif
 	int dump_oops;
 	u32 flags;
@@ -100,9 +100,9 @@ struct ramoops_context {
 	unsigned int max_ftrace_cnt;
 	unsigned int ftrace_read_cnt;
 	unsigned int pmsg_read_cnt;
-#ifdef CONFIG_PSTORE_BOOT_LOG
-	unsigned int boot_log_read_cnt;
-	unsigned int max_boot_log_cnt;
+#ifdef CONFIG_PSTORE_MCU_LOG
+	unsigned int mcu_log_read_cnt;
+	unsigned int max_mcu_log_cnt;
 #endif
 	struct pstore_info pstore;
 };
@@ -141,9 +141,9 @@ struct ramoops_platform_data {
 	unsigned long	console_size;
 	unsigned long	ftrace_size;
 	unsigned long	pmsg_size;
-#ifdef CONFIG_PSTORE_BOOT_LOG
-	unsigned long	boot_log_size;
-	unsigned long	max_boot_log_cnt;
+#ifdef CONFIG_PSTORE_MCU_LOG
+	unsigned long	mcu_log_size;
+	unsigned long	max_mcu_log_cnt;
 #endif
 	int		dump_oops;
 	u32		flags;

@@ -166,10 +166,10 @@ config PSTORE_RAM
 
 	  For more information, see Documentation/admin-guide/ramoops.rst.
 
-config PSTORE_BOOT_LOG
-	bool "Print boot log by linux"
+config PSTORE_MCU_LOG
+	bool "Print mcu log by linux"
 	depends on PSTORE
 	help
-	  Collect log from loader,uboot,ATF and so on, you can get their log by cat command
+	  When your soc has several mcu, you can get their log by cat command
 	  through linux shell
 	  If unsure, say N.

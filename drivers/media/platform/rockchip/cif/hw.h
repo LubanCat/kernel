@@ -59,35 +59,6 @@ struct rkcif_hw_match_data {
 };
 
 /*
- * the detecting mode of cif reset timer
- * related with dts property:rockchip,cif-monitor
- */
-enum rkcif_monitor_mode {
-	RKCIF_MONITOR_MODE_IDLE = 0x0,
-	RKCIF_MONITOR_MODE_CONTINUE,
-	RKCIF_MONITOR_MODE_TRIGGER,
-	RKCIF_MONITOR_MODE_HOTPLUG,
-};
-
-struct rkcif_hw_timer {
-	struct timer_list	timer;
-	spinlock_t		timer_lock;
-	unsigned long		cycle_jif;
-	/* unit: us */
-	unsigned int		run_cnt;
-	unsigned int		max_run_cnt;
-	unsigned int		stop_index_of_run_cnt;
-	unsigned int		monitor_cycle;
-	unsigned int		err_ref_cnt;
-	unsigned int		err_time_interval;
-	unsigned int		is_reset_by_user;
-	bool			is_running;
-	bool			has_been_init;
-	enum rkcif_monitor_mode	monitor_mode;
-	enum rkmodule_reset_src	reset_src;
-};
-
-/*
  * struct rkcif_device - ISP platform device
  * @base_addr: base register address
  * @active_sensor: sensor in-use, set when streaming on
@@ -114,10 +85,6 @@ struct rkcif_hw {
 	atomic_t power_cnt;
 	const struct rkcif_hw_match_data *match_data;
 	struct mutex			dev_lock;
-	struct rkcif_hw_timer		hw_timer;
-	struct rkcif_reset_info		reset_info;
-	spinlock_t			spin_lock;
-	bool				reset_work_cancel;
 };
 
 void rkcif_hw_soft_reset(struct rkcif_hw *cif_hw, bool is_rst_iommu);

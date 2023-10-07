@@ -1034,17 +1034,17 @@ struct cfg80211_non_tx_bss {
 };
 
 /* Returned bss is reference counted and must be cleaned up appropriately. */
-struct cfg80211_internal_bss *
+static struct cfg80211_internal_bss *
 cfg80211_bss_update(struct cfg80211_registered_device *rdev,
 		    struct cfg80211_internal_bss *tmp,
-		    bool signal_valid, unsigned long ts)
+		    bool signal_valid)
 {
 	struct cfg80211_internal_bss *found = NULL;
 
 	if (WARN_ON(!tmp->pub.channel))
 		return NULL;
 
-	tmp->ts = ts;
+	tmp->ts = jiffies;
 
 	spin_lock_bh(&rdev->bss_lock);
 
@@ -1367,8 +1367,7 @@ cfg80211_inform_single_bss_data(struct wiphy *wiphy,
 
 	signal_valid = abs(data->chan->center_freq - channel->center_freq) <=
 		wiphy->max_adj_channel_rssi_comp;
-	res = cfg80211_bss_update(wiphy_to_rdev(wiphy), &tmp, signal_valid,
-				  jiffies);
+	res = cfg80211_bss_update(wiphy_to_rdev(wiphy), &tmp, signal_valid);
 	if (!res)
 		return NULL;
 
@@ -1692,8 +1691,7 @@ cfg80211_inform_single_bss_frame_data(struct wiphy *wiphy,
 
 	signal_valid = abs(data->chan->center_freq - channel->center_freq) <=
 		wiphy->max_adj_channel_rssi_comp;
-	res = cfg80211_bss_update(wiphy_to_rdev(wiphy), &tmp, signal_valid,
-				  jiffies);
+	res = cfg80211_bss_update(wiphy_to_rdev(wiphy), &tmp, signal_valid);
 	if (!res)
 		return NULL;
 

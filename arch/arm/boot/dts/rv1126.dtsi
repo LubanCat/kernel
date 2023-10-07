@@ -2125,7 +2125,7 @@
 		iommus = <&rkvdec_mmu>;
 		rockchip,srv = <&mpp_srv>;
 		rockchip,taskqueue-node = <0>;
-		rockchip,resetgroup-node = <1>;
+		rockchip,resetgroup-node = <0>;
 		status = "disabled";
 	};
 
@@ -2364,9 +2364,8 @@
 		clock-names = "biu", "ciu", "ciu-drive", "ciu-sample";
 		fifo-depth = <0x100>;
 		max-frequency = <200000000>;
-		pinctrl-names = "normal", "idle";
+		pinctrl-names = "default";
 		pinctrl-0 = <&sdmmc0_clk &sdmmc0_cmd &sdmmc0_det &sdmmc0_bus4>;
-		pinctrl-1 = <&sdmmc0_idle_pins &sdmmc0_det>;
 		status = "disabled";
 	};
 
@@ -2540,7 +2539,6 @@
 			snps,tx-ipgap-linecheck-dis-quirk;
 			snps,tx-fifo-resize;
 			snps,xhci-trb-ent-quirk;
-			snps,usb2-lpm-disable;
 			status = "disabled";
 		};
 	};

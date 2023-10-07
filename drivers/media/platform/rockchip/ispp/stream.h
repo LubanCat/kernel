@@ -6,8 +6,6 @@
 
 #include "common.h"
 
-#define RKISPP_FEC_BUF_MAX 7
-
 struct rkispp_stream;
 
 /*
@@ -87,7 +85,7 @@ struct in_tnr_buf {
 
 struct in_nr_buf {
 	struct rkispp_dummy_buffer tmp_yuv;
-	struct rkispp_dummy_buffer wr[RKISPP_FEC_BUF_MAX];
+	struct rkispp_dummy_buffer wr[RKISPP_BUF_MAX];
 };
 
 struct tnr_module {
@@ -104,7 +102,7 @@ struct tnr_module {
 	u32 uv_offset;
 	bool is_end;
 	bool is_3to1;
-	bool is_buf_init;
+	bool is_but_init;
 	bool is_trigger;
 };
 
@@ -112,7 +110,6 @@ struct nr_module {
 	struct in_nr_buf buf;
 	struct list_head list_rd;
 	struct list_head list_wr;
-	struct list_head list_rpt;
 	spinlock_t buf_lock;
 	struct rkisp_ispp_buf *cur_rd;
 	struct rkispp_dummy_buffer *cur_wr;
@@ -120,7 +117,6 @@ struct nr_module {
 	struct frame_debug_info dbg;
 	u32 uv_offset;
 	bool is_end;
-	bool is_buf_init;
 };
 
 struct fec_module {
@@ -214,6 +210,7 @@ struct rkispp_vir_cpy {
 /* rkispp stream device */
 struct rkispp_stream_vdev {
 	struct rkispp_stream stream[STREAM_MAX];
+	struct rkispp_isp_buf_pool pool[RKISPP_BUF_POOL_MAX];
 	struct tnr_module tnr;
 	struct nr_module nr;
 	struct fec_module fec;
@@ -231,7 +228,8 @@ struct rkispp_stream_vdev {
 };
 
 int rkispp_get_tnrbuf_fd(struct rkispp_device *dev, struct rkispp_buf_idxfd *idxfd);
-int rkispp_get_nrbuf_fd(struct rkispp_device *dev, struct rkispp_buf_idxfd *idxfd);
+void rkispp_sendbuf_to_nr(struct rkispp_device *dev,
+			  struct rkispp_tnr_inf *tnr_inf);
 void rkispp_set_trigger_mode(struct rkispp_device *dev,
 			     struct rkispp_trigger_mode *mode);
 void rkispp_module_work_event(struct rkispp_device *dev,

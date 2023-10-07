@@ -61,7 +61,6 @@ struct rk_i2s_dev {
 	bool is_master_mode;
 	const struct rk_i2s_pins *pins;
 	unsigned int bclk_fs;
-	spinlock_t lock; /* tx/rx lock */
 	unsigned int clk_trcm;
 
 	unsigned int mclk_root_rate;
@@ -70,6 +69,9 @@ struct rk_i2s_dev {
 	bool mclk_calibrate;
 
 };
+
+/* txctrl/rxctrl lock */
+static DEFINE_SPINLOCK(lock);
 
 static int i2s_runtime_suspend(struct device *dev)
 {
@@ -122,51 +124,12 @@ static void rockchip_i2s_reset(struct rk_i2s_dev *i2s)
 	regcache_sync(i2s->regmap);
 }
 
-static int rockchip_i2s_clear(struct rk_i2s_dev *i2s)
-{
-	unsigned int clr = I2S_CLR_TXC | I2S_CLR_RXC;
-	unsigned int val = 0;
-	int ret;
-
-	/*
-	 * Workaround for FIFO clear on SLAVE mode:
-	 *
-	 * A Suggest to do reset hclk domain and then do mclk
-	 *   domain, especially for SLAVE mode without CLK in.
-	 *   at last, recovery regmap config.
-	 *
-	 * B Suggest to switch to MASTER, and then do FIFO clr,
-	 *   at last, bring back to SLAVE.
-	 *
-	 * Now we choose plan B here.
-	 */
-	if (!i2s->is_master_mode)
-		regmap_update_bits(i2s->regmap, I2S_CKR,
-				   I2S_CKR_MSS_MASK, I2S_CKR_MSS_MASTER);
-	regmap_update_bits(i2s->regmap, I2S_CLR, clr, clr);
-
-	ret = regmap_read_poll_timeout_atomic(i2s->regmap, I2S_CLR, val,
-					      !(val & clr), 10, 100);
-	if (!i2s->is_master_mode)
-		regmap_update_bits(i2s->regmap, I2S_CKR,
-				   I2S_CKR_MSS_MASK, I2S_CKR_MSS_SLAVE);
-	if (ret < 0) {
-		dev_warn(i2s->dev, "failed to clear fifo on %s mode\n",
-			 i2s->is_master_mode ? "master" : "slave");
-		goto reset;
-	}
-
-	return 0;
-
-reset:
-	rockchip_i2s_reset(i2s);
-
-	return ret;
-}
-
 static void rockchip_snd_txctrl(struct rk_i2s_dev *i2s, int on)
 {
-	spin_lock(&i2s->lock);
+	unsigned int val = 0;
+	int retry = 10;
+
+	spin_lock(&lock);
 	if (on) {
 		regmap_update_bits(i2s->regmap, I2S_DMACR,
 				   I2S_DMACR_TDE_ENABLE, I2S_DMACR_TDE_ENABLE);
@@ -190,15 +153,33 @@ static void rockchip_snd_txctrl(struct rk_i2s_dev *i2s, int on)
 					   I2S_XFER_RXS_STOP);
 
 			udelay(150);
-			rockchip_i2s_clear(i2s);
+			regmap_update_bits(i2s->regmap, I2S_CLR,
+					   I2S_CLR_TXC | I2S_CLR_RXC,
+					   I2S_CLR_TXC | I2S_CLR_RXC);
+
+			regmap_read(i2s->regmap, I2S_CLR, &val);
+
+			/* Should wait for clear operation to finish */
+			while (val) {
+				regmap_read(i2s->regmap, I2S_CLR, &val);
+				retry--;
+				if (!retry) {
+					dev_warn(i2s->dev, "reset\n");
+					rockchip_i2s_reset(i2s);
+					break;
+				}
+			}
 		}
 	}
-	spin_unlock(&i2s->lock);
+	spin_unlock(&lock);
 }
 
 static void rockchip_snd_rxctrl(struct rk_i2s_dev *i2s, int on)
 {
-	spin_lock(&i2s->lock);
+	unsigned int val = 0;
+	int retry = 10;
+
+	spin_lock(&lock);
 	if (on) {
 		regmap_update_bits(i2s->regmap, I2S_DMACR,
 				   I2S_DMACR_RDE_ENABLE, I2S_DMACR_RDE_ENABLE);
@@ -222,10 +203,25 @@ static void rockchip_snd_rxctrl(struct rk_i2s_dev *i2s, int on)
 					   I2S_XFER_RXS_STOP);
 
 			udelay(150);
-			rockchip_i2s_clear(i2s);
+			regmap_update_bits(i2s->regmap, I2S_CLR,
+					   I2S_CLR_TXC | I2S_CLR_RXC,
+					   I2S_CLR_TXC | I2S_CLR_RXC);
+
+			regmap_read(i2s->regmap, I2S_CLR, &val);
+
+			/* Should wait for clear operation to finish */
+			while (val) {
+				regmap_read(i2s->regmap, I2S_CLR, &val);
+				retry--;
+				if (!retry) {
+					dev_warn(i2s->dev, "reset\n");
+					rockchip_i2s_reset(i2s);
+					break;
+				}
+			}
 		}
 	}
-	spin_unlock(&i2s->lock);
+	spin_unlock(&lock);
 }
 
 static int rockchip_i2s_set_fmt(struct snd_soc_dai *cpu_dai,
@@ -783,7 +779,6 @@ static int rockchip_i2s_probe(struct platform_device *pdev)
 	if (!i2s)
 		return -ENOMEM;
 
-	spin_lock_init(&i2s->lock);
 	i2s->dev = &pdev->dev;
 
 	i2s->grf = syscon_regmap_lookup_by_phandle(node, "rockchip,grf");
@@ -824,23 +819,20 @@ static int rockchip_i2s_probe(struct platform_device *pdev)
 	i2s->mclk = devm_clk_get(&pdev->dev, "i2s_clk");
 	if (IS_ERR(i2s->mclk)) {
 		dev_err(&pdev->dev, "Can't retrieve i2s master clock\n");
-		ret = PTR_ERR(i2s->mclk);
-		goto err_clk;
+		return PTR_ERR(i2s->mclk);
 	}
 
-	regs = devm_platform_get_and_ioremap_resource(pdev, 0, &res);
-	if (IS_ERR(regs)) {
-		ret = PTR_ERR(regs);
-		goto err_clk;
-	}
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	regs = devm_ioremap_resource(&pdev->dev, res);
+	if (IS_ERR(regs))
+		return PTR_ERR(regs);
 
 	i2s->regmap = devm_regmap_init_mmio(&pdev->dev, regs,
 					    &rockchip_i2s_regmap_config);
 	if (IS_ERR(i2s->regmap)) {
 		dev_err(&pdev->dev,
 			"Failed to initialise managed register map\n");
-		ret = PTR_ERR(i2s->regmap);
-		goto err_clk;
+		return PTR_ERR(i2s->regmap);
 	}
 
 	i2s->playback_dma_data.addr = res->start + I2S_TXDR;
@@ -909,11 +901,8 @@ static int rockchip_i2s_probe(struct platform_device *pdev)
 		goto err_suspend;
 	}
 
-	if (of_property_read_bool(node, "rockchip,no-dmaengine")) {
-		dev_info(&pdev->dev, "Used for Multi-DAI\n");
-		return 0;
-	}
-
+	if (of_property_read_bool(node, "rockchip,no-dmaengine"))
+		return ret;
 	ret = devm_snd_dmaengine_pcm_register(&pdev->dev, NULL, 0);
 	if (ret) {
 		dev_err(&pdev->dev, "Could not register PCM\n");
@@ -927,8 +916,7 @@ err_suspend:
 		i2s_runtime_suspend(&pdev->dev);
 err_pm_disable:
 	pm_runtime_disable(&pdev->dev);
-err_clk:
-	clk_disable_unprepare(i2s->hclk);
+
 	return ret;
 }
 

@@ -1,0 +1,168 @@
+<kernel minlts="5.4.42" />
+
+<!-- KEEP ALPHABETICALLY SORTED -->
+<!-- ARM base requirements -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_ARM</key>
+			<value type="bool">y</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_AEABI</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_CPU_SW_DOMAIN_PAN</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_DEVKMEM</key>
+		<value type="bool">n</value>
+	</config>
+	<config>
+		<key>CONFIG_OABI_COMPAT</key>
+		<value type="bool">n</value>
+	</config>
+</group>
+
+<!-- ARM64 base requirements -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_ARM64</key>
+			<value type="bool">y</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_ARM64_PAN</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_ARM64_SW_TTBR0_PAN</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_ARMV8_DEPRECATED</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_COMPAT</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_CP15_BARRIER_EMULATION</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_SETEND_EMULATION</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_SHADOW_CALL_STACK</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_SWP_EMULATION</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_BPF_JIT_ALWAYS_ON</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- x86 base requirements -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_X86</key>
+			<value type="bool">y</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_DEVKMEM</key>
+		<value type="bool">n</value>
+	</config>
+	<config>
+		<key>CONFIG_PAGE_TABLE_ISOLATION</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_RETPOLINE</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_BPF_JIT_ALWAYS_ON</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- CONFIG_ACPI || CONFIG_OF -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_ACPI</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_OF</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_OF</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_ACPI</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- CONFIG_IKHEADERS=y || CONFIG_IKHEADERS=m -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_IKHEADERS</key>
+			<value type="tristate">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>DISALLOW_CONFIG_IKHEADERS_IS_N</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- EXT4 requirements -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_EXT4_FS</key>
+			<value type="bool">y</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_EXT4_FS_POSIX_ACL</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- F2FS requirements -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_F2FS_FS</key>
+			<value type="bool">y</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_F2FS_FS_POSIX_ACL</key>
+		<value type="bool">y</value>
+	</config>
+</group>

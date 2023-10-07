@@ -551,9 +551,6 @@ void rkisp_soft_reset(struct rkisp_hw_dev *dev, bool is_secure)
 		rockchip_iommu_disable(dev->dev);
 		rockchip_iommu_enable(dev->dev);
 	}
-
-	if (dev->isp_ver == ISP_V21)
-		writel(readl(base + MI_RD_CTRL2) | BIT(30), base + MI_RD_CTRL2);
 }
 
 static void isp_config_clk(struct rkisp_hw_dev *dev, int on)

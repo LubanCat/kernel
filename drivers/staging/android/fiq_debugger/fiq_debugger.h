@@ -63,8 +63,6 @@ struct fiq_debugger_pdata {
 #ifdef CONFIG_RK_CONSOLE_THREAD
 	void (*console_write)(struct platform_device *pdev, const char *s,
 			      unsigned int count);
-	int (*tty_write)(struct platform_device *pdev, const char *s, int count);
-	int (*write_room)(struct platform_device *pdev);
 #endif
 #ifdef CONFIG_FIQ_DEBUGGER_TRUST_ZONE
 	void (*switch_cpu)(struct platform_device *pdev, u32 cpu);
@@ -72,5 +70,4 @@ struct fiq_debugger_pdata {
 #endif
 };
 
-void fiq_tty_wake_up(struct platform_device *pdev);
 #endif

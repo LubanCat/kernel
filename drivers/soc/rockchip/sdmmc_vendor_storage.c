@@ -23,15 +23,41 @@
 #include <linux/soc/rockchip/rk_vendor_storage.h>
 #include <linux/kthread.h>
 #include <linux/delay.h>
-#include <misc/rkflash_vendor_storage.h>
 
 #define EMMC_IDB_PART_OFFSET		64
 #define EMMC_SYS_PART_OFFSET		8064
 #define EMMC_BOOT_PART_SIZE		1024
 #define EMMC_VENDOR_PART_START		(1024 * 7)
-#define EMMC_VENDOR_PART_SIZE		VENDOR_PART_SIZE
+#define EMMC_VENDOR_PART_SIZE		128
 #define EMMC_VENDOR_PART_NUM		4
-#define EMMC_VENDOR_TAG			VENDOR_HEAD_TAG
+#define EMMC_VENDOR_TAG			0x524B5644
+
+struct rk_vendor_req {
+	u32 tag;
+	u16 id;
+	u16 len;
+	u8 data[1024];
+};
+
+struct vendor_item {
+	u16  id;
+	u16  offset;
+	u16  size;
+	u16  flag;
+};
+
+struct vendor_info {
+	u32	tag;
+	u32	version;
+	u16	next_index;
+	u16	item_num;
+	u16	free_offset;
+	u16	free_size;
+	struct	vendor_item item[126]; /* 126 * 8*/
+	u8	data[EMMC_VENDOR_PART_SIZE * 512 - 1024 - 8];
+	u32	hash;
+	u32	version2;
+};
 
 #ifdef CONFIG_ROCKCHIP_VENDOR_STORAGE_UPDATE_LOADER
 #define READ_SECTOR_IO		_IOW('r', 0x04, unsigned int)
@@ -41,6 +67,10 @@
 #define GET_BAD_BLOCK_IO	_IOW('r', 0x03, unsigned int)
 #define GET_LOCK_FLAG_IO	_IOW('r', 0x53, unsigned int)
 #endif
+
+#define VENDOR_REQ_TAG		0x56524551
+#define VENDOR_READ_IO		_IOW('v', 0x01, unsigned int)
+#define VENDOR_WRITE_IO		_IOW('v', 0x02, unsigned int)
 
 static u8 *g_idb_buffer;
 static struct vendor_info *g_vendor;
@@ -376,7 +406,7 @@ static long vendor_storage_ioctl(struct file *file, unsigned int cmd,
 {
 	long ret = -1;
 	int size;
-	struct RK_VENDOR_REQ *v_req;
+	struct rk_vendor_req *v_req;
 	u32 *page_buf;
 
 	page_buf = kmalloc(4096, GFP_KERNEL);
@@ -385,7 +415,7 @@ static long vendor_storage_ioctl(struct file *file, unsigned int cmd,
 
 	mutex_lock(&vendor_ops_mutex);
 
-	v_req = (struct RK_VENDOR_REQ *)page_buf;
+	v_req = (struct rk_vendor_req *)page_buf;
 
 	switch (cmd) {
 	case VENDOR_READ_IO:
@@ -544,7 +574,7 @@ exit:
 	return ret;
 }
 
-static const struct file_operations vendor_storage_fops = {
+const struct file_operations vendor_storage_fops = {
 	.open = vendor_storage_open,
 	.compat_ioctl	= vendor_storage_ioctl,
 	.unlocked_ioctl = vendor_storage_ioctl,

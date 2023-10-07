@@ -147,7 +147,7 @@ int mmc_go_idle(struct mmc_host *host)
 	 * rules that must accommodate non-MMC slaves which this layer
 	 * won't even know about.
 	 */
-#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT
 	if (!mmc_host_is_spi(host)) {
 		mmc_set_chip_select(host, MMC_CS_HIGH);
 		mmc_delay(1);
@@ -159,7 +159,7 @@ int mmc_go_idle(struct mmc_host *host)
 
 	err = mmc_wait_for_cmd(host, &cmd, 0);
 
-#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT
 	mmc_delay(1);
 	if (!mmc_host_is_spi(host)) {
 		mmc_set_chip_select(host, MMC_CS_DONTCARE);
@@ -199,7 +199,7 @@ int mmc_send_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
 		}
 
 		err = -ETIMEDOUT;
-#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT
 		mmc_delay(1);
 #else
 		udelay(1);

@@ -27,9 +27,8 @@ GetVoltageFromDtsVal=0
 ShowChecklist()
 {
 	PMUIO2=$(whiptail --title "IO Domain Checklist" --menu --nocancel\
-	"Get the corresponding value from the hardware schematic diagram" 15 60 3 \
+	"Get the corresponding value from the hardware schematic diagram" 15 60 2 \
 	"1800000" "PMUIO2 Supply Power Voltage(uV)" \
-	"3000000" "PMUIO2 Supply Power Voltage(uV)" \
 	"3300000" "PMUIO2 Supply Power Voltage(uV)" 3>&1 1>&2 2>&3)
 	exitstatus=$?
 	if [ $exitstatus != 0 ]; then
@@ -38,9 +37,8 @@ ShowChecklist()
 	fi
 
 	VCCIO1=$(whiptail --title "IO Domain Checklist" --menu --nocancel\
-	"Get the corresponding value from the hardware schematic diagram" 15 60 3 \
+	"Get the corresponding value from the hardware schematic diagram" 15 60 2 \
 	"1800000" "VCCIO1 Supply Power Voltage(uV)" \
-	"3000000" "VCCIO1 Supply Power Voltage(uV)" \
 	"3300000" "VCCIO1 Supply Power Voltage(uV)" 3>&1 1>&2 2>&3)
 	exitstatus=$?
 	if [ $exitstatus != 0 ]; then
@@ -49,9 +47,8 @@ ShowChecklist()
 	fi
 
 	VCCIO3=$(whiptail --title "IO Domain Checklist" --menu --nocancel\
-	"Get the corresponding value from the hardware schematic diagram" 15 60 3 \
+	"Get the corresponding value from the hardware schematic diagram" 15 60 2 \
 	"1800000" "VCCIO3 Supply Power Voltage(uV)" \
-	"3000000" "VCCIO3 Supply Power Voltage(uV)" \
 	"3300000" "VCCIO3 Supply Power Voltage(uV)" 3>&1 1>&2 2>&3)
 	exitstatus=$?
 	if [ $exitstatus != 0 ]; then
@@ -60,9 +57,8 @@ ShowChecklist()
 	fi
 
 	VCCIO4=$(whiptail --title "IO Domain Checklist" --menu --nocancel\
-	"Get the corresponding value from the hardware schematic diagram" 15 60 3 \
+	"Get the corresponding value from the hardware schematic diagram" 15 60 2 \
 	"1800000" "VCCIO4 Supply Power Voltage(uV)" \
-	"3000000" "VCCIO4 Supply Power Voltage(uV)" \
 	"3300000" "VCCIO4 Supply Power Voltage(uV)" 3>&1 1>&2 2>&3)
 	exitstatus=$?
 	if [ $exitstatus != 0 ]; then
@@ -71,9 +67,8 @@ ShowChecklist()
 	fi
 
 	VCCIO5=$(whiptail --title "IO Domain Checklist" --menu --nocancel\
-	"Get the corresponding value from the hardware schematic diagram" 15 60 3 \
+	"Get the corresponding value from the hardware schematic diagram" 15 60 2 \
 	"1800000" "VCCIO5 Supply Power Voltage(uV)" \
-	"3000000" "VCCIO5 Supply Power Voltage(uV)" \
 	"3300000" "VCCIO5 Supply Power Voltage(uV)" 3>&1 1>&2 2>&3)
 	exitstatus=$?
 	if [ $exitstatus != 0 ]; then
@@ -82,9 +77,8 @@ ShowChecklist()
 	fi
 
 	VCCIO6=$(whiptail --title "IO Domain Checklist" --menu --nocancel\
-	"Get the corresponding value from the hardware schematic diagram" 15 60 3 \
+	"Get the corresponding value from the hardware schematic diagram" 15 60 2 \
 	"1800000" "VCCIO6 Supply Power Voltage(uV)" \
-	"3000000" "VCCIO6 Supply Power Voltage(uV)" \
 	"3300000" "VCCIO6 Supply Power Voltage(uV)" 3>&1 1>&2 2>&3)
 	exitstatus=$?
 	if [ $exitstatus != 0 ]; then
@@ -93,9 +87,8 @@ ShowChecklist()
 	fi
 
 	VCCIO7=$(whiptail --title "IO Domain Checklist" --menu --nocancel\
-	"Get the corresponding value from the hardware schematic diagram" 15 60 3 \
+	"Get the corresponding value from the hardware schematic diagram" 15 60 2 \
 	"1800000" "VCCIO7 Supply Power Voltage(uV)" \
-	"3000000" "VCCIO7 Supply Power Voltage(uV)" \
 	"3300000" "VCCIO7 Supply Power Voltage(uV)" 3>&1 1>&2 2>&3)
 	exitstatus=$?
 	if [ $exitstatus != 0 ]; then

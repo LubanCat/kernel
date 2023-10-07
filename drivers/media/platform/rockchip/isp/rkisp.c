@@ -594,30 +594,9 @@ void rkisp_trigger_read_back(struct rkisp_device *dev, u8 dma2frm, u32 mode, boo
 		val = rkisp_read(dev, ISP_CTRL, false);
 		val |= CIF_ISP_CTRL_ISP_CFG_UPD;
 		rkisp_write(dev, ISP_CTRL, val, true);
-		/* fix ldch multi sensor case:
-		 * ldch will pre-read data when en and isp force upd or frame end,
-		 * udelay for ldch pre-read data.
-		 * ldch en=0 before start for frame end to stop ldch read data.
-		 */
-		if (!hw->is_single &&
-		    (rkisp_read(dev, ISP_LDCH_BASE, true) & 0x1)) {
-			udelay(50);
-			writel(0, hw->base_addr + ISP_LDCH_BASE);
-		}
 	}
 	if (is_3dlut_upd)
 		rkisp_write(dev, ISP_3DLUT_UPDATE, 1, true);
-
-	/* if output stream enable, wait it end */
-	val = rkisp_read(dev, CIF_MI_CTRL_SHD, true);
-	if (val & CIF_MI_CTRL_SHD_MP_OUT_ENABLED)
-		dev->irq_ends_mask |= ISP_FRAME_MP;
-	else
-		dev->irq_ends_mask &= ~ISP_FRAME_MP;
-	if (val & CIF_MI_CTRL_SHD_SP_OUT_ENABLED)
-		dev->irq_ends_mask |= ISP_FRAME_SP;
-	else
-		dev->irq_ends_mask &= ~ISP_FRAME_SP;
 
 	memset(dev->filt_state, 0, sizeof(dev->filt_state));
 	dev->filt_state[RDBK_F_VS] = dma2frm;
@@ -746,27 +725,12 @@ void rkisp_check_idle(struct rkisp_device *dev, u32 irq)
 		if (!completion_done(&dev->hw_dev->monitor.cmpl))
 			complete(&dev->hw_dev->monitor.cmpl);
 	}
-	if ((dev->irq_ends & dev->irq_ends_mask) != dev->irq_ends_mask ||
-	    !IS_HDR_RDBK(dev->rd_mode))
+	if (dev->irq_ends != dev->irq_ends_mask || !IS_HDR_RDBK(dev->rd_mode))
 		return;
 
-	/* check output stream is off */
-	val = ISP_FRAME_MP | ISP_FRAME_SP | ISP_FRAME_MPFBC;
-	if (!(dev->irq_ends_mask & val)) {
-		u32 state = dev->isp_state;
-		struct rkisp_stream *s;
+	if (!(dev->irq_ends_mask & (ISP_FRAME_MP | ISP_FRAME_SP | ISP_FRAME_MPFBC)))
+		dev->isp_state = ISP_STOP;
 
-		for (val = 0; val <= RKISP_STREAM_SP; val++) {
-			s = &dev->cap_dev.stream[val];
-			dev->isp_state = ISP_STOP;
-			if (s->streaming) {
-				dev->isp_state = state;
-				break;
-			}
-		}
-	}
-
-	val = 0;
 	dev->irq_ends = 0;
 	switch (dev->rd_mode) {
 	case HDR_RDBK_FRAME3://for rd1 rd0 rd2
@@ -780,6 +744,8 @@ void rkisp_check_idle(struct rkisp_device *dev, u32 irq)
 		/* FALLTHROUGH */
 	}
 	rkisp2_rawrd_isr(val, dev);
+	if (!(dev->irq_ends_mask & (ISP_FRAME_MP | ISP_FRAME_SP | ISP_FRAME_MPFBC)))
+		dev->isp_state = ISP_STOP;
 	if (dev->dmarx_dev.trigger == T_MANUAL)
 		rkisp_rdbk_trigger_event(dev, T_CMD_END, NULL);
 	if (dev->isp_state == ISP_STOP)
@@ -1406,10 +1372,6 @@ static int rkisp_config_path(struct rkisp_device *dev)
 		ret = -EINVAL;
 	}
 
-	/* fix 3a_wr no output with selfpath */
-	if (dev->isp_ver == ISP_V21)
-		dpcl |= CIF_VI_DPCL_CHAN_MODE_MP | CIF_VI_DPCL_MP_MUX_MRSZ_MI;
-
 	writel(dpcl, dev->base_addr + CIF_VI_DPCL);
 
 	return ret;
@@ -1511,6 +1473,13 @@ static int rkisp_isp_stop(struct rkisp_device *dev)
 
 	if (atomic_read(&dev->hw_dev->refcnt) > 1)
 		goto end;
+
+	if (dev->hw_dev->monitor.is_en) {
+		dev->hw_dev->monitor.is_en = 0;
+		dev->hw_dev->monitor.state = ISP_STOP;
+		if (!completion_done(&dev->hw_dev->monitor.cmpl))
+			complete(&dev->hw_dev->monitor.cmpl);
+	}
 	/*
 	 * ISP(mi) stop in mi frame end -> Stop ISP(mipi) ->
 	 * Stop ISP(isp) ->wait for ISP isp off
@@ -2262,7 +2231,7 @@ static void rkisp_global_update_mi(struct rkisp_device *dev)
 	if (dev->hw_dev->is_single) {
 		for (i = 0; i < RKISP_MAX_STREAM; i++) {
 			stream = &dev->cap_dev.stream[i];
-			if (stream->streaming && !stream->next_buf)
+			if (stream->streaming)
 				stream->ops->frame_end(stream);
 		}
 	}
@@ -2273,6 +2242,7 @@ static int rkisp_isp_sd_s_stream(struct v4l2_subdev *sd, int on)
 	struct rkisp_device *isp_dev = sd_to_isp_dev(sd);
 
 	if (!on) {
+		rkisp_stop_3a_run(isp_dev);
 		wait_event_timeout(isp_dev->sync_onoff,
 			isp_dev->irq_ends_mask == (ISP_FRAME_END | ISP_FRAME_IN) &&
 			(!IS_HDR_RDBK(isp_dev->rd_mode) ||
@@ -2280,7 +2250,6 @@ static int rkisp_isp_sd_s_stream(struct v4l2_subdev *sd, int on)
 		rkisp_isp_stop(isp_dev);
 		atomic_dec(&isp_dev->hw_dev->refcnt);
 		rkisp_params_stream_stop(&isp_dev->params_vdev);
-		rkisp_stop_3a_run(isp_dev);
 		return 0;
 	}
 

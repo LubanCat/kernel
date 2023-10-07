@@ -1,0 +1,159 @@
+<kernel minlts="4.9.165" />
+
+<!-- KEEP ALPHABETICALLY SORTED -->
+<!-- ARM base requirements -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_ARM</key>
+			<value type="bool">y</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_AEABI</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_CPU_SW_DOMAIN_PAN</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_OABI_COMPAT</key>
+		<value type="bool">n</value>
+	</config>
+</group>
+
+<!-- ARM64 base requirements -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_ARM64</key>
+			<value type="bool">y</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_ARM64_SW_TTBR0_PAN</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_ARMV8_DEPRECATED</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_COMPAT</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_CP15_BARRIER_EMULATION</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_SETEND_EMULATION</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_SWP_EMULATION</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- x86 base requirements -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_X86</key>
+			<value type="bool">y</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_PAGE_TABLE_ISOLATION</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_RETPOLINE</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- CONFIG_ACPI || CONFIG_OF -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_ACPI</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_OF</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_OF</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_ACPI</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- CONFIG_ANDROID_LOW_MEMORY_KILLER || (CONFIG_MEMCG && CONFIG_MEMCG_SWAP) -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_ANDROID_LOW_MEMORY_KILLER</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_MEMCG</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_MEMCG_SWAP</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_MEMCG</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_ANDROID_LOW_MEMORY_KILLER</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_MEMCG_SWAP</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_ANDROID_LOW_MEMORY_KILLER</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- CONFIG_USB implies CONFIG_USB_RTL8152 -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_USB_RTL8152</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_USB</key>
+		<value type="bool">n</value>
+	</config>
+</group>
+

@@ -245,26 +245,20 @@ static int rkflash_blk_xfer(struct flash_blk_dev *dev,
 static int rkflash_blk_check_buffer_align(struct request *req, char **pbuf)
 {
 	int nr_vec = 0;
-	struct bio_vec bv;
+	struct bio_vec bvec;
 	struct req_iterator iter;
 	char *buffer;
 	void *firstbuf = 0;
 	char *nextbuffer = 0;
 
-	rq_for_each_segment(bv, req, iter) {
-		/* high mem return 0 and using kernel buffer */
-		if (PageHighMem(bv.bv_page))
-			return 0;
-
-		buffer = page_address(bv.bv_page) + bv.bv_offset;
-		if (!buffer)
-			return 0;
+	rq_for_each_segment(bvec, req, iter) {
+		buffer = page_address(bvec.bv_page) + bvec.bv_offset;
 		if (!firstbuf)
 			firstbuf = buffer;
 		nr_vec++;
 		if (nextbuffer && nextbuffer != buffer)
 			return 0;
-		nextbuffer = buffer + bv.bv_len;
+		nextbuffer = buffer + bvec.bv_len;
 	}
 	*pbuf = firstbuf;
 	return 1;
@@ -275,11 +269,12 @@ static int rkflash_blktrans_thread(void *arg)
 	struct flash_blk_ops *blk_ops = arg;
 	struct request_queue *rq = blk_ops->rq;
 	struct request *req = NULL;
-	char *buf, *page_buf;
+	char *buf;
 	struct req_iterator rq_iter;
 	struct bio_vec bvec;
 	unsigned long long sector_index = ULLONG_MAX;
 	unsigned long totle_nsect;
+	unsigned long rq_len = 0;
 	int rw_flag = 0;
 
 	spin_lock_irq(rq->queue_lock);
@@ -310,6 +305,7 @@ static int rkflash_blktrans_thread(void *arg)
 		dev = req->rq_disk->private_data;
 		totle_nsect = (req->__data_len) >> 9;
 		sector_index = blk_rq_pos(req);
+		rq_len = 0;
 		buf = 0;
 		res = 0;
 		rw_flag = req_op(req);
@@ -326,7 +322,7 @@ static int rkflash_blktrans_thread(void *arg)
 			if (!__blk_end_request_cur(req, res))
 				req = NULL;
 			continue;
-		} else if (rw_flag == REQ_OP_READ) {
+		} else if (rw_flag == REQ_OP_READ && mtd_read_temp_buffer) {
 			buf = mtd_read_temp_buffer;
 			rkflash_blk_check_buffer_align(req, &buf);
 			spin_unlock_irq(rq->queue_lock);
@@ -341,39 +337,46 @@ static int rkflash_blktrans_thread(void *arg)
 				char *p = buf;
 
 				rq_for_each_segment(bvec, req, rq_iter) {
-					page_buf = kmap_atomic(bvec.bv_page);
-					memcpy(page_buf +
+					memcpy(page_address(bvec.bv_page) +
 					       bvec.bv_offset,
 					       p,
 					       bvec.bv_len);
 					p += bvec.bv_len;
-					kunmap_atomic(page_buf);
 				}
 			}
 		} else if (rw_flag == REQ_OP_WRITE){
-			buf = mtd_read_temp_buffer;
-			rkflash_blk_check_buffer_align(req, &buf);
-			if (buf == mtd_read_temp_buffer) {
-				char *p = buf;
-
-				rq_for_each_segment(bvec, req, rq_iter) {
-					page_buf = kmap_atomic(bvec.bv_page);
-					memcpy(p,
-					       page_buf +
-					       bvec.bv_offset,
-					       bvec.bv_len);
-					p += bvec.bv_len;
-					kunmap_atomic(page_buf);
+			rq_for_each_segment(bvec, req, rq_iter) {
+				if ((page_address(bvec.bv_page)
+					+ bvec.bv_offset)
+					== (buf + rq_len)) {
+					rq_len += bvec.bv_len;
+				} else {
+					if (rq_len) {
+						spin_unlock_irq(rq->queue_lock);
+						res = rkflash_blk_xfer(dev,
+								       sector_index,
+								       rq_len >> 9,
+								       buf,
+								       rw_flag,
+								       totle_nsect);
+						spin_lock_irq(rq->queue_lock);
+					}
+					sector_index += rq_len >> 9;
+					buf = (page_address(bvec.bv_page) +
+						bvec.bv_offset);
+					rq_len = bvec.bv_len;
 				}
 			}
-			spin_unlock_irq(rq->queue_lock);
-			res = rkflash_blk_xfer(dev,
-					       sector_index,
-					       totle_nsect,
-					       buf,
-					       rw_flag,
-					       totle_nsect);
-			spin_lock_irq(rq->queue_lock);
+			if (rq_len) {
+				spin_unlock_irq(rq->queue_lock);
+				res = rkflash_blk_xfer(dev,
+						       sector_index,
+						       rq_len >> 9,
+						       buf,
+						       rw_flag,
+						       totle_nsect);
+				spin_lock_irq(rq->queue_lock);
+			}
 		} else {
 			pr_err("%s error req flag\n", __func__);
 		}

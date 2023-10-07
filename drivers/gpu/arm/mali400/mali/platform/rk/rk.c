@@ -34,10 +34,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/pm_runtime.h>
 #include <linux/delay.h>
-#include <linux/regmap.h>
-#include <linux/mfd/syscon.h>
 #include <linux/rockchip/cpu.h>
-#include <soc/rockchip/rockchip_ipa.h>
 #include <soc/rockchip/rockchip_opp_select.h>
 
 #include <linux/mali/mali_utgard.h>
@@ -50,7 +47,6 @@ u32 mali_group_error;
 
 /*---------------------------------------------------------------------------*/
 
-#define RK3528_GPU_SD_SLP_HAST	0x10024
 #define DEFAULT_UTILISATION_PERIOD_IN_MS (100)
 
 /*
@@ -59,7 +55,6 @@ u32 mali_group_error;
 struct rk_context {
 	/* mali device. */
 	struct device *dev;
-	struct regmap *grf;
 	/* is the GPU powered on?  */
 	bool is_powered;
 	/* debug only, the period in ms to count gpu_utilisation. */
@@ -188,10 +183,6 @@ static int rk_context_init(struct platform_device *pdev)
 	}
 
 	platform->dev = dev;
-	platform->grf = syscon_regmap_lookup_by_phandle(dev->of_node,
-							"rockchip,grf");
-	if (IS_ERR(platform->grf))
-		platform->grf = NULL;
 	platform->is_powered = false;
 
 	platform->utilisation_period = DEFAULT_UTILISATION_PERIOD_IN_MS;
@@ -241,78 +232,6 @@ static u32 dynamic_coefficient;
 static u32 static_coefficient;
 static s32 ts[4];
 static struct thermal_zone_device *gpu_tz;
-static struct ipa_power_model_data *model_data;
-
-/* Calculate gpu static power example for reference */
-static unsigned long rk_model_static_power(struct devfreq *devfreq,
-					   unsigned long voltage)
-{
-	int temperature, temp;
-	int temp_squared, temp_cubed, temp_scaling_factor;
-	const unsigned long voltage_cubed = (voltage * voltage * voltage) >> 10;
-	unsigned long static_power;
-
-	if (gpu_tz) {
-		int ret;
-
-		ret = gpu_tz->ops->get_temp(gpu_tz, &temperature);
-		if (ret) {
-			MALI_DEBUG_PRINT(2, ("fail to read temp: %d\n", ret));
-			temperature = FALLBACK_STATIC_TEMPERATURE;
-		}
-	} else {
-		temperature = FALLBACK_STATIC_TEMPERATURE;
-	}
-
-	/* Calculate the temperature scaling factor. To be applied to the
-	 * voltage scaled power.
-	 */
-	temp = temperature / 1000;
-	temp_squared = temp * temp;
-	temp_cubed = temp_squared * temp;
-	temp_scaling_factor =
-			(ts[3] * temp_cubed)
-			+ (ts[2] * temp_squared)
-			+ (ts[1] * temp)
-			+ ts[0];
-
-	static_power = (((static_coefficient * voltage_cubed) >> 20)
-			* temp_scaling_factor)
-		       / 1000000;
-
-	return static_power;
-}
-
-/* Calculate gpu dynamic power example for reference */
-static unsigned long rk_model_dynamic_power(struct devfreq *devfreq,
-					    unsigned long freq,
-					    unsigned long voltage)
-{
-	/* The inputs: freq (f) is in Hz, and voltage (v) in mV.
-	 * The coefficient (c) is in mW/(MHz mV mV).
-	 *
-	 * This function calculates the dynamic power after this formula:
-	 * Pdyn (mW) = c (mW/(MHz*mV*mV)) * v (mV) * v (mV) * f (MHz)
-	 */
-	const unsigned long v2 = (voltage * voltage) / 1000; /* m*(V*V) */
-	const unsigned long f_mhz = freq / 1000000; /* MHz */
-	unsigned long dynamic_power;
-
-	dynamic_power = (dynamic_coefficient * v2 * f_mhz) / 1000000; /* mW */
-
-	return dynamic_power;
-}
-
-static struct devfreq_cooling_power rk_cooling_ops = {
-	.get_static_power = rk_model_static_power,
-	.get_dynamic_power = rk_model_dynamic_power,
-};
-
-static unsigned long mali_devfreq_get_static_power(struct devfreq *devfreq,
-						   unsigned long voltage)
-{
-	return rockchip_ipa_get_static_power(model_data, voltage);
-}
 
 static int power_model_simple_init(struct platform_device *pdev)
 {
@@ -320,29 +239,6 @@ static int power_model_simple_init(struct platform_device *pdev)
 	const char *tz_name;
 	u32 static_power, dynamic_power;
 	u32 voltage, voltage_squared, voltage_cubed, frequency;
-
-	if (of_find_compatible_node(pdev->dev.of_node, NULL, "simple-power-model")) {
-		of_property_read_u32(pdev->dev.of_node,
-				     "dynamic-power-coefficient",
-				     (u32 *)&rk_cooling_ops.dyn_power_coeff);
-		model_data = rockchip_ipa_power_model_init(&pdev->dev,
-							   "gpu_leakage");
-		if (IS_ERR_OR_NULL(model_data)) {
-			model_data = NULL;
-			dev_err(&pdev->dev, "failed to initialize power model\n");
-		} else if (model_data->dynamic_coefficient) {
-			rk_cooling_ops.dyn_power_coeff =
-			model_data->dynamic_coefficient;
-			rk_cooling_ops.get_dynamic_power = NULL;
-			rk_cooling_ops.get_static_power = mali_devfreq_get_static_power;
-		}
-		if (!rk_cooling_ops.dyn_power_coeff) {
-			dev_err(&pdev->dev, "failed to get dynamic-coefficient\n");
-			return -EINVAL;
-		}
-
-		return 0;
-	}
 
 	power_model_node = of_get_child_by_name(pdev->dev.of_node,
 			"power_model");
@@ -404,6 +300,70 @@ static int power_model_simple_init(struct platform_device *pdev)
 	return 0;
 }
 
+/* Calculate gpu static power example for reference */
+static unsigned long rk_model_static_power(struct devfreq *devfreq,
+					   unsigned long voltage)
+{
+	int temperature, temp;
+	int temp_squared, temp_cubed, temp_scaling_factor;
+	const unsigned long voltage_cubed = (voltage * voltage * voltage) >> 10;
+	unsigned long static_power;
+
+	if (gpu_tz) {
+		int ret;
+
+		ret = gpu_tz->ops->get_temp(gpu_tz, &temperature);
+		if (ret) {
+			MALI_DEBUG_PRINT(2, ("fail to read temp: %d\n", ret));
+			temperature = FALLBACK_STATIC_TEMPERATURE;
+		}
+	} else {
+		temperature = FALLBACK_STATIC_TEMPERATURE;
+	}
+
+	/* Calculate the temperature scaling factor. To be applied to the
+	 * voltage scaled power.
+	 */
+	temp = temperature / 1000;
+	temp_squared = temp * temp;
+	temp_cubed = temp_squared * temp;
+	temp_scaling_factor =
+			(ts[3] * temp_cubed)
+			+ (ts[2] * temp_squared)
+			+ (ts[1] * temp)
+			+ ts[0];
+
+	static_power = (((static_coefficient * voltage_cubed) >> 20)
+			* temp_scaling_factor)
+		       / 1000000;
+
+	return static_power;
+}
+
+/* Calculate gpu dynamic power example for reference */
+static unsigned long rk_model_dynamic_power(struct devfreq *devfreq,
+					    unsigned long freq,
+					    unsigned long voltage)
+{
+	/* The inputs: freq (f) is in Hz, and voltage (v) in mV.
+	 * The coefficient (c) is in mW/(MHz mV mV).
+	 *
+	 * This function calculates the dynamic power after this formula:
+	 * Pdyn (mW) = c (mW/(MHz*mV*mV)) * v (mV) * v (mV) * f (MHz)
+	 */
+	const unsigned long v2 = (voltage * voltage) / 1000; /* m*(V*V) */
+	const unsigned long f_mhz = freq / 1000000; /* MHz */
+	unsigned long dynamic_power;
+
+	dynamic_power = (dynamic_coefficient * v2 * f_mhz) / 1000000; /* mW */
+
+	return dynamic_power;
+}
+
+struct devfreq_cooling_power rk_cooling_ops = {
+	.get_static_power = rk_model_static_power,
+	.get_dynamic_power = rk_model_dynamic_power,
+};
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -416,7 +376,8 @@ static int rk_platform_enable_clk_gpu(struct device *dev)
 #if defined(CONFIG_MALI_DEVFREQ) && defined(CONFIG_HAVE_CLK)
 	struct mali_device *mdev = dev_get_drvdata(dev);
 
-	ret = clk_bulk_enable(mdev->num_clks, mdev->clks);
+	if (mdev->clock)
+		ret = clk_enable(mdev->clock);
 #endif
 	return ret;
 }
@@ -426,7 +387,8 @@ static void rk_platform_disable_clk_gpu(struct device *dev)
 #if defined(CONFIG_MALI_DEVFREQ) && defined(CONFIG_HAVE_CLK)
 	struct mali_device *mdev = dev_get_drvdata(dev);
 
-	clk_bulk_disable(mdev->num_clks, mdev->clks);
+	if (mdev->clock)
+		clk_disable(mdev->clock);
 #endif
 }
 
@@ -470,18 +432,6 @@ static int rk_platform_power_on_gpu(struct device *dev)
 			goto fail_to_enable_regulator;
 		}
 
-		if (cpu_is_rk3528()) {
-#if defined(CONFIG_MALI_DEVFREQ) && defined(CONFIG_HAVE_CLK)
-			struct mali_device *mdev = dev_get_drvdata(dev);
-
-			clk_set_rate(mdev->clock, mdev->current_freq);
-#endif
-			if (platform->grf)
-				regmap_write(platform->grf,
-					     RK3528_GPU_SD_SLP_HAST,
-					     0xffff0000);
-		}
-
 		platform->is_powered = true;
 	}
 
@@ -499,18 +449,6 @@ static void rk_platform_power_off_gpu(struct device *dev)
 	struct rk_context *platform = s_rk_context;
 
 	if (platform->is_powered) {
-		if (cpu_is_rk3528()) {
-#if defined(CONFIG_MALI_DEVFREQ) && defined(CONFIG_HAVE_CLK)
-			struct mali_device *mdev = dev_get_drvdata(dev);
-
-			//use normal pll 200M for gpu when suspend
-			clk_set_rate(mdev->clock, 200000000);
-#endif
-			if (platform->grf)
-				regmap_write(platform->grf,
-					     RK3528_GPU_SD_SLP_HAST,
-					     0xfffffffd);
-		}
 		rk_platform_disable_clk_gpu(dev);
 		rk_platform_disable_gpu_regulator(dev);
 

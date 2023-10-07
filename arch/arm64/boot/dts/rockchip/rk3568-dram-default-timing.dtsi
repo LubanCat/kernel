@@ -94,7 +94,7 @@
 		standby_idle = <0>;
 		pd_dis_freq = <1066>;
 		sr_dis_freq = <800>;
-		dram_dll_dis_freq = <500>;
+		dram_dll_dis_freq = <625>;
 		phy_dll_dis_freq = <IGNORE_THIS>;
 		/* drv when odt on */
 		phy_dq_drv_odten = <37>;
@@ -393,7 +393,7 @@
 		lp4_dq_vref_odten = <228>;
 		lp4_ca_vref_odten = <343>;
 		/* lp4 vref info when odt disable */
-		phy_lp4_dq_vref_odtoff = <245>;
+		phy_lp4_dq_vref_odtoff = <420>;
 		lp4_dq_vref_odtoff = <420>;
 		lp4_ca_vref_odtoff = <343>;
 	};

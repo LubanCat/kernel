@@ -7,4 +7,3 @@ obj-$(CONFIG_ROCKCHIP_EBC_DEV)   += pmic/
 obj-$(CONFIG_ROCKCHIP_EBC_DEV)   += tcon/
 
 rkebc-$(CONFIG_ARM64) += ebc_dev_v8.o
-#rkebc-$(CONFIG_ARM64) += ebc_dev_y8_v8.o

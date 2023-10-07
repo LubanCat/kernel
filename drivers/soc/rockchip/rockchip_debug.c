@@ -55,10 +55,6 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
-#include <linux/kernel_stat.h>
-#include <linux/irq.h>
-#include <linux/delay.h>
-
 #include "../../staging/android/fiq_debugger/fiq_debugger_priv.h"
 #include "rockchip_debug.h"
 
@@ -80,10 +76,6 @@
 static void __iomem *rockchip_cpu_debug[16];
 static void __iomem *rockchip_cs_pmu[16];
 static bool edpcsr_present;
-static char log_buf[1024];
-
-extern struct atomic_notifier_head hardlock_notifier_list;
-extern struct atomic_notifier_head rcu_stall_notifier_list;
 
 #if IS_ENABLED(CONFIG_FIQ_DEBUGGER)
 static int rockchip_debug_dump_edpcsr(struct fiq_debugger_output *output)
@@ -94,43 +86,26 @@ static int rockchip_debug_dump_edpcsr(struct fiq_debugger_output *output)
 	void *prev_pc = NULL;
 	int printed = 0;
 	void __iomem *base;
-	u32 pu = 0, online = 0;
-
-#ifdef CONFIG_ARM64
-	/* disable SError */
-	asm volatile("msr	daifset, #0x4");
-#endif
+	u32 pu = 0;
 
 	while (rockchip_cpu_debug[i]) {
-		online = cpu_online(i);
-		output->printf(output,
-				"CPU%d online:%d\n", i, online);
-		if (online == 0) {
-			i++;
-			continue;
-		}
-
 		base = rockchip_cpu_debug[i];
+
 		pu = (u32)readl(base + EDPRSR) & EDPRSR_PU;
+
 		if (pu != EDPRSR_PU) {
-			output->printf(output,
-					"CPU%d power down\n", i);
 			i++;
 			continue;
 		}
 		/* Unlock EDLSR.SLK so that EDPCSRhi gets populated */
 		writel(EDLAR_UNLOCK, base + EDLAR);
 
+		output->printf(output,
+				"CPU%d online:%d\n", i, cpu_online(i));
+
 		/* Try to read a bunch of times if CPU is actually running */
 		for (j = 0; j < NUM_CPU_SAMPLES &&
 			    printed < NUM_SAMPLES_TO_PRINT; j++) {
-			pu = (u32)readl(base + EDPRSR) & EDPRSR_PU;
-			if (pu != EDPRSR_PU) {
-				output->printf(output,
-						"CPU%d power down\n", i);
-				break;
-			}
-
 			if (sizeof(edpcsr) == 8)
 				edpcsr = ((u64)readl(base + EDPCSR_LO)) |
 				  ((u64)readl(base + EDPCSR_HI) << 32);
@@ -153,12 +128,6 @@ static int rockchip_debug_dump_edpcsr(struct fiq_debugger_output *output)
 		prev_pc = NULL;
 		printed = 0;
 	}
-
-#ifdef CONFIG_ARM64
-	/* enable SError */
-	asm volatile("msr	daifclr, #0x4");
-#endif
-
 	return NOTIFY_OK;
 }
 
@@ -171,39 +140,16 @@ static int rockchip_debug_dump_pmpcsr(struct fiq_debugger_output *output)
 	void *prev_pc = NULL;
 	int printed = 0;
 	void __iomem *base;
-	u32 pu = 0, online = 0;
-
-	/* disable SError */
-	asm volatile("msr	daifset, #0x4");
 
 	while (rockchip_cs_pmu[i]) {
-		online = cpu_online(i);
-		output->printf(output,
-				"CPU%d online:%d\n", i, online);
-		if (online == 0) {
-			i++;
-			continue;
-		}
-
-		pu = (u32)readl(rockchip_cpu_debug[i] + EDPRSR) & EDPRSR_PU;
-		if (pu != EDPRSR_PU) {
-			output->printf(output,
-					"CPU%d power down\n", i);
-			i++;
-			continue;
-		}
-
 		base = rockchip_cs_pmu[i];
+
+		output->printf(output,
+				"CPU%d online:%d\n", i, cpu_online(i));
+
 		/* Try to read a bunch of times if CPU is actually running */
 		for (j = 0; j < NUM_CPU_SAMPLES &&
 			    printed < NUM_SAMPLES_TO_PRINT; j++) {
-			pu = (u32)readl(rockchip_cpu_debug[i] + EDPRSR) & EDPRSR_PU;
-			if (pu != EDPRSR_PU) {
-				output->printf(output,
-						"CPU%d power down\n", i);
-				break;
-			}
-
 			pmpcsr = ((u64)readl(base + PMPCSR_LO)) |
 				((u64)readl(base + PMPCSR_HI) << 32);
 
@@ -233,8 +179,6 @@ static int rockchip_debug_dump_pmpcsr(struct fiq_debugger_output *output)
 		prev_pc = NULL;
 		printed = 0;
 	}
-	/* enable SError */
-	asm volatile("msr	daifclr, #0x4");
 	return NOTIFY_OK;
 }
 #else
@@ -267,11 +211,6 @@ static int rockchip_panic_notify_edpcsr(struct notifier_block *nb,
 	void __iomem *base;
 	u32 pu = 0;
 
-#ifdef CONFIG_ARM64
-	/* disable SError */
-	asm volatile("msr	daifset, #0x4");
-#endif
-
 	/*
 	 * The panic handler will try to shut down the other CPUs.
 	 * If any of them are still online at this point, this loop attempts
@@ -281,13 +220,13 @@ static int rockchip_panic_notify_edpcsr(struct notifier_block *nb,
 
 	while (rockchip_cpu_debug[i]) {
 		base = rockchip_cpu_debug[i];
+
 		pu = (u32)readl(base + EDPRSR) & EDPRSR_PU;
+
 		if (pu != EDPRSR_PU) {
-			pr_err("CPU%d power down\n", i);
 			i++;
 			continue;
 		}
-
 		/* Unlock EDLSR.SLK so that EDPCSRhi gets populated */
 		writel(EDLAR_UNLOCK, base + EDLAR);
 
@@ -296,12 +235,6 @@ static int rockchip_panic_notify_edpcsr(struct notifier_block *nb,
 		/* Try to read a bunch of times if CPU is actually running */
 		for (j = 0; j < NUM_CPU_SAMPLES &&
 			    printed < NUM_SAMPLES_TO_PRINT; j++) {
-			pu = (u32)readl(base + EDPRSR) & EDPRSR_PU;
-			if (pu != EDPRSR_PU) {
-				pr_err("CPU%d power down\n", i);
-				break;
-			}
-
 			if (sizeof(edpcsr) == 8)
 				edpcsr = ((u64)readl(base + EDPCSR_LO)) |
 				  ((u64)readl(base + EDPCSR_HI) << 32);
@@ -323,12 +256,6 @@ static int rockchip_panic_notify_edpcsr(struct notifier_block *nb,
 		prev_pc = NULL;
 		printed = 0;
 	}
-
-#ifdef CONFIG_ARM64
-	/* enable SError */
-	asm volatile("msr	daifclr, #0x4");
-#endif
-
 	return NOTIFY_OK;
 }
 
@@ -342,10 +269,6 @@ static int rockchip_panic_notify_pmpcsr(struct notifier_block *nb,
 	void *prev_pc = NULL;
 	int printed = 0;
 	void __iomem *base;
-	u32 pu = 0;
-
-	/* disable SError */
-	asm volatile("msr	daifset, #0x4");
 
 	/*
 	 * The panic handler will try to shut down the other CPUs.
@@ -359,21 +282,9 @@ static int rockchip_panic_notify_pmpcsr(struct notifier_block *nb,
 
 		pr_err("CPU%d online:%d\n", i, cpu_online(i));
 
-		pu = (u32)readl(rockchip_cpu_debug[i] + EDPRSR) & EDPRSR_PU;
-		if (pu != EDPRSR_PU) {
-			pr_err("CPU%d power down\n", i);
-			i++;
-			continue;
-		}
-
 		/* Try to read a bunch of times if CPU is actually running */
 		for (j = 0; j < NUM_CPU_SAMPLES &&
 			    printed < NUM_SAMPLES_TO_PRINT; j++) {
-			pu = (u32)readl(rockchip_cpu_debug[i] + EDPRSR) & EDPRSR_PU;
-			if (pu != EDPRSR_PU) {
-				pr_err("CPU%d power down\n", i);
-				break;
-			}
 			pmpcsr = ((u64)readl(base + PMPCSR_LO)) |
 				((u64)readl(base + PMPCSR_HI) << 32);
 
@@ -403,8 +314,6 @@ static int rockchip_panic_notify_pmpcsr(struct notifier_block *nb,
 		prev_pc = NULL;
 		printed = 0;
 	}
-	/* enable SError */
-	asm volatile("msr	daifclr, #0x4");
 	return NOTIFY_OK;
 }
 #else
@@ -415,84 +324,6 @@ static int rockchip_panic_notify_pmpcsr(struct notifier_block *nb,
 }
 #endif
 
-static int rockchip_show_interrupts(char *p, int irq)
-{
-	static int prec;
-	char *buf = p;
-	unsigned long any_count = 0;
-	int i = irq, j;
-	struct irqaction *action;
-	struct irq_desc *desc;
-
-	if (i > nr_irqs)
-		return -EINVAL;
-
-	/* print header and calculate the width of the first column */
-	if (i == 0) {
-		for (prec = 3, j = 1000; prec < 10 && j <= nr_irqs; ++prec)
-			j *= 10;
-
-		buf += sprintf(buf, "%*s", prec + 8, "");
-		for_each_possible_cpu(j)
-			buf += sprintf(buf, "CPU%-8d", j);
-		buf += sprintf(buf, "\n");
-	}
-
-	desc = irq_to_desc(i);
-	if (!desc)
-		return -EINVAL;
-
-	if (desc->kstat_irqs)
-		for_each_possible_cpu(j)
-			any_count |= *per_cpu_ptr(desc->kstat_irqs, j);
-
-	if ((!desc->action || (desc->action && desc->action == &chained_action)) && !any_count)
-		return -EINVAL;
-
-	buf += sprintf(buf, "%*d: ", prec, i);
-	for_each_possible_cpu(j)
-		buf += sprintf(buf, "%10u ", desc->kstat_irqs ?
-					*per_cpu_ptr(desc->kstat_irqs, j) : 0);
-
-	if (desc->irq_data.chip) {
-		if (desc->irq_data.chip->name)
-			buf += sprintf(buf, " %8s", desc->irq_data.chip->name);
-		else
-			buf += sprintf(buf, " %8s", "-");
-	} else {
-		buf += sprintf(buf, " %8s", "None");
-	}
-	if (desc->irq_data.domain)
-		buf += sprintf(buf, " %*d", prec, (int) desc->irq_data.hwirq);
-	else
-		buf += sprintf(buf, " %*s", prec, "");
-#ifdef CONFIG_GENERIC_IRQ_SHOW_LEVEL
-	buf += sprintf(buf, " %-8s", irqd_is_level_type(&desc->irq_data) ? "Level" : "Edge");
-#endif
-	if (desc->name)
-		buf += sprintf(buf, "-%-8s", desc->name);
-
-	action = desc->action;
-	if (action) {
-		buf += sprintf(buf, "  %s", action->name);
-		while ((action = action->next) != NULL)
-			buf += sprintf(buf, ", %s", action->name);
-	}
-
-	sprintf(buf, "\n");
-	return 0;
-}
-
-static void rockchip_panic_notify_dump_irqs(void)
-{
-	int i = 0;
-
-	for (i = 0; i < nr_irqs; i++) {
-		if (!rockchip_show_interrupts(log_buf, i) || i == 0)
-			printk("%s", log_buf);
-	}
-}
-
 static int rockchip_panic_notify(struct notifier_block *nb, unsigned long event,
 				 void *p)
 {
@@ -500,10 +331,6 @@ static int rockchip_panic_notify(struct notifier_block *nb, unsigned long event,
 		rockchip_panic_notify_edpcsr(nb, event, p);
 	else
 		rockchip_panic_notify_pmpcsr(nb, event, p);
-
-	rockchip_panic_notify_dump_irqs();
-	mdelay(1000);
-	rockchip_panic_notify_dump_irqs();
 	return NOTIFY_OK;
 }
 static struct notifier_block rockchip_panic_nb = {
@@ -569,15 +396,7 @@ static int __init rockchip_debug_init(void)
 		return -ENODEV;
 
 	atomic_notifier_chain_register(&panic_notifier_list,
-					&rockchip_panic_nb);
-
-	if (IS_ENABLED(CONFIG_HARDLOCKUP_DETECTOR))
-		atomic_notifier_chain_register(&hardlock_notifier_list,
-						&rockchip_panic_nb);
-
-	atomic_notifier_chain_register(&rcu_stall_notifier_list,
-					&rockchip_panic_nb);
-
+				&rockchip_panic_nb);
 	return 0;
 }
 arch_initcall(rockchip_debug_init);
@@ -587,13 +406,6 @@ static void __exit rockchip_debug_exit(void)
 	int i = 0;
 
 	atomic_notifier_chain_unregister(&panic_notifier_list,
-					 &rockchip_panic_nb);
-
-	if (IS_ENABLED(CONFIG_HARDLOCKUP_DETECTOR))
-		atomic_notifier_chain_unregister(&hardlock_notifier_list,
-						 &rockchip_panic_nb);
-
-	atomic_notifier_chain_unregister(&rcu_stall_notifier_list,
 					 &rockchip_panic_nb);
 
 	while (rockchip_cpu_debug[i])

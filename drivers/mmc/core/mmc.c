@@ -70,7 +70,7 @@ static const unsigned int taac_mant[] = {
 /*
  * Given the decoded CSD structure, decode the raw CID to our CID structure.
  */
-#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT
 static int mmc_decode_cid(struct mmc_card *card)
 {
 	u32 *resp = card->raw_cid;
@@ -666,7 +666,7 @@ out:
 	return err;
 }
 
-#ifdef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifdef CONFIG_ROCKCHIP_THUNDER_BOOT
 static void *mmc_tb_map_ecsd(phys_addr_t start, size_t len)
 {
 	int i;
@@ -696,7 +696,7 @@ static int mmc_read_ext_csd(struct mmc_card *card)
 {
 	u8 *ext_csd;
 	int err;
-#ifdef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifdef CONFIG_ROCKCHIP_THUNDER_BOOT
 	void *ecsd = NULL;
 	bool valid_ecsd = false;
 	bool valid_reserved = false;
@@ -707,7 +707,7 @@ static int mmc_read_ext_csd(struct mmc_card *card)
 	if (!mmc_can_ext_csd(card))
 		return 0;
 
-#ifdef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifdef CONFIG_ROCKCHIP_THUNDER_BOOT
 	mem = of_parse_phandle(dev->of_node, "memory-region-ecsd", 0);
 	if (mem) {
 		err = of_address_to_resource(mem, 0, &reg);
@@ -758,11 +758,11 @@ get_ecsd:
 
 		return err;
 	}
-#ifdef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifdef CONFIG_ROCKCHIP_THUNDER_BOOT
 decode:
 #endif
 	err = mmc_decode_ext_csd(card, ext_csd);
-#ifdef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifdef CONFIG_ROCKCHIP_THUNDER_BOOT
 	if (!valid_ecsd)
 		kfree(ext_csd);
 	else
@@ -777,7 +777,7 @@ decode:
 	return err;
 }
 
-#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT
 static int mmc_compare_ext_csds(struct mmc_card *card, unsigned bus_width)
 {
 	u8 *bw_ext_csd;
@@ -1117,7 +1117,7 @@ static int mmc_select_bus_width(struct mmc_card *card)
 		 * compare ext_csd previously read in 1 bit mode
 		 * against ext_csd at new bus width
 		 */
-#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT
 		if (!(host->caps & MMC_CAP_BUS_WIDTH_TEST))
 			err = mmc_compare_ext_csds(card, bus_width);
 		else
@@ -1495,9 +1495,6 @@ static int mmc_select_hs400es(struct mmc_card *card)
 	if (host->ops->hs400_enhanced_strobe)
 		host->ops->hs400_enhanced_strobe(host, &host->ios);
 
-	/* some emmc device need a delay before read status */
-	usleep_range(100, 200);
-
 	err = mmc_switch_status(card);
 	if (err)
 		goto out_err;
@@ -1656,7 +1653,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	 * respond.
 	 * mmc_go_idle is needed for eMMC that are asleep
 	 */
-#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT
 	mmc_go_idle(host);
 #endif
 
@@ -1701,7 +1698,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		card->ocr = ocr;
 		card->type = MMC_TYPE_MMC;
 		card->rca = 1;
-#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT
 		memcpy(card->raw_cid, cid, sizeof(card->raw_cid));
 #endif
 	}
@@ -1734,7 +1731,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		err = mmc_decode_csd(card);
 		if (err)
 			goto free_card;
-#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT
 		err = mmc_decode_cid(card);
 		if (err)
 			goto free_card;
@@ -1869,7 +1866,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	/*
 	 * Enable HPI feature (if supported)
 	 */
-#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT_MMC
+#ifndef CONFIG_ROCKCHIP_THUNDER_BOOT
 	if (card->ext_csd.hpi) {
 		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 				EXT_CSD_HPI_MGMT, 1,
@@ -1939,19 +1936,15 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	 */
 	card->reenable_cmdq = card->ext_csd.cmdq_en;
 
-	if (host->cqe_ops && !host->cqe_enabled) {
+	if (card->ext_csd.cmdq_en && !host->cqe_enabled) {
 		err = host->cqe_ops->cqe_enable(host, card);
-		if (!err) {
+		if (err) {
+			pr_err("%s: Failed to enable CQE, error %d\n",
+				mmc_hostname(host), err);
+		} else {
 			host->cqe_enabled = true;
-
-			if (card->ext_csd.cmdq_en) {
-				pr_info("%s: Command Queue Engine enabled\n",
-					mmc_hostname(host));
-			} else {
-				host->hsq_enabled = true;
-				pr_info("%s: Host Software Queue enabled\n",
-					mmc_hostname(host));
-			}
+			pr_info("%s: Command Queue Engine enabled\n",
+				mmc_hostname(host));
 		}
 	}
 

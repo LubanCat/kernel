@@ -47,15 +47,7 @@ static bool analogix_dp_bandwidth_ok(struct analogix_dp_device *dp,
 				     const struct drm_display_mode *mode,
 				     unsigned int rate, unsigned int lanes)
 {
-	const struct drm_display_info *info;
 	u32 max_bw, req_bw, bpp = 24;
-
-	if (dp->plat_data->skip_connector)
-		return true;
-
-	info = &dp->connector.display_info;
-	if (info->bpc)
-		bpp = 3 * info->bpc;
 
 	req_bw = mode->clock * bpp / 8;
 	max_bw = lanes * rate;
@@ -1659,11 +1651,9 @@ analogix_dp_bind(struct device *dev, struct drm_device *drm_dev,
 	}
 
 	if (dp->hpd_gpiod) {
-		dp->hpd_irq = gpiod_to_irq(dp->hpd_gpiod);
-		if (dp->hpd_irq < 0)
-			return ERR_PTR(-EINVAL);
-
-		ret = devm_request_threaded_irq(dev, dp->hpd_irq, NULL,
+		ret = devm_request_threaded_irq(dev,
+						gpiod_to_irq(dp->hpd_gpiod),
+						NULL,
 						analogix_dp_hpd_irq_handler,
 						IRQF_TRIGGER_RISING |
 						IRQF_TRIGGER_FALLING |
@@ -1740,9 +1730,6 @@ EXPORT_SYMBOL_GPL(analogix_dp_unbind);
 #ifdef CONFIG_PM
 int analogix_dp_suspend(struct analogix_dp_device *dp)
 {
-	if (dp->hpd_gpiod)
-		disable_irq(dp->hpd_irq);
-
 	if (dp->plat_data->panel) {
 		if (drm_panel_unprepare(dp->plat_data->panel))
 			DRM_ERROR("failed to turnoff the panel\n");
@@ -1760,9 +1747,6 @@ int analogix_dp_resume(struct analogix_dp_device *dp)
 			return -EBUSY;
 		}
 	}
-
-	if (dp->hpd_gpiod)
-		enable_irq(dp->hpd_irq);
 
 	return 0;
 }

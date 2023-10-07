@@ -14,14 +14,12 @@ CFLAGS_mpp_service.o += -DMPP_VERSION="\"$(MPP_REVISION)\""
 rk_vcodec-$(CONFIG_ROCKCHIP_MPP_RKVDEC) += mpp_rkvdec.o
 rk_vcodec-$(CONFIG_ROCKCHIP_MPP_RKVDEC2) += mpp_rkvdec2.o mpp_rkvdec2_link.o
 rk_vcodec-$(CONFIG_ROCKCHIP_MPP_RKVENC) += mpp_rkvenc.o
-rk_vcodec-$(CONFIG_ROCKCHIP_MPP_RKVENC2) += mpp_rkvenc2.o
 rk_vcodec-$(CONFIG_ROCKCHIP_MPP_VDPU1)  += mpp_vdpu1.o
 rk_vcodec-$(CONFIG_ROCKCHIP_MPP_VEPU1)  += mpp_vepu1.o
 rk_vcodec-$(CONFIG_ROCKCHIP_MPP_VDPU2)  += mpp_vdpu2.o
 rk_vcodec-$(CONFIG_ROCKCHIP_MPP_VEPU2)  += mpp_vepu2.o
 rk_vcodec-$(CONFIG_ROCKCHIP_MPP_IEP2)   += mpp_iep2.o
 rk_vcodec-$(CONFIG_ROCKCHIP_MPP_JPGDEC) += mpp_jpgdec.o
-rk_vcodec-$(CONFIG_ROCKCHIP_MPP_VDPP)   += mpp_vdpp.o
 
 # hack for workaround
 rk_vcodec-$(CONFIG_CPU_PX30) += hack/mpp_hack_px30.o

@@ -636,11 +636,9 @@ PE_NAME array '=' PE_VALUE
 PE_DRV_CFG_TERM
 {
 	struct parse_events_term *term;
-	char *config = strdup($1);
 
-	ABORT_ON(!config);
 	ABORT_ON(parse_events_term__str(&term, PARSE_EVENTS__TERM_TYPE_DRV_CFG,
-					config, $1, &@1, NULL));
+					$1, $1, &@1, NULL));
 	$$ = term;
 }
 

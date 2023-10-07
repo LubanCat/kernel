@@ -2593,10 +2593,7 @@ static bool sdhci_request_done(struct sdhci_host *host)
 	mmiowb();
 	spin_unlock_irqrestore(&host->lock, flags);
 
-	if (host->ops->request_done)
-		host->ops->request_done(host, mrq);
-	else
-		mmc_request_done(host->mmc, mrq);
+	mmc_request_done(host->mmc, mrq);
 
 	return false;
 }
@@ -2894,24 +2891,12 @@ static void sdhci_data_irq(struct sdhci_host *host, u32 intmask)
 	}
 }
 
-static inline bool sdhci_defer_done(struct sdhci_host *host,
-				    struct mmc_request *mrq)
-{
-	struct mmc_data *data = mrq->data;
-
-	return host->pending_reset || host->always_defer_done ||
-	       ((host->flags & SDHCI_REQ_USE_DMA) && data &&
-		data->host_cookie == COOKIE_MAPPED);
-}
-
 static irqreturn_t sdhci_irq(int irq, void *dev_id)
 {
-	struct mmc_request *mrqs_done[SDHCI_MAX_MRQS] = {0};
 	irqreturn_t result = IRQ_NONE;
 	struct sdhci_host *host = dev_id;
 	u32 intmask, mask, unexpected = 0;
 	int max_loops = 16;
-	int i;
 
 	spin_lock(&host->lock);
 
@@ -3005,34 +2990,8 @@ cont:
 
 		intmask = sdhci_readl(host, SDHCI_INT_STATUS);
 	} while (intmask && --max_loops);
-
-	/* Determine if mrqs can be completed immediately */
-	for (i = 0; i < SDHCI_MAX_MRQS; i++) {
-		struct mmc_request *mrq = host->mrqs_done[i];
-
-		if (!mrq)
-			continue;
-
-		if (sdhci_defer_done(host, mrq)) {
-			result = IRQ_WAKE_THREAD;
-		} else {
-			mrqs_done[i] = mrq;
-			host->mrqs_done[i] = NULL;
-		}
-	}
 out:
 	spin_unlock(&host->lock);
-
-	/* Process mrqs ready for immediate completion */
-	for (i = 0; i < SDHCI_MAX_MRQS; i++) {
-		if (!mrqs_done[i])
-			continue;
-
-		if (host->ops->request_done)
-			host->ops->request_done(host, mrqs_done[i]);
-		else
-			mmc_request_done(host->mmc, mrqs_done[i]);
-	}
 
 	if (unexpected) {
 		pr_err("%s: Unexpected interrupt 0x%08x.\n",

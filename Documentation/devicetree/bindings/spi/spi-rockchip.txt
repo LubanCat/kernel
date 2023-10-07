@@ -35,11 +35,6 @@ Optional Properties:
 - rx-sample-delay-ns: nanoseconds to delay after the SCLK edge before sampling
 		Rx data (may need to be fine tuned for high capacitance lines).
 		No delay (0) by default.
-- csm: ss_n be high for half or one sclk_out cycle after every frame data is
-		transferred:
-		- "0" for keep low;
-		- "1" for half sclk_out;
-		- "2" for one sclk_out.
 - pinctrl-names: Names for the pin configuration(s); may be "default" or
 		"sleep", where the "sleep" configuration may describe the state
 		the pins should be in during system suspend. See also

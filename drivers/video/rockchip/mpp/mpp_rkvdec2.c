@@ -17,10 +17,8 @@
 
 #include <linux/devfreq_cooling.h>
 #include <soc/rockchip/rockchip_ipa.h>
-#include <soc/rockchip/rockchip_dmc.h>
 #include <soc/rockchip/rockchip_opp_select.h>
 #include <soc/rockchip/rockchip_system_monitor.h>
-#include <soc/rockchip/rockchip_iommu.h>
 
 #ifdef CONFIG_PM_DEVFREQ
 #include "../../../devfreq/governor.h"
@@ -35,16 +33,6 @@ static struct mpp_hw_info rkvdec_v2_hw_info = {
 	.reg_start = RKVDEC_REG_START_INDEX,
 	.reg_end = RKVDEC_REG_END_INDEX,
 	.reg_en = RKVDEC_REG_START_EN_INDEX,
-	.link_info = &rkvdec_link_v2_hw_info,
-};
-
-static struct mpp_hw_info rkvdec_rk3568_hw_info = {
-	.reg_num = RKVDEC_REG_NUM,
-	.reg_id = RKVDEC_REG_HW_ID_INDEX,
-	.reg_start = RKVDEC_REG_START_INDEX,
-	.reg_end = RKVDEC_REG_END_INDEX,
-	.reg_en = RKVDEC_REG_START_EN_INDEX,
-	.link_info = &rkvdec_link_rk3568_hw_info,
 };
 
 /*
@@ -54,27 +42,20 @@ static const u16 trans_tbl_h264d[] = {
 	128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142,
 	161, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176,
 	177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191,
-	192, 193, 194, 195, 196, 197, 198, 199
+	192, 193, 194, 195, 196, 197
 };
 
 static const u16 trans_tbl_h265d[] = {
 	128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142,
 	161, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176,
 	177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191,
-	192, 193, 194, 195, 196, 197, 198, 199
+	192, 193, 194, 195, 196, 197
 };
 
 static const u16 trans_tbl_vp9d[] = {
 	128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142,
 	160, 162, 164, 165, 166, 167, 168, 169, 170, 171, 172, 180, 181, 182, 183,
-	184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199
-};
-
-static const u16 trans_tbl_avs2d[] = {
-	128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142,
-	161, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176,
-	177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191,
-	192, 193, 194, 195, 196, 197, 198, 199
+	184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197
 };
 
 static struct mpp_trans_info rkvdec_v2_trans[] = {
@@ -90,10 +71,6 @@ static struct mpp_trans_info rkvdec_v2_trans[] = {
 		.count = ARRAY_SIZE(trans_tbl_vp9d),
 		.table = trans_tbl_vp9d,
 	},
-	[RKVDEC_FMT_AVS2] = {
-		.count = ARRAY_SIZE(trans_tbl_avs2d),
-		.table = trans_tbl_avs2d,
-	}
 };
 
 static int mpp_extract_rcb_info(struct rkvdec2_rcb_info *rcb_inf,
@@ -306,7 +283,6 @@ static void *rkvdec2_rk3568_alloc_task(struct mpp_session *session,
 static int rkvdec2_run(struct mpp_dev *mpp, struct mpp_task *mpp_task)
 {
 	struct rkvdec2_task *task = to_rkvdec2_task(mpp_task);
-	u32 timing_en = mpp->srv->timing_en;
 	u32 reg_en = mpp_task->hw_info->reg_en;
 	/* set cache size */
 	u32 reg = RKVDEC_CACHE_PERMIT_CACHEABLE_ACCESS |
@@ -335,20 +311,12 @@ static int rkvdec2_run(struct mpp_dev *mpp, struct mpp_task *mpp_task)
 		e = s + req->size / sizeof(u32);
 		mpp_write_req(mpp, task->reg, s, e, reg_en);
 	}
-
-	/* flush tlb before starting hardware */
-	mpp_iommu_flush_tlb(mpp->iommu_info);
-
 	/* init current task */
 	mpp->cur_task = mpp_task;
-
-	mpp_task_run_begin(mpp_task, timing_en, MPP_WORK_TIMEOUT_DELAY);
-
+	mpp_time_record(mpp_task);
 	/* Flush the register before the start the device */
 	wmb();
 	mpp_write(mpp, RKVDEC_REG_START_EN_BASE, task->reg[reg_en] | RKVDEC_START_EN);
-
-	mpp_task_run_end(mpp_task, timing_en);
 
 	mpp_debug_leave();
 
@@ -392,15 +360,13 @@ static int rkvdec2_isr(struct mpp_dev *mpp)
 	u32 err_mask;
 	struct rkvdec2_task *task = NULL;
 	struct mpp_task *mpp_task = mpp->cur_task;
-	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
 
 	/* FIXME use a spin lock here */
 	if (!mpp_task) {
 		dev_err(mpp->dev, "no current task\n");
 		return IRQ_HANDLED;
 	}
-	mpp_task->hw_cycles = mpp_read(mpp, RKVDEC_PERF_WORKING_CNT);
-	mpp_time_diff_with_hw_time(mpp_task, dec->core_clk_info.real_rate_hz);
+	mpp_time_diff(mpp_task);
 	mpp->cur_task = NULL;
 	task = to_rkvdec2_task(mpp_task);
 	task->irq_status = mpp->irq_status;
@@ -565,16 +531,6 @@ static int rkvdec2_control(struct mpp_session *session, struct mpp_request *req)
 			}
 		}
 	} break;
-	case MPP_CMD_SET_ERR_REF_HACK: {
-		struct rkvdec2_dev *dec = to_rkvdec2_dev(session->mpp);
-		u32 err_ref_hack_en = 0;
-
-		if (copy_from_user(&err_ref_hack_en, req->data, sizeof(u32))) {
-			mpp_err("copy_from_user failed\n");
-			return -EINVAL;
-		}
-		dec->err_ref_hack = err_ref_hack_en;
-	} break;
 	default: {
 		mpp_err("unknown mpp ioctl cmd %x\n", req->cmd);
 	} break;
@@ -640,10 +596,6 @@ static int rkvdec2_procfs_init(struct mpp_dev *mpp)
 		dec->procfs = NULL;
 		return -EIO;
 	}
-
-	/* for common mpp_dev options */
-	mpp_procfs_create_common(dec->procfs, mpp);
-
 	mpp_procfs_create_u32("aclk", 0644,
 			      dec->procfs, &dec->aclk_info.debug_rate_hz);
 	mpp_procfs_create_u32("clk_core", 0644,
@@ -1094,41 +1046,17 @@ static int rkvdec2_set_freq(struct mpp_dev *mpp,
 	return 0;
 }
 
-static int rkvdec2_soft_reset(struct mpp_dev *mpp)
-{
-	int ret = 0;
-
-	/*
-	 * for rk3528 and rk3562
-	 * use mmu reset instead of rkvdec soft reset
-	 * rkvdec will reset together when rkvdec_mmu force reset
-	 */
-	ret = rockchip_iommu_force_reset(mpp->dev);
-	if (ret)
-		mpp_err("soft mmu reset fail, ret %d\n", ret);
-	mpp_write(mpp, RKVDEC_REG_INT_EN, 0);
-
-	return ret;
-
-}
-
 static int rkvdec2_reset(struct mpp_dev *mpp)
 {
 	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
-	int ret = 0;
 
 	mpp_debug_enter();
 #ifdef CONFIG_PM_DEVFREQ
 	if (dec->devfreq)
 		mutex_lock(&dec->devfreq->lock);
 #endif
-	/* safe reset first*/
-	ret = rkvdec2_soft_reset(mpp);
-
-	/* cru reset */
-	if (ret && dec->rst_a && dec->rst_h) {
-		mpp_err("soft reset timeout, use cru reset\n");
-		mpp_pmu_idle_request(mpp, true);
+	if (dec->rst_a && dec->rst_h) {
+		rockchip_pmu_idle_request(mpp->dev, true);
 		mpp_safe_reset(dec->rst_niu_a);
 		mpp_safe_reset(dec->rst_niu_h);
 		mpp_safe_reset(dec->rst_a);
@@ -1144,30 +1072,12 @@ static int rkvdec2_reset(struct mpp_dev *mpp)
 		mpp_safe_unreset(dec->rst_core);
 		mpp_safe_unreset(dec->rst_cabac);
 		mpp_safe_unreset(dec->rst_hevc_cabac);
-		mpp_pmu_idle_request(mpp, false);
+		rockchip_pmu_idle_request(mpp->dev, false);
 	}
 #ifdef CONFIG_PM_DEVFREQ
 	if (dec->devfreq)
 		mutex_unlock(&dec->devfreq->lock);
 #endif
-	mpp_debug_leave();
-
-	return 0;
-}
-
-static int rkvdec2_sip_reset(struct mpp_dev *mpp)
-{
-	mpp_debug_enter();
-
-	if (IS_REACHABLE(CONFIG_ROCKCHIP_SIP)) {
-		/* sip reset */
-		rockchip_dmcfreq_lock();
-		sip_smc_vpu_reset(0, 0, 0);
-		rockchip_dmcfreq_unlock();
-	} else {
-		rkvdec2_reset(mpp);
-	}
-
 	mpp_debug_leave();
 
 	return 0;
@@ -1189,7 +1099,7 @@ static struct mpp_hw_ops rkvdec_rk3568_hw_ops = {
 	.clk_off = rkvdec2_clk_off,
 	.get_freq = rkvdec2_get_freq,
 	.set_freq = rkvdec2_set_freq,
-	.reset = rkvdec2_sip_reset,
+	.reset = rkvdec2_reset,
 };
 
 static struct mpp_dev_ops rkvdec_v2_dev_ops = {
@@ -1229,7 +1139,7 @@ static const struct mpp_dev_var rkvdec_v2_data = {
 
 static const struct mpp_dev_var rkvdec_rk3568_data = {
 	.device_type = MPP_DEVICE_RKVDEC,
-	.hw_info = &rkvdec_rk3568_hw_info,
+	.hw_info = &rkvdec_v2_hw_info,
 	.trans_info = rkvdec_v2_trans,
 	.hw_ops = &rkvdec_rk3568_hw_ops,
 	.dev_ops = &rkvdec_rk3568_dev_ops,

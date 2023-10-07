@@ -11,6 +11,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/pci.h>
+#include <linux/of_net.h>
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
 #include <linux/clk.h>
@@ -1824,7 +1825,7 @@ static void rtl8169_get_strings(struct net_device *dev, u32 stringset, u8 *data)
 {
 	switch(stringset) {
 	case ETH_SS_STATS:
-		memcpy(data, rtl8169_gstrings, sizeof(rtl8169_gstrings));
+		memcpy(data, *rtl8169_gstrings, sizeof(rtl8169_gstrings));
 		break;
 	}
 }
@@ -7595,6 +7596,17 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	}
 	for (i = 0; i < ETH_ALEN; i++)
 		dev->dev_addr[i] = RTL_R8(tp, MAC0 + i);
+
+	if (!is_valid_ether_addr(dev->dev_addr)) {
+		/* try to get MAC address from DT */
+		const u8 *mac = of_get_mac_address(pdev->dev.of_node);
+		if (mac) {
+			ether_addr_copy(dev->dev_addr, mac);
+		} else {
+			eth_hw_addr_random(dev);
+		}
+		rtl_rar_set(tp, dev->dev_addr);
+	}
 
 	dev->ethtool_ops = &rtl8169_ethtool_ops;
 	dev->watchdog_timeo = RTL8169_TX_TIMEOUT;

@@ -81,6 +81,54 @@ struct dram_info {
 	unsigned int dramid[3];
 };
 
+struct lpddrx_id {
+	unsigned int dramid;
+	char *name;
+};
+
+static const struct lpddrx_id lp23_manuf_id[] = {
+	{ 0x1, "Samsung" },
+	{ 0x2, "Qimonda" },
+	{ 0x3, "Elpida" },
+	{ 0x4, "Etron" },
+	{ 0x5, "Nanya" },
+	{ 0x6, "SK hynix" },
+	{ 0x7, "Mosel" },
+	{ 0x8, "Winbond" },
+	{ 0x9, "ESMT" },
+	{ 0xa, "Zentel" },
+	{ 0xb, "Spansion" },
+	{ 0xc, "SST" },
+	{ 0xd, "ZMOS" },
+	{ 0xe, "Intel" },
+	{ 0x12, "Being Advanced Memory Corp" },
+	{ 0x1a, "Xi'an UniIC Semiconductors Co., Ltd" },
+	{ 0x1b, "ISSI" },
+	{ 0x1c, "JSC" },
+	{ 0xaa, "Tezzaron" },
+	{ 0xc2, "Macronix" },
+	{ 0xf8, "Fidelix" },
+	{ 0xfc, "eveRAM" },
+	{ 0xfd, "AP Memory" },
+	{ 0xfe, "Numonyx" },
+	{ 0xff, "Micron" }
+};
+
+static const struct lpddrx_id lp4_manuf_id[] = {
+	{ 0x1, "Samsung" },
+	{ 0x5, "Nanya" },
+	{ 0x6, "SK hynix" },
+	{ 0x8, "Winbond" },
+	{ 0x9, "ESMT" },
+	{ 0x13, "CXMT" },
+	{ 0x1a, "Xi'an UniIC Semiconductors Co., Ltd" },
+	{ 0x1c, "JSC" },
+	{ 0xf8, "Fidelix" },
+	{ 0xf9, "Ultra Memory" },
+	{ 0xfd, "AP Memory" },
+	{ 0xff, "Micron" }
+};
+
 static const char * const power_save_msg[] = {
 	"auto power down enable",
 	"auto power down idle cycle",
@@ -222,16 +270,46 @@ static int dmcinfo_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "DramType:	%s\n", p_dram_info->dramtype);
 	if (p_dram_info->version >= 0x2) {
 		if ((strcmp(p_dram_info->dramtype, "LPDDR2") == 0) ||
-		    (strcmp(p_dram_info->dramtype, "LPDDR3") == 0) ||
-		    (strcmp(p_dram_info->dramtype, "LPDDR4") == 0) ||
-		    (strcmp(p_dram_info->dramtype, "LPDDR4X") == 0))
-			seq_printf(m,
-				   "Dram ID:	MR5=0x%x,MR6=0x%x,MR7=0x%x\n",
-				   p_dram_info->dramid[0],
-				   p_dram_info->dramid[1],
-				   p_dram_info->dramid[2]);
-		else
+		    (strcmp(p_dram_info->dramtype, "LPDDR3") == 0)) {
+			for (i = 0; i < ARRAY_SIZE(lp23_manuf_id); i++) {
+				if (lp23_manuf_id[i].dramid == p_dram_info->dramid[0]) {
+					seq_printf(m,
+						   "Dram ID:	%s(MR5=0x%x,MR6=0x%x,MR7=0x%x)\n",
+						   lp23_manuf_id[i].name,
+						   p_dram_info->dramid[0],
+						   p_dram_info->dramid[1],
+						   p_dram_info->dramid[2]);
+					break;
+				}
+			}
+			if (i == ARRAY_SIZE(lp23_manuf_id))
+				seq_printf(m,
+					   "Dram ID:	Unknown(MR5=0x%x,MR6=0x%x,MR7=0x%x)\n",
+					   p_dram_info->dramid[0],
+					   p_dram_info->dramid[1],
+					   p_dram_info->dramid[2]);
+		} else if ((strcmp(p_dram_info->dramtype, "LPDDR4") == 0) ||
+			   (strcmp(p_dram_info->dramtype, "LPDDR4X") == 0)) {
+			for (i = 0; i < ARRAY_SIZE(lp4_manuf_id); i++) {
+				if (lp4_manuf_id[i].dramid == p_dram_info->dramid[0]) {
+					seq_printf(m,
+						   "Dram ID:	%s(MR5=0x%x,MR6=0x%x,MR7=0x%x)\n",
+						   lp4_manuf_id[i].name,
+						   p_dram_info->dramid[0],
+						   p_dram_info->dramid[1],
+						   p_dram_info->dramid[2]);
+					break;
+				}
+			}
+			if (i == ARRAY_SIZE(lp4_manuf_id))
+				seq_printf(m,
+					   "Dram ID:	Unknown(MR5=0x%x,MR6=0x%x,MR7=0x%x)\n",
+					   p_dram_info->dramid[0],
+					   p_dram_info->dramid[1],
+					   p_dram_info->dramid[2]);
+		} else {
 			seq_printf(m, "Dram ID:	None\n");
+		}
 	}
 	/* dram capacity information */
 	seq_printf(m, "\n"

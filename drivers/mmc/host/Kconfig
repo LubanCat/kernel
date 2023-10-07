@@ -181,7 +181,6 @@ config MMC_SDHCI_OF_DWCMSHC
 	depends on MMC_SDHCI_PLTFM
 	depends on OF
 	depends on COMMON_CLK
-	select MMC_HSQ
 	help
 	  This selects Synopsys DesignWare Cores Mobile Storage Controller
 	  support.
@@ -875,17 +874,6 @@ config MMC_CQHCI
 	  This controller supports eMMC devices with command queue support.
 
 	  If you have a controller with this interface, say Y or M here.
-
-	  If unsure, say N.
-
-config MMC_HSQ
-	tristate "MMC Host Software Queue support"
-	help
-	  This selects the MMC Host Software Queue support. This may increase
-	  performance, if the host controller and its driver supports it.
-
-	  If you have a controller/driver supporting this interface, say Y or M
-	  here.
 
 	  If unsure, say N.
 

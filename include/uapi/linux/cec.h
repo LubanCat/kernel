@@ -475,12 +475,6 @@ struct cec_event {
 #define CEC_G_MODE		_IOR('a',  8, __u32)
 #define CEC_S_MODE		_IOW('a',  9, __u32)
 
-/* set cec into standby mode */
-#define CEC_STANDBY		_IOW('a', 10, __u8)
-
-/* set cec wake up function enable */
-#define CEC_FUNC_EN		_IOW('a', 11, int)
-
 /*
  * The remainder of this header defines all CEC messages and operands.
  * The format matters since it the cec-ctl utility parses it to generate

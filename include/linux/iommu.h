@@ -45,7 +45,10 @@
 #define IOMMU_USE_UPSTREAM_HINT	(1 << 6)
 
 /* Use upstream device's bus attribute with no write-allocate cache policy */
-#define IOMMU_USE_LLC_NWA       (1 << 7)
+#define IOMMU_USE_LLC_NWA	(1 << 7)
+
+/* For shoting entire IOMMU tlb once */
+#define IOMMU_TLB_SHOT_ENTIRE	(1 << 6)
 
 struct iommu_ops;
 struct iommu_group;

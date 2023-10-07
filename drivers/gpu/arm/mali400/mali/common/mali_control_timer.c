@@ -19,7 +19,7 @@
 static u64 period_start_time = 0;
 
 /** .KP : mali_control_timer */
-static _mali_osk_timer_t mali_control_timer;
+static _mali_osk_timer_t *mali_control_timer = NULL;
 static mali_bool timer_running = MALI_FALSE;
 
 /**
@@ -30,12 +30,12 @@ static u32 mali_control_timeout = 20;
 
 void mali_control_timer_add(u32 timeout)/* 'timeout' : 以 ms 为单位. */
 {
-	_mali_osk_timer_add(&mali_control_timer, _mali_osk_time_mstoticks(timeout));
+	_mali_osk_timer_add(mali_control_timer, _mali_osk_time_mstoticks(timeout));
 }
 
 void mali_control_timer_mod(u32 timeout_in_ms)
 {
-	_mali_osk_timer_mod(&mali_control_timer, _mali_osk_time_mstoticks(timeout_in_ms));
+	_mali_osk_timer_mod(mali_control_timer, _mali_osk_time_mstoticks(timeout_in_ms));
 }
 
 static void mali_control_timer_callback(void *arg)
@@ -76,15 +76,23 @@ _mali_osk_errcode_t mali_control_timer_init(void)
 		}
 	}
 
-	_mali_osk_timer_init(&mali_control_timer, mali_control_timer_callback);
+	mali_control_timer = _mali_osk_timer_init(mali_control_timer_callback);
+	if (NULL == mali_control_timer) {
+		return _MALI_OSK_ERR_FAULT;
+	}
+	_mali_osk_timer_setcallback(mali_control_timer, mali_control_timer_callback, NULL);
 
 	return _MALI_OSK_ERR_OK;
 }
 
 void mali_control_timer_term(void)
 {
-	_mali_osk_timer_del(&mali_control_timer);
-	timer_running = MALI_FALSE;
+	if (NULL != mali_control_timer) {
+		_mali_osk_timer_del(mali_control_timer);
+		timer_running = MALI_FALSE;
+		_mali_osk_timer_term(mali_control_timer);
+		mali_control_timer = NULL;
+	}
 }
 
 mali_bool mali_control_timer_resume(u64 time_now)
@@ -122,7 +130,7 @@ void mali_control_timer_suspend(mali_bool suspend)
 		mali_utilization_data_unlock();
 
 		if (suspend == MALI_TRUE) {
-			_mali_osk_timer_del(&mali_control_timer);
+			_mali_osk_timer_del(mali_control_timer);
 			mali_utilization_reset();
 		}
 	} else {

@@ -22,10 +22,8 @@
 #include <linux/reset.h>
 #include <linux/irqreturn.h>
 #include <linux/poll.h>
-#include <soc/rockchip/pm_domains.h>
 
-#define MHZ				(1000 * 1000)
-#define MPP_WORK_TIMEOUT_DELAY		(500)
+#define MHZ			(1000 * 1000)
 
 #define MPP_MAX_MSG_NUM			(16)
 #define MPP_MAX_REG_TRANS_NUM		(60)
@@ -61,7 +59,6 @@ enum MPP_DEVICE_TYPE {
 	MPP_DEVICE_VEPU22	= 24, /* 0x01000000 */
 
 	MPP_DEVICE_IEP2		= 28, /* 0x10000000 */
-	MPP_DEVICE_VDPP		= 29, /* 0x20000000 */
 	MPP_DEVICE_BUTT,
 };
 
@@ -81,8 +78,6 @@ enum MPP_DRIVER_TYPE {
 	MPP_DRIVER_IEP2,
 	MPP_DRIVER_JPGDEC,
 	MPP_DRIVER_RKVDEC2,
-	MPP_DRIVER_VDPP,
-	MPP_DRIVER_RKVENC2,
 	MPP_DRIVER_BUTT,
 };
 
@@ -118,7 +113,6 @@ enum MPP_DEV_COMMAND_TYPE {
 	MPP_CMD_TRANS_FD_TO_IOVA	= MPP_CMD_CONTROL_BASE + 1,
 	MPP_CMD_RELEASE_FD		= MPP_CMD_CONTROL_BASE + 2,
 	MPP_CMD_SEND_CODEC_INFO		= MPP_CMD_CONTROL_BASE + 3,
-	MPP_CMD_SET_ERR_REF_HACK	= MPP_CMD_CONTROL_BASE + 4,
 	MPP_CMD_CONTROL_BUTT,
 
 	MPP_CMD_BUTT,
@@ -202,12 +196,6 @@ struct mpp_task_msgs {
 struct mpp_grf_info {
 	u32 offset;
 	u32 val;
-
-	/* close mem when module is not working*/
-	u32 mem_offset;
-	u32 val_mem_on;
-	u32 val_mem_off;
-
 	struct regmap *grf;
 };
 
@@ -226,7 +214,6 @@ struct mpp_hw_info {
 	u32 reg_end;
 	/* register of enable hardware */
 	int reg_en;
-	void *link_info;
 };
 
 struct mpp_trans_info {
@@ -264,7 +251,6 @@ struct mpp_clk_info {
 	u32 reduce_rate_hz;
 	/* record last used rate */
 	u32 used_rate_hz;
-	u32 real_rate_hz;
 };
 
 struct mpp_dev_var {
@@ -299,12 +285,14 @@ struct mpp_dev {
 	struct mpp_hw_ops *hw_ops;
 	struct mpp_dev_ops *dev_ops;
 
+	/* kworker for attached taskqueue */
+	struct kthread_worker worker;
+	/* task for work queue */
+	struct task_struct *kworker_task;
 	/* per-device work for attached taskqueue */
 	struct kthread_work work;
 	/* the flag for get/get/reduce freq */
 	bool auto_freq_en;
-	/* the flag for pmu idle request before device reset */
-	bool skip_idle;
 
 	/*
 	 * The task capacity is the task queue length that hardware can accept.
@@ -334,9 +322,6 @@ struct mpp_dev {
 	struct mpp_service *srv;
 
 	struct list_head queue_link;
-
-	/* common per-device procfs */
-	u32 timing_check;
 };
 
 struct mpp_task;
@@ -353,7 +338,13 @@ struct mpp_session {
 	struct mutex pending_lock;
 	/* task pending list in session */
 	struct list_head pending_list;
+	/* lock for session task done list */
+	struct mutex done_lock;
+	/* task done list in session */
+	struct list_head done_list;
 
+	/* event for session wait thread */
+	wait_queue_head_t wait;
 	pid_t pid;
 	atomic_t task_count;
 	atomic_t release_request;
@@ -396,18 +387,6 @@ enum mpp_task_state {
 	TASK_STATE_ABORT	= 9,
 	TASK_STATE_ABORT_READY	= 10,
 	TASK_STATE_PROC_DONE	= 11,
-
-	/* timing debug state */
-	TASK_TIMING_CREATE	= 16,
-	TASK_TIMING_CREATE_END	= 17,
-	TASK_TIMING_PENDING	= 18,
-	TASK_TIMING_RUN		= 19,
-	TASK_TIMING_TO_SCHED	= 20,
-	TASK_TIMING_RUN_END	= 21,
-	TASK_TIMING_IRQ		= 22,
-	TASK_TIMING_TO_CANCEL	= 23,
-	TASK_TIMING_ISR		= 24,
-	TASK_TIMING_FINISH	= 25,
 };
 
 /* The context for the a task */
@@ -434,44 +413,21 @@ struct mpp_task {
 	struct kref ref;
 
 	/* record context running start time */
-	ktime_t start;
-	ktime_t part;
-
-	/* debug timing */
-	ktime_t on_create;
-	ktime_t on_create_end;
-	ktime_t on_pending;
-	ktime_t on_run;
-	ktime_t on_sched_timeout;
-	ktime_t on_run_end;
-	ktime_t on_irq;
-	ktime_t on_cancel_timeout;
-	ktime_t on_isr;
-	ktime_t on_finish;
-
+	struct timeval start;
 	/* hardware info for current task */
 	struct mpp_hw_info *hw_info;
 	u32 task_index;
 	u32 *reg;
-	/* hw cycles */
-	u32 hw_cycles;
-	/* event for session wait thread */
-	wait_queue_head_t wait;
 };
 
 struct mpp_taskqueue {
-	/* kworker for attached taskqueue */
-	struct kthread_worker worker;
-	/* task for work queue */
-	struct task_struct *kworker_task;
-
 	/* lock for session attach and session_detach */
 	struct mutex session_lock;
 	/* link to session session_link for attached sessions */
 	struct list_head session_attach;
 	/* link to session session_link for detached sessions */
 	struct list_head session_detach;
-	atomic_t detach_count;
+	u32 detach_count;
 
 	/* lock for pending list */
 	struct mutex pending_lock;
@@ -493,15 +449,6 @@ struct mpp_taskqueue {
 	 * device task capacity which is attached to the taskqueue
 	 */
 	u32 task_capacity;
-
-	/*
-	 * when we need to set grf_mem config to close mem shared by combo modules,
-	 * use runtime_cnt to make sure every combo module are not working
-	 */
-	/* lock for runtime counting */
-	struct mutex ref_lock;
-	atomic_t runtime_cnt;
-
 };
 
 struct mpp_reset_group {
@@ -538,9 +485,6 @@ struct mpp_service {
 	struct mutex session_lock;
 	struct list_head session_list;
 	u32 session_count;
-
-	/* global timing record flag */
-	u32 timing_en;
 };
 
 /*
@@ -631,8 +575,6 @@ int mpp_task_init(struct mpp_session *session,
 		  struct mpp_task *task);
 int mpp_task_finish(struct mpp_session *session,
 		    struct mpp_task *task);
-void mpp_task_run_begin(struct mpp_task *task, u32 timing_en, u32 timeout);
-void mpp_task_run_end(struct mpp_task *task, u32 timing_en);
 int mpp_task_finalize(struct mpp_session *session,
 		      struct mpp_task *task);
 int mpp_task_dump_mem_region(struct mpp_dev *mpp,
@@ -641,12 +583,8 @@ int mpp_task_dump_reg(struct mpp_dev *mpp,
 		      struct mpp_task *task);
 int mpp_task_dump_hw_reg(struct mpp_dev *mpp,
 			 struct mpp_task *task);
-void mpp_task_dump_timing(struct mpp_task *task, s64 time_diff);
-void mpp_reg_show(struct mpp_dev *mpp, u32 offset);
 
-void mpp_session_deinit(struct mpp_session *session);
-void mpp_session_cleanup_detach(struct mpp_taskqueue *queue,
-				struct kthread_work *work);
+int mpp_session_deinit(struct mpp_session *session);
 
 int mpp_dev_probe(struct mpp_dev *mpp,
 		  struct platform_device *pdev);
@@ -670,8 +608,6 @@ int mpp_set_grf(struct mpp_grf_info *grf_info);
 
 int mpp_time_record(struct mpp_task *task);
 int mpp_time_diff(struct mpp_task *task);
-int mpp_time_diff_with_hw_time(struct mpp_task *task, u32 clk_hz);
-int mpp_time_part_diff(struct mpp_task *task);
 
 int mpp_write_req(struct mpp_dev *mpp, u32 *regs,
 		  u32 start_idx, u32 end_idx, u32 en_idx);
@@ -799,28 +735,16 @@ static inline int mpp_reset_up_write(struct mpp_reset_group *group)
 	return 0;
 }
 
-static inline int mpp_pmu_idle_request(struct mpp_dev *mpp, bool idle)
-{
-	if (mpp->skip_idle)
-		return 0;
-
-	return rockchip_pmu_idle_request(mpp->dev, idle);
-}
-
 #ifdef CONFIG_ROCKCHIP_MPP_PROC_FS
 struct proc_dir_entry *
 mpp_procfs_create_u32(const char *name, umode_t mode,
 		      struct proc_dir_entry *parent, void *data);
-void mpp_procfs_create_common(struct proc_dir_entry *parent, struct mpp_dev *mpp);
 #else
 static inline struct proc_dir_entry *
 mpp_procfs_create_u32(const char *name, umode_t mode,
 		      struct proc_dir_entry *parent, void *data)
 {
 	return 0;
-}
-void mpp_procfs_create_common(struct proc_dir_entry *parent, struct mpp_dev *mpp)
-{
 }
 #endif
 
@@ -841,7 +765,5 @@ extern struct platform_driver rockchip_vepu22_driver;
 extern struct platform_driver rockchip_iep2_driver;
 extern struct platform_driver rockchip_jpgdec_driver;
 extern struct platform_driver rockchip_rkvdec2_driver;
-extern struct platform_driver rockchip_vdpp_driver;
-extern struct platform_driver rockchip_rkvenc2_driver;
 
 #endif

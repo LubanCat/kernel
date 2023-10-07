@@ -12,7 +12,6 @@
 #include "mali_kernel_common.h"
 
 #include <linux/clk.h>
-#include <linux/clk-provider.h>
 #include <linux/devfreq.h>
 #include <linux/regulator/consumer.h>
 #include <linux/regulator/driver.h>
@@ -88,17 +87,13 @@ mali_devfreq_target(struct device *dev, unsigned long *target_freq, u32 flags)
 		return 0;
 	}
 
-	err = clk_bulk_enable(mdev->num_clks, mdev->clks);
-	if (err)
-		return err;
-
 #ifdef CONFIG_REGULATOR
 	if (mdev->regulator && mdev->current_voltage != voltage &&
 	    old_freq < freq) {
 		err = regulator_set_voltage(mdev->regulator, voltage, INT_MAX);
 		if (err) {
 			MALI_PRINT_ERROR(("Failed to increase voltage (%d)\n", err));
-			goto err;
+			return err;
 		}
 	}
 #endif
@@ -106,9 +101,8 @@ mali_devfreq_target(struct device *dev, unsigned long *target_freq, u32 flags)
 	err = clk_set_rate(mdev->clock, freq);
 	if (err) {
 		MALI_PRINT_ERROR(("Failed to set clock %lu (target %lu)\n", freq, *target_freq));
-		goto err;
+		return err;
 	}
-
 	*target_freq = freq;
 	mdev->current_freq = freq;
 	if (mdev->devfreq)
@@ -120,7 +114,7 @@ mali_devfreq_target(struct device *dev, unsigned long *target_freq, u32 flags)
 		err = regulator_set_voltage(mdev->regulator, voltage, INT_MAX);
 		if (err) {
 			MALI_PRINT_ERROR(("Failed to decrease voltage (%d)\n", err));
-			goto err;
+			return err;
 		}
 	}
 #endif
@@ -128,8 +122,6 @@ mali_devfreq_target(struct device *dev, unsigned long *target_freq, u32 flags)
 	mdev->current_voltage = voltage;
 
 	mali_pm_reset_dvfs_utilisation(mdev);
-err:
-	clk_bulk_disable(mdev->num_clks, mdev->clks);
 
 	return err;
 }

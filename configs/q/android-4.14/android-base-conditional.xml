@@ -1,0 +1,181 @@
+<kernel minlts="4.14.105" />
+
+<!-- KEEP ALPHABETICALLY SORTED -->
+<!-- ARM base requirements -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_ARM</key>
+			<value type="bool">y</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_AEABI</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_CPU_SW_DOMAIN_PAN</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_DEVKMEM</key>
+		<value type="bool">n</value>
+	</config>
+	<config>
+		<key>CONFIG_OABI_COMPAT</key>
+		<value type="bool">n</value>
+	</config>
+</group>
+
+<!-- ARM64 base requirements -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_ARM64</key>
+			<value type="bool">y</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_ARMV8_DEPRECATED</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_COMPAT</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_CP15_BARRIER_EMULATION</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_SETEND_EMULATION</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_SWP_EMULATION</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- For ARM64, CONFIG_ARM64_SW_TTBR0_PAN || CONFIG_ARM64_PAN -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_ARM64</key>
+			<value type="bool">y</value>
+		</config>
+		<config>
+			<key>CONFIG_ARM64_SW_TTBR0_PAN</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_ARM64_PAN</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_ARM64</key>
+			<value type="bool">y</value>
+		</config>
+		<config>
+			<key>CONFIG_ARM64_PAN</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_ARM64_SW_TTBR0_PAN</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- x86 base requirements -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_X86</key>
+			<value type="bool">y</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_DEVKMEM</key>
+		<value type="bool">n</value>
+	</config>
+	<config>
+		<key>CONFIG_PAGE_TABLE_ISOLATION</key>
+		<value type="bool">y</value>
+	</config>
+	<config>
+		<key>CONFIG_RETPOLINE</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- CONFIG_ACPI || CONFIG_OF -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_ACPI</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_OF</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_OF</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_ACPI</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- CONFIG_MEMCG || CONFIG_PSI -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_MEMCG</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_PSI</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_PSI</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_MEMCG</key>
+		<value type="bool">y</value>
+	</config>
+</group>
+
+<!-- CONFIG_USB implies CONFIG_USB_RTL8152 -->
+<group>
+	<conditions>
+		<config>
+			<key>CONFIG_USB_RTL8152</key>
+			<value type="bool">n</value>
+		</config>
+	</conditions>
+	<config>
+		<key>CONFIG_USB</key>
+		<value type="bool">n</value>
+	</config>
+</group>
+

@@ -411,15 +411,13 @@ static int rockchip_pwm_probe(struct platform_device *pdev)
 	pc->pinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(pc->pinctrl)) {
 		dev_err(&pdev->dev, "Get pinctrl failed!\n");
-		ret = PTR_ERR(pc->pinctrl);
-		goto err_pclk;
+		return PTR_ERR(pc->pinctrl);
 	}
 
 	pc->active_state = pinctrl_lookup_state(pc->pinctrl, "active");
 	if (IS_ERR(pc->active_state)) {
 		dev_err(&pdev->dev, "No active pinctrl state\n");
-		ret = PTR_ERR(pc->active_state);
-		goto err_pclk;
+		return PTR_ERR(pc->active_state);
 	}
 
 	platform_set_drvdata(pdev, pc);

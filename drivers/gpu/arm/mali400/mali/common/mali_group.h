@@ -84,7 +84,7 @@ struct mali_group {
 	_mali_osk_wq_work_t         *bottom_half_work_gp;
 	_mali_osk_wq_work_t         *bottom_half_work_pp;
 
-	_mali_osk_timer_t           timeout_timer;
+	_mali_osk_timer_t           *timeout_timer;
 };
 
 /** @brief Create a new Mali group object

@@ -33,7 +33,6 @@ struct ebc_buf_s {
 	int needpic;
 };
 
-int ebc_drop_one_dsp_buf(void);
 struct ebc_buf_s *ebc_empty_osd_buf_get(void);
 struct ebc_buf_s *ebc_osd_buf_clone(void);
 int ebc_buf_release(struct ebc_buf_s *release_buf);

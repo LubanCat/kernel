@@ -149,7 +149,6 @@ struct rk_nfc {
 	int max_ecc_strength;
 	u32 *oob_buf;
 	u32 *page_buf;
-	struct mtd_info *mtd;
 };
 
 static inline struct rk_nfc *to_rk_nfc(struct nand_controller *ctrl)
@@ -349,7 +348,7 @@ static int rk_nfc_hw_syndrome_ecc_read_page(struct mtd_info *mtd,
 		if (bch_st & NANDC_V6_BCH0_ST_ERR ||
 		    bch_st & NANDC_V6_BCH1_ST_ERR) {
 			mtd->ecc_stats.failed++;
-			max_bitflips = 0;
+			max_bitflips = -1;
 		} else {
 			ret = NANDC_V6_ECC_ERR_CNT0(bch_st);
 			mtd->ecc_stats.corrected += ret;
@@ -600,6 +599,15 @@ static int rk_nfc_hw_ecc_ctrl_init(struct mtd_info *mtd,
 	if (max_strength > nfc->max_ecc_strength)
 		max_strength = nfc->max_ecc_strength;
 
+	nfc->page_buf = kmalloc(mtd->writesize, GFP_KERNEL | GFP_DMA);
+	if (!nfc->page_buf)
+		return -ENOMEM;
+	nfc->oob_buf = kmalloc(ecc->steps * 128, GFP_KERNEL | GFP_DMA);
+	if (!nfc->oob_buf) {
+		kfree(nfc->page_buf);
+		return -ENOMEM;
+	}
+
 	for (i = 0; i < ARRAY_SIZE(strengths); i++)
 		if (max_strength >= strengths[i])
 			break;
@@ -609,15 +617,6 @@ static int rk_nfc_hw_ecc_ctrl_init(struct mtd_info *mtd,
 		return -ENOTSUPP;
 	}
 
-	nfc->page_buf = (u32 *)__get_free_pages(GFP_KERNEL | GFP_DMA32, get_order(mtd->writesize));
-	if (!nfc->page_buf)
-		return -ENOMEM;
-	nfc->oob_buf = (u32 *)__get_free_pages(GFP_KERNEL | GFP_DMA32, get_order(ecc->steps * 128));
-	if (!nfc->oob_buf) {
-		free_pages((unsigned long)nfc->page_buf, get_order(mtd->writesize));
-		return -ENOMEM;
-	}
-	nfc->mtd = mtd;
 	nfc->ecc_mode = strengths[i];
 	rk_nfc_hw_ecc_setup(mtd, ecc, nfc->ecc_mode);
 
@@ -952,11 +951,10 @@ out_ahb_clk_unprepare:
 static int rk_nfc_remove(struct platform_device *pdev)
 {
 	struct rk_nfc *nfc = platform_get_drvdata(pdev);
-	struct nand_chip *nand = mtd_to_nand(nfc->mtd);
 
 	rk_nand_chips_cleanup(nfc);
-	free_pages((unsigned long)nfc->page_buf, get_order(nfc->mtd->writesize));
-	free_pages((unsigned long)nfc->oob_buf, get_order(nand->ecc.steps * 128));
+	kfree(nfc->page_buf);
+	kfree(nfc->oob_buf);
 	clk_disable_unprepare(nfc->clk);
 	clk_disable_unprepare(nfc->hclk);
 	if (!(IS_ERR(nfc->gclk)))

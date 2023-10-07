@@ -930,11 +930,7 @@ dtb-$(CONFIG_ARCH_ROCKCHIP) += \
 	rk3326-evb-lp3-v10.dtb \
 	rk3326-863-lp3-v10.dtb \
 	rk3326-evb-lp3-v10-avb.dtb \
-	rk3326-863-lp3-v10-avb.dtb \
-	rk3528-evb1-ddr4-v10.dtb \
-	rk3528-evb2-ddr3-v10.dtb \
-	rk3528-evb3-lp4x-v10.dtb \
-	rk3528-evb4-ddr4-v10.dtb
+	rk3326-863-lp3-v10-avb.dtb
 dtb-$(CONFIG_ARCH_S3C24XX) += \
 	s3c2416-smdk2416.dtb
 dtb-$(CONFIG_ARCH_S3C64XX) += \

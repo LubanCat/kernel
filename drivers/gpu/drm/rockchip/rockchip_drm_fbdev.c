@@ -56,6 +56,8 @@ static struct fb_ops rockchip_drm_fbdev_ops = {
 	.fb_fillrect	= drm_fb_helper_cfb_fillrect,
 	.fb_copyarea	= drm_fb_helper_cfb_copyarea,
 	.fb_imageblit	= drm_fb_helper_cfb_imageblit,
+	.fb_read	= drm_fb_helper_sys_read,
+	.fb_write	= drm_fb_helper_sys_write,
 	.fb_mmap		= rockchip_fbdev_mmap,
 	.fb_dmabuf_export	= rockchip_fbdev_get_dma_buf,
 };

@@ -2697,6 +2697,8 @@ static inline void mi_raw_length(struct rkisp_stream *stream)
 		is_direct = false;
 	rkisp_write(stream->ispdev, stream->config->mi.length,
 		    stream->out_fmt.plane_fmt[0].bytesperline, is_direct);
+	if (stream->ispdev->isp_ver == ISP_V21)
+		rkisp_set_bits(stream->ispdev, MI_RD_CTRL2, 0, BIT(30), false);
 }
 
 static inline void rx_force_upd(void __iomem *base)

@@ -51,8 +51,6 @@ static int dw_hdmi_i2s_hw_params(struct device *dev, void *data,
 	u8 inputclkfs = 0;
 	u8 val;
 
-	dw_hdmi_audio_disable(hdmi);
-
 	/* it cares I2S only */
 	if ((fmt->fmt != HDMI_I2S) ||
 	    (fmt->bit_clk_master | fmt->frame_clk_master)) {
@@ -204,6 +202,21 @@ static int dw_hdmi_i2s_hw_params(struct device *dev, void *data,
 	return 0;
 }
 
+static void dw_hdmi_i2s_audio_shutdown(struct device *dev, void *data)
+{
+	struct dw_hdmi_i2s_audio_data *audio = data;
+	struct dw_hdmi *hdmi = audio->hdmi;
+
+	dw_hdmi_audio_disable(hdmi);
+
+	hdmi_update_bits(audio,
+			 HDMI_AUD_CONF0_SW_RESET,
+			 HDMI_AUD_CONF0_SW_RESET |
+				(HDMI_AUD_CONF0_I2S_ALL_ENABLE ^
+				 HDMI_AUD_CONF0_I2S_SELECT_MASK),
+			 HDMI_AUD_CONF0);
+}
+
 static int dw_hdmi_i2s_get_dai_id(struct snd_soc_component *component,
 				  struct device_node *endpoint)
 {
@@ -236,6 +249,7 @@ static int dw_hdmi_i2s_hook_plugged_cb(struct device *dev, void *data,
 
 static struct hdmi_codec_ops dw_hdmi_i2s_ops = {
 	.hw_params	= dw_hdmi_i2s_hw_params,
+	.audio_shutdown	= dw_hdmi_i2s_audio_shutdown,
 	.get_dai_id	= dw_hdmi_i2s_get_dai_id,
 	.hook_plugged_cb = dw_hdmi_i2s_hook_plugged_cb,
 };
