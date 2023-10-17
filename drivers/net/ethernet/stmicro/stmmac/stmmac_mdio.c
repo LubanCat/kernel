@@ -365,6 +365,12 @@ int stmmac_mdio_register(struct net_device *ndev)
 		goto bus_register_fail;
 	}
 
+	stmmac_mdio_write(new_bus,0,31,2627);
+	stmmac_mdio_write(new_bus,0,25,0x1801);
+	stmmac_mdio_write(new_bus,0,31,0);
+	stmmac_mdio_write(new_bus,0,0,0x8000);
+
+
 	if (priv->plat->phy_node || mdio_node)
 		goto bus_register_done;
 
