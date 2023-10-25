@@ -735,10 +735,6 @@
 	status = "okay";
 };
 
-&rk809_codec {
-	hp-ctl-gpios = <&gpio0 RK_PB5 GPIO_ACTIVE_HIGH>;
-};
-
 &gmac0 {
 	snps,reset-gpio = <&gpio1 RK_PA1 GPIO_ACTIVE_LOW>;
 	tx_delay = <0x1c>;
