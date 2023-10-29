@@ -30,8 +30,8 @@
                 spi-max-frequency = <50000000>; //spi output clock 50M
                 buswidth = <8>;
                 fps = <50>;
-                dc-gpios = <&gpio3 RK_PA7 GPIO_ACTIVE_HIGH>; //GPIO_A7 data/command 103
-                reset-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>; //GPIO3_A6 reset 102
+                dc-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>; //GPIO_A6 data/command 103
+                reset-gpios = <&gpio3 RK_PA7 GPIO_ACTIVE_HIGH>; //GPIO3_A7 reset 102
                 led-gpios = <&gpio3 RK_PB1 GPIO_ACTIVE_LOW>; //GPIO3_B1 back light 101
                 pinctrl-names = "default";
                 pinctrl-0 = <&spi_lcd_cmd_pin &spi_lcd_reset_pin &spi_lcd_light_pin>;
