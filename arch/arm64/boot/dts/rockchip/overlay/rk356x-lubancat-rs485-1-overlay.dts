@@ -1,0 +1,22 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+
+/ {
+	compatible = "rockchip,rk3568";
+
+	fragment@0 {
+		target = <&uart3>;
+
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&uart3m1_xfer &uart3m1_rts>;
+			rs485-de-gpios = <&gpio2 RK_PD2 GPIO_ACTIVE_HIGH>;
+			linux,rs485-enabled-at-boot-time;
+			status = "okay";
+		};
+	};
+};
+

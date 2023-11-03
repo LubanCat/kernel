@@ -37,6 +37,8 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk356x-lubancat-uart8-m0-overlay.dtbo \
 	rk356x-lubancat-uart8-m1-overlay.dtbo \
 	rk356x-lubancat-uart9-m1-overlay.dtbo \
+	rk356x-lubancat-rs485-1-overlay.dtbo \
+	rk356x-lubancat-rs485-2-overlay.dtbo \
 	rk3566-lubancat-0-spi3-m1-gpio-cs-overlay.dtbo \
 	rk3566-lubancat-1h-edp-in-vp0-overlay.dtbo \
 	rk3566-lubancat-1h-lvds-10.1-in-vp0-overlay.dtbo \
