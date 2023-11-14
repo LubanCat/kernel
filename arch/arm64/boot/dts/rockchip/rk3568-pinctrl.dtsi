@@ -2293,12 +2293,6 @@
 				/* uart3_txm1 */
 				<3 RK_PB7 4 &pcfg_pull_up>;
 		};
-
-		uart3m1_rts: uart3m1_rts {
-			rockchip,pins =
-				/* 485_1_rts */
-				<2 RK_PD2 0 &pcfg_pull_none>;
-		};
 	};
 
 	uart4 {
@@ -2328,12 +2322,6 @@
 				<3 RK_PB1 4 &pcfg_pull_up>,
 				/* uart4_txm1 */
 				<3 RK_PB2 4 &pcfg_pull_up>;
-		};
-
-		uart4m1_rts: uart4m1_rts {
-			rockchip,pins =
-				/* 485_2_rts */
-				<2 RK_PD3 0 &pcfg_pull_none>;
 		};
 	};
 

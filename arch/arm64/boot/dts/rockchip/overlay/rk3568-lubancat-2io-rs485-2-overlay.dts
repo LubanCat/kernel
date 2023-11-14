@@ -3,6 +3,7 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/pinctrl/rockchip.h>
+#include "../rockchip-pinconf.dtsi"
 
 / {
 	compatible = "rockchip,rk3568";
@@ -12,10 +13,22 @@
 
 		__overlay__ {
 			pinctrl-names = "default";
-			pinctrl-0 = <&uart4m1_xfer &uart4m1_rts>;
+			pinctrl-0 = <&uart4m1_xfer &rs485_2_rts>;
 			rs485-de-gpios = <&gpio2 RK_PD3 GPIO_ACTIVE_HIGH>;
 			linux,rs485-enabled-at-boot-time;
 			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&pinctrl>;
+		__overlay__ {
+		rs485_rts {
+			rs485_2_rts:rs485_2_rts{
+				rockchip,pins =
+					<2 RK_PD3 RK_FUNC_GPIO &pcfg_pull_none>;
+				};
+			};
 		};
 	};
 };
