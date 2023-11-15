@@ -21,6 +21,7 @@
 };
 
 &i2c1 {
+	status = "okay";
 	// ov5648 Camare
 	dw9714: dw9714@0c {
 		compatible = "dongwoon,dw9714";

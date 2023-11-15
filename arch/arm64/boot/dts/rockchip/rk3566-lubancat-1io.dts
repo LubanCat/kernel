@@ -5,14 +5,16 @@
  */
 
  /dts-v1/;
-//HDMI输出
+//核心板配置
 #include "rk3566-lubancat-1core-port.dtsi"
 
-//HDMI输出
-#include "rk3566-lubancat-hdmi.dtsi" 
 
-// MIPI-DSI屏幕
-#include "rk3568-lubancat-dsi.dtsi"
+// MIPI-DSI1屏幕
+#include "rk3566-lubancat-1io-dsi1.dtsi"
+//HDMI输出（与lvds二选一）
+#include "rk3566-lubancat-hdmi.dtsi" 
+// lvds屏幕（与HDMI二选一）
+// #include "rk3566-lubancat-1io-lvds.dtsi"
 
 //MIPI摄像头配置
 #include "rk3568-lubancat-csi2-double.dtsi"
@@ -40,7 +42,7 @@
             status = "okay";
 			linux,default-trigger = "heartbeat";
 			default-state = "on";
-			gpios = <&gpio2 RK_PC0 GPIO_ACTIVE_LOW>;
+			gpios = <&gpio2 RK_PB7 GPIO_ACTIVE_LOW>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&user_led2_pin>;
 		};
@@ -50,9 +52,18 @@
             status = "okay";
 			linux,default-trigger = "heartbeat";
 			default-state = "on";
-			gpios = <&gpio2 RK_PB7 GPIO_ACTIVE_LOW>;
+			gpios = <&gpio2 RK_PC0 GPIO_ACTIVE_LOW>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&user_led3_pin>;
+		};
+
+		fan: fan {
+			label = "fan";
+			default-state = "on";
+			linux,default-trigger = "none";
+			gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&fan_pin>;
 		};
 	};
 
@@ -452,44 +463,6 @@
 	};
 };
 
-// mipi dsi0 gpio set
-&dsi0_panel {
-	reset-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_LOW>;
-};
-
-&gt911_dsi0 {
-    interrupt-parent = <&gpio3>;
-    interrupts = <RK_PC4 IRQ_TYPE_LEVEL_LOW>;
-    reset-gpios = <&gpio3 RK_PC2 GPIO_ACTIVE_LOW>;
-    irq-gpios = <&gpio3 RK_PC4 GPIO_ACTIVE_HIGH>;
-};
-
-&gt928_dsi0 {
-    interrupt-parent = <&gpio3>;
-    interrupts = <RK_PC4 IRQ_TYPE_LEVEL_LOW>;
-    reset-gpios = <&gpio3 RK_PC2 GPIO_ACTIVE_LOW>;
-    irq-gpios = <&gpio3 RK_PC4 GPIO_ACTIVE_HIGH>;
-};
-
-// mipi dsi1 gpio set
-&dsi1_panel {
-	reset-gpios = <&gpio2 RK_PC2 GPIO_ACTIVE_LOW>;
-};
-
-&gt911_dsi1 {
-	interrupt-parent = <&gpio2>;
-	interrupts = <RK_PC3 IRQ_TYPE_LEVEL_LOW>;
-	reset-gpios = <&gpio2 RK_PC4 GPIO_ACTIVE_LOW>;
-	irq-gpios = <&gpio2 RK_PC3 GPIO_ACTIVE_HIGH>;
-};
-
-&gt928_dsi1 {
-	interrupt-parent = <&gpio2>;
-	interrupts = <RK_PC3 IRQ_TYPE_LEVEL_LOW>;
-	reset-gpios = <&gpio2 RK_PC4 GPIO_ACTIVE_LOW>;
-	irq-gpios = <&gpio2 RK_PC3 GPIO_ACTIVE_HIGH>;
-};
-
 //cam0-gpio-setting
 &ov5647 {
     pwdn-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_LOW>;
@@ -581,6 +554,25 @@
 	pinctrl-0 = <&i2c2m1_xfer>;
 };
 
+
+&i2c0 {
+	rx8010: rx8010@32 {
+		compatible = "epson,rx8010";
+		reg = <0x32>;
+		status = "okay";
+	};
+};
+
+&rk809 {
+	rtc {
+		status = "disabled"; //use rx8010
+	};
+};
+
+&xin32k {
+	status = "disabled"; //use for RX8010_nIRQ1
+};
+
 &i2c3 {
     status = "okay";
 };
@@ -593,37 +585,6 @@
 &pwm5 {
     status = "okay";
 };
-
-&dmc_opp_table {
-    opp-324000000 {
-        opp-hz = /bits/ 64 <324000000>;
-        opp-microvolt = <875000>;
-        opp-microvolt-L0 = <875000>;
-        opp-microvolt-L1 = <850000>;
-    };
-
-    opp-528000000 {
-        opp-hz = /bits/ 64 <528000000>;
-        opp-microvolt = <875000>;
-        opp-microvolt-L0 = <875000>;
-        opp-microvolt-L1 = <850000>;
-    };
-
-    opp-528000000 {
-        opp-hz = /bits/ 64 <780000000>;
-        opp-microvolt = <875000>;
-        opp-microvolt-L0 = <875000>;
-        opp-microvolt-L1 = <850000>;
-    };
-
-    opp-1056000000 {
-        opp-hz = /bits/ 64 <1056000000>;
-        opp-microvolt = <900000>;
-        opp-microvolt-L0 = <900000>;
-        opp-microvolt-L1 = <850000>;
-    };
-};
-
 
 &sdmmc0 {
     max-frequency = <150000000>;
@@ -738,7 +699,7 @@
 };
 
 &gmac1 {
-	snps,reset-gpio = <&gpio4 RK_PC0 GPIO_ACTIVE_LOW>;
+	snps,reset-gpio = <&gpio4 RK_PC2 GPIO_ACTIVE_LOW>;
     tx_delay = <0x16>;
     rx_delay = <0x06>;
 	status = "okay";
@@ -776,12 +737,17 @@
 		};
 
         user_led2_pin:user_led2_pin{
+            rockchip,pins = <2 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
+        };
+
+		user_led3_pin:user_led3_pin{
             rockchip,pins = <2 RK_PC0 RK_FUNC_GPIO &pcfg_pull_none>;
         };
 
-        user_led3_pin:user_led3_pin{
-            rockchip,pins = <2 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
-        };
+		fan_pin: fan-pin {
+			rockchip,pins = <0 RK_PC1 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+		
 	};
 
     power{
@@ -823,6 +789,12 @@
     headphone {
 		hp_det: hp-det {
 			rockchip,pins = <1 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	rx8010 {
+		rx8010_irq: rx8010-irq {
+			rockchip,pins = <3 RK_PA5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 };

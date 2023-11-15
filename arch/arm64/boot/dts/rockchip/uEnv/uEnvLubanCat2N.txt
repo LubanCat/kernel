@@ -30,8 +30,10 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk356x-lubancat-uart7-m1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-uart8-m1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-uart9-m1-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3568-lubancat-can1-m0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-can1-m1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-can2-m0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-canfd1-m1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-canfd2-m0-overlay.dtbo
 #mini-pcie 5G modules
 #dtoverlay=/dtb/overlay/rk356x-lubancat-pcie2x1-disabled-overlay.dtbo
 #display

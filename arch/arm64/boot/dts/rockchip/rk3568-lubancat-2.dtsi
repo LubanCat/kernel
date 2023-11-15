@@ -239,6 +239,16 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&sys_status_led_pin>;
 		};
+
+		fan: fan {
+			label = "fan";
+			default-state = "on";
+			linux,default-trigger = "none";
+			gpios = <&gpio0 RK_PB7 GPIO_ACTIVE_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&fan_pin>;
+		};
+		
 	};
 
 	rk809_sound: rk809-sound {
@@ -370,16 +380,6 @@
 };
 
 &dmc {
-	system-status-freq = <
-		/*system status		 freq(KHz)*/
-		SYS_STATUS_NORMAL	   780000
-		SYS_STATUS_REBOOT	   1560000
-		SYS_STATUS_SUSPEND	  324000
-		SYS_STATUS_VIDEO_1080P  528000
-		SYS_STATUS_BOOST		1560000
-		SYS_STATUS_ISP		  1560000
-		SYS_STATUS_PERFORMANCE  1560000
-	>;
 	center-supply = <&vdd_logic>;
 	status = "okay";
 };
@@ -696,6 +696,24 @@
 
 };
 
+&can1 {
+	status = "disabled";
+	compatible = "rockchip,rk3568-can-2.0";
+	assigned-clocks = <&cru CLK_CAN1>;
+    assigned-clock-rates = <200000000>;
+	pinctrl-names = "default";
+    pinctrl-0 = <&can1m1_pins>;
+};
+
+&can2 {
+	status = "disabled";
+	compatible = "rockchip,rk3568-can-2.0";
+	pinctrl-names = "default";
+	assigned-clocks = <&cru CLK_CAN2>;
+    assigned-clock-rates = <200000000>;
+	pinctrl-0 = <&can2m0_pins>;
+};
+
 &i2s0_8ch {
     status = "okay";
 };
@@ -722,7 +740,6 @@
 
 &pmu_io_domains {
 	status = "okay";
-	pmuio1-supply = <&vcc3v3_pmu>;
 	pmuio2-supply = <&vcc3v3_pmu>;
 	vccio1-supply = <&vccio_acodec>;
 	vccio3-supply = <&vccio_sd>;
@@ -1097,6 +1114,10 @@
 	leds {
 		sys_status_led_pin: sys-status-led-pin {
 			rockchip,pins = <0 RK_PC7 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		fan_pin: fan-pin {
+			rockchip,pins = <0 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 };

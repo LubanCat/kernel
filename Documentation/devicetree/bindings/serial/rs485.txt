@@ -17,6 +17,7 @@ Optional properties:
   feature at boot time. It can be disabled later with proper ioctl.
 - rs485-rx-during-tx: empty property that enables the receiving of data even
   whilst sending data.
+- rs485-de-gpios: if using other gpio instead of rts, set this gpio.
 
 RS485 example for Atmel USART:
 	usart0: serial@fff8c000 {

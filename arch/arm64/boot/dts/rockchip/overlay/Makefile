@@ -38,9 +38,13 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk356x-lubancat-uart8-m1-overlay.dtbo \
 	rk356x-lubancat-uart9-m1-overlay.dtbo \
 	rk3566-lubancat-0-spi3-m1-gpio-cs-overlay.dtbo \
+	rk3566-lubancat-1h-rs485-1-overlay.dtbo \
+	rk3566-lubancat-1h-rs485-2-overlay.dtbo \
 	rk3566-lubancat-1h-edp-in-vp0-overlay.dtbo \
 	rk3566-lubancat-1h-lvds-10.1-in-vp0-overlay.dtbo \
 	rk3566-lubancat-1h-lvds-edp-touch-overlay.dtbo \
+	rk3566-lubancat-1io-rs485-1-overlay.dtbo \
+	rk3566-lubancat-1io-rs485-2-overlay.dtbo \
 	rk3566-lubancat-1io-dsi0-in-vp0-7.0-1024x600-overlay.dtbo \
 	rk3566-lubancat-1io-dsi0-in-vp0-10.1-800x1280-overlay.dtbo \
 	rk3566-lubancat-1io-dsi0-in-vp0-1080p-overlay.dtbo \
@@ -65,6 +69,8 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3568-lubancat-2-dsi1-in-vp0-10.1-800x1280-overlay.dtbo \
 	rk3568-lubancat-2-dsi1-in-vp0-1080p-overlay.dtbo \
 	rk3568-lubancat-2-dsi1-in-vp0-rpi-overlay.dtbo \
+	rk3568-lubancat-2io-rs485-1-overlay.dtbo \
+	rk3568-lubancat-2io-rs485-2-overlay.dtbo \
 	rk3568-lubancat-2io-edp-in-vp1-overlay.dtbo \
 	rk3568-lubancat-can1-m0-overlay.dtbo \
 	rk3568-lubancat-can1-m1-overlay.dtbo \
