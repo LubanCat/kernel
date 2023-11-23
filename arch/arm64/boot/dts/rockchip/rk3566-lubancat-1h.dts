@@ -449,9 +449,16 @@
 		status = "okay";
 	};
 
+	ext_wifi_32k_clk: external-32k-clock {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <32768>;
+		clock-output-names = "ext_wifi_32k_clk";
+	};
+
 	sdio_pwrseq: sdio-pwrseq {
 		compatible = "mmc-pwrseq-simple";
-		clocks = <&rk809 1>;
+		clocks = <&ext_wifi_32k_clk>;
 		clock-names = "ext_clock";
 		pinctrl-names = "default";
 		pinctrl-0 = <&wifi_enable_h>;
@@ -468,13 +475,11 @@
 
 	wireless_wlan: wireless-wlan {
 		compatible = "wlan-platdata";
-		clocks = <&rk809 1>;
-		clock-names = "clk_wifi";
 		rockchip,grf = <&grf>;
 		wifi_chip_type = "rtl8189es";
 		pinctrl-names = "default";
 		pinctrl-0 = <&wifi_host_wake_irq>;
-		WIFI,host_wake_irq = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
+		WIFI,host_wake_irq = <&gpio0 RK_PC6 GPIO_ACTIVE_LOW>;
 		status = "okay";
 	};
 };
