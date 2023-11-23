@@ -408,6 +408,7 @@
         status = "okay";
         compatible = "pwm-backlight";
         pwms = <&pwm10 0 50000 0>;
+		enable-gpios = <&gpio3 RK_PB6 GPIO_ACTIVE_HIGH>;
         brightness-levels = <
              95  95  95  95  95  95  95  95
              95  95  95  95  95  95  95  95
