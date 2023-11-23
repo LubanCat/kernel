@@ -47,8 +47,8 @@
 			pinctrl-0 = <&user_led1_pin>;
 		};
 
-        user_led1: user_led1 {
-			label = "user_led1";
+        user_led2: user_led2 {
+			label = "user_led2";
             status = "okay";
 			linux,default-trigger = "none";
 			default-state = "on";
