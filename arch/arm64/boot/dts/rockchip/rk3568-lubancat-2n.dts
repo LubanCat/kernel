@@ -1078,7 +1078,7 @@
 
 	/* JL2101 */
 	tx_delay = <0x1f>;
-	rx_delay = <0x08>;
+	rx_delay = <0x05>;
 
 	phy-handle = <&rgmii_phy1>;
 	status = "okay";
