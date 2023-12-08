@@ -1,0 +1,34 @@
+#include <dt-bindings/gpio/gpio.h>
+#include "rk3588.dtsi"
+
+/ {
+	hdmi0_sound: hdmi0-sound {
+		status = "okay";
+		compatible = "rockchip,hdmi";
+		rockchip,mclk-fs = <128>;
+		rockchip,card-name = "rockchip-hdmi0";
+		rockchip,cpu = <&i2s5_8ch>;
+		rockchip,codec = <&hdmi0>;
+		rockchip,jack-det;
+	};
+};
+
+/* hdmi0 display */
+&hdmi0 {
+	enable-gpios = <&gpio1 RK_PC4 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
+
+&route_hdmi0{
+	status = "okay";
+	connect = <&vp0_out_hdmi0>;
+};
+
+&hdmi0_in_vp0 {
+	status = "okay";
+};
+
+&hdptxphy_hdmi0 {
+	status = "okay";
+};
+
