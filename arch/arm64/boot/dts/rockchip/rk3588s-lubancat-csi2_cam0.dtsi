@@ -19,6 +19,13 @@
 		clock-output-names = "ext_cam_24m_clk";
 	};
 
+	ext_cam0_27m_clk: external-camera-27m-clock {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <27000000>;
+		clock-output-names = "ext_cam_27m_clk";
+	};
+
 	vdd_cam0_5v: vdd-cam0-5v-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vdd_cam_5v";
@@ -188,7 +195,7 @@
 		compatible = "sony,imx415";
 		status = "okay";
 		reg = <0x1a>;
-		clocks = <&cru CLK_MIPI_CAMARAOUT_M1>;
+		clocks = <&ext_cam0_24m_clk>;
 		clock-names = "xvclk";
 		power-domains = <&power RK3588_PD_VI>;
 		avdd-supply = <&cam0_avdd>;
@@ -198,6 +205,8 @@
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "CMK-OT2022-PX1";
 		rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
+		// NO_HDR:0 HDR_X2:5 HDR_X3:6
+		// rockchip,camera-hdr-mode = <0>;
 		port {
 			imx415_out0: endpoint {
 				remote-endpoint = <&dcphy0_in_imx415>;
