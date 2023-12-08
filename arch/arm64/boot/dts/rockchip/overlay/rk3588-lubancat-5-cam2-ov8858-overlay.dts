@@ -18,7 +18,7 @@
 			ext_cam2_25m_clk: external-camera-25m-clock {
 				compatible = "fixed-clock";
 				clock-frequency = <25000000>;
-				clock-output-names = "ext_cam_25m_clk";
+				clock-output-names = "ext_cam2_25m_clk";
 				#clock-cells = <0>;
 			};
 
@@ -26,21 +26,21 @@
 				compatible = "fixed-clock";
 				#clock-cells = <0>;
 				clock-frequency = <24000000>;
-				clock-output-names = "ext_cam_24m_clk";
+				clock-output-names = "ext_cam2_24m_clk";
 			};
 
-			vdd_cam2_5v: vdd-cam2-5v-regulator {
+			vdd_cam2_5v: vdd-cam-5v-regulator {
 				compatible = "regulator-fixed";
-				regulator-name = "vdd_cam_5v";
+				regulator-name = "vdd_cam2_5v";
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-min-microvolt = <3300000>;
 				regulator-max-microvolt = <3300000>;
 			};
 
-			cam2_dovdd: cam2-dovdd {
+			cam2_dovdd: cam-dovdd {
 				compatible = "regulator-fixed";
-				regulator-name = "cam_dovdd";
+				regulator-name = "cam2_dovdd";
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-min-microvolt = <1800000>;
@@ -48,9 +48,9 @@
 				vin-supply = <&vdd_cam2_5v>;
 			};
 
-			cam2_avdd: cam2-avdd {
+			cam2_avdd: cam-avdd {
 				compatible = "regulator-fixed";
-				regulator-name = "cam_avdd";
+				regulator-name = "cam2_avdd";
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-min-microvolt = <2800000>;
@@ -58,9 +58,9 @@
 				vin-supply = <&vdd_cam2_5v>;
 			};
 
-			cam2_dvdd: cam2-dvdd {
+			cam2_dvdd: cam-dvdd {
 				compatible = "regulator-fixed";
-				regulator-name = "cam_dvdd";
+				regulator-name = "cam2_dvdd";
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-min-microvolt = <1200000>;
@@ -80,7 +80,7 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			dw9714_2: dw9714-2@c {
+			dw9714_2: dw9714@c {
 				status = "okay";
 				compatible = "dongwoon,dw9714";
 				reg = <0xc>;
@@ -95,7 +95,7 @@
 				rockchip,camera-module-facing = "back";
 			};
 
-			ov8858_2: ov8858-2@36 {
+			ov8858_2: ov8858@36 {
 				compatible = "ovti,ov8858";
 				status = "okay";
 				reg = <0x36>;
@@ -108,7 +108,7 @@
 				reset-gpios = <&gpio6 11 GPIO_ACTIVE_LOW>;
 				rotation = <180>;
 
-				rockchip,camera-module-index = <2>;
+				rockchip,camera-module-index = <0>;
 				rockchip,camera-module-facing = "back";
 				rockchip,camera-module-name = "HS5885-BNSM1018-V01";
 				rockchip,camera-module-lens-name = "default";
