@@ -19,11 +19,7 @@
 
 //vp0
 // #include "rk3588-lubancat-5-hdmi1-vp0.dtsi"
-#include "rk3588-lubancat-5-hdmi0.dtsi"
-
-
-//vp1
-// #include "rk3588-lubancat-5-dp0.dtsi"
+// #include "rk3588-lubancat-5-hdmi0.dtsi"
 
 //vp2 二选一
 // #include "rk3588-lubancat-5-dp1-edp_port.dtsi"
@@ -43,6 +39,33 @@
 / {
 	model = "Embedfire LubanCat-5";
 	compatible = "rockchip,rk3588-lubancat-5", "rockchip,rk3588";
+
+	/* If hdmirx node is disabled, delete the reserved-memory node here. */
+	// reserved-memory {
+	// 	#address-cells = <2>;
+	// 	#size-cells = <2>;
+	// 	ranges;
+
+	// 	/* Reserve 128MB memory for hdmirx-controller@fdee0000 */
+	// 	cma {
+	// 		compatible = "shared-dma-pool";
+	// 		reusable;
+	// 		reg = <0x0 (256 * 0x100000) 0x0 (128 * 0x100000)>;
+	// 		linux,cma-default;
+	// 	};
+	// };
+
+	// hdmiin-sound {
+	// 	compatible = "rockchip,hdmi";
+	// 	rockchip,mclk-fs = <128>;
+	// 	rockchip,format = "i2s";
+	// 	rockchip,bitclock-master = <&hdmirx_ctrler>;
+	// 	rockchip,frame-master = <&hdmirx_ctrler>;
+	// 	rockchip,card-name = "rockchip,hdmiin";
+	// 	rockchip,cpu = <&i2s7_8ch>;
+	// 	rockchip,codec = <&hdmirx_ctrler 0>;
+	// 	rockchip,jack-det;
+	// };
 
 	adc_keys: adc-keys {
 		compatible = "adc-keys";
@@ -72,10 +95,17 @@
 		};
 
 		abc_led: abc-led {
-			label = "123_led";
+			label = "abc_led";
 			linux,default-trigger = "heartbeat";
 			default-state = "on";
 			gpios = <&gpio6 0 GPIO_ACTIVE_HIGH>;
+		};
+
+		def_led: def-led {
+			label = "def_led";
+			linux,default-trigger = "heartbeat";
+			default-state = "on";
+			gpios = <&gpio7 2 GPIO_ACTIVE_HIGH>;
 		};
 	};
 
@@ -263,7 +293,7 @@
 	fan: pwm-fan {
 		compatible = "pwm-fan";
 		#cooling-cells = <2>;
-		pwms = <&pwm4 0 250000 0>;
+		pwms = <&pwm4 0 5000 0>;
 		cooling-levels = <0 100 150 200 255>;
 		rockchip,temp-trips = <
 			35000	1
@@ -367,15 +397,16 @@
 	pinctrl-0 = <&i2c5m2_xfer>;
 	status = "okay";
 
-	gpio6: gpio-expander-0@21 {
+	gpio6: gpio-expander@21 {
 		compatible = "nxp,pca9535";
+		status = "okay";
 		reg = <0x21>;
 		gpio-controller;
 		#gpio-cells = <2>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_pca9535>;
+		pinctrl-0 = <&pinctrl_pca9535_1>;
 		interrupt-parent = <&gpio2>;
-		interrupts = <RK_PC4 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <RK_PC4 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-controller;
 		#interrupt-cells = <2>;
 	};
@@ -386,18 +417,18 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c6m0_xfer>;
 
-	gpio7: gpio-expander-0@21 {
+	gpio7: gpio-expander@21 {
 		compatible = "nxp,pca9535";
-		status = "disabled";
+		status = "okay";
 		reg = <0x21>;
 		gpio-controller;
 		#gpio-cells = <2>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_pca9535>;
-		interrupt-parent = <&gpio2>;
-		interrupts = <RK_PC4 IRQ_TYPE_LEVEL_LOW>;
-		interrupt-controller;
-		#interrupt-cells = <2>;
+		// pinctrl-0 = <&pinctrl_pca9535_2>;
+		// interrupt-parent = <&gpio2>;
+		// interrupts = <RK_PC5 IRQ_TYPE_LEVEL_HIGH>;
+		// interrupt-controller;
+		// #interrupt-cells = <2>;
 	};
 };
 
@@ -1243,7 +1274,6 @@
 
 &usbdp_phy1_u3 {
 	status = "okay";
-
 };
 
 &usbdrd3_1 {
@@ -1331,11 +1361,12 @@
 
 /* USB3.1 HOST2 Controller  */
 &usbhost3_0 {
-	status = "disabled";
+	status = "okay";
 };
 
 &usbhost_dwc3_0 {
-	status = "disabled";
+	dr_mode = "host";
+	status = "okay";
 };
 
 /* USB2.0 HOST0 PHY2 */
@@ -1398,6 +1429,10 @@
 // 	hdmirx-det-gpios = <&gpio1 RK_PD5 GPIO_ACTIVE_LOW>;
 // 	pinctrl-names = "default";
 // 	pinctrl-0 = <&hdmim1_rx &hdmirx_det>;
+// };
+
+// &i2s7_8ch {
+//        status = "okay";
 // };
 
 /* dp0 display */
@@ -1502,8 +1537,11 @@
 	};
 
 	io {
-		pinctrl_pca9535: pinctrl-pca9535{
-			rockchip,pins = <2 RK_PC4 RK_FUNC_GPIO &pcfg_pull_up>;
+		pinctrl_pca9535_1: pinctrl-pca9535-1{
+			rockchip,pins = <2 RK_PC4 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+		pinctrl_pca9535_2: pinctrl-pca9535-2{
+			rockchip,pins = <2 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
