@@ -296,7 +296,7 @@
 	fan: pwm-fan {
 		compatible = "pwm-fan";
 		#cooling-cells = <2>;
-		pwms = <&pwm0 0 250000 0>;
+		pwms = <&pwm0 0 5000 0>;
 		cooling-levels = <0 100 150 200 255>;
 		rockchip,temp-trips = <
 			40000	1
