@@ -40,33 +40,6 @@
 	model = "Embedfire LubanCat-5";
 	compatible = "rockchip,rk3588-lubancat-5", "rockchip,rk3588";
 
-	/* If hdmirx node is disabled, delete the reserved-memory node here. */
-	// reserved-memory {
-	// 	#address-cells = <2>;
-	// 	#size-cells = <2>;
-	// 	ranges;
-
-	// 	/* Reserve 128MB memory for hdmirx-controller@fdee0000 */
-	// 	cma {
-	// 		compatible = "shared-dma-pool";
-	// 		reusable;
-	// 		reg = <0x0 (256 * 0x100000) 0x0 (128 * 0x100000)>;
-	// 		linux,cma-default;
-	// 	};
-	// };
-
-	// hdmiin-sound {
-	// 	compatible = "rockchip,hdmi";
-	// 	rockchip,mclk-fs = <128>;
-	// 	rockchip,format = "i2s";
-	// 	rockchip,bitclock-master = <&hdmirx_ctrler>;
-	// 	rockchip,frame-master = <&hdmirx_ctrler>;
-	// 	rockchip,card-name = "rockchip,hdmiin";
-	// 	rockchip,cpu = <&i2s7_8ch>;
-	// 	rockchip,codec = <&hdmirx_ctrler 0>;
-	// 	rockchip,jack-det;
-	// };
-
 	adc_keys: adc-keys {
 		compatible = "adc-keys";
 		io-channels = <&saradc 1>;
@@ -1429,22 +1402,6 @@
 &vepu {
 	status = "okay";
 };
-
-/* Should work with at least 128MB cma reserved above. */
-// &hdmirx_ctrler {
-// 	status = "okay";
-
-// 	#sound-dai-cells = <1>;
-// 	/* Effective level used to trigger HPD: 0-low, 1-high */
-// 	hpd-trigger-level = <1>;
-// 	hdmirx-det-gpios = <&gpio1 RK_PD5 GPIO_ACTIVE_LOW>;
-// 	pinctrl-names = "default";
-// 	pinctrl-0 = <&hdmim1_rx &hdmirx_det>;
-// };
-
-// &i2s7_8ch {
-//        status = "okay";
-// };
 
 /* dp0 display */
 
