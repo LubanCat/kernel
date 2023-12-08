@@ -18,13 +18,13 @@
 #include "rk3588-linux.dtsi"
 
 //vp2 二选一
-// #include "rk3588-lubancat-5-dp-1.dtsi"
-// #include "rk3588-lubancat-5-hdmi-1.dtsi"
-// dsi0
-// #include "rk3588-lubancat-5-dsi1.dtsi"
+// #include "rk3588-lubancat-5-dp1-edp_port.dtsi"
+// #include "rk3588-lubancat-5-hdmi1.dtsi"
+// #include "rk3588-lubancat-5-dsi0-ebf410125_1080p.dtsi"
 
-/*vp3*/
-//dsi1
+//vp3 
+// #include "rk3588-lubancat-5-dsi1-ebf410125_1080p.dtsi"
+
 
 
 / {
@@ -1341,6 +1341,14 @@
 	status = "okay";
 };
 
+&hdmi0_in_vp1 {
+	status = "disabled";
+};
+
+&hdmi0_in_vp2 {
+	status = "disabled";
+};
+
 &hdptxphy_hdmi0 {
 	status = "okay";
 };
@@ -1382,9 +1390,9 @@
 
 &vop {
 	status = "okay";
-	disable-win-move;
-	assigned-clocks = <&cru ACLK_VOP>;
-	assigned-clock-rates = <800000000>;
+	// disable-win-move;
+	// assigned-clocks = <&cru ACLK_VOP>;
+	// assigned-clock-rates = <800000000>;
 };
 
 &vop_mmu {
