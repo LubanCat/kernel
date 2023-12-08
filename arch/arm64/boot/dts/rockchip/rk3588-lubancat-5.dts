@@ -154,13 +154,13 @@
 		vin-supply = <&vcc_3v3_s3>;
 	};
 
-	vbus5v0_typec: vbus5v0-typec {
+	vbus_typec: vbus-typec {
 		compatible = "regulator-fixed";
-		regulator-name = "vbus5v0_typec";
+		regulator-name = "vbus_typec";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
 		enable-active-high;
-		gpio = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio2 RK_PB5 GPIO_ACTIVE_HIGH>;
 		vin-supply = <&vcc5v0_usb>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&typec_vbus_en>;
@@ -190,15 +190,13 @@
 		pinctrl-0 = <&usb20_host_pwr_en>;
 	};
 
-	vcc3v3_pcie20: vcc3v3-pcie20 {
+	vcc3v3_pcie: vcc3v3-pcie30 {
 		compatible = "regulator-fixed";
-		regulator-name = "vcc3v3_pcie20";
+		regulator-name = "vcc3v3_pcie";
+		regulator-always-on;
+		regulator-boot-on;
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		enable-active-high;
-		regulator-always-on;
-		gpios = <&gpio1 RK_PD5 GPIO_ACTIVE_HIGH>;
-		startup-delay-us = <5000>;
 		vin-supply = <&vcc5v0_sys>;
 	};
 
@@ -536,10 +534,10 @@
 		compatible = "fcs,fusb302";
 		reg = <0x22>;
 		interrupt-parent = <&gpio0>;
-		interrupts = <RK_PC6 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <RK_PC4 IRQ_TYPE_LEVEL_LOW>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&fusb302_int>;
-		vbus-supply = <&vbus5v0_typec>;
+		vbus-supply = <&vbus_typec>;
 		status = "okay";
 
 		ports {
@@ -1314,6 +1312,27 @@
 	};
 };
 
+&pcie30phy {
+	rockchip,pcie30-phymode = <PHY_MODE_PCIE_AGGREGATION>;
+	status = "okay";
+};
+
+&pcie3x4 {
+	reset-gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_HIGH>;
+	vpcie3v3-supply = <&vcc3v3_pcie>;
+	status = "okay";
+};
+
+&combphy1_ps {
+	status = "okay";
+};
+
+&pcie2x1l0 {
+	reset-gpios = <&gpio4 RK_PA5 GPIO_ACTIVE_HIGH>;
+	disable-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
+
 /* SATA30/PCIe20x1_2 Combo PHY */
 &combphy0_ps {
 	status = "okay";
@@ -1321,17 +1340,35 @@
 
 &pcie2x1l2 {
 	reset-gpios = <&gpio3 RK_PD1 GPIO_ACTIVE_HIGH>;
-	disable-gpios = <&gpio3 RK_PC6 GPIO_ACTIVE_HIGH>;
-	vpcie3v3-supply = <&vcc3v3_pcie20>;
+	disable-gpios = <&gpio3 RK_PC1 GPIO_ACTIVE_HIGH>;
 	status = "okay";
+};
+
+/* USB3.1/DP Combo PHY1 */
+&usbdp_phy1 {
+	status = "okay";
+};
+
+&usbdp_phy1_u3 {
+	status = "okay";
+
+};
+
+&usbdrd3_1 {
+	status = "okay";
+};
+
+&usbdrd_dwc3_1 {
+	status = "okay";
+	dr_mode = "host";
 };
 
 /* USB3.1/DP Combo PHY0 */
 &usbdp_phy0 {
 	orientation-switch;
 	svid = <0xff01>;
-	sbu1-dc-gpios = <&gpio4 RK_PB3 GPIO_ACTIVE_HIGH>;
-	sbu2-dc-gpios = <&gpio4 RK_PB4 GPIO_ACTIVE_HIGH>;
+	sbu1-dc-gpios = <&gpio1 RK_PA0 GPIO_ACTIVE_HIGH>;
+	sbu2-dc-gpios = <&gpio1 RK_PA1 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
 	port {
@@ -1384,6 +1421,14 @@
 
 &u2phy0_otg {
 	rockchip,typec-vbus-det;
+	status = "okay";
+};
+
+&u2phy1 {
+	status = "okay";
+};
+
+&u2phy1_otg {
 	status = "okay";
 };
 
@@ -1564,11 +1609,11 @@
 
 	usb-typec {
 		fusb302_int: fusb302-int {
-			rockchip,pins = <0 RK_PC6 RK_FUNC_GPIO &pcfg_pull_up>;
+			rockchip,pins = <0 RK_PC4 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 
 		typec_vbus_en: typec-vbus-en {
-			rockchip,pins = <1 RK_PC1 RK_FUNC_GPIO &pcfg_pull_none>;
+			rockchip,pins = <2 RK_PB5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
