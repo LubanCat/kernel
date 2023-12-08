@@ -17,6 +17,14 @@
 #include "rk3588.dtsi"
 #include "rk3588-linux.dtsi"
 
+//vp0
+// #include "rk3588-lubancat-5-hdmi1-vp0.dtsi"
+#include "rk3588-lubancat-5-hdmi0.dtsi"
+
+
+//vp1
+// #include "rk3588-lubancat-5-dp0.dtsi"
+
 //vp2 二选一
 // #include "rk3588-lubancat-5-dp1-edp_port.dtsi"
 // #include "rk3588-lubancat-5-hdmi1.dtsi"
@@ -25,7 +33,12 @@
 //vp3 
 // #include "rk3588-lubancat-5-dsi1-ebf410125_1080p.dtsi"
 
-
+// #include "rk3588-lubancat-5-cam0.dtsi"
+// #include "rk3588-lubancat-5-cam1.dtsi"
+// #include "rk3588-lubancat-5-cam2.dtsi"
+// #include "rk3588-lubancat-5-cam3.dtsi"
+// #include "rk3588-lubancat-5-cam4.dtsi"
+// #include "rk3588-lubancat-5-cam5.dtsi"
 
 / {
 	model = "Embedfire LubanCat-5";
@@ -56,6 +69,13 @@
 			gpios = <&gpio0 RK_PD3 GPIO_ACTIVE_LOW>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&sys_status_led_pin>;
+		};
+
+		abc_led: abc-led {
+			label = "123_led";
+			linux,default-trigger = "heartbeat";
+			default-state = "on";
+			gpios = <&gpio6 0 GPIO_ACTIVE_HIGH>;
 		};
 	};
 
@@ -196,16 +216,6 @@
 		rockchip,jack-det;
 	};
 
-	hdmi0_sound: hdmi0-sound {
-		status = "okay";
-		compatible = "rockchip,hdmi";
-		rockchip,mclk-fs = <128>;
-		rockchip,card-name = "rockchip-hdmi0";
-		rockchip,cpu = <&i2s5_8ch>;
-		rockchip,codec = <&hdmi0>;
-		rockchip,jack-det;
-	};
-
 	es8388_sound: es8388-sound {
 		status = "okay";
 		compatible = "rockchip,multicodecs-card";
@@ -337,6 +347,60 @@
 	center-supply = <&vdd_ddr_s0>;
 	mem-supply = <&vdd_log_s0>;
 };
+
+&i2c4 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c4m3_xfer>;
+};
+
+&i2c3 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c3m0_xfer>;
+};
+
+
+
+&i2c5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c5m2_xfer>;
+	status = "okay";
+
+	gpio6: gpio-expander-0@21 {
+		compatible = "nxp,pca9535";
+		reg = <0x21>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_pca9535>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <RK_PC4 IRQ_TYPE_LEVEL_LOW>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+	};
+};
+
+&i2c6 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c6m0_xfer>;
+
+	gpio7: gpio-expander-0@21 {
+		compatible = "nxp,pca9535";
+		status = "disabled";
+		reg = <0x21>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_pca9535>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <RK_PC4 IRQ_TYPE_LEVEL_LOW>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+	};
+};
+
 
 &i2c0 {
 	pinctrl-names = "default";
@@ -1267,12 +1331,11 @@
 
 /* USB3.1 HOST2 Controller  */
 &usbhost3_0 {
-	status = "okay";
+	status = "disabled";
 };
 
 &usbhost_dwc3_0 {
-	dr_mode = "host";
-	status = "okay";
+	status = "disabled";
 };
 
 /* USB2.0 HOST0 PHY2 */
@@ -1325,34 +1388,6 @@
 	status = "okay";
 };
 
-/* hdmi0 display */
-&hdmi0 {
-	enable-gpios = <&gpio1 RK_PC4 GPIO_ACTIVE_HIGH>;
-	cec-enable = "true";
-	status = "okay";
-};
-
-&route_hdmi0{
-	status = "okay";
-	connect = <&vp0_out_hdmi0>;
-};
-
-&hdmi0_in_vp0 {
-	status = "okay";
-};
-
-&hdmi0_in_vp1 {
-	status = "disabled";
-};
-
-&hdmi0_in_vp2 {
-	status = "disabled";
-};
-
-&hdptxphy_hdmi0 {
-	status = "okay";
-};
-
 /* Should work with at least 128MB cma reserved above. */
 // &hdmirx_ctrler {
 // 	status = "okay";
@@ -1391,8 +1426,6 @@
 &vop {
 	status = "okay";
 	// disable-win-move;
-	// assigned-clocks = <&cru ACLK_VOP>;
-	// assigned-clock-rates = <800000000>;
 };
 
 &vop_mmu {
@@ -1403,7 +1436,7 @@
 &vp0 {
 	rockchip,plane-mask = <(1 << ROCKCHIP_VOP2_CLUSTER0 | 1 << ROCKCHIP_VOP2_ESMART0)>;
 	rockchip,primary-plane = <ROCKCHIP_VOP2_ESMART0>;
-	cursor-win-id = <ROCKCHIP_VOP2_CLUSTER0>;
+	// cursor-win-id = <ROCKCHIP_VOP2_CLUSTER0>;
 };
 
 &vp1 {
@@ -1425,8 +1458,8 @@
 };
 
 &display_subsystem {
-	clocks = <&hdptxphy_hdmi_clk0>;
-	clock-names = "hdmi0_phy_pll";
+	clocks = <&hdptxphy_hdmi_clk0>, <&hdptxphy_hdmi_clk1>;
+	clock-names = "hdmi0_phy_pll", "hdmi1_phy_pll";
 };
 
 &hdptxphy_hdmi_clk0 {
@@ -1465,6 +1498,12 @@
 	hdmi {
 		hdmirx_det: hdmirx-det {
 			rockchip,pins = <1 RK_PD5 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+
+	io {
+		pinctrl_pca9535: pinctrl-pca9535{
+			rockchip,pins = <2 RK_PC4 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 	};
 
