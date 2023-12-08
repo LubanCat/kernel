@@ -1269,6 +1269,11 @@
 	status = "okay";
 };
 
+/* this is a watchdog */
+&wdt {
+	status = "okay";
+};
+
 &gmac1 {
 	/* Use rgmii-rxid mode to disable rx delay inside Soc */
 	phy-mode = "rgmii-rxid";
