@@ -1,0 +1,66 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/display/drm_mipi_dsi.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include "dt-bindings/usb/pd.h"
+
+/ {
+	fragment@0 {
+		target = <&hdmirx_ctrler>;
+
+		__overlay__ {
+			status = "okay";
+			#sound-dai-cells = <1>;
+			/* Effective level used to trigger HPD: 0-low, 1-high */
+			hpd-trigger-level = <1>;
+			hdmirx-det-gpios = <&gpio1 RK_PD5 GPIO_ACTIVE_LOW>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&hdmim1_rx &hdmirx_det>;
+		};
+	};
+
+	fragment@1 {
+		target = <&i2s7_8ch>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target-path = "/";
+
+		__overlay__ {
+			/* If hdmirx node is disabled, delete the reserved-memory node here. */
+			reserved-memory {
+				#address-cells = <2>;
+				#size-cells = <1>;
+				ranges;
+
+				/* Reserve 128MB memory for hdmirx-controller@fdee0000 */
+				cma {
+					compatible = "shared-dma-pool";
+					reusable;
+					reg = <0x0 (256 * 0x100000) 0x0 (128 * 0x100000)>;
+					linux,cma-default;
+				};
+			};
+
+			hdmiin-sound {
+				compatible = "rockchip,hdmi";
+				rockchip,mclk-fs = <128>;
+				rockchip,format = "i2s";
+				rockchip,bitclock-master = <&hdmirx_ctrler>;
+				rockchip,frame-master = <&hdmirx_ctrler>;
+				rockchip,card-name = "rockchip,hdmiin";
+				rockchip,cpu = <&i2s7_8ch>;
+				rockchip,codec = <&hdmirx_ctrler 0>;
+				rockchip,jack-det;
+			};
+		};
+	};
+};
+

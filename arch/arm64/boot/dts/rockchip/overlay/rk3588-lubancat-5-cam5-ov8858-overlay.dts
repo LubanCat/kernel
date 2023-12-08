@@ -1,0 +1,287 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/usb/pd.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pwm/pwm.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/input/rk-input.h>
+#include <dt-bindings/display/drm_mipi_dsi.h>
+#include <dt-bindings/display/rockchip_vop.h>
+#include <dt-bindings/sensor-dev.h>
+
+/ {
+	fragment@0 {
+		target-path = "/";
+
+		__overlay__ {
+			ext_cam5_25m_clk: external-camera-25m-clock {
+				compatible = "fixed-clock";
+				clock-frequency = <25000000>;
+				clock-output-names = "ext_cam_25m_clk";
+				#clock-cells = <0>;
+			};
+
+			ext_cam5_24m_clk: external-camera-24m-clock {
+				compatible = "fixed-clock";
+				#clock-cells = <0>;
+				clock-frequency = <24000000>;
+				clock-output-names = "ext_cam_24m_clk";
+			};
+
+			vdd_cam5_5v: vdd-cam5-5v-regulator {
+				compatible = "regulator-fixed";
+				regulator-name = "vdd_cam_5v";
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+			};
+
+			cam5_dovdd: cam5-dovdd {
+				compatible = "regulator-fixed";
+				regulator-name = "cam_dovdd";
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				vin-supply = <&vdd_cam5_5v>;
+			};
+
+			cam5_avdd: cam5-avdd {
+				compatible = "regulator-fixed";
+				regulator-name = "cam_avdd";
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-min-microvolt = <2800000>;
+				regulator-max-microvolt = <2800000>;
+				vin-supply = <&vdd_cam5_5v>;
+			};
+
+			cam5_dvdd: cam5-dvdd {
+				compatible = "regulator-fixed";
+				regulator-name = "cam_dvdd";
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <1200000>;
+				vin-supply = <&vdd_cam5_5v>;
+			};
+		};
+	};
+
+/* Link path: sensor->csi2_dphy5->mipi5_csi2->rkcif_mipi_lvds5--->rkcif_mipi_lvds5_sditf->rkisp0_vir2 */
+	fragment@1 {
+		target = <&i2c7>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&i2c7m0_xfer>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			dw9714_5: dw9714-5@c {
+				status = "okay";
+				compatible = "dongwoon,dw9714";
+				reg = <0xc>;
+				rockchip,camera-module-index = <0>;
+				rockchip,vcm-max-current = <100>;
+				rockchip,vcm-start-current = <0>;
+				rockchip,vcm-rated-current = <100>;
+				rockchip,vcm-step-mode = <0xd>;
+				rockchip,vcm-dlc-enable = <0>;
+				rockchip,vcm-mclk = <0>;	
+				rockchip,vcm-t-src = <0>;
+				rockchip,camera-module-facing = "back";
+			};
+
+			ov8858_5: ov8858-5@36 {
+				compatible = "ovti,ov8858";
+				status = "okay";
+				reg = <0x36>;
+				clocks = <&ext_cam5_24m_clk>;
+				clock-names = "xvclk";
+				dovdd-supply= <&cam5_dovdd>; /* 1.8v */
+				avdd-supply = <&cam5_avdd>;  /* 2.8v */
+				dvdd-supply = <&cam5_dvdd>;  /* 1.2v */
+				pwdn-gpios = <&gpio7 8 GPIO_ACTIVE_LOW>;
+				reset-gpios = <&gpio7 9 GPIO_ACTIVE_LOW>;
+				rotation = <180>;
+
+				rockchip,camera-module-index = <2>;
+				rockchip,camera-module-facing = "back";
+				rockchip,camera-module-name = "HS5885-BNSM1018-V01";
+				rockchip,camera-module-lens-name = "default";
+				lens-focus = <&dw9714_5>;
+
+				port {
+					/* MIPI CSI-2 bus endpoint */
+					ov8858_out5: endpoint {
+						remote-endpoint = <&dphy5_in_ov8858>;
+						clock-lanes = <0>;
+						data-lanes = <1 2>;
+					};
+				};
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&csi2_dphy1_hw>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+
+	fragment@3 {
+		target = <&csi2_dphy5>;
+
+		__overlay__ {
+			status = "okay";
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@0 {
+					reg = <0>;
+					#address-cells = <1>;
+					#size-cells = <0>;
+
+					dphy5_in_ov8858: endpoint@2 {
+						reg = <2>;
+						remote-endpoint = <&ov8858_out5>;
+						data-lanes = <1 2>;
+					};
+				};
+
+				port@1 {
+					reg = <1>;
+					#address-cells = <1>;
+					#size-cells = <0>;
+
+					csidphy5_out: endpoint@0 {
+						reg = <0>;
+						remote-endpoint = <&mipi5_csi2_input>;
+					};
+				};
+			};
+		};
+	};
+
+	fragment@4 {
+		target = <&mipi5_csi2>;
+
+		__overlay__ {
+			status = "okay";
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@0 {
+					reg = <0>;
+					#address-cells = <1>;
+					#size-cells = <0>;
+
+					mipi5_csi2_input: endpoint@1 {
+						reg = <1>;
+						remote-endpoint = <&csidphy5_out>;
+					};
+				};
+
+				port@1 {
+					reg = <1>;
+					#address-cells = <1>;
+					#size-cells = <0>;
+
+					mipi5_csi2_output: endpoint@0 {
+						reg = <0>;
+						remote-endpoint = <&cif_mipi5_in0>;
+					};
+				};
+			};
+		};
+	};
+
+	fragment@5 {
+		target = <&rkcif>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@6 {
+		target = <&rkcif_mipi_lvds5>;
+
+		__overlay__ {
+			status = "okay";
+
+			port {
+				cif_mipi5_in0: endpoint {
+					remote-endpoint = <&mipi5_csi2_output>;
+				};
+			};
+		};
+	};
+
+	fragment@7 {
+		target = <&rkcif_mipi_lvds5_sditf>;
+
+		__overlay__ {
+			status = "okay";
+
+			port {
+				mipi_lvds5_sditf: endpoint {
+					remote-endpoint = <&isp1_vir2>;
+				};
+			};
+		};
+	};
+
+	fragment@8 {
+		target = <&rkcif_mmu>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@9 {
+		target = <&rkisp1>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@10 {
+		target = <&isp1_mmu>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@11 {
+		target = <&rkisp1_vir2>;
+
+		__overlay__ {
+			status = "okay";
+
+			port {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				isp1_vir2: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&mipi_lvds5_sditf>;
+				};
+			};
+		};
+	};
+
+};
+

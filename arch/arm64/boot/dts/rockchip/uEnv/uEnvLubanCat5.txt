@@ -6,5 +6,20 @@ enable_uboot_overlays=1
 #overlay_start
 
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi-8k-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-edp-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
+
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi-rx-overlay.dtbo
+
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam0-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam1-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam2-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam3-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam4-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam5-ov8858-overlay.dtbo
 
 #overlay_end
