@@ -26,7 +26,8 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588s-lubancat-4-dsi1-800x1280-overlay.dtbo \
 	rk3588s-lubancat-4-dsi1-1024x600-overlay.dtbo \
 	rk3588s-lubancat-4-dsi1-1080p-overlay.dtbo \
-	rk3588s-lubancat-4-hdmi0-8k-overlay.dtbo
+	rk3588s-lubancat-4-hdmi0-8k-overlay.dtbo \
+	rk3588-lubancat-msata-overlay.dtbo 
 
 endif
 
