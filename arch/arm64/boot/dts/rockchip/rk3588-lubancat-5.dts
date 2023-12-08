@@ -40,6 +40,20 @@
 	model = "Embedfire LubanCat-5";
 	compatible = "rockchip,rk3588-lubancat-5", "rockchip,rk3588";
 
+	/* If hdmirx node is disabled, delete the reserved-memory node here. */
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+		/* Reserve 256MB memory for hdmirx-controller@fdee0000 */
+		cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			reg = <0x0 (256 * 0x100000) 0x0 (256 * 0x100000)>;
+			linux,cma-default;
+		};
+	};
+
 	adc_keys: adc-keys {
 		compatible = "adc-keys";
 		io-channels = <&saradc 1>;
@@ -110,17 +124,7 @@
 		regulator-max-microvolt = <5000000>;
 		vin-supply = <&vcc12v_dcin>;
 	};
-
-	vcc12v0_sys: vcc12v0-sys {
-		compatible = "regulator-fixed";
-		regulator-name = "vcc12v0_sys";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <12000000>;
-		regulator-max-microvolt = <12000000>;
-		vin-supply = <&vcc12v_dcin>;
-	};
-
+	
 	vcc_5v0: vcc-5v0 {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc_5v0";
