@@ -109,13 +109,13 @@
 		};
 	};
 
-	vcc5v0_dcin: vcc5v0-dcin {
+	vcc12v_dcin: vcc12v-dcin {
 		compatible = "regulator-fixed";
-		regulator-name = "vcc5v_dcin";
 		regulator-always-on;
 		regulator-boot-on;
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+		regulator-name = "vcc12v_dcin";
 	};
 	
 	vcc5v0_sys: vcc5v0-sys {
@@ -125,7 +125,7 @@
 		regulator-boot-on;
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
-		vin-supply = <&vcc5v0_dcin>;
+		vin-supply = <&vcc12v_dcin>;
 	};
 
 	vcc_5v0: vcc-5v0 {
