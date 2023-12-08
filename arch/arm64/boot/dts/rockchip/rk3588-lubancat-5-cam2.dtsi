@@ -8,7 +8,7 @@
 	ext_cam2_25m_clk: external-camera-25m-clock {
 		compatible = "fixed-clock";
 		clock-frequency = <25000000>;
-		clock-output-names = "ext_cam_25m_clk";
+		clock-output-names = "ext_cam2_25m_clk";
 		#clock-cells = <0>;
 	};
 
@@ -16,12 +16,12 @@
 		compatible = "fixed-clock";
 		#clock-cells = <0>;
 		clock-frequency = <24000000>;
-		clock-output-names = "ext_cam_24m_clk";
+		clock-output-names = "ext_cam2_24m_clk";
 	};
 
 	vdd_cam2_5v: vdd-cam2-5v-regulator {
 		compatible = "regulator-fixed";
-		regulator-name = "vdd_cam_5v";
+		regulator-name = "vdd_cam2_5v";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <3300000>;
@@ -30,7 +30,7 @@
 
 	cam2_dovdd: cam2-dovdd {
 		compatible = "regulator-fixed";
-		regulator-name = "cam_dovdd";
+		regulator-name = "cam2_dovdd";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <1800000>;
@@ -40,7 +40,7 @@
 
 	cam2_avdd: cam2-avdd {
 		compatible = "regulator-fixed";
-		regulator-name = "cam_avdd";
+		regulator-name = "cam2_avdd";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <2800000>;
@@ -50,7 +50,7 @@
 
 	cam2_dvdd: cam2-dvdd {
 		compatible = "regulator-fixed";
-		regulator-name = "cam_dvdd";
+		regulator-name = "cam2_dvdd";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <1200000>;
@@ -66,7 +66,7 @@
 	pinctrl-0 = <&i2c3m0_xfer>;
 
 	
-	dw9714: dw9714@c {
+	dw9714_2: dw9714@c {
 		status = "okay";
 		compatible = "dongwoon,dw9714";
 		reg = <0xc>;
@@ -81,24 +81,24 @@
 		rockchip,camera-module-facing = "back";
 	};
 
-	ov5647: ov5647@36 {
+	ov5647_2: ov5647@36 {
 		compatible = "ovti,ov5647";
 		status = "disabled";
 		reg = <0x36>;
 		clocks = <&ext_cam2_25m_clk>;
 		clock-names = "ext_cam_25m_clk";
 		pwdn-gpios = <&gpio6 10 GPIO_ACTIVE_LOW>;
-		lens-focus = <&dw9714>;
+		lens-focus = <&dw9714_2>;
 
 		port {
-			ov5647_out: endpoint {
+			ov5647_out2: endpoint {
 				remote-endpoint = <&dphy1_in_ov5647>;
 				data-lanes = <1 2>;
 			};
 		};
 	};
 
-	ov5648: camera@36 {
+	ov5648_2: camera@36 {
 		compatible = "ovti,ov5648";
 		status = "disabled";
 		reg = <0x36>;
@@ -115,11 +115,11 @@
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "THDS11073";
 		rockchip,camera-module-lens-name = "Largan-40122a1";
-		lens-focus = <&dw9714>;
+		lens-focus = <&dw9714_2>;
 
 		port {
 			/* MIPI CSI-2 bus endpoint */
-			ov5648_out: endpoint {
+			ov5648_out2: endpoint {
 				remote-endpoint = <&dphy1_in_ov5648>;
 				clock-lanes = <0>;
 				data-lanes = <1 2>;
@@ -127,7 +127,7 @@
 		};
 	};
 
-	ov8858: ov8858@36 {
+	ov8858_2: ov8858@36 {
 		compatible = "ovti,ov8858";
 		status = "okay";
 		reg = <0x36>;
@@ -144,11 +144,11 @@
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "HS5885-BNSM1018-V01";
 		rockchip,camera-module-lens-name = "default";
-		lens-focus = <&dw9714>;
+		lens-focus = <&dw9714_2>;
 
 		port {
 			/* MIPI CSI-2 bus endpoint */
-			ov8858_out: endpoint {
+			ov8858_out2: endpoint {
 				remote-endpoint = <&dphy1_in_ov8858>;
 				clock-lanes = <0>;
 				data-lanes = <1 2>;
@@ -156,7 +156,7 @@
 		};
 	};
 
-   ov13850: ov13850@10 {
+   ov13850_2: ov13850@10 {
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
@@ -173,11 +173,11 @@
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "ZC-OV13850R2A-V1";
 		rockchip,camera-module-lens-name = "Largan-50064B31";
-		lens-focus = <&dw9714>;
+		lens-focus = <&dw9714_2>;
 
 		port {
 			/* MIPI CSI-2 bus endpoint */
-			ov13850_out: endpoint {
+			ov13850_out2: endpoint {
 				remote-endpoint = <&dphy1_in_ov13850>;
 				clock-lanes = <0>;
 				data-lanes = <1 2>;
@@ -204,25 +204,25 @@
 
 			dphy1_in_ov5648: endpoint@1 {
 				reg = <1>;
-				remote-endpoint = <&ov5648_out>;
+				remote-endpoint = <&ov5648_out2>;
 				data-lanes = <1 2>;
 			};
 
 			dphy1_in_ov8858: endpoint@2 {
 				reg = <2>;
-				remote-endpoint = <&ov8858_out>;
+				remote-endpoint = <&ov8858_out2>;
 				data-lanes = <1 2>;
 			};
 
 			dphy1_in_ov13850: endpoint@3 {
 				reg = <3>;
-				remote-endpoint = <&ov13850_out>;
+				remote-endpoint = <&ov13850_out2>;
 				data-lanes = <1 2>;
 			};
 
 			dphy1_in_ov5647: endpoint@4 {
 				reg = <4>;
-				remote-endpoint = <&ov5647_out>;
+				remote-endpoint = <&ov5647_out2>;
 				data-lanes = <1 2>;
 			};
 		};

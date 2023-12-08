@@ -8,7 +8,7 @@
 	ext_cam1_25m_clk: external-camera-25m-clock {
 		compatible = "fixed-clock";
 		clock-frequency = <25000000>;
-		clock-output-names = "ext_cam_25m_clk";
+		clock-output-names = "ext_cam1_25m_clk";
 		#clock-cells = <0>;
 	};
 
@@ -16,12 +16,12 @@
 		compatible = "fixed-clock";
 		#clock-cells = <0>;
 		clock-frequency = <24000000>;
-		clock-output-names = "ext_cam_24m_clk";
+		clock-output-names = "ext_cam1_24m_clk";
 	};
 
 	vdd_cam1_5v: vdd-cam1-5v-regulator {
 		compatible = "regulator-fixed";
-		regulator-name = "vdd_cam_5v";
+		regulator-name = "vdd_cam1_5v";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <3300000>;
@@ -30,7 +30,7 @@
 
 	cam1_dovdd: cam1-dovdd {
 		compatible = "regulator-fixed";
-		regulator-name = "cam_dovdd";
+		regulator-name = "cam1_dovdd";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <1800000>;
@@ -40,7 +40,7 @@
 
 	cam1_avdd: cam1-avdd {
 		compatible = "regulator-fixed";
-		regulator-name = "cam_avdd";
+		regulator-name = "cam1_avdd";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <2800000>;
@@ -50,7 +50,7 @@
 
 	cam1_dvdd: cam1-dvdd {
 		compatible = "regulator-fixed";
-		regulator-name = "cam_dvdd";
+		regulator-name = "cam1_dvdd";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <1200000>;
@@ -63,7 +63,7 @@
 &i2c5 {
 	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&i2c5m3_xfer>;
+	pinctrl-0 = <&i2c5m2_xfer>;
 
 	dw9714_1: dw9714-1@c {
 		status = "okay";
@@ -80,12 +80,12 @@
 		rockchip,camera-module-facing = "back";
 	};
 
-	ov5647_1: ov5647-1@36 {
+	ov5647_1: ov5647@36 {
 		compatible = "ovti,ov5647";
 		status = "disabled";
 		reg = <0x36>;
 		clocks = <&ext_cam1_25m_clk>;
-		clock-names = "ext_cam_25m_clk";
+		clock-names = "ext_cam1_25m_clk";
 		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_LOW>;
 		lens-focus = <&dw9714_1>;
 
@@ -97,7 +97,7 @@
 		};
 	};
 
-	ov5648_1: ov5648-1@36 {
+	ov5648_1: ov5648@36 {
 		compatible = "ovti,ov5648";
 		status = "disabled";
 		reg = <0x36>;
@@ -126,7 +126,7 @@
 		};
 	};
 
-	ov8858_1: ov8858-1@36 {
+	ov8858_1: ov8858@36 {
 		compatible = "ovti,ov8858";
 		status = "disabled";
 		reg = <0x36>;
@@ -155,7 +155,7 @@
 		};
 	};
 
-   ov13850_1: ov13850-1@10 {
+   ov13850_1: ov13850@10 {
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
@@ -184,7 +184,7 @@
 		};
     };
 
-	imx415_1: imx415-1@1a {
+	imx415_1: imx415@1a {
 		compatible = "sony,imx415";
 		status = "okay";
 		reg = <0x1a>;
@@ -194,6 +194,9 @@
 		avdd-supply = <&cam1_avdd>;
 		dovdd-supply = <&cam1_dovdd>;
 		dvdd-supply = <&cam1_dvdd>;
+		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 9 GPIO_ACTIVE_LOW>;
+
 		rockchip,camera-module-index = <1>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "CMK-OT2022-PX1";

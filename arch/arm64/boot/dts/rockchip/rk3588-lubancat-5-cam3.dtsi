@@ -8,7 +8,7 @@
 	ext_cam3_25m_clk: external-camera-25m-clock {
 		compatible = "fixed-clock";
 		clock-frequency = <25000000>;
-		clock-output-names = "ext_cam_25m_clk";
+		clock-output-names = "ext_cam3_25m_clk";
 		#clock-cells = <0>;
 	};
 
@@ -16,12 +16,12 @@
 		compatible = "fixed-clock";
 		#clock-cells = <0>;
 		clock-frequency = <24000000>;
-		clock-output-names = "ext_cam_24m_clk";
+		clock-output-names = "ext_cam3_24m_clk";
 	};
 
 	vdd_cam3_5v: vdd-cam3-5v-regulator {
 		compatible = "regulator-fixed";
-		regulator-name = "vdd_cam_5v";
+		regulator-name = "vdd_cam3_5v";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <3300000>;
@@ -30,7 +30,7 @@
 
 	cam3_dovdd: cam3-dovdd {
 		compatible = "regulator-fixed";
-		regulator-name = "cam_dovdd";
+		regulator-name = "cam3_dovdd";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <1800000>;
@@ -40,7 +40,7 @@
 
 	cam3_avdd: cam3-avdd {
 		compatible = "regulator-fixed";
-		regulator-name = "cam_avdd";
+		regulator-name = "cam3_avdd";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <2800000>;
@@ -50,7 +50,7 @@
 
 	cam3_dvdd: cam3-dvdd {
 		compatible = "regulator-fixed";
-		regulator-name = "cam_dvdd";
+		regulator-name = "cam3_dvdd";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <1200000>;
@@ -59,14 +59,14 @@
 	};
 };
 
-/* Link path: sensor->csi2_dphy2->mipi3_csi2->rkcif_mipi_lvds3--->rkcif_mipi_lvds2_sditf->rkisp0_vir2 */
+/* Link path: sensor->csi2_dphy2->mipi3_csi2->rkcif_mipi_lvds3--->rkcif_mipi_lvds3_sditf->rkisp1_vir0 */
 &i2c4 {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c4m3_xfer>;
 
 	
-	dw9714_3: dw9714-3@c {
+	dw9714_3: dw9714@c {
 		status = "okay";
 		compatible = "dongwoon,dw9714";
 		reg = <0xc>;
@@ -81,12 +81,12 @@
 		rockchip,camera-module-facing = "back";
 	};
 
-	ov5647_3: ov5647-3@36 {
+	ov5647_3: ov5647@36 {
 		compatible = "ovti,ov5647";
 		status = "disabled";
 		reg = <0x36>;
 		clocks = <&ext_cam3_25m_clk>;
-		clock-names = "ext_cam_25m_clk";
+		clock-names = "ext_cam3_25m_clk";
 		pwdn-gpios = <&gpio6 12 GPIO_ACTIVE_LOW>;
 		lens-focus = <&dw9714_3>;
 
@@ -98,7 +98,7 @@
 		};
 	};
 
-	ov5648_3: ov5648-3@36 {
+	ov5648_3: ov5648@36 {
 		compatible = "ovti,ov5648";
 		status = "disabled";
 		reg = <0x36>;
@@ -127,7 +127,7 @@
 		};
 	};
 
-	ov8858_3: ov8858-3@36 {
+	ov8858_3: ov8858@36 {
 		compatible = "ovti,ov8858";
 		status = "okay";
 		reg = <0x36>;
@@ -156,7 +156,7 @@
 		};
 	};
 
-   ov13850_3: ov13850-3@10 {
+   ov13850_3: ov13850@10 {
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
