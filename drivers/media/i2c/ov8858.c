@@ -45,9 +45,9 @@
 #ifndef V4L2_CID_DIGITAL_GAIN
 #define V4L2_CID_DIGITAL_GAIN		V4L2_CID_GAIN
 #endif
-#define OV8858_PIXEL_RATE		(360000000LL * 2LL * 2LL / 10LL)
+#define OV8858_PIXEL_RATE		(552000000LL * 2LL * 2LL / 10LL)
 
-#define MIPI_FREQ			360000000U
+#define MIPI_FREQ			552000000U
 #define OV8858_XVCLK_FREQ		24000000
 
 #define CHIP_ID				0x008858
@@ -1415,6 +1415,8 @@ static const struct regval ov8858_1632x1224_regs_r2a_2lane[] = {
  */
 static const struct regval ov8858_3264x2448_regs_r2a_2lane[] = {
 	{0x0100, 0x00},
+	{0x0302, 0x2e},// pll1_multi
+	{0x030d, 0x2e},
 	{0x3501, 0x9a},// exposure M
 	{0x3502, 0x20},// exposure L
 	{0x3778, 0x1a},//
@@ -1859,7 +1861,7 @@ static const struct ov8858_mode supported_modes_r2a_2lane[] = {
 		.height = 2448,
 		.max_fps = {
 			.numerator = 10000,
-			.denominator = 150000,
+			.denominator = 230000,
 		},
 		.exp_def = 0x09a0,
 		.hts_def = 0x0794 * 2,
