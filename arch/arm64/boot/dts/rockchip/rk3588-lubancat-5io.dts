@@ -22,12 +22,11 @@
 // #include "rk3588-lubancat-5io-hdmi0.dtsi"
 
 //vp2 二选一
-// #include "rk3588-lubancat-5-dp1-edp_port.dtsi"
-#include "rk3588-lubancat-5io-hdmi1.dtsi"
-// #include "rk3588-lubancat-5-dsi0-ebf410125_1080p.dtsi"
+// #include "rk3588-lubancat-5io-hdmi1.dtsi"
+// #include "rk3588-lubancat-5io-dsi0-ebf410125_1080p.dtsi"
 
 //vp3 
-// #include "rk3588-lubancat-5-dsi1-ebf410125_1080p.dtsi"
+// #include "rk3588-lubancat-5io-dsi1-ebf410125_1080p.dtsi"
 
 // #include "rk3588-lubancat-5-cam0.dtsi"
 // #include "rk3588-lubancat-5-cam1.dtsi"
@@ -81,14 +80,14 @@
 			pinctrl-0 = <&sys_status_led_pin>;
 		};
 
-		// spk_ctrl: spk-ctrl {
-		// 	label = "spk_ctrl";
-		// 	default-state = "on";
-		// 	linux,default-trigger = "none";
-		// 	gpios = <&gpio1 RK_PB1 GPIO_ACTIVE_HIGH>;
-		// 	pinctrl-names = "default";
-		// 	pinctrl-0 = <&spk_ctrl_pin>;
-		// };
+		spk_ctrl: spk-ctrl {
+			label = "spk_ctrl";
+			default-state = "on";
+			linux,default-trigger = "none";
+			gpios = <&gpio3 RK_PD5 GPIO_ACTIVE_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&spk_ctrl_pin>;
+		};
 	};
 
 	vcc12v_dcin: vcc12v-dcin {
@@ -1606,7 +1605,7 @@
 		};
 
 		spk_ctrl_pin: spk-ctrl-pin {
-			rockchip,pins = <1 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>;
+			rockchip,pins = <3 RK_PD5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
