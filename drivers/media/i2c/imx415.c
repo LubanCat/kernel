@@ -76,7 +76,7 @@
 
 #define IMX415_4LANES			4
 
-#define IMX415_MAX_PIXEL_RATE		(MIPI_FREQ_1440M / 10 * 2 * IMX415_4LANES)
+#define IMX415_MAX_PIXEL_RATE		(MIPI_FREQ_720M / 10 * 2 * IMX415_4LANES)
 #define OF_CAMERA_HDR_MODE		"rockchip,camera-hdr-mode"
 
 // #define IMX415_XVCLK_FREQ		37125000
@@ -912,9 +912,9 @@ static const struct imx415_mode supported_modes[] = {
 		.hts_def = 0x044c * IMX415_4LANES * 2,
 		.vts_def = 0x08ca,
 		.global_reg_list = imx415_global_10bit_3864x2192_regs,
-		.reg_list = imx415_linear_10bit_3864x2192_1440M_24M_regs,
+		.reg_list = imx415_linear_10bit_3864x2192_720M_24M_regs,
 		.hdr_mode = NO_HDR,
-		.mipi_freq_idx =7,
+		.mipi_freq_idx =2,
 		.bpp = 10,
 		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
 	},
