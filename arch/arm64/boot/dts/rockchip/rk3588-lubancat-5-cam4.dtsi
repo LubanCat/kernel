@@ -4,60 +4,7 @@
  *
  */
 
-/ {
-	ext_cam4_25m_clk: external-camera-25m-clock {
-		compatible = "fixed-clock";
-		clock-frequency = <25000000>;
-		clock-output-names = "ext_cam4_25m_clk";
-		#clock-cells = <0>;
-	};
-
-	ext_cam4_24m_clk: external-camera-24m-clock {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-frequency = <24000000>;
-		clock-output-names = "ext_cam4_24m_clk";
-	};
-
-	vdd_cam4_5v: vdd-cam4-5v-regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "vdd_cam4_5v";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-	};
-
-	cam4_dovdd: cam4-dovdd {
-		compatible = "regulator-fixed";
-		regulator-name = "cam4_dovdd";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		vin-supply = <&vdd_cam4_5v>;
-	};
-
-	cam4_avdd: cam4-avdd {
-		compatible = "regulator-fixed";
-		regulator-name = "cam4_avdd";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <2800000>;
-		regulator-max-microvolt = <2800000>;
-		vin-supply = <&vdd_cam4_5v>;
-	};
-
-	cam4_dvdd: cam4-dvdd {
-		compatible = "regulator-fixed";
-		regulator-name = "cam4_dvdd";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <1200000>;
-		regulator-max-microvolt = <1200000>;
-		vin-supply = <&vdd_cam4_5v>;
-	};
-};
+#include "rk3588-lubancat-cam.dtsi"
 
 /* Link path: sensor->csi2_dphy4->mipi4_csi2->rkcif_mipi_lvds4--->rkcif_mipi_lvds4_sditf->rkisp1_vir1 */
 &i2c6 {
@@ -66,7 +13,7 @@
 	pinctrl-0 = <&i2c6m0_xfer>;
 
 	
-	dw9714_4: dw9714@c {
+	dphy4_dw9714: dw9714@c {
 		status = "okay";
 		compatible = "dongwoon,dw9714";
 		reg = <0xc>;
@@ -81,32 +28,32 @@
 		rockchip,camera-module-facing = "back";
 	};
 
-	ov5647_4: ov5647@36 {
+	dphy4_ov5647: ov5647@36 {
 		compatible = "ovti,ov5647";
 		status = "disabled";
 		reg = <0x36>;
-		clocks = <&ext_cam4_25m_clk>;
+		clocks = <&ext_cam_25m_clk>;
 		clock-names = "ext_cam_25m_clk";
 		pwdn-gpios = <&gpio6 14 GPIO_ACTIVE_LOW>;
-		lens-focus = <&dw9714_4>;
+		lens-focus = <&dphy4_dw9714>;
 
 		port {
-			ov5647_out4: endpoint {
+			ov5647_dphy4_out: endpoint {
 				remote-endpoint = <&dphy4_in_ov5647>;
 				data-lanes = <1 2>;
 			};
 		};
 	};
 
-	ov5648_4: ov5648@36 {
+	dphy4_ov5648: ov5648@36 {
 		compatible = "ovti,ov5648";
 		status = "disabled";
 		reg = <0x36>;
-		clocks = <&ext_cam4_24m_clk>;
+		clocks = <&ext_cam_24m_clk>;
 		clock-names = "xvclk";
-		dovdd-supply= <&cam4_dovdd>; /* 1.8v */
-		avdd-supply = <&cam4_avdd>;  /* 2.8v */
-		dvdd-supply = <&cam4_dvdd>;  /* 1.2v */
+		dovdd-supply= <&cam_dovdd>; /* 1.8v */
+		avdd-supply = <&cam_avdd>;  /* 2.8v */
+		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
 		pwdn-gpios = <&gpio6 14 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio6 15 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
@@ -115,11 +62,11 @@
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "THDS11073";
 		rockchip,camera-module-lens-name = "Largan-40122a1";
-		lens-focus = <&dw9714_4>;
+		lens-focus = <&dphy4_dw9714>;
 
 		port {
 			/* MIPI CSI-2 bus endpoint */
-			ov5648_out4: endpoint {
+			ov5648_dphy4_out: endpoint {
 				remote-endpoint = <&dphy4_in_ov5648>;
 				clock-lanes = <0>;
 				data-lanes = <1 2>;
@@ -127,15 +74,15 @@
 		};
 	};
 
-	ov8858_4: ov8858@36 {
+	dphy4_ov8858: ov8858@36 {
 		compatible = "ovti,ov8858";
 		status = "okay";
 		reg = <0x36>;
-		clocks = <&ext_cam4_24m_clk>;
+		clocks = <&ext_cam_24m_clk>;
 		clock-names = "xvclk";
-		dovdd-supply= <&cam4_dovdd>; /* 1.8v */
-		avdd-supply = <&cam4_avdd>;  /* 2.8v */
-		dvdd-supply = <&cam4_dvdd>;  /* 1.2v */
+		dovdd-supply= <&cam_dovdd>; /* 1.8v */
+		avdd-supply = <&cam_avdd>;  /* 2.8v */
+		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
 		pwdn-gpios = <&gpio6 14 GPIO_ACTIVE_LOW>;
 		reset-gpios = <&gpio6 15 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
@@ -144,11 +91,11 @@
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "HS5885-BNSM1018-V01";
 		rockchip,camera-module-lens-name = "default";
-		lens-focus = <&dw9714_4>;
+		lens-focus = <&dphy4_dw9714>;
 
 		port {
 			/* MIPI CSI-2 bus endpoint */
-			ov8858_out4: endpoint {
+			ov8858_dphy4_out: endpoint {
 				remote-endpoint = <&dphy4_in_ov8858>;
 				clock-lanes = <0>;
 				data-lanes = <1 2>;
@@ -156,15 +103,15 @@
 		};
 	};
 
-   ov13850_4: ov13850@10 {
+    dphy4_ov13850: ov13850@10 {
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
-		clocks = <&ext_cam4_24m_clk>;
+		clocks = <&ext_cam_24m_clk>;
 		clock-names = "xvclk";
-		dovdd-supply= <&cam4_dovdd>; /* 1.8v */
-		avdd-supply = <&cam4_avdd>;  /* 2.8v */
-		dvdd-supply = <&cam4_dvdd>;  /* 1.2v */
+		dovdd-supply= <&cam_dovdd>; /* 1.8v */
+		avdd-supply = <&cam_avdd>;  /* 2.8v */
+		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
 		pwdn-gpios = <&gpio6 14 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio6 15 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
@@ -173,11 +120,11 @@
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "ZC-OV13850R2A-V1";
 		rockchip,camera-module-lens-name = "Largan-50064B31";
-		lens-focus = <&dw9714_4>;
+		lens-focus = <&dphy4_dw9714>;
 
 		port {
 			/* MIPI CSI-2 bus endpoint */
-			ov13850_out4: endpoint {
+			ov13850_dphy4_out: endpoint {
 				remote-endpoint = <&dphy4_in_ov13850>;
 				clock-lanes = <0>;
 				data-lanes = <1 2>;
@@ -204,25 +151,25 @@
 
 			dphy4_in_ov5648: endpoint@1 {
 				reg = <1>;
-				remote-endpoint = <&ov5648_out4>;
+				remote-endpoint = <&ov5648_dphy4_out>;
 				data-lanes = <1 2>;
 			};
 
 			dphy4_in_ov8858: endpoint@2 {
 				reg = <2>;
-				remote-endpoint = <&ov8858_out4>;
+				remote-endpoint = <&ov8858_dphy4_out>;
 				data-lanes = <1 2>;
 			};
 
 			dphy4_in_ov13850: endpoint@3 {
 				reg = <3>;
-				remote-endpoint = <&ov13850_out4>;
+				remote-endpoint = <&ov13850_dphy4_out>;
 				data-lanes = <1 2>;
 			};
 
 			dphy4_in_ov5647: endpoint@4 {
 				reg = <4>;
-				remote-endpoint = <&ov5647_out4>;
+				remote-endpoint = <&ov5647_dphy4_out>;
 				data-lanes = <1 2>;
 			};
 		};
@@ -265,7 +212,7 @@
 
 			mipi4_csi2_output: endpoint@0 {
 				reg = <0>;
-				remote-endpoint = <&cif_mipi4_in0>;
+				remote-endpoint = <&cif_mipi_in4>;
 			};
 		};
 	};
@@ -279,7 +226,7 @@
 	status = "okay";
 
 	port {
-		cif_mipi4_in0: endpoint {
+		cif_mipi_in4: endpoint {
 			remote-endpoint = <&mipi4_csi2_output>;
 		};
 	};

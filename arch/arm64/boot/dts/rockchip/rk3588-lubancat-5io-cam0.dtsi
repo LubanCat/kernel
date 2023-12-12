@@ -4,15 +4,15 @@
  *
  */
 
+/* Link path: sensor->csi2_dcphy0->mipi0_csi2->rkcif_mipi_lvds--->rkcif_mipi_lvds_sditf->rkisp0_vir0 */
 #include "rk3588-lubancat-cam.dtsi"
 
-/* Link path: sensor->csi2_dcphy1->mipi1_csi2->rkcif_mipi_lvds1--->rkcif_mipi_lvds1_sditf->rkisp0_vir1 */
-&i2c5 {
+&i2c0 {
 	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&i2c5m2_xfer>;
+	pinctrl-0 = <&i2c0m2_xfer>;
 
-	dcphy1_dw9714: dw9714@c {
+	dcphy0_dw9714: dw9714@c {
 		status = "okay";
 		compatible = "dongwoon,dw9714";
 		reg = <0xc>;
@@ -27,24 +27,24 @@
 		rockchip,camera-module-facing = "back";
 	};
 
-	dcphy1_ov5647: ov5647@36 {
+	dcphy0_ov5647: ov5647@36 {
 		compatible = "ovti,ov5647";
 		status = "disabled";
 		reg = <0x36>;
 		clocks = <&ext_cam_25m_clk>;
 		clock-names = "ext_cam_25m_clk";
-		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_LOW>;
-		lens-focus = <&dcphy1_dw9714>;
+		pwdn-gpios = <&gpio1 RK_PA3 GPIO_ACTIVE_LOW>;
+		lens-focus = <&dcphy0_dw9714>;
 
 		port {
-			ov5647_dcphy1_out: endpoint {
-				remote-endpoint = <&dcphy1_in_ov5647>;
+			ov5647_dcphy0_out: endpoint {
+				remote-endpoint = <&dcphy0_in_ov5647>;
 				data-lanes = <1 2>;
 			};
 		};
 	};
 
-	dcphy1_ov5648: ov5648@36 {
+	dcphy0_ov5648: ov5648@36 {
 		compatible = "ovti,ov5648";
 		status = "disabled";
 		reg = <0x36>;
@@ -53,27 +53,27 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio6 9 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio1 RK_PA3 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
 
-		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-index = <0>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "THDS11073";
 		rockchip,camera-module-lens-name = "Largan-40122a1";
-		lens-focus = <&dcphy1_dw9714>;
+		lens-focus = <&dcphy0_dw9714>;
 
 		port {
 			/* MIPI CSI-2 bus endpoint */
-			ov5648_dcphy1_out: endpoint {
-				remote-endpoint = <&dcphy1_in_ov5648>;
+			ov5648_dcphy0_out: endpoint {
+				remote-endpoint = <&dcphy0_in_ov5648>;
 				clock-lanes = <0>;
 				data-lanes = <1 2>;
 			};
 		};
 	};
 
-	dcphy1_ov8858: ov8858@36 {
+	dcphy0_ov8858: ov8858@36 {
 		compatible = "ovti,ov8858";
 		status = "disabled";
 		reg = <0x36>;
@@ -82,27 +82,27 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio6 9 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio1 RK_PA3 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
-		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-index = <0>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "HS5885-BNSM1018-V01";
 		rockchip,camera-module-lens-name = "default";
-		lens-focus = <&dcphy1_dw9714>;
+		lens-focus = <&dcphy0_dw9714>;
 
 		port {
 			/* MIPI CSI-2 bus endpoint */
-			ov8858_dcphy1_out: endpoint {
-				remote-endpoint = <&dcphy1_in_ov8858>;
+			ov8858_dcphy0_out: endpoint {
+				remote-endpoint = <&dcphy0_in_ov8858>;
 				clock-lanes = <0>;
 				data-lanes = <1 2>;
 			};
 		};
 	};
 
-   dcphy1_ov13850: ov13850@10 {
+   	dcphy0_ov13850: ov13850@10 {
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
@@ -111,27 +111,27 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio6 9 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio1 RK_PA3 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
-		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-index = <2>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "ZC-OV13850R2A-V1";
 		rockchip,camera-module-lens-name = "Largan-50064B31";
-		lens-focus = <&dcphy1_dw9714>;
+		lens-focus = <&dcphy0_dw9714>;
 
 		port {
 			/* MIPI CSI-2 bus endpoint */
-			ov13850_dcphy1_out: endpoint {
-				remote-endpoint = <&dcphy1_in_ov13850>;
+			ov13850_dcphy0_out: endpoint {
+				remote-endpoint = <&dcphy0_in_ov13850>;
 				clock-lanes = <0>;
 				data-lanes = <1 2>;
 			};
 		};
     };
 
-	dcphy1_imx415: imx415@1a {
+	dcphy0_imx415: imx415@1a {
 		compatible = "sony,imx415";
 		status = "okay";
 		reg = <0x1a>;
@@ -141,27 +141,29 @@
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
-		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio6 9 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio1 RK_PA3 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_LOW>;
 
-		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-index = <0>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "CMK-OT2022-PX1";
 		rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
+		// NO_HDR:0 HDR_X2:5 HDR_X3:6
+		// rockchip,camera-hdr-mode = <0>;
 		port {
-			imx415_dcphy1_out: endpoint {
-				remote-endpoint = <&dcphy1_in_imx415>;
+			imx415_dcphy0_out: endpoint {
+				remote-endpoint = <&dcphy0_in_imx415>;
 				data-lanes = <1 2 3 4>;
 			};
 		};
 	};
 };
 
-&mipi_dcphy1 {
+&mipi_dcphy0 {
 	status = "okay";
 };
 
-&csi2_dcphy1 {
+&csi2_dcphy0 {
 	status = "okay";
 	
 	ports {
@@ -173,33 +175,33 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			dcphy1_in_ov5648: endpoint@1 {
+			dcphy0_in_ov5648: endpoint@1 {
 				reg = <1>;
-				remote-endpoint = <&ov5648_dcphy1_out>;
+				remote-endpoint = <&ov5648_dcphy0_out>;
 				data-lanes = <1 2>;
 			};
 
-			dcphy1_in_ov8858: endpoint@2 {
+			dcphy0_in_ov8858: endpoint@2 {
 				reg = <2>;
-				remote-endpoint = <&ov8858_dcphy1_out>;
+				remote-endpoint = <&ov8858_dcphy0_out>;
 				data-lanes = <1 2>;
 			};
 
-			dcphy1_in_ov13850: endpoint@3 {
+			dcphy0_in_ov13850: endpoint@3 {
 				reg = <3>;
-				remote-endpoint = <&ov13850_dcphy1_out>;
-				data-lanes = <1 2>;
-			};
-			
-			dcphy1_in_ov5647: endpoint@4 {
-				reg = <4>;
-				remote-endpoint = <&ov5647_dcphy1_out>;
+				remote-endpoint = <&ov13850_dcphy0_out>;
 				data-lanes = <1 2>;
 			};
 
-			dcphy1_in_imx415: endpoint@5 {
+			dcphy0_in_ov5647: endpoint@4 {
+				reg = <4>;
+				remote-endpoint = <&ov5647_dcphy0_out>;
+				data-lanes = <1 2>;
+			};
+
+			dcphy0_in_imx415: endpoint@5 {
 				reg = <5>;
-				remote-endpoint = <&imx415_dcphy1_out>;
+				remote-endpoint = <&imx415_dcphy0_out>;
 				data-lanes = <1 2 3 4>;
 			};
 		};
@@ -209,15 +211,15 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			csidcphy1_out: endpoint@0 {
+			csidcphy0_out: endpoint@0 {
 				reg = <0>;
-				remote-endpoint = <&mipi1_csi2_input>;
+				remote-endpoint = <&mipi0_csi2_input>;
 			};
 		};
 	};
 };
 
-&mipi1_csi2 {
+&mipi0_csi2 {
 	status = "okay";
 
 	ports {
@@ -229,9 +231,9 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			mipi1_csi2_input: endpoint@1 {
+			mipi0_csi2_input: endpoint@1 {
 				reg = <1>;
-				remote-endpoint = <&csidcphy1_out>;
+				remote-endpoint = <&csidcphy0_out>;
 			};
 		};
 
@@ -240,9 +242,9 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			mipi1_csi2_output: endpoint@0 {
+			mipi0_csi2_output: endpoint@0 {
 				reg = <0>;
-				remote-endpoint = <&cif_mipi_in1>;
+				remote-endpoint = <&cif_mipi_in0>;
 			};
 		};
 	};
@@ -252,22 +254,22 @@
 	status = "okay";
 };
 
-&rkcif_mipi_lvds1 {
+&rkcif_mipi_lvds {
 	status = "okay";
 
 	port {
-		cif_mipi_in1: endpoint {
-			remote-endpoint = <&mipi1_csi2_output>;
+		cif_mipi_in0: endpoint {
+			remote-endpoint = <&mipi0_csi2_output>;
 		};
 	};
 };
 
-&rkcif_mipi_lvds1_sditf {
+&rkcif_mipi_lvds_sditf {
 	status = "okay";
 
 	port {
-		mipi_lvds1_sditf: endpoint {
-			remote-endpoint = <&isp0_vir1>;
+		mipi_lvds_sditf: endpoint {
+			remote-endpoint = <&isp0_vir0>;
 		};
 	};
 };
@@ -284,16 +286,16 @@
 	status = "okay";
 };
 
-&rkisp0_vir1 {
+&rkisp0_vir0 {
 	status = "okay";
 
 	port {
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		isp0_vir1: endpoint@0 {
+		isp0_vir0: endpoint@0 {
 			reg = <0>;
-			remote-endpoint = <&mipi_lvds1_sditf>;
+			remote-endpoint = <&mipi_lvds_sditf>;
 		};
 	};
 };

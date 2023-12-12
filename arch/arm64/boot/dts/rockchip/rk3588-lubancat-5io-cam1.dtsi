@@ -7,10 +7,10 @@
 #include "rk3588-lubancat-cam.dtsi"
 
 /* Link path: sensor->csi2_dcphy1->mipi1_csi2->rkcif_mipi_lvds1--->rkcif_mipi_lvds1_sditf->rkisp0_vir1 */
-&i2c5 {
+&i2c1 {
 	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&i2c5m2_xfer>;
+	pinctrl-0 = <&i2c1m2_xfer>;
 
 	dcphy1_dw9714: dw9714@c {
 		status = "okay";
@@ -33,7 +33,7 @@
 		reg = <0x36>;
 		clocks = <&ext_cam_25m_clk>;
 		clock-names = "ext_cam_25m_clk";
-		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio6 2 GPIO_ACTIVE_LOW>;
 		lens-focus = <&dcphy1_dw9714>;
 
 		port {
@@ -53,8 +53,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio6 9 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio6 2 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 3 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <1>;
@@ -82,8 +82,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio6 9 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio6 2 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 3 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <1>;
@@ -111,8 +111,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio6 9 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio6 2 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 3 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <1>;
@@ -141,8 +141,8 @@
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
-		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio6 9 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio6 2 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 3 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <1>;
 		rockchip,camera-module-facing = "back";
