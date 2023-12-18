@@ -28,12 +28,21 @@
 //vp3 
 // #include "rk3588-lubancat-5io-dsi1-ebf410125_1080p.dtsi"
 
-// #include "rk3588-lubancat-5-cam0.dtsi"
-// #include "rk3588-lubancat-5-cam1.dtsi"
-// #include "rk3588-lubancat-5-cam2.dtsi"
-// #include "rk3588-lubancat-5-cam3.dtsi"
-// #include "rk3588-lubancat-5-cam4.dtsi"
-// #include "rk3588-lubancat-5-cam5.dtsi"
+//只有一帧
+// #include "rk3588-lubancat-5io-cam0.dtsi"
+
+// #include "rk3588-lubancat-5io-cam1.dtsi" 
+
+// i2c4失效，读不到任何i2c设备
+// #include "rk3588-lubancat-5io-cam2.dtsi"
+
+// #include "rk3588-lubancat-5io-cam3.dtsi"
+
+//i2c总线能读到马达的i2c 读不到摄像头的
+// #include "rk3588-lubancat-5io-cam4.dtsi" 
+
+// #include "rk3588-lubancat-5io-cam5.dtsi"
+
 
 / {
 	model = "Embedfire LubanCat-5";
@@ -410,6 +419,12 @@
 		| RKPM_CPU0_WKUP_EN
 		)
 	>;
+};
+
+&i2c2 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c2m4_xfer>;
 };
 
 &pwm11 {
@@ -1045,8 +1060,6 @@
 	status = "okay";
 };
 
-
-
 &iep {
 	status = "okay";
 };
@@ -1215,6 +1228,10 @@
 	status = "okay";
 };
 
+/* this is a watchdog */
+&wdt {
+	status = "okay";
+};
 
 &gmac0 {
 	/* Use rgmii-rxid mode to disable rx delay inside Soc */
@@ -1233,7 +1250,7 @@
 			 &gmac0_rgmii_clk
 			 &gmac0_rgmii_bus>;
 
-	tx_delay = <0x30>;
+	tx_delay = <0x26>;
 	/* rx_delay = <0x4f>; */
 
 	phy-handle = <&rgmii_phy0>;
@@ -1265,16 +1282,16 @@
 };
 
 &mdio0 {
-	rgmii_phy0: phy@1 {
+	rgmii_phy0: phy@0 {
 		compatible = "ethernet-phy-ieee802.3-c22";
-		reg = <0x1>;
+		reg = <0x0>;
 	};
 };
 
 &mdio1 {
-	rgmii_phy1: phy@0 {
+	rgmii_phy1: phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
-		reg = <0x00>;
+		reg = <0x01>;
 	};
 };
 
@@ -1485,9 +1502,9 @@
 	status = "okay";
 };
 
-// &dp0_in_vp2 {
-// 	status = "disabled";
-// };
+&dp0_in_vp2 {
+	status = "disabled";
+};
 
 &vop {
 	status = "okay";
@@ -1530,6 +1547,32 @@
 
 &hdptxphy_hdmi_clk0 {
     status = "okay";
+};
+
+&uart4 {
+	status = "okay";
+	pinctrl-0 = <&uart4m2_xfer>;
+};
+
+&uart7 {
+	status = "okay";
+	pinctrl-0 = <&uart7m2_xfer>;
+};
+
+&can1 {
+	assigned-clocks = <&cru CLK_CAN1>;
+	assigned-clock-rates = <150000000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&can1m1_pins>;
+	status = "okay";
+};
+
+&can2 {
+	assigned-clocks = <&cru CLK_CAN2>;
+	assigned-clock-rates = <150000000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&can2m0_pins>;
+	status = "okay";
 };
 
 &pinctrl {
