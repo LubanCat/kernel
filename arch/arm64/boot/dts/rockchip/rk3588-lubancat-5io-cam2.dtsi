@@ -12,7 +12,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c2m4_xfer>;
 
-	
 	dphy1_dw9714: dw9714@c {
 		status = "okay";
 		compatible = "dongwoon,dw9714";

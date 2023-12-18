@@ -7,7 +7,7 @@
 #include "rk3588-lubancat-cam.dtsi"
 
 /* Link path: sensor->csi2_dphy2->mipi3_csi2->rkcif_mipi_lvds3--->rkcif_mipi_lvds3_sditf->rkisp1_vir0 */
-&i2c4 {
+&i2c5 {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c5m3_xfer>;
@@ -31,8 +31,8 @@
 		compatible = "ovti,ov5647";
 		status = "disabled";
 		reg = <0x36>;
-		clocks = <&ext_cam3_25m_clk>;
-		clock-names = "ext_cam3_25m_clk";
+		clocks = <&ext_cam_25m_clk>;
+		clock-names = "ext_cam_25m_clk";
 		pwdn-gpios = <&gpio6 6 GPIO_ACTIVE_LOW>;
 		lens-focus = <&dphy2_dw9714>;
 
@@ -48,11 +48,11 @@
 		compatible = "ovti,ov5648";
 		status = "disabled";
 		reg = <0x36>;
-		clocks = <&ext_cam3_24m_clk>;
+		clocks = <&ext_cam_24m_clk>;
 		clock-names = "xvclk";
-		dovdd-supply= <&cam3_dovdd>; /* 1.8v */
-		avdd-supply = <&cam3_avdd>;  /* 2.8v */
-		dvdd-supply = <&cam3_dvdd>;  /* 1.2v */
+		dovdd-supply= <&cam_dovdd>; /* 1.8v */
+		avdd-supply = <&cam_avdd>;  /* 2.8v */
+		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
 		pwdn-gpios = <&gpio6 6 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio6 7 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
@@ -77,11 +77,11 @@
 		compatible = "ovti,ov8858";
 		status = "okay";
 		reg = <0x36>;
-		clocks = <&ext_cam3_24m_clk>;
+		clocks = <&ext_cam_24m_clk>;
 		clock-names = "xvclk";
-		dovdd-supply= <&cam3_dovdd>; /* 1.8v */
-		avdd-supply = <&cam3_avdd>;  /* 2.8v */
-		dvdd-supply = <&cam3_dvdd>;  /* 1.2v */
+		dovdd-supply= <&cam_dovdd>; /* 1.8v */
+		avdd-supply = <&cam_avdd>;  /* 2.8v */
+		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
 		pwdn-gpios = <&gpio6 6 GPIO_ACTIVE_LOW>;
 		reset-gpios = <&gpio6 7 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
@@ -106,11 +106,11 @@
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
-		clocks = <&ext_cam3_24m_clk>;
+		clocks = <&ext_cam_24m_clk>;
 		clock-names = "xvclk";
-		dovdd-supply= <&cam3_dovdd>; /* 1.8v */
-		avdd-supply = <&cam3_avdd>;  /* 2.8v */
-		dvdd-supply = <&cam3_dvdd>;  /* 1.2v */
+		dovdd-supply= <&cam_dovdd>; /* 1.8v */
+		avdd-supply = <&cam_avdd>;  /* 2.8v */
+		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
 		pwdn-gpios = <&gpio6 6 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio6 7 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
