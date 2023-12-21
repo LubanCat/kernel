@@ -172,7 +172,9 @@ board_id() {
     BOARD_ID=$ADC_CH2_INDEX$ADC_CH3_INDEX
 }
 
-if [ -e "/sys/bus/iio/devices/iio\:device0/in_voltage_scale" ];then
+if [ -e /boot/build-host ]; then
+    echo "Install kernel package"
+else
     board_id
     board_info ${BOARD_ID} ${SOC_type}
 
