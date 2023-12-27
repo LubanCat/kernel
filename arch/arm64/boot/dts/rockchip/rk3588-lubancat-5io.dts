@@ -80,22 +80,13 @@
 		status = "okay";
 		compatible = "gpio-leds";
 
-		sys_status_led: sys-status-led {
-			label = "sys_status_led";
+		sys_led: sys-led {
+			label = "sys_led";
 			linux,default-trigger = "heartbeat";
 			default-state = "on";
 			gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_HIGH>;
 			pinctrl-names = "default";
-			pinctrl-0 = <&sys_status_led_pin>;
-		};
-
-		spk_ctrl: spk-ctrl {
-			label = "spk_ctrl";
-			default-state = "on";
-			linux,default-trigger = "none";
-			gpios = <&gpio3 RK_PD5 GPIO_ACTIVE_HIGH>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&spk_ctrl_pin>;
+			pinctrl-0 = <&sys_led_pin>;
 		};
 	};
 
@@ -349,6 +340,7 @@
 		rockchip,card-name = "rockchip-es8388";
 		hp-det-gpio = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
 		hp-con-gpio = <&gpio0 RK_PC7 GPIO_ACTIVE_HIGH>;
+		spk-con-gpio = <&gpio3 RK_PD5 GPIO_ACTIVE_HIGH>;
 		io-channels = <&saradc 4>;
 		io-channel-names = "adc-detect";
 		keyup-threshold-microvolt = <1800000>;
@@ -360,8 +352,12 @@
 		rockchip,audio-routing =
 			"Headphone", "LOUT1",
 			"Headphone", "ROUT1",
+			"Speaker", "LOUT2",
+			"Speaker", "ROUT2",
 			"Headphone", "Headphone Power",
 			"Headphone", "Headphone Power",
+			"Speaker", "Speaker Power",
+			"Speaker", "Speaker Power",
 			"LINPUT1", "Main Mic",
 			"LINPUT2", "Main Mic",
 			"RINPUT1", "Headset Mic",
@@ -1643,12 +1639,8 @@
 	};
 
 	leds {
-		sys_status_led_pin: sys-status-led-pin {
+		sys_led_pin: sys-led-pin {
 			rockchip,pins = <1 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-
-		spk_ctrl_pin: spk-ctrl-pin {
-			rockchip,pins = <3 RK_PD5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
