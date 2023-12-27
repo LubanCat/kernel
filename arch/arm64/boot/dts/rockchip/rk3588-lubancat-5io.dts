@@ -440,10 +440,6 @@
     status = "okay";
 };
 
-&i2s5_8ch {
-	status = "okay";
-};
-
 &cpu_l0 {
 	cpu-supply = <&vdd_cpu_lit_s0>;
 	mem-supply = <&vdd_cpu_lit_mem_s0>;
@@ -1649,12 +1645,6 @@
 	leds {
 		sys_led_pin: sys-led-pin {
 			rockchip,pins = <1 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-	};
-
-	hdmi {
-		hdmirx_det: hdmirx-det {
-			rockchip,pins = <1 RK_PD5 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 	};
 };

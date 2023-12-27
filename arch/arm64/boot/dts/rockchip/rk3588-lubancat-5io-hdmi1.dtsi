@@ -1,5 +1,3 @@
-#include <dt-bindings/gpio/gpio.h>
-#include "rk3588.dtsi"
 
 / {
 	hdmi1_sound: hdmi1-sound {
@@ -20,6 +18,8 @@
 
 &hdmi1 {
 	enable-gpios = <&gpio1 RK_PA7 GPIO_ACTIVE_HIGH>;
+	pinctrl-0 = <&hdmim0_tx1_cec &hdmim0_tx1_hpd &hdmim0_tx1_scl &hdmim0_tx1_sda>;
+	pinctrl-names = "default";
 	status = "okay";
 };
 
@@ -36,5 +36,9 @@
 };
 
 &hdptxphy_hdmi1 {
+	status = "okay";
+};
+
+&i2s6_8ch {
 	status = "okay";
 };

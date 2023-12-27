@@ -1,5 +1,3 @@
-#include <dt-bindings/gpio/gpio.h>
-#include "rk3588.dtsi"
 
 / {
 	hdmi0_sound: hdmi0-sound {
@@ -13,22 +11,32 @@
 	};
 };
 
-/* hdmi0 display */
-&hdmi0 {
-	enable-gpios = <&gpio1 RK_PC4 GPIO_ACTIVE_HIGH>;
-	status = "okay";
-};
-
 &route_hdmi0{
 	status = "okay";
 	connect = <&vp0_out_hdmi0>;
+};
+
+&hdmi0 {
+	enable-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
+	status = "okay";
 };
 
 &hdmi0_in_vp0 {
 	status = "okay";
 };
 
+&hdmi0_in_vp1 {
+	status = "disabled";
+};
+
+&hdmi0_in_vp2 {
+	status = "disabled";
+};
+
 &hdptxphy_hdmi0 {
 	status = "okay";
 };
 
+&i2s5_8ch {
+	status = "okay";
+};
