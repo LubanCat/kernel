@@ -402,7 +402,7 @@
 };
 
 &rockchip_suspend {
-	status = "disabled";
+	status = "okay";
 	rockchip,sleep-debug-en = <1>;
 	rockchip,sleep-mode-config = <
 		(0
@@ -1291,38 +1291,42 @@
 	};
 };
 
+/* PCIe30 PHY Port0 & Port1 */
 &pcie30phy {
 	rockchip,pcie30-phymode = <PHY_MODE_PCIE_NANBNB>;
 	status = "okay";
 };
 
-// PCIEX2
-&pcie3x2 {
-	vpcie3v3-supply = <&vcc3v3_pcie>;
-	reset-gpios = <&gpio4 RK_PB1 GPIO_ACTIVE_HIGH>;
-	status = "okay";
-};
-
-// m2
+// PCIe30 Port0: M.2 M-Key
 &pcie3x4 {
 	num-lanes = <2>;
 	vpcie3v3-supply = <&vcc3v3_m2_pcie>;
 	status = "okay";
 };
 
-/* SATA30/PCIe20x1_2 Combo PHY */
+// PCIe30 Port1: PCIe-64P
+&pcie3x2 {
+	vpcie3v3-supply = <&vcc3v3_pcie>;
+	reset-gpios = <&gpio4 RK_PB1 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
+
+/* SATA30_HOST0/PCIe20x1_2 Combo PHY */
 &combphy0_ps {
 	status = "okay";
 };
 
+// SATA
 &sata0{
 	status = "okay";
 };
 
+/* SATA30_HOST1/PCIe20x1_0 Combo PHY */
 &combphy1_ps {
 	status = "okay";
 };
 
+// M.2 E-Key
 &pcie2x1l0 {
 	reset-gpios = <&gpio0 RK_PC5 GPIO_ACTIVE_HIGH>;
 	disable-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
@@ -1330,11 +1334,12 @@
 	status = "okay";
 };
 
-/* USB3.1/SATA/PCIe20x1_1 Combo PHY */
+/* USB30_HOST2/SATA30_HOST2/PCIe20x1_1 Combo PHY */
 &combphy2_psu {
 	status = "okay";
 };
 
+// Mini-PCIe
 &pcie2x1l1 {
 	reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_HIGH>;
 	disable-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>;
@@ -1342,25 +1347,7 @@
 	status = "okay";
 };
 
-/* USB3.1/DP Combo PHY1 */
-&usbdp_phy1 {
-	status = "okay";
-};
-
-&usbdp_phy1_u3 {
-	status = "okay";
-};
-
-&usbdrd3_1 {
-	status = "okay";
-};
-
-&usbdrd_dwc3_1 {
-	status = "okay";
-	dr_mode = "host";
-};
-
-/* USB3.1/DP Combo PHY0 */
+/* USB3.0_OTG/DP1.4 Combo PHY0 */
 &usbdp_phy0 {
 	orientation-switch;
 	svid = <0xff01>;
@@ -1391,7 +1378,7 @@
 	status = "okay";
 };
 
-/* USB3.1 OTG0 Controller  */
+/* USB3.0 OTG0 Controller  */
 &usbdrd3_0 {
 	status = "okay";
 };
@@ -1421,11 +1408,32 @@
 	status = "okay";
 };
 
+/* USB3.0_OTG/DP1.4 Combo PHY1 */
+&usbdp_phy1 {
+	// rockchip,dp-lane-mux = <2 3>;
+	status = "okay";
+};
+
+&usbdp_phy1_u3 {
+	status = "okay";
+};
+
+&usbdrd3_1 {
+	status = "okay";
+};
+
+&usbdrd_dwc3_1 {
+	dr_mode = "host";
+	status = "okay";
+};
+
+/* USB2.0 PHY1 */
 &u2phy1 {
 	status = "okay";
 };
 
 &u2phy1_otg {
+	phy-supply = <&vcc5v0_usb30_otg>;
 	status = "okay";
 };
 
@@ -1435,7 +1443,7 @@
 };
 
 &u2phy2_host {
-	phy-supply = <&vcc5v0_usb>;
+	phy-supply = <&vcc5v0_usb20_host>;
 	status = "okay";
 };
 
@@ -1454,7 +1462,7 @@
 };
 
 &u2phy3_host {
-	phy-supply = <&vcc5v0_usb>;
+	phy-supply = <&vcc5v0_usb20_hub>;
 	status = "okay";
 };
 
