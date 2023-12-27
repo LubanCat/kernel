@@ -1,8 +1,5 @@
 
-#include "rk3588.dtsi"
-
 / {
-
 	backlight_dsi1: backlight-dsi1 {
 		status = "okay";
 		compatible = "pwm-backlight";

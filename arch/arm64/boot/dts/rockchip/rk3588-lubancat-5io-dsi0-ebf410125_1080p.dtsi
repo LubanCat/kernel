@@ -1,6 +1,4 @@
 
-#include "rk3588.dtsi"
-
 / {
 	backlight_dsi0: backlight-dsi0 {
 		status = "okay";
@@ -177,4 +175,3 @@
 &dsi0_in_vp2 {
 	status = "okay";
 };
-

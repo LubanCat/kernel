@@ -1,6 +1,4 @@
 
-#include "rk3588.dtsi"
-
 / {
 	backlight_dsi0: backlight-dsi0 {
 		status = "okay";

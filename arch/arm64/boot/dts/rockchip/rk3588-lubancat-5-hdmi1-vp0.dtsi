@@ -1,5 +1,3 @@
-#include <dt-bindings/gpio/gpio.h>
-#include "rk3588.dtsi"
 
 / {
 	hdmi1_sound: hdmi1-sound {

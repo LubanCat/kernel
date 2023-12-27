@@ -1,9 +1,5 @@
 
-#include "rk3588.dtsi"
-#include <dt-bindings/pwm/pwm.h>
-
 / {
-
 	backlight_dp1: backlight-dp1 {
 		compatible = "pwm-backlight";
 		pwms = <&pwm11 0 25000 0>;
