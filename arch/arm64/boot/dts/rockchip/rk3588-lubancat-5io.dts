@@ -21,8 +21,11 @@
 // #include "rk3588-lubancat-5-hdmi1-vp0.dtsi"
 // #include "rk3588-lubancat-5io-hdmi0.dtsi"
 
+//vp1
+#include "rk3588-lubancat-5io-hdmi1.dtsi"
+
 //vp2 二选一
-// #include "rk3588-lubancat-5io-hdmi1.dtsi"
+// #include "rk3588-lubancat-5io-dp0.dtsi"
 // #include "rk3588-lubancat-5io-dsi0-ebf410125_1080p.dtsi"
 
 //vp3 
@@ -324,16 +327,6 @@
 		pinctrl-0 = <&mipi_dsi1_power_en>;
 	};
 
-	dp0_sound: dp0-sound {
-		status = "okay";
-		compatible = "rockchip,hdmi";
-		rockchip,card-name= "rockchip,dp0";
-		rockchip,mclk-fs = <512>;
-		rockchip,cpu = <&spdif_tx2>;
-		rockchip,codec = <&dp0 1>;
-		rockchip,jack-det;
-	};
-
 	es8388_sound: es8388-sound {
 		status = "okay";
 		compatible = "rockchip,multicodecs-card";
@@ -434,10 +427,6 @@
 
 &av1d_mmu {
 	status = "okay";
-};
-
-&spdif_tx2 {
-    status = "okay";
 };
 
 &cpu_l0 {
@@ -1483,29 +1472,6 @@
 	status = "okay";
 };
 
-/* dp0 display */
-
-&dp0 {
-	status = "okay";
-};
-
-&route_dp0 {
-	status = "okay";
-	connect = <&vp1_out_dp0>;	
-};
-
-&dp0_in_vp0 {
-	status = "disabled";
-};
-
-&dp0_in_vp1 {
-	status = "okay";
-};
-
-&dp0_in_vp2 {
-	status = "disabled";
-};
-
 &vop {
 	status = "okay";
 	// disable-win-move;
@@ -1517,12 +1483,18 @@
 
 /* vp0 & vp1 splice for 8K output */
 &vp0 {
+	assigned-clocks = <&cru DCLK_VOP0>;
+	assigned-clock-parents = <&hdptxphy_hdmi_clk0>;
+
 	rockchip,plane-mask = <(1 << ROCKCHIP_VOP2_CLUSTER0 | 1 << ROCKCHIP_VOP2_ESMART0)>;
 	rockchip,primary-plane = <ROCKCHIP_VOP2_ESMART0>;
 	// cursor-win-id = <ROCKCHIP_VOP2_CLUSTER0>;
 };
 
 &vp1 {
+	assigned-clocks = <&cru DCLK_VOP1>;
+	assigned-clock-parents = <&hdptxphy_hdmi_clk1>;
+
 	rockchip,plane-mask = <(1 << ROCKCHIP_VOP2_CLUSTER1 | 1 << ROCKCHIP_VOP2_ESMART1)>;
 	rockchip,primary-plane = <ROCKCHIP_VOP2_ESMART1>;
 	cursor-win-id = <ROCKCHIP_VOP2_CLUSTER1>;
@@ -1540,12 +1512,19 @@
 	cursor-win-id = <ROCKCHIP_VOP2_CLUSTER3>;
 };
 
-&display_subsystem {
-	clocks = <&hdptxphy_hdmi_clk0>, <&hdptxphy_hdmi_clk1>;
-	clock-names = "hdmi0_phy_pll", "hdmi1_phy_pll";
+&hdptxphy_hdmi0 {
+	status = "okay";
+};
+
+&hdptxphy_hdmi1 {
+	status = "okay";
 };
 
 &hdptxphy_hdmi_clk0 {
+    status = "okay";
+};
+
+&hdptxphy_hdmi_clk1 {
     status = "okay";
 };
 
