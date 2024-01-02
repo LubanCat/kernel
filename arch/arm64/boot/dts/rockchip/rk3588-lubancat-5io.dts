@@ -18,11 +18,11 @@
 #include "rk3588-linux.dtsi"
 
 //vp0
-// #include "rk3588-lubancat-5-hdmi1-vp0.dtsi"
-// #include "rk3588-lubancat-5io-hdmi0.dtsi"
+#include "rk3588-lubancat-5io-hdmi0.dtsi"
+// #include "rk3588-lubancat-5io-hdmi1-in-vp0.dtsi"
 
 //vp1
-#include "rk3588-lubancat-5io-hdmi1.dtsi"
+// #include "rk3588-lubancat-5io-hdmi1.dtsi"
 
 //vp2 二选一
 // #include "rk3588-lubancat-5io-dp0.dtsi"
@@ -48,8 +48,8 @@
 
 
 / {
-	model = "Embedfire LubanCat-5";
-	compatible = "rockchip,rk3588-lubancat-5", "rockchip,rk3588";
+	model = "Embedfire LubanCat-5IO";
+	compatible = "rockchip,rk3588-lubancat-5io", "rockchip,rk3588";
 
 	/* If hdmirx node is disabled, delete the reserved-memory node here. */
 	reserved-memory {
