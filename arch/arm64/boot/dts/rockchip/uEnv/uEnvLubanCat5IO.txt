@@ -1,0 +1,11 @@
+uname_r=5.10.160
+size=0x1000000
+cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
+
+enable_uboot_overlays=1
+#overlay_start
+
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi-8k-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi-rx-overlay.dtbo
+
+#overlay_end

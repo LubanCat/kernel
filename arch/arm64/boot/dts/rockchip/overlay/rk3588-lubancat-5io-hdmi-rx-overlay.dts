@@ -16,7 +16,7 @@
 			#sound-dai-cells = <1>;
 			/* Effective level used to trigger HPD: 0-low, 1-high */
 			hpd-trigger-level = <1>;
-			hdmirx-det-gpios = <&gpio1 RK_PD5 GPIO_ACTIVE_LOW>;
+			hdmirx-det-gpios = <&gpio1 RK_PD2 GPIO_ACTIVE_LOW>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&hdmim1_rx &hdmirx_det>;
 		};

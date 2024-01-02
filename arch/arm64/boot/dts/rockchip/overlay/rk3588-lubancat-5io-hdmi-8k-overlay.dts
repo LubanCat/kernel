@@ -1,0 +1,47 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/clock/rk3588-cru.h>
+
+/* dp0 display */
+/ {
+
+	fragment@0 {
+		target = <&display_subsystem>;
+
+		__overlay__ {
+			clocks;
+			clock-names;
+		};
+	};
+
+	fragment@1 {
+		target = <&vop>;
+
+		__overlay__ {
+			status = "okay";
+			assigned-clocks = <&cru ACLK_VOP>;
+			assigned-clock-rates = <800000000>;
+		};
+	};
+
+	fragment@2 {
+		target = <&vp0>;
+
+		__overlay__ {
+			status = "okay";
+			assigned-clocks;
+			assigned-clock-rates;
+		};
+	};
+
+	fragment@3 {
+		target = <&vp1>;
+
+		__overlay__ {
+			status = "okay";
+			assigned-clocks;
+			assigned-clock-rates;
+		};
+	};	
+};
