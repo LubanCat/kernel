@@ -8,33 +8,32 @@
 
 
 / {
-        compatible = "rockchip,rk3568";
+    compatible = "rockchip,rk3568";
 
-        fragment@0 {
-                target = <&spi3>;
+    fragment@0 {
+        target = <&spi3>;
 
-                __overlay__ {
-                        status = "okay";
-            cs-gpios = <&gpio4 RK_PC6 GPIO_ACTIVE_LOW>;
-                        #address-cells = <1>;
-                        #size-cells = <0>;
-
+        __overlay__ {
+            status = "okay";
+        cs-gpios = <&gpio4 RK_PC6 GPIO_ACTIVE_LOW>;
+            #address-cells = <1>;
+            #size-cells = <0>;
             //assigned-clock-rates = <100000000>; //100M
-                        pinctrl-names = "default", "high_speed"; 
-                        pinctrl-0 = <&spi3m1_cs0 &spi3m1_pins>; 
-                        pinctrl-1 = <&spi3m1_cs0 &spi3m1_pins_hs>; 
+            pinctrl-names = "default", "high_speed";
+            pinctrl-0 = <&spi3m1_cs0 &spi3m1_pins>;
+            pinctrl-1 = <&spi3m1_cs0 &spi3m1_pins_hs>;
 
-            spi_lcd@0 {
-                compatible = "ilitek,ili9341";
-                reg = <0>; //chip select 0:cs0  1:cs1
-                spi-max-frequency = <50000000>; //spi output clock 50M
-                buswidth = <8>;
-                fps = <50>;
-                dc-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>; //GPIO_A6 data/command 103
-                reset-gpios = <&gpio3 RK_PA7 GPIO_ACTIVE_HIGH>; //GPIO3_A7 reset 102
-                led-gpios = <&gpio3 RK_PB1 GPIO_ACTIVE_LOW>; //GPIO3_B1 back light 101
-                pinctrl-names = "default";
-                pinctrl-0 = <&spi_lcd_cmd_pin &spi_lcd_reset_pin &spi_lcd_light_pin>;
+        spi_lcd@0 {
+            compatible = "ilitek,ili9341";
+            reg = <0>; //chip select 0:cs0  1:cs1
+            spi-max-frequency = <50000000>; //spi output clock 50M
+            buswidth = <8>;
+            fps = <50>;
+            dc-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>; //GPIO_A6 data/command 103
+            reset-gpios = <&gpio3 RK_PA7 GPIO_ACTIVE_HIGH>; //GPIO3_A7 reset 102
+            led-gpios = <&gpio3 RK_PB1 GPIO_ACTIVE_LOW>; //GPIO3_B1 back light 101
+            pinctrl-names = "default";
+            pinctrl-0 = <&spi_lcd_cmd_pin &spi_lcd_reset_pin &spi_lcd_light_pin>;
             };
         };
     };
@@ -45,10 +44,10 @@
         __overlay__ {
             spi_lcd {
                 spi_lcd_cmd_pin: spi_lcd_cmd_pin {
-                    rockchip,pins = <3 RK_PA7 RK_FUNC_GPIO &pcfg_pull_up_drv_level_1>;
+                    rockchip,pins = <3 RK_PA6 RK_FUNC_GPIO &pcfg_pull_up_drv_level_1>;
                 };
                 spi_lcd_reset_pin: spi_lcd_reset_pin {
-                    rockchip,pins = <3 RK_PA6 RK_FUNC_GPIO &pcfg_pull_up_drv_level_1>;
+                    rockchip,pins = <3 RK_PA7 RK_FUNC_GPIO &pcfg_pull_up_drv_level_1>;
                 };        
                 spi_lcd_light_pin: spi_lcd_light_pin {
                     rockchip,pins = <3 RK_PB1 RK_FUNC_GPIO &pcfg_pull_up_drv_level_1>;
