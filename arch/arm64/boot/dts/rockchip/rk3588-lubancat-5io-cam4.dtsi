@@ -11,7 +11,6 @@
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c7m0_xfer>;
-
 	
 	dphy4_dw9714: dw9714@c {
 		status = "okay";
@@ -83,8 +82,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_LOW>;
-		reset-gpios = <&gpio6 9 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 9 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <2>;
