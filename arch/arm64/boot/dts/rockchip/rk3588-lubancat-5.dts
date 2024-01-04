@@ -124,7 +124,7 @@
 		regulator-max-microvolt = <5000000>;
 		vin-supply = <&vcc12v_dcin>;
 	};
-	
+
 	vcc_5v0: vcc-5v0 {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc_5v0";
@@ -1214,16 +1214,16 @@
 };
 
 &mdio0 {
-	rgmii_phy0: phy@1 {
+	rgmii_phy0: phy@0 {
 		compatible = "ethernet-phy-ieee802.3-c22";
-		reg = <0x1>;
+		reg = <0x00>;
 	};
 };
 
 &mdio1 {
-	rgmii_phy1: phy@0 {
+	rgmii_phy1: phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
-		reg = <0x00>;
+		reg = <0x01>;
 	};
 };
 
