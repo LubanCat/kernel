@@ -1,15 +1,19 @@
 /dts-v1/;
 /plugin/;
 
-/ {
-    fragment@0 {
-        target = <&can0>;
+#include <dt-bindings/clock/rk3588-cru.h>
 
-        __overlay__ {
-            status = "okay";
-            pinctrl-names = "default";
-            pinctrl-0 = <&can0m0_pins>;
-        };
-    };
+/ {
+	fragment@0 {
+		target = <&can0>;
+
+		__overlay__ {
+			status = "okay";
+			assigned-clocks = <&cru CLK_CAN0>;
+			assigned-clock-rates = <200000000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&can0m0_pins>;
+		};
+	};
 };
 
