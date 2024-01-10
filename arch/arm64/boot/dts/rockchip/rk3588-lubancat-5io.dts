@@ -101,20 +101,20 @@
 		regulator-max-microvolt = <12000000>;
 		regulator-name = "vcc12v_dcin";
 	};
-	
-	vcc3v3_sys: vcc3v3-sys {
+
+	vcc4v0_sys: vcc4v0-sys {
 		compatible = "regulator-fixed";
-		regulator-name = "vcc3v3_sys";
+		regulator-name = "vcc4v0_sys";
 		regulator-always-on;
 		regulator-boot-on;
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
+		regulator-min-microvolt = <4000000>;
+		regulator-max-microvolt = <4000000>;
 		vin-supply = <&vcc12v_dcin>;
 	};
 
-	vcc5v0_sys: vcc5v0-sys {
+	vcc_5v0_s0: vcc-5v0-s0 {
 		compatible = "regulator-fixed";
-		regulator-name = "vcc5v0_sys";
+		regulator-name = "vcc_5v0_s0";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <5000000>;
@@ -122,26 +122,25 @@
 		vin-supply = <&vcc12v_dcin>;
 	};
 
-	vcc_5v0: vcc-5v0 {
+	vcc5v0_usb_s0: vcc5v0-usb-s0 {
 		compatible = "regulator-fixed";
-		regulator-name = "vcc_5v0";
+		regulator-name = "vcc5v0_usb_s0";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
-		vin-supply = <&vcc5v0_sys>;
-	};
-
-	vcc5v0_usb: vcc5v0-usb {
-		compatible = "regulator-fixed";
-		regulator-name = "vcc_5v0";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		vin-supply = <&vcc5v0_sys>;
+		vin-supply = <&vcc12v_dcin>;
 	};
 	
+	combophy_avdd0v85: combophy-avdd0v85 {
+		compatible = "regulator-fixed";
+		regulator-name = "combophy_avdd0v85";
+		regulator-boot-on;
+		regulator-min-microvolt = <850000>;
+		regulator-max-microvolt = <850000>;
+		vin-supply = <&avdd_0v85_s0>;
+    };
+
 	combophy_avdd1v8: combophy-avdd1v8 {
 		compatible = "regulator-fixed";
 		regulator-name = "combophy_avdd1v8";
@@ -158,7 +157,7 @@
 		regulator-boot-on;
 		regulator-min-microvolt = <1100000>;
 		regulator-max-microvolt = <1100000>;
-		vin-supply = <&vcc5v0_sys>;
+		vin-supply = <&vcc4v0_sys>;
 	};
 
 	vcc_3v3_s0: vcc-3v3-s0 {
@@ -171,9 +170,9 @@
 		vin-supply = <&vcc_3v3_s3>;
 	};
 
-	vcc_3v3_sd_s3: vcc-3v3-sd-s3 {
+	vcc3v3_sd_s3: vcc3v3-sd-s3 {
 		compatible = "regulator-fixed";
-		regulator-name = "vcc_3v3_sd_s3";
+		regulator-name = "vcc3v3_sd_s3";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <3300000>;
@@ -181,14 +180,14 @@
 		vin-supply = <&vcc_3v3_s3>;
 	};
 
-	vbus_typec: vbus-typec {
+	vbus5v0_typec: vbus5v0-typec {
 		compatible = "regulator-fixed";
-		regulator-name = "vbus_typec";
+		regulator-name = "vbus5v0_typec";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
 		enable-active-high;
 		gpio = <&gpio4 RK_PA3 GPIO_ACTIVE_HIGH>;
-		vin-supply = <&vcc5v0_usb>;
+		vin-supply = <&vcc5v0_usb_s0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&typec_vbus_en>;
 	};
@@ -202,7 +201,7 @@
 		enable-active-high;
 		regulator-boot-on;
 		gpio = <&gpio4 RK_PA4 GPIO_ACTIVE_HIGH>;
-		vin-supply = <&vcc5v0_usb>;
+		vin-supply = <&vcc5v0_usb_s0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&vcc5v0_usb30_otg_en>;
 	};
@@ -216,7 +215,7 @@
 		enable-active-high;
 		regulator-boot-on;
 		gpio = <&gpio4 RK_PA5 GPIO_ACTIVE_HIGH>;
-		vin-supply = <&vcc5v0_usb>;
+		vin-supply = <&vcc5v0_usb_s0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&vcc5v0_usb20_hub_en>;
 	};
@@ -230,7 +229,7 @@
 		enable-active-high;
 		regulator-boot-on;
 		gpio = <&gpio2 RK_PC3 GPIO_ACTIVE_HIGH>;
-		vin-supply = <&vcc5v0_usb>;
+		vin-supply = <&vcc5v0_usb_s0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&vcc5v0_usb20_host_en>;
 	};
@@ -249,9 +248,9 @@
 		pinctrl-0 = <&vcc3v3_m2_pcie_en>;
 	};
 
-	vcc3v3_pcie: vcc3v3-pcie {
+	vcc3v3_pciex4: vcc3v3-pciex4 {
 		compatible = "regulator-fixed";
-		regulator-name = "vcc3v3_pcie";
+		regulator-name = "vcc3v3_pciex4";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		regulator-always-on;
@@ -310,7 +309,7 @@
 		enable-active-high;
 		regulator-boot-on;
 		gpio = <&gpio1 RK_PC0 GPIO_ACTIVE_HIGH>;
-		vin-supply = <&vcc5v0_sys>;
+		vin-supply = <&vcc_5v0_s0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&mipi_dsi0_power_en>;
 	};
@@ -322,7 +321,7 @@
 		enable-active-high;
 		regulator-boot-on;
 		gpio = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
-		vin-supply = <&vcc5v0_sys>;
+		vin-supply = <&vcc_5v0_s0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&mipi_dsi1_power_en>;
 	};
@@ -483,7 +482,7 @@
 	vdd_cpu_big0_s0: vdd_cpu_big0_mem_s0: rk8602@42 {
 		compatible = "rockchip,rk8602";
 		reg = <0x42>;
-		vin-supply = <&vcc5v0_sys>;
+		vin-supply = <&vcc4v0_sys>;
 		regulator-compatible = "rk860x-reg";
 		regulator-name = "vdd_cpu_big0_s0";
 		regulator-min-microvolt = <550000>;
@@ -500,7 +499,7 @@
 	vdd_cpu_big1_s0: vdd_cpu_big1_mem_s0: rk8603@43 {
 		compatible = "rockchip,rk8603";
 		reg = <0x43>;
-		vin-supply = <&vcc5v0_sys>;
+		vin-supply = <&vcc4v0_sys>;
 		regulator-compatible = "rk860x-reg";
 		regulator-name = "vdd_cpu_big1_s0";
 		regulator-min-microvolt = <550000>;
@@ -531,7 +530,7 @@
 	vdd_npu_s0: vdd_npu_mem_s0: rk8602@42 {
 		compatible = "rockchip,rk8602";
 		reg = <0x42>;
-		vin-supply = <&vcc5v0_sys>;
+		vin-supply = <&vcc4v0_sys>;
 		regulator-compatible = "rk860x-reg";
 		regulator-name = "vdd_npu_s0";
 		regulator-min-microvolt = <550000>;
@@ -553,7 +552,7 @@
 		interrupts = <RK_PD3 IRQ_TYPE_LEVEL_LOW>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&fusb302_int>;
-		vbus-supply = <&vbus_typec>;
+		vbus-supply = <&vbus5v0_typec>;
 		status = "okay";
 
 		ports {
@@ -650,21 +649,21 @@
 		 */
 		pmic-reset-func = <1>;
 
-		vcc1-supply = <&vcc5v0_sys>;
-		vcc2-supply = <&vcc5v0_sys>;
-		vcc3-supply = <&vcc5v0_sys>;
-		vcc4-supply = <&vcc5v0_sys>;
-		vcc5-supply = <&vcc5v0_sys>;
-		vcc6-supply = <&vcc5v0_sys>;
-		vcc7-supply = <&vcc5v0_sys>;
-		vcc8-supply = <&vcc5v0_sys>;
-		vcc9-supply = <&vcc5v0_sys>;
-		vcc10-supply = <&vcc5v0_sys>;
+		vcc1-supply = <&vcc4v0_sys>;
+		vcc2-supply = <&vcc4v0_sys>;
+		vcc3-supply = <&vcc4v0_sys>;
+		vcc4-supply = <&vcc4v0_sys>;
+		vcc5-supply = <&vcc4v0_sys>;
+		vcc6-supply = <&vcc4v0_sys>;
+		vcc7-supply = <&vcc4v0_sys>;
+		vcc8-supply = <&vcc4v0_sys>;
+		vcc9-supply = <&vcc4v0_sys>;
+		vcc10-supply = <&vcc4v0_sys>;
 		vcc11-supply = <&vcc_2v0_pldo_s3>;
-		vcc12-supply = <&vcc5v0_sys>;
+		vcc12-supply = <&vcc4v0_sys>;
 		vcc13-supply = <&vcc_1v1_nldo_s3>;
 		vcc14-supply = <&vcc_1v1_nldo_s3>;
-		vcca-supply = <&vcc5v0_sys>;
+		vcca-supply = <&vcc4v0_sys>;
 
 		pwrkey {
 			status = "okay";
@@ -871,7 +870,7 @@
 				};
 			};
 
-			vcc_1v8_s0: PLDO_REG1 {
+			avcc_1v8_s0: PLDO_REG1 {
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-min-microvolt = <1800000>;
@@ -882,12 +881,12 @@
 				};
 			};
 
-			avcc_1v8_s0: PLDO_REG2 {
+			vcc_1v8_s0: PLDO_REG2 {
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <1800000>;
-				regulator-name = "avcc_1v8_s0";
+				regulator-name = "vcc_1v8_s0";
 				regulator-state-mem {
 					regulator-off-in-suspend;
 					regulator-suspend-microvolt = <1800000>;
@@ -973,6 +972,28 @@
 					regulator-off-in-suspend;
 				};
 			};
+
+			avdd_0v85_s0: NLDO_REG4 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-min-microvolt = <850000>;
+				regulator-max-microvolt = <850000>;
+				regulator-name = "avdd_0v85_s0";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+
+			vdd_0v75_s0: NLDO_REG5 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-min-microvolt = <750000>;
+				regulator-max-microvolt = <750000>;
+				regulator-name = "vdd_0v75_s0";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
 		};
 	};
 };
@@ -1034,7 +1055,7 @@
 	cap-sd-highspeed;
 	disable-wp;
 	sd-uhs-sdr104;
-	vmmc-supply = <&vcc_3v3_sd_s3>;
+	vmmc-supply = <&vcc3v3_sd_s3>;
 	vqmmc-supply = <&vccio_sd_s0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&sdmmc_bus4 &sdmmc_clk &sdmmc_cmd &sdmmc_det>;
@@ -1291,7 +1312,7 @@
 
 // PCIe30 Port1: PCIe-64P
 &pcie3x2 {
-	vpcie3v3-supply = <&vcc3v3_pcie>;
+	vpcie3v3-supply = <&vcc3v3_pciex4>;
 	reset-gpios = <&gpio4 RK_PB1 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
@@ -1395,7 +1416,7 @@
 
 /* USB3.0_OTG/DP1.4 Combo PHY1 */
 &usbdp_phy1 {
-	// rockchip,dp-lane-mux = <2 3>;
+	rockchip,dp-lane-mux = <2 3>;
 	status = "okay";
 };
 
