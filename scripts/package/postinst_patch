@@ -182,6 +182,17 @@ else
         echo "ln -sf $BOARD_uEnv /boot/uEnv/uEnv.txt"
         ln -sf $BOARD_uEnv /boot/uEnv/uEnv.txt
     fi
+
+    if [ -e "/boot/initrd-5.10.160" ] ; then 
+        echo "ln -sf initrd-5.10.160 initrd-5.10.160-rt89"
+        ln -sf initrd-5.10.160 /boot/initrd-5.10.160-rt89 
+    fi
+
+    if [ -z "$(awk '{print $1}' /etc/fstab | grep -w "#debugfs")" ];then
+        sed -i '/debugfs/ s/^/#/' "/etc/fstab"
+    fi
+
+    
 fi
 
 exit 0
