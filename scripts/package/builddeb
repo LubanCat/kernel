@@ -207,7 +207,7 @@ fi
 # make-kpkg sets $INITRD to indicate whether an initramfs is wanted, and
 # so do we; recent versions of dracut and initramfs-tools will obey this.
 debhookdir=${KDEB_HOOKDIR:-/etc/kernel}
-for script in postinst postrm preinst prerm ; do
+for script in postinst preinst prerm ; do
 	mkdir -p "$tmpdir$debhookdir/$script.d"
 	cat <<EOF > "$tmpdir/DEBIAN/$script"
 #!/bin/bash -e
@@ -224,9 +224,36 @@ EOF
 	chmod 755 "$tmpdir/DEBIAN/$script"
 done
 
+# creat postrm
+script=postrm
+
+mkdir -p "$tmpdir$debhookdir/$script.d"
+cat <<EOF > "$tmpdir/DEBIAN/$script"
+#!/bin/bash -e
+
+# Pass maintainer script parameters to hook scripts
+export DEB_MAINT_PARAMS="\$*"
+
+# Tell initramfs builder whether it's wanted
+export INITRD=$want_initrd
+
+test -d $debhookdir/$script.d && run-parts --arg="$version" --arg="/$installed_image_path" $debhookdir/$script.d
+
+if [ -n "$(awk '{print $1}' /etc/fstab | grep -w "#debugfs")" ];then
+	sed -i 's/#debugfs/debugfs/' /etc/fstab
+fi
+
+if [ -e "/boot/initrd-5.10.160-rt89" ] ; then 
+    echo "remove initrd-5.10.160-rt89"
+    rm /boot/initrd-5.10.160-rt89 
+fi
+
+exit 0
+EOF
+
 sed '$d' "$tmpdir/DEBIAN/postinst" > "$tmpdir/DEBIAN/postinst.tmp"  && mv "$tmpdir/DEBIAN/postinst.tmp" "$tmpdir/DEBIAN/postinst"
 cat scripts/package/postinst_patch >> "$tmpdir/DEBIAN/postinst"
-chmod 755 "$tmpdir/DEBIAN/postinst"
+chmod 755 "$tmpdir/DEBIAN/postinst" "$tmpdir/DEBIAN/postrm"
 
 if [ "$ARCH" != "um" ]; then
 	if is_enabled CONFIG_MODULES; then
