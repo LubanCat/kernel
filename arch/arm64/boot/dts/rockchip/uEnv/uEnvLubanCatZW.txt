@@ -1,4 +1,4 @@
-uname_r=4.19.232
+uname_r=4.19.232-rt104
 size=0x1000000
 cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
 
