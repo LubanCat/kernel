@@ -103,7 +103,6 @@
 		// interrupts = < >;
 		// reset-gpios = < >;
 		// irq-gpios = < >;
-		touchscreen-inverted-y;
 	};
 
 	rockpi_mcu_0: rockpi-mcu-0@45 {
@@ -222,7 +221,6 @@
 		// interrupts = < >;
 		// reset-gpios = < >;
 		// irq-gpios = < >;
-		touchscreen-inverted-y;
 	};
 
 	rockpi_mcu_1: rockpi-mcu-1@45 {

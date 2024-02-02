@@ -20,6 +20,7 @@
 #include <linux/ioport.h>
 #include <linux/init.h>
 #include <linux/console.h>
+#include <linux/gpio/consumer.h>
 #include <linux/sysrq.h>
 #include <linux/delay.h>
 #include <linux/platform_device.h>
@@ -58,6 +59,12 @@
 #define DEBUG_AUTOCONF(fmt...)	printk(fmt)
 #else
 #define DEBUG_AUTOCONF(fmt...)	do { } while (0)
+#endif
+
+#if 0
+#define DEBUG_EM485(fmt...)	printk(fmt)
+#else
+#define DEBUG_EM485(fmt...)	do { } while (0)
 #endif
 
 #define BOTH_EMPTY	(UART_LSR_TEMT | UART_LSR_THRE)
@@ -567,13 +574,27 @@ static void serial8250_clear_fifos(struct uart_8250_port *p)
 
 static inline void serial8250_em485_rts_after_send(struct uart_8250_port *p)
 {
+	struct uart_port	*port = &p->port;
 	unsigned char mcr = serial8250_in_MCR(p);
+	int value = 0;
+
+	if (port->rs485_de_gpio) {
+		if (p->port.rs485.flags & SER_RS485_RTS_AFTER_SEND)
+			value = 1;
+		else
+			value = 0;
+
+		gpiod_set_value(port->rs485_de_gpio, value);
+		DEBUG_EM485("%s ttyS%d gpio:%d\n", __func__, p->port.line, value);
+		return;
+	}
 
 	if (p->port.rs485.flags & SER_RS485_RTS_AFTER_SEND)
 		mcr |= UART_MCR_RTS;
 	else
 		mcr &= ~UART_MCR_RTS;
 	serial8250_out_MCR(p, mcr);
+	DEBUG_EM485("%s ttyS%d mcr:%02x\n", __func__, up->port.line, mcr);
 }
 
 static enum hrtimer_restart serial8250_em485_handle_start_tx(struct hrtimer *t);
@@ -623,8 +644,10 @@ EXPORT_SYMBOL_GPL(serial8250_rpm_put);
  *
  *	Return 0 - success, -errno - otherwise
  */
-int serial8250_em485_init(struct uart_8250_port *p)
+static int serial8250_em485_init(struct uart_8250_port *p)
 {
+	DEBUG_EM485("%s ttyS%d\n", __func__, p->port.line);
+
 	if (p->em485)
 		return 0;
 
@@ -644,7 +667,6 @@ int serial8250_em485_init(struct uart_8250_port *p)
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(serial8250_em485_init);
 
 /**
  *	serial8250_em485_destroy() - put uart_8250_port into normal state
@@ -671,6 +693,45 @@ void serial8250_em485_destroy(struct uart_8250_port *p)
 	p->em485 = NULL;
 }
 EXPORT_SYMBOL_GPL(serial8250_em485_destroy);
+
+/**
+ * serial8250_em485_config() - generic ->rs485_config() callback
+ * @port: uart port
+ * @rs485: rs485 settings
+ *
+ * Generic callback usable by 8250 uart drivers to activate rs485 settings
+ * if the uart is incapable of driving RTS as a Transmit Enable signal in
+ * hardware, relying on software emulation instead.
+ */
+int serial8250_em485_config(struct uart_port *port, struct serial_rs485 *rs485)
+{
+	struct uart_8250_port *up = up_to_u8250p(port);
+
+	/* clamp the delays to [0, 100ms] */
+	rs485->delay_rts_before_send = min(rs485->delay_rts_before_send, 100U);
+	rs485->delay_rts_after_send  = min(rs485->delay_rts_after_send, 100U);
+
+	port->rs485 = *rs485;
+	DEBUG_EM485("%s ttyS%d\n", __func__, port->line);
+
+	/*
+	 * Both serial8250_em485_init() and serial8250_em485_destroy()
+	 * are idempotent.
+	 */
+	if (rs485->flags & SER_RS485_ENABLED) {
+		int ret = serial8250_em485_init(up);
+
+		if (ret) {
+			rs485->flags &= ~SER_RS485_ENABLED;
+			port->rs485.flags &= ~SER_RS485_ENABLED;
+		}
+		return ret;
+	}
+
+	serial8250_em485_destroy(up);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(serial8250_em485_config);
 
 /*
  * These two wrappers ensure that enable_runtime_pm_tx() can be called more than
@@ -1447,6 +1508,7 @@ static void serial8250_stop_rx(struct uart_port *port)
 
 static void __do_stop_tx_rs485(struct uart_8250_port *p)
 {
+	DEBUG_EM485("%s ttyS%d\n", __func__, p->port.line);
 	serial8250_em485_rts_after_send(p);
 
 	/*
@@ -1490,20 +1552,23 @@ static void start_hrtimer_ms(struct hrtimer *hrt, unsigned long msec)
 	hrtimer_start(hrt, t, HRTIMER_MODE_REL);
 }
 
-static void __stop_tx_rs485(struct uart_8250_port *p)
+static void __stop_tx_rs485(struct uart_8250_port *p, u64 stop_delay)
 {
 	struct uart_8250_em485 *em485 = p->em485;
+
+	DEBUG_EM485("%s ttyS%d\n", __func__, p->port.line);
+	stop_delay += (u64)p->port.rs485.delay_rts_after_send * NSEC_PER_MSEC;
 
 	/*
 	 * __do_stop_tx_rs485 is going to set RTS according to config
 	 * AND flush RX FIFO if required.
 	 */
-	if (p->port.rs485.delay_rts_after_send > 0) {
+	if (stop_delay > 0) {
 		em485->active_timer = &em485->stop_tx_timer;
-		start_hrtimer_ms(&em485->stop_tx_timer,
-				   p->port.rs485.delay_rts_after_send);
+		hrtimer_start(&em485->stop_tx_timer, ns_to_ktime(stop_delay), HRTIMER_MODE_REL);
 	} else {
 		__do_stop_tx_rs485(p);
+		em485->active_timer = NULL;
 	}
 }
 
@@ -1512,7 +1577,8 @@ static inline void __do_stop_tx(struct uart_8250_port *p)
 	if (p->ier & UART_IER_THRI) {
 		p->ier &= ~UART_IER_THRI;
 #ifdef CONFIG_ARCH_ROCKCHIP
-		p->ier &= ~UART_IER_PTIME;
+		if (!p->em485)
+			p->ier &= ~UART_IER_PTIME;
 #endif
 		serial_out(p, UART_IER, p->ier);
 		serial8250_rpm_put_tx(p);
@@ -1525,18 +1591,25 @@ static inline void __stop_tx(struct uart_8250_port *p)
 
 	if (em485) {
 		unsigned char lsr = serial_in(p, UART_LSR);
-		/*
-		 * To provide required timeing and allow FIFO transfer,
-		 * __stop_tx_rs485() must be called only when both FIFO and
-		 * shift register are empty. It is for device driver to enable
-		 * interrupt on TEMT.
-		 */
-		if ((lsr & BOTH_EMPTY) != BOTH_EMPTY)
+		u64 stop_delay = 0;
+
+		p->lsr_saved_flags |= lsr & LSR_SAVE_FLAGS;
+
+		if (!(lsr & UART_LSR_THRE))
 			return;
 
-		em485->active_timer = NULL;
+		/*
+		 * To provide required timing and allow FIFO transfer,
+		 * __stop_tx_rs485() must be called only when both FIFO and
+		 * shift register are empty. The device driver should either
+		 * enable interrupt on TEMT or set UART_CAP_NOTEMT that will
+		 * enlarge stop_tx_timer by the tx time of one frame to cover
+		 * for emptying of the shift register.
+		 */
+		if (!(lsr & UART_LSR_TEMT))
+			stop_delay = p->port.frame_time + 2000;
 
-		__stop_tx_rs485(p);
+		__stop_tx_rs485(p, stop_delay);
 	}
 	__do_stop_tx(p);
 }
@@ -1573,7 +1646,9 @@ static inline void __start_tx(struct uart_port *port)
 	if (!(up->ier & UART_IER_THRI)) {
 		up->ier |= UART_IER_THRI;
 #ifdef CONFIG_ARCH_ROCKCHIP
-		up->ier |= UART_IER_PTIME;
+		/* Disable PTIME when it is rs485 mode*/
+		if (!up->em485)
+			up->ier |= UART_IER_PTIME;
 #endif
 		serial_port_out(port, UART_IER, up->ier);
 
@@ -1601,11 +1676,23 @@ static inline void start_tx_rs485(struct uart_port *port)
 	struct uart_8250_port *up = up_to_u8250p(port);
 	struct uart_8250_em485 *em485 = up->em485;
 	unsigned char mcr;
+	int value = 0;
 
 	if (!(up->port.rs485.flags & SER_RS485_RX_DURING_TX))
 		serial8250_stop_rx(&up->port);
 
 	em485->active_timer = NULL;
+
+	if (port->rs485_de_gpio) {
+		if (up->port.rs485.flags & SER_RS485_RTS_ON_SEND)
+			value = 1;
+		else
+			value = 0;
+		gpiod_set_value(port->rs485_de_gpio, value);
+		DEBUG_EM485("%s ttyS%d gpio:%d\n", __func__, port->line, value);
+		__start_tx(port);
+		return;
+	}
 
 	mcr = serial8250_in_MCR(up);
 	if (!!(up->port.rs485.flags & SER_RS485_RTS_ON_SEND) !=
@@ -1615,6 +1702,7 @@ static inline void start_tx_rs485(struct uart_port *port)
 		else
 			mcr &= ~UART_MCR_RTS;
 		serial8250_out_MCR(up, mcr);
+		DEBUG_EM485("%s:%d ttyS%d MCR:%02X\n", __func__, __LINE__, port->line, mcr);
 
 		if (up->port.rs485.delay_rts_before_send > 0) {
 			em485->active_timer = &em485->start_tx_timer;
@@ -1778,6 +1866,7 @@ unsigned char serial8250_rx_chars(struct uart_8250_port *up, unsigned char lsr)
 		lsr = serial_in(up, UART_LSR);
 	} while (lsr & (UART_LSR_DR | UART_LSR_BI));
 
+	serial8250_out_MCR(up, 2);
 	tty_flip_buffer_push(&port->state->port);
 	return lsr;
 }

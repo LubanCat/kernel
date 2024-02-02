@@ -663,8 +663,10 @@ static struct sk_buff *pfifo_fast_dequeue(struct Qdisc *qdisc)
 {
 	struct pfifo_fast_priv *priv = qdisc_priv(qdisc);
 	struct sk_buff *skb = NULL;
+	bool need_retry = true;
 	int band;
 
+retry:
 	for (band = 0; band < PFIFO_FAST_BANDS && !skb; band++) {
 		struct skb_array *q = band2list(priv, band);
 
@@ -677,6 +679,23 @@ static struct sk_buff *pfifo_fast_dequeue(struct Qdisc *qdisc)
 		qdisc_qstats_cpu_backlog_dec(qdisc, skb);
 		qdisc_bstats_cpu_update(qdisc, skb);
 		qdisc_qstats_atomic_qlen_dec(qdisc);
+	} else if (need_retry &&
+		   test_bit(__QDISC_STATE_MISSED, &qdisc->state)) {
+		/* Delay clearing the STATE_MISSED here to reduce
+		 * the overhead of the second spin_trylock() in
+		 * qdisc_run_begin() and __netif_schedule() calling
+		 * in qdisc_run_end().
+		 */
+		clear_bit(__QDISC_STATE_MISSED, &qdisc->state);
+
+		/* Make sure dequeuing happens after clearing
+		 * STATE_MISSED.
+		 */
+		smp_mb__after_atomic();
+
+		need_retry = false;
+
+		goto retry;
 	}
 
 	return skb;

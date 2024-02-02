@@ -333,7 +333,6 @@
 				interrupts = <RK_PB5 IRQ_TYPE_LEVEL_LOW>;
 				reset-gpios = <&gpio0 RK_PB6 GPIO_ACTIVE_LOW>;
 				irq-gpios = <&gpio0 RK_PB5 GPIO_ACTIVE_HIGH>;
-				touchscreen-inverted-y;
 			};
 		};
 	};

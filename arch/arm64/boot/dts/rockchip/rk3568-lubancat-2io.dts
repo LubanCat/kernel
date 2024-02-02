@@ -301,6 +301,16 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&led0_pin>;
 		};
+
+		fan: fan {
+			label = "fan";
+			default-state = "on";
+			linux,default-trigger = "none";
+			gpios = <&gpio0 RK_PB7 GPIO_ACTIVE_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&fan_pin>;
+		};
+		
 	};
 
 	adc_keys: adc-keys {
@@ -323,19 +333,6 @@
 		headset_gpio = <&gpio0 RK_PB5 GPIO_ACTIVE_LOW>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hp_det>;
-	};
-
-	fan: pwm-fan {
-		compatible = "pwm-fan";
-		#cooling-cells = <2>;
-		pwms = <&pwm0 0 500000 0>;
-		cooling-levels = <0 100 150 200 255>;
-		rockchip,temp-trips = <
-			50000	1
-			55000	2
-			60000	3
-			65000	4
-		>;
 	};
 
 	backlight0: backlight0 {
@@ -738,10 +735,6 @@
 	status = "okay";
 };
 
-&rk809_codec {
-	hp-ctl-gpios = <&gpio0 RK_PB5 GPIO_ACTIVE_HIGH>;
-};
-
 &gmac0 {
 	snps,reset-gpio = <&gpio1 RK_PA1 GPIO_ACTIVE_LOW>;
 	tx_delay = <0x1c>;
@@ -751,7 +744,7 @@
 
 &gmac1 {
 	snps,reset-gpio = <&gpio0 RK_PC7 GPIO_ACTIVE_LOW>;
-	tx_delay = <0x20>;
+	tx_delay = <0x26>;
 	rx_delay = <0x00>;
 	status = "okay";
 };
@@ -899,6 +892,10 @@
 	leds {
 		led0_pin: led0-pin {
 			rockchip,pins = <4 RK_PD2 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		fan_pin: fan-pin {
+			rockchip,pins = <0 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 

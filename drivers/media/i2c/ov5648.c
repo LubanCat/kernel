@@ -399,15 +399,15 @@ static const struct regval ov5648_2592x1944_regs[] = {
 /*
  * Xclk 24Mhz
  * Pclk 84Mhz
- * linelength 2816(0xb00)
- * framelength 992(0x3e0)
+ * linelength 1400(0x578)
+ * framelength 1000(0x3e8)
  * grabwindow_width 1296
  * grabwindow_height 972
- * max_framerate 30fps
+ * max_framerate 60fps
  * mipi_datarate per lane 420Mbps
  */
 static const struct regval ov5648_1296x972_regs[] = {
-	// 1296x972 30fps 2 lane MIPI 420Mbps/lane
+	// 1296x972 60fps 2 lane MIPI 420Mbps/lane
 	{0x0100, 0x00},
 	{0x3501, 0x3d}, // exposure
 	{0x3502, 0x00}, // exposure
@@ -427,10 +427,10 @@ static const struct regval ov5648_1296x972_regs[] = {
 	{0x380a, 0x03}, // y output size = 972
 	{0x380b, 0xcc}, // y output size
 
-	{0x380c, 0x0b}, // hts = 2816
-	{0x380d, 0x00}, // hts
-	{0x380e, 0x03}, // vts = 992
-	{0x380f, 0xe0}, // vts
+	{0x380c, 0x05}, // hts = 1400
+	{0x380d, 0x78}, // hts
+	{0x380e, 0x03}, // vts = 1000
+	{0x380f, 0xe8}, // vts
 	{0x3810, 0x00}, // isp x win = 8
 	{0x3811, 0x08}, // isp x win
 	{0x3812, 0x00}, // isp y win = 4
@@ -467,11 +467,11 @@ static const struct ov5648_mode supported_modes_2lane[] = {
 		.height = 972,
 		.max_fps = {
 			.numerator = 10000,
-			.denominator = 300000,
+			.denominator = 600000,
 		},
 		.exp_def = 0x03d0,
-		.hts_def = 0x0b00,
-		.vts_def = 0x03e0,
+		.hts_def = 0x0578,
+		.vts_def = 0x03e8,
 		.reg_list = ov5648_1296x972_regs,
 	},
 };
@@ -1335,7 +1335,7 @@ static int ov5648_parse_of(struct ov5648 *ov5648)
 
 	ov5648->lane_num = rval;
 	if (2 == ov5648->lane_num) {
-		ov5648->cur_mode = &supported_modes_2lane[0];
+		ov5648->cur_mode = &supported_modes_2lane[1];
 		supported_modes = supported_modes_2lane;
 		ov5648->cfg_num = ARRAY_SIZE(supported_modes_2lane);
 

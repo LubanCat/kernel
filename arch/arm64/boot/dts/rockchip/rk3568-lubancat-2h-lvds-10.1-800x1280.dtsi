@@ -1,0 +1,161 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2020 Rockchip Electronics Co., Ltd.
+ *
+ */
+
+&video_phy0 {
+	status = "okay";
+};
+
+&dsi0_in_vp1 {
+	status = "disabled";
+};
+
+&dsi0_in_vp0 {
+	status = "okay";
+};
+
+&dsi0 {
+	status = "okay";
+	// rockchip,lane-rate = <480>;
+	dsi0_panel: panel@0 {
+		compatible = "simple-panel-dsi";
+		reg = <0>;
+		backlight = <&backlight_lvds_edp>;
+		reset-gpios = <&gpio4 RK_PC6 GPIO_ACTIVE_LOW>;
+		enable-gpios = <&gpio3 RK_PB1 GPIO_ACTIVE_HIGH>;
+
+		enable-delay-ms = <35>;
+		prepare-delay-ms = <6>;
+		reset-delay-ms = <0>;
+		init-delay-ms = <20>;
+		unprepare-delay-ms = <0>;
+		disable-delay-ms = <20>;
+
+		size,width = <74>;
+		size,height = <133>;
+
+		dsi,flags = <(MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET)>;
+		dsi,format = <MIPI_DSI_FMT_RGB888>;
+		dsi,lanes  = <4>;
+
+		panel-init-sequence = [
+			23 00 02 27 AA
+			23 00 02 48 02
+			23 00 02 B6 20
+			23 00 02 01 20
+			23 00 02 02 00
+			23 00 02 03 53
+			23 00 02 04 48
+			23 00 02 05 18
+			23 00 02 06 18
+			23 00 02 07 00
+			23 00 02 08 0C
+			23 00 02 09 02
+			23 00 02 0A 0A
+			23 00 02 0B 82
+			23 00 02 0C 22
+			23 00 02 0D 01
+			23 00 02 0E 80
+			23 00 02 0F 20
+			23 00 02 10 20
+			23 00 02 11 03
+			23 00 02 12 1B
+			23 00 02 13 03
+			23 00 02 14 01
+			23 00 02 15 23
+			23 00 02 16 40
+			23 00 02 17 00
+			23 00 02 18 01
+			23 00 02 19 23
+			23 00 02 1A 40
+			23 00 02 1B 00
+			23 00 02 1E 46
+			23 00 02 51 30
+			23 00 02 1F 10
+			23 00 02 2A 01
+            //如下为SSR展频，不加可能点不亮
+			23 00 02 6A	08
+			23 00 02 6C	9E
+			23 00 02 6D 07
+			23 00 02 6E	00
+			23 00 02 6F	8A
+			23 00 02 70 19
+			23 64 02 71 00
+		];
+
+		disp_timings0: display-timings {
+			native-mode = <&dsi0_timing0>;
+			dsi0_timing0: timing0 {
+				clock-frequency = <60000000>;
+				hactive = <800>;
+				vactive = <1280>;
+				hsync-len = <24>;
+				hback-porch = <24>;
+				hfront-porch = <72>;
+				vsync-len = <2>;
+				vback-porch = <10>;
+				vfront-porch = <12>;
+				hsync-active = <0>;
+				vsync-active = <0>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+			};
+		};
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+				panel_in_dsi: endpoint {
+					remote-endpoint = <&dsi_out_panel>;
+				};
+			};
+		};
+	};
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@1 {
+			reg = <1>;
+			dsi_out_panel: endpoint {
+				remote-endpoint = <&panel_in_dsi>;
+			};
+		};
+	};
+};
+
+&route_hdmi {
+	status = "disabled";
+};
+
+&hdmi_in_vp0 {
+	status = "disabled";
+};
+
+&hdmi_in_vp1 {
+	status = "disabled";
+};
+
+&hdmi {
+	status = "disabled";
+};
+
+&i2c5 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	gt911: gt911@5d {
+		status = "okay";
+		compatible = "goodix,gt911";
+		reg = <0x5d>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <RK_PB7 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&gpio3 RK_PC1 GPIO_ACTIVE_LOW>;
+		irq-gpios = <&gpio3 RK_PB7 GPIO_ACTIVE_HIGH>;
+	};
+};

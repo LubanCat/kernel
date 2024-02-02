@@ -14,6 +14,7 @@
 #include <linux/sched/signal.h>
 #include <linux/init.h>
 #include <linux/console.h>
+#include <linux/gpio/consumer.h>
 #include <linux/of.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
@@ -25,6 +26,7 @@
 
 #include <linux/irq.h>
 #include <linux/uaccess.h>
+#include <linux/math64.h>
 
 /*
  * This is used to lock changes in serial line configuration.
@@ -332,6 +334,7 @@ uart_update_timeout(struct uart_port *port, unsigned int cflag,
 		    unsigned int baud)
 {
 	unsigned int bits;
+	u64 frame_time;
 
 	/* byte size and parity */
 	switch (cflag & CSIZE) {
@@ -354,6 +357,8 @@ uart_update_timeout(struct uart_port *port, unsigned int cflag,
 	if (cflag & PARENB)
 		bits++;
 
+	frame_time = (u64)bits * NSEC_PER_SEC;
+
 	/*
 	 * The total number of bits to be transmitted in the fifo.
 	 */
@@ -364,6 +369,7 @@ uart_update_timeout(struct uart_port *port, unsigned int cflag,
 	 * Add .02 seconds of slop
 	 */
 	port->timeout = (HZ * bits) / baud + HZ/50;
+	port->frame_time = DIV64_U64_ROUND_UP(frame_time, baud);
 }
 
 EXPORT_SYMBOL(uart_update_timeout);
@@ -2336,7 +2342,10 @@ uart_configure_port(struct uart_driver *drv, struct uart_state *state,
 		 */
 		spin_lock_irqsave(&port->lock, flags);
 		port->mctrl &= TIOCM_DTR;
-		port->ops->set_mctrl(port, port->mctrl);
+		if (!(port->rs485.flags & SER_RS485_ENABLED))
+			port->ops->set_mctrl(port, port->mctrl);
+		else
+			port->rs485_config(port, &port->rs485);
 		spin_unlock_irqrestore(&port->lock, flags);
 
 		/*
@@ -3066,8 +3075,10 @@ EXPORT_SYMBOL(uart_remove_one_port);
  * This function implements the device tree binding described in
  * Documentation/devicetree/bindings/serial/rs485.txt.
  */
-void uart_get_rs485_mode(struct device *dev, struct serial_rs485 *rs485conf)
+void uart_get_rs485_mode(struct uart_port *port)
 {
+	struct serial_rs485 *rs485conf = &port->rs485;
+	struct device *dev = port->dev;
 	u32 rs485_delay[2];
 	int ret;
 
@@ -3099,6 +3110,11 @@ void uart_get_rs485_mode(struct device *dev, struct serial_rs485 *rs485conf)
 		rs485conf->flags &= ~SER_RS485_RTS_ON_SEND;
 		rs485conf->flags |= SER_RS485_RTS_AFTER_SEND;
 	}
+
+	port->rs485_de_gpio = devm_gpiod_get_optional(dev, "rs485-de",
+							GPIOD_OUT_HIGH);
+	if (IS_ERR(port->rs485_de_gpio))
+		port->rs485_de_gpio = NULL;
 }
 EXPORT_SYMBOL_GPL(uart_get_rs485_mode);
 

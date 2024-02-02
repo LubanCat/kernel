@@ -7,8 +7,23 @@
 #include "rk3568-lubancat-2.dtsi"
 // 双摄像头
 #include "rk3568-lubancat-csi2-double.dtsi"
-// MIPI-DSI屏幕
 #include "rk3568-lubancat-dsi.dtsi"
+
+// MIPI-DSI屏幕
+// MIPI-DSI0
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-600p.dtsi"  //野火7寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-800p.dtsi"  //野火10寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-1080p.dtsi"  //野火5寸屏幕
+
+// MIPI-DSI1
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-600p.dtsi" //野火7寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-800p.dtsi"  //野火10寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-1080p.dtsi"  // 野火5寸屏幕
+/* 注意：
+V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
+如果需要MIPI-DSI+HDMI显示，
+请禁掉MIPI-DSI1相关引用dtsi，只开MIPI-DSI0。
+*/
 
 / {
 	model = "EmbedFire LubanCat-2";
@@ -286,22 +301,22 @@
 
 //cam1-gpio-setting
 &cam1_ov5647 {
-    pwdn-gpios = <&gpio3 RK_PC4 GPIO_ACTIVE_LOW>;
+    pwdn-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_LOW>;
 };
 
 &cam1_ov5648 {
-	pwdn-gpios = <&gpio3 RK_PC4 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_LOW>;
+	pwdn-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_LOW>;
 };
 
 &cam1_ov8858 {
-	pwdn-gpios = <&gpio3 RK_PC4 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	pwdn-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_HIGH>;
 };
 
 &cam1_sc132gs {
-	pwdn-gpios = <&gpio3 RK_PC4 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	pwdn-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_HIGH>;
 };
 
 // mipi dsi0 gpio set

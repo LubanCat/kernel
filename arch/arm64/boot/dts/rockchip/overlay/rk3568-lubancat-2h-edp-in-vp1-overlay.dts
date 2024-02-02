@@ -1,0 +1,140 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/display/drm_mipi_dsi.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+
+	fragment@0 {
+		target = <&pwm15>;
+
+		__overlay__ {
+			status = "okay";
+			pinctrl-0 = <&pwm15m1_pins>;
+		};
+	};
+
+	fragment@1 {
+		target = <&edp_phy>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&edp_in_vp0>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@3 {
+		target = <&edp_in_vp1>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@4 {
+		target = <&edp>;
+
+		__overlay__ {
+			status = "okay";
+			// hpd-gpios = <&gpio4 RK_PC4 GPIO_ACTIVE_HIGH>; //热插拔信号检测
+			force-hpd; //强制hpd，忽略物理hdp信号
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@1 {
+					reg = <1>;
+					edp_out_panel: endpoint@0 {
+						remote-endpoint = <&panel_in_edp>;
+					};
+				};
+			};
+		};
+	};
+
+	fragment@5 {
+		target-path = "/";
+
+		__overlay__ {
+
+			vdd_3v3_edp_lcd: vdd-3v3-edp-lcd-regulator {
+				compatible = "regulator-fixed";
+				enable-active-high;
+				regulator-boot-on;
+				regulator-name = "vdd_3v3_edp_lcd";
+				regulator-always-on;
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+			};
+
+			backlight_edp: backlight-edp {
+				status = "okay";
+				compatible = "pwm-backlight";
+				pwms = <&pwm15 0 50000 0>;
+				brightness-levels = <
+					95  95  95  95  95  95  95  95
+					95  95  95  95  95  95  95  95
+					95  95  95  95  95  95  95  95
+					95  95  95  95  95  95  95  95
+					95  95  95  95  95  95  95  95
+					95  95  95  95  95  95  95  95
+					95  95  95  95  95  95  95  95
+					95  95  95  95  95  95  95  95
+					95  95  95  95  95  95  95  95
+					95  95  95  95  95  95  95  95
+					95  95  95  95  95  95  95  95
+					88  89  90  91  92  93  94  95
+					96  97  98  99 100 101 102 103
+					104 105 106 107 108 109 110 111
+					112 113 114 115 116 117 118 119
+					120 121 122 123 124 125 126 127
+					128 129 130 131 132 133 134 135
+					136 137 138 139 140 141 142 143
+					144 145 146 147 148 149 150 151
+					152 153 154 155 156 157 158 159
+					160 161 162 163 164 165 166 167
+					168 169 170 171 172 173 174 175
+					176 177 178 179 180 181 182 183
+					184 185 186 187 188 189 190 191
+					192 193 194 195 196 197 198 199
+					200 201 202 203 204 205 206 207
+					208 209 210 211 212 213 214 215
+					216 217 218 219 220 221 222 223
+					224 225 226 227 228 229 230 231
+					232 233 234 235 236 237 238 239
+					240 241 242 243 244 245 246 247
+					248 249 250 251 252 253 254 255
+				>;
+				default-brightness-level = <200>;
+			};
+
+			edp_panel: edp-panel {
+				compatible = "simple-panel";
+				backlight = <&backlight_edp>;
+				status = "okay";
+				power-supply = <&vdd_3v3_edp_lcd>;
+				enable-gpios = <&gpio4 RK_PC2 GPIO_ACTIVE_HIGH>;
+				//bus-format = <MEDIA_BUS_FMT_RBG888_1X24>;
+				prepare-delay-ms = <100>; //AUX通信前延时
+				enable-delay-ms = <100>;
+
+				ports {
+					panel_in_edp: endpoint {
+						remote-endpoint = <&edp_out_panel>;
+					};
+				};
+			};
+		};
+	};
+};

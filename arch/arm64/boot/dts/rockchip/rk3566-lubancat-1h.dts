@@ -22,7 +22,7 @@
 #include "rk3568-lubancat-csi2-double.dtsi"
 
 //LVDS屏幕配置
-// #include "rk3566-lubancat-lvds-10.1-800x1280.dtsi"
+//#include "rk3566-lubancat-1h-soc-lvds-10.1-in-vp1.dtsi" 
 
 / {
 	model = "EmbedFire LubanCat-1H";
@@ -79,17 +79,36 @@
 		};
 	};
 
-	adc_keys: adc-keys {
+
+	adc-keys {
 		compatible = "adc-keys";
 		io-channels = <&saradc 0>;
 		io-channel-names = "buttons";
-		keyup-threshold-microvolt = <1800000>;
 		poll-interval = <100>;
+		keyup-threshold-microvolt = <1800000>;
 
-		restart-key {
-			label = "restart";
-			linux,code = <KEY_RESTART>;
-			press-threshold-microvolt = <9>;
+		esc-key {
+			linux,code = <KEY_ESC>;
+			label = "esc";
+			press-threshold-microvolt = <1100000>;
+		};
+
+		menu-key {
+			linux,code = <KEY_MENU>;
+			label = "menu";
+			press-threshold-microvolt = <600000>;
+		};
+
+		vol-down-key {
+			linux,code = <KEY_VOLUMEDOWN>;
+			label = "volume down";
+			press-threshold-microvolt = <300000>;
+		};
+
+		vol-up-key {
+			linux,code = <KEY_VOLUMEUP>;
+			label = "volume up";
+			press-threshold-microvolt = <18000>;
 		};
 	};
 
@@ -282,6 +301,34 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&sys_status_led_pin>;
 		};
+
+		blue_led: blue-led {
+			label = "blue_led";
+			linux,default-trigger = "heartbeat";
+			default-state = "on";
+			gpios = <&gpio2 RK_PC0 GPIO_ACTIVE_LOW>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&blue_led_pin>;
+		};
+
+		red_led: red-led {
+			label = "red_led";
+			linux,default-trigger = "heartbeat";
+			default-state = "on";
+			gpios = <&gpio2 RK_PB7 GPIO_ACTIVE_LOW>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&red_led_pin>;
+		};
+
+		fan: fan {
+			label = "fan";
+			default-state = "on";
+			linux,default-trigger = "none";
+			gpios = <&gpio4 RK_PC0 GPIO_ACTIVE_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&fan_pin>;
+		};
+
 	};
 
 	rk809_sound: rk809-sound {
@@ -313,19 +360,6 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&hp_det>;
 		io-channels = <&saradc 1>;
-	};
-
-	fan: pwm-fan {
-		compatible = "pwm-fan";
-		#cooling-cells = <2>;
-		pwms = <&pwm11 0 500000 0>;
-		cooling-levels = <0 100 150 200 255>;
-		rockchip,temp-trips = <
-			50000	1
-			55000	2
-			60000	3
-			65000	4
-		>;
 	};
 
 
@@ -374,6 +408,7 @@
         status = "okay";
         compatible = "pwm-backlight";
         pwms = <&pwm10 0 50000 0>;
+		enable-gpios = <&gpio3 RK_PB6 GPIO_ACTIVE_HIGH>;
         brightness-levels = <
              95  95  95  95  95  95  95  95
              95  95  95  95  95  95  95  95
@@ -415,9 +450,16 @@
 		status = "okay";
 	};
 
+	ext_wifi_32k_clk: external-32k-clock {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <32768>;
+		clock-output-names = "ext_wifi_32k_clk";
+	};
+
 	sdio_pwrseq: sdio-pwrseq {
 		compatible = "mmc-pwrseq-simple";
-		clocks = <&rk809 1>;
+		clocks = <&ext_wifi_32k_clk>;
 		clock-names = "ext_clock";
 		pinctrl-names = "default";
 		pinctrl-0 = <&wifi_enable_h>;
@@ -434,14 +476,36 @@
 
 	wireless_wlan: wireless-wlan {
 		compatible = "wlan-platdata";
-		clocks = <&rk809 1>;
-		clock-names = "clk_wifi";
 		rockchip,grf = <&grf>;
 		wifi_chip_type = "rtl8189es";
 		pinctrl-names = "default";
 		pinctrl-0 = <&wifi_host_wake_irq>;
-		WIFI,host_wake_irq = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
+		WIFI,host_wake_irq = <&gpio0 RK_PC6 GPIO_ACTIVE_LOW>;
 		status = "okay";
+	};
+};
+
+&pwm3 {
+	status = "okay";
+
+	compatible = "rockchip,remotectl-pwm";
+	interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
+	remote_pwm_id = <3>;
+	handle_cpu_id = <1>;
+	remote_support_psci = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm3_pins>;
+
+	ir_key_lubancat{
+		rockchip,usercode = <0x909>;
+		rockchip,key_table =
+			<0xf4   KEY_POWER>,
+			<0xe6   KEY_SLEEP>,
+			<0xe4   KEY_WAKEUP>,
+			<0xed   KEY_VOLUMEUP>,
+			<0xec   KEY_VOLUMEDOWN>,
+			<0xef   KEY_UP>,
+			<0xee   KEY_DOWN>;
 	};
 };
 
@@ -506,16 +570,6 @@
 };
 
 &dmc {
-	system-status-freq = <
-		/*system status		 freq(KHz)*/
-		SYS_STATUS_NORMAL	   780000
-		SYS_STATUS_REBOOT	   1560000
-		SYS_STATUS_SUSPEND	  324000
-		SYS_STATUS_VIDEO_1080P  528000
-		SYS_STATUS_BOOST		1560000
-		SYS_STATUS_ISP		  1560000
-		SYS_STATUS_PERFORMANCE  1560000
-	>;
 	center-supply = <&vdd_logic>;
 	status = "okay";
 };
@@ -843,6 +897,7 @@
 		#clock-cells = <0>;
 		clock-frequency = <32768>;
 		clock-output-names = "hym8563";
+		rtc-irq-gpio = <&gpio0 RK_PA6 IRQ_TYPE_EDGE_FALLING>;
 	};
 };
 
@@ -899,6 +954,38 @@
 	};
 };
 
+&uart0 {
+    status = "okay";
+};
+
+&uart3 {
+    status = "okay";
+};
+
+&uart4 {
+    status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart4m1_xfer>;
+};
+
+&uart5 {
+    status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart5m1_xfer>;
+};
+
+&uart7 {
+    status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart7m1_xfer>;
+};
+
+&uart9 {
+    status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart9m1_xfer>;
+};
+
 &i2c1 {
 	status = "okay";
 	clock-frequency = <100000>;
@@ -923,7 +1010,6 @@
 		interrupts = <RK_PA6 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&gpio3 RK_PA5 GPIO_ACTIVE_LOW>;
 		irq-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>;
-		touchscreen-inverted-y;
 	};
 
 	rockpi_mcu_1: rockpi-mcu-1@45 {
@@ -1007,7 +1093,6 @@
 
 &pmu_io_domains {
 	status = "okay";
-	pmuio1-supply = <&vcc3v3_pmu>;
 	pmuio2-supply = <&vcc3v3_pmu>;
 	vccio1-supply = <&vccio_acodec>;
 	vccio3-supply = <&vccio_sd>;
@@ -1100,18 +1185,6 @@
 
 &vop_mmu {
 	status = "okay";
-};
-
-&vp0 {
-	rockchip,plane-mask = <(1 << ROCKCHIP_VOP2_CLUSTER0 | 1 << ROCKCHIP_VOP2_ESMART0 | 1 << ROCKCHIP_VOP2_SMART0)>;
-	rockchip,primary-plane = <ROCKCHIP_VOP2_SMART0>;
-	// cursor-win-id = <ROCKCHIP_VOP2_CLUSTER0>;
-};
-
-&vp1 {
-	rockchip,plane-mask = <(1 << ROCKCHIP_VOP2_CLUSTER1 | 1 << ROCKCHIP_VOP2_ESMART1 | 1 << ROCKCHIP_VOP2_SMART1)>;
-	rockchip,primary-plane = <ROCKCHIP_VOP2_SMART1>;
-	// cursor-win-id = <ROCKCHIP_VOP2_CLUSTER1>;
 };
 
 &rng {
@@ -1314,6 +1387,15 @@
 	leds {
 		sys_status_led_pin: sys-status-led-pin {
 			rockchip,pins = <0 RK_PC7 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+		blue_led_pin: blue-led-pin {
+			rockchip,pins = <2 RK_PC0 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+		red_led_pin: red-led-pin {
+			rockchip,pins = <2 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+		fan_pin: fan-pin {
+			rockchip,pins = <4 RK_PC0 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 

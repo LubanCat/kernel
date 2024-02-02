@@ -11,6 +11,7 @@
 
 		__overlay__ {
 			status = "okay";
+			compatible = "rockchip,canfd-1.0";
 			pinctrl-names = "default";
 			assigned-clocks = <&cru CLK_CAN2>;
     		assigned-clock-rates = <100000000>;

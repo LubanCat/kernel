@@ -54,7 +54,6 @@
 				reg = <0>;
 				backlight = <&backlight_lvds_edp>;
 				reset-gpios = <&gpio4 RK_PC3 GPIO_ACTIVE_LOW>;
-				enable-gpios = <&gpio3 RK_PB6 GPIO_ACTIVE_HIGH>;
 				
 				enable-delay-ms = <35>;
 				prepare-delay-ms = <6>;
