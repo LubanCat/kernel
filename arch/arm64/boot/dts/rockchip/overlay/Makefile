@@ -21,7 +21,9 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk356x-lubancat-pwm9-m0-overlay.dtbo \
 	rk356x-lubancat-pwm10-m0-overlay.dtbo \
 	rk356x-lubancat-pwm11-ir-m0-overlay.dtbo \
+	rk356x-lubancat-pwm12-m0-overlay.dtbo \
 	rk356x-lubancat-pwm12-m1-overlay.dtbo \
+	rk356x-lubancat-pwm13-m0-overlay.dtbo \
 	rk356x-lubancat-pwm13-m1-overlay.dtbo \
 	rk356x-lubancat-pwm14-m0-overlay.dtbo \
 	rk356x-lubancat-pwm14-m1-overlay.dtbo \
