@@ -26,6 +26,13 @@
 		clock-output-names = "ext_cam_27m_clk";
 	};
 
+	ext_cam_37m_clk: external-camera-37m-clock {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <37125000>;
+		clock-output-names = "ext_cam_37m_clk";
+	};
+
 	vdd_cam_5v: vdd-cam-5v-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vdd_cam_5v";
