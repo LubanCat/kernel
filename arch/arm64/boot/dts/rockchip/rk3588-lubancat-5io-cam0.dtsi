@@ -135,7 +135,7 @@
 		compatible = "sony,imx415";
 		status = "okay";
 		reg = <0x1a>;
-		clocks = <&ext_cam_24m_clk>;
+		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
 		power-domains = <&power RK3588_PD_VI>;
 		avdd-supply = <&cam_avdd>;
