@@ -30,8 +30,8 @@
 
 		enable-delay-ms = <35>;
 		prepare-delay-ms = <6>;
-		reset-delay-ms = <0>;
-		init-delay-ms = <20>;
+		reset-delay-ms = <10>;
+		init-delay-ms = <50>;
 		unprepare-delay-ms = <0>;
 		disable-delay-ms = <20>;
 
