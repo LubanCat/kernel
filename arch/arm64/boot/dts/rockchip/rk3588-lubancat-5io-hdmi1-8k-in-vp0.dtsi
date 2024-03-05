@@ -1,0 +1,53 @@
+
+/ {
+	hdmi1_sound: hdmi1-sound {
+		status = "okay";
+		compatible = "rockchip,hdmi";
+		rockchip,mclk-fs = <128>;
+		rockchip,card-name = "rockchip-hdmi1";
+		rockchip,cpu = <&i2s6_8ch>;
+		rockchip,codec = <&hdmi1>;
+		rockchip,jack-det;
+	};
+};
+
+&route_hdmi1{
+	status = "okay";
+	connect = <&vp0_out_hdmi1>;
+};
+
+&hdmi1 {
+	enable-gpios = <&gpio1 RK_PA7 GPIO_ACTIVE_HIGH>;
+	cec-enable = "true";
+	pinctrl-0 = <&hdmim0_tx1_cec &hdmim0_tx1_hpd &hdmim0_tx1_scl &hdmim0_tx1_sda>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&hdmi1_in_vp0 {
+	status = "okay";
+};
+
+&hdmi1_in_vp1 {
+	status = "disabled";
+};
+
+&hdmi1_in_vp2 {
+	status = "disabled";
+};
+
+&i2s6_8ch {
+	status = "okay";
+};
+
+&display_subsystem {
+	clocks;
+	clock-names;
+};
+
+&vop {
+	status = "okay";
+	assigned-clocks = <&cru ACLK_VOP>;
+	assigned-clock-rates = <800000000>;
+};
+
