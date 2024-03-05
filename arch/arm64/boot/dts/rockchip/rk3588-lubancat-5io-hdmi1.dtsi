@@ -18,6 +18,7 @@
 
 &hdmi1 {
 	enable-gpios = <&gpio1 RK_PA7 GPIO_ACTIVE_HIGH>;
+	cec-enable = "true";
 	pinctrl-0 = <&hdmim0_tx1_cec &hdmim0_tx1_hpd &hdmim0_tx1_scl &hdmim0_tx1_sda>;
 	pinctrl-names = "default";
 	status = "okay";

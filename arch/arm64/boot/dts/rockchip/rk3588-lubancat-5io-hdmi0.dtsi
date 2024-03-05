@@ -18,6 +18,7 @@
 
 &hdmi0 {
 	enable-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
+	cec-enable = "true";
 	status = "okay";
 };
 
