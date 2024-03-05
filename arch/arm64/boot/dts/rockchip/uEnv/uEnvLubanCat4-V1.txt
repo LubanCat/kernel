@@ -22,6 +22,11 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-uart7-m1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-uart7-m2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-uart9-m2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-can0-m0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-can2-m0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-cam0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-cam1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-cam2-overlay.dtbo
 
 # Display 显示输出配置
 # 每个vp对应一个显示接口，同一个vp同时只能开启一个屏幕
