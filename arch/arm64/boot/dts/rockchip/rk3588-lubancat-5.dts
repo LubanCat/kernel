@@ -75,13 +75,13 @@
 		status = "okay";
 		compatible = "gpio-leds";
 
-		sys_status_led: sys-status-led {
-			label = "sys_status_led";
+		sys_led: sys-led {
+			label = "sys_led";
 			linux,default-trigger = "heartbeat";
 			default-state = "on";
 			gpios = <&gpio0 RK_PD3 GPIO_ACTIVE_LOW>;
 			pinctrl-names = "default";
-			pinctrl-0 = <&sys_status_led_pin>;
+			pinctrl-0 = <&sys_led_pin>;
 		};
 
 		abc_led: abc-led {
@@ -107,16 +107,6 @@
 		regulator-max-microvolt = <12000000>;
 		regulator-name = "vcc12v_dcin";
 	};
-	
-	vcc3v3_sys: vcc3v3-sys {
-		compatible = "regulator-fixed";
-		regulator-name = "vcc3v3_sys";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		vin-supply = <&vcc12v_dcin>;
-	};
 
 	vcc5v0_sys: vcc5v0-sys {
 		compatible = "regulator-fixed";
@@ -125,6 +115,16 @@
 		regulator-boot-on;
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
+		vin-supply = <&vcc12v_dcin>;
+	};
+
+	vcc3v3_sys: vcc3v3-sys {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v3_sys";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
 		vin-supply = <&vcc12v_dcin>;
 	};
 
@@ -1512,7 +1512,7 @@
 	};
 
 	leds {
-		sys_status_led_pin: sys-status-led-pin {
+		sys_led_pin: sys-led-pin {
 			rockchip,pins = <0 RK_PD3 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
