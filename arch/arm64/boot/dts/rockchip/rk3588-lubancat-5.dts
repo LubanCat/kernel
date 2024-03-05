@@ -1484,6 +1484,10 @@
     status = "okay";
 };
 
+&hdptxphy_hdmi_clk1 {
+	status = "okay";
+};
+
 &pinctrl {
     hym8563 {
         hym8563_int: hym8563-int {
