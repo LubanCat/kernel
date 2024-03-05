@@ -1,12 +1,12 @@
 
 / {
-	hdmiin-sound {
+	hdmiin_sound: hdmiin-sound {
 		compatible = "rockchip,hdmi";
 		rockchip,mclk-fs = <128>;
 		rockchip,format = "i2s";
 		rockchip,bitclock-master = <&hdmirx_ctrler>;
 		rockchip,frame-master = <&hdmirx_ctrler>;
-		rockchip,card-name = "rockchip,hdmiin";
+		rockchip,card-name = "rockchip-hdmiin";
 		rockchip,cpu = <&i2s7_8ch>;
 		rockchip,codec = <&hdmirx_ctrler 0>;
 		rockchip,jack-det;
@@ -20,8 +20,12 @@
 	/* Effective level used to trigger HPD: 0-low, 1-high */
 	hpd-trigger-level = <1>;
 	hdmirx-det-gpios = <&gpio1 RK_PD2 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&hdmim1_rx_cec &hdmim1_rx_hpdin &hdmim1_rx_scl &hdmim1_rx_sda &hdmirx_det>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&hdmim1_rx &hdmirx_det>;	
+};
+
+&hdmiin_sound {
+	status = "okay";
 };
 
 &i2s7_8ch {
@@ -29,7 +33,7 @@
 };
 
 &pinctrl {
-	hdmi {
+	hdmirx {
 		hdmirx_det: hdmirx-det {
 			rockchip,pins = <1 RK_PD2 RK_FUNC_GPIO &pcfg_pull_up>;
 		};

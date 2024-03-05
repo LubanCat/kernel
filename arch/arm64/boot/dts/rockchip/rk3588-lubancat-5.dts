@@ -36,6 +36,9 @@
 // #include "rk3588-lubancat-5-cam4.dtsi"
 // #include "rk3588-lubancat-5-cam5.dtsi"
 
+// HDMI RX
+// #include "rk3588-lubancat-5-hdmi-rx.dtsi"
+
 / {
 	model = "Embedfire LubanCat-5";
 	compatible = "rockchip,rk3588-lubancat-5", "rockchip,rk3588";
