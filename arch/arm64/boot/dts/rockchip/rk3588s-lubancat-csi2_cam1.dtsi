@@ -5,6 +5,13 @@
  */
 
 / {
+	ext_cam1_37m_clk: external-camera-37m-clock {
+		compatible = "fixed-clock";
+		clock-frequency = <37125000>;
+		clock-output-names = "ext_cam_37m_clk";
+		#clock-cells = <0>;
+	};
+
 	ext_cam1_25m_clk: external-camera-25m-clock {
 		compatible = "fixed-clock";
 		clock-frequency = <25000000>;
@@ -188,12 +195,13 @@
 		compatible = "sony,imx415";
 		status = "okay";
 		reg = <0x1a>;
-		clocks = <&cru CLK_MIPI_CAMARAOUT_M1>;
+		clocks = <&ext_cam1_37m_clk>;
 		clock-names = "xvclk";
-		power-domains = <&power RK3588_PD_VI>;
 		avdd-supply = <&cam1_avdd>;
 		dovdd-supply = <&cam1_dovdd>;
 		dvdd-supply = <&cam1_dvdd>;
+		reset-gpios = <&gpio4 RK_PA6 GPIO_ACTIVE_LOW>;
+
 		rockchip,camera-module-index = <1>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "CMK-OT2022-PX1";

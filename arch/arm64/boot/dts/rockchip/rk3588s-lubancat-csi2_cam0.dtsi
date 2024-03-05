@@ -5,6 +5,13 @@
  */
 
 / {
+	ext_cam0_37m_clk: external-camera-37m-clock {
+		compatible = "fixed-clock";
+		clock-frequency = <37125000>;
+		clock-output-names = "ext_cam_37m_clk";
+		#clock-cells = <0>;
+	};
+
 	ext_cam0_25m_clk: external-camera-25m-clock {
 		compatible = "fixed-clock";
 		clock-frequency = <25000000>;
@@ -195,18 +202,17 @@
 		compatible = "sony,imx415";
 		status = "okay";
 		reg = <0x1a>;
-		clocks = <&ext_cam0_24m_clk>;
+		clocks = <&ext_cam0_37m_clk>;
 		clock-names = "xvclk";
-		power-domains = <&power RK3588_PD_VI>;
 		avdd-supply = <&cam0_avdd>;
 		dovdd-supply = <&cam0_dovdd>;
 		dvdd-supply = <&cam0_dvdd>;
+		reset-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_LOW>;
+
 		rockchip,camera-module-index = <0>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "CMK-OT2022-PX1";
 		rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
-		// NO_HDR:0 HDR_X2:5 HDR_X3:6
-		// rockchip,camera-hdr-mode = <0>;
 		port {
 			imx415_out0: endpoint {
 				remote-endpoint = <&dcphy0_in_imx415>;
