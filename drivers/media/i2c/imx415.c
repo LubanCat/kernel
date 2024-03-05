@@ -914,7 +914,7 @@ static const struct imx415_mode supported_modes[] = {
 		.global_reg_list = imx415_global_10bit_3864x2192_regs,
 		.reg_list = imx415_linear_10bit_3864x2192_720M_24M_regs,
 		.hdr_mode = NO_HDR,
-		.mipi_freq_idx =2,
+		.mipi_freq_idx =4,
 		.bpp = 10,
 		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
 	},
