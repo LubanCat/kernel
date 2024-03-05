@@ -6,7 +6,7 @@
 
 /dts-v1/;
 
-#include "rk3588s-lubancat-4-v1.dts"
+#include "rk3588s-lubancat-4.dts"
 
 // #include "rk3588s-lubancat-40pin.dtsi"
 // #include "rk3588s-lubancat-csi2.dtsi"
