@@ -226,6 +226,18 @@
 		regulator-boot-on;
 		regulator-always-on;
 	};
+	
+	hdmiin-sound {
+		compatible = "rockchip,hdmi";
+		rockchip,mclk-fs = <128>;
+		rockchip,format = "i2s";
+		rockchip,bitclock-master = <&hdmirx_ctrler>;
+		rockchip,frame-master = <&hdmirx_ctrler>;
+		rockchip,card-name = "rockchip,hdmiin";
+		rockchip,cpu = <&i2s7_8ch>;
+		rockchip,codec = <&hdmirx_ctrler 0>;
+		rockchip,jack-det;
+	};
 
 	dp0_sound: dp0-sound {
 		status = "okay";
@@ -1469,6 +1481,20 @@
 };
 
 &vop_mmu {
+	status = "okay";
+};
+
+&hdmirx_ctrler {
+	status = "okay";
+	#sound-dai-cells = <1>;
+	/* Effective level used to trigger HPD: 0-low, 1-high */
+	hpd-trigger-level = <1>;
+	hdmirx-det-gpios = <&gpio1 RK_PD5 GPIO_ACTIVE_LOW>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&hdmim1_rx &hdmirx_det>;
+};
+
+&i2s7_8ch{
 	status = "okay";
 };
 
