@@ -5,6 +5,23 @@ cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 root
 enable_uboot_overlays=1
 #overlay_start
 
+
+#40pin
+#dtoverlay=/dtb/overlay/rk3588-lubancat-i2c3-m0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-i2c4-m3-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-uart3-m0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-uart1-m1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-spi0-m1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-i2c8-m2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm0-m2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm1-m2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm13-m1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm13-m2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm14-m1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm14-m2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm15-ir-m3-overlay.dtbo
+
+# Display
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi-8k-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-1080p-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-1080p-overlay.dtbo
@@ -12,6 +29,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dp0-disabled-overlay.dtbo
 
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi-rx-overlay.dtbo
 
