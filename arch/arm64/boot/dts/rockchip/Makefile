@@ -203,6 +203,10 @@
 
 ifeq ($(CONFIG_ARCH_ROCKCHIP), y)
 
+dtb-$(CONFIG_CPU_RK3562) += \
+	rk3562-lubancat-rk_series.dtb \
+	rk3562-lubancat-a2io.dtb	
+
 dtb-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-rk_series.dtb \
 	rk3588s-lubancat-4.dtb \
