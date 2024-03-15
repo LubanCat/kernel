@@ -192,3 +192,5 @@ obj-$(CONFIG_RK_NAND)		+= rk_nand/
 obj-$(CONFIG_RK_HEADSET)	+= headset_observe/
 obj-$(CONFIG_RK_FLASH)		+= rkflash/
 obj-$(CONFIG_ROCKCHIP_RKNPU)	+= rknpu/
+
+obj-$(CONFIG_EBF_MODULE) += ebf_module/

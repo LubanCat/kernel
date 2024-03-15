@@ -5,6 +5,7 @@ cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 root
 enable_uboot_overlays=1
 #overlay_start
 
+#dtoverlay=/dtb/overlay/rk3566-lubancat-0-xl9535-overlay.dtbo
 #network
 dtoverlay=/dtb/overlay/rk356x-lubancat-gmac1-disabled-overlay.dtbo
 #40pin

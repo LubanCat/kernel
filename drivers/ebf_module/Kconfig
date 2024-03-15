@@ -1,0 +1,19 @@
+menu "Embedfire Modules"
+
+menuconfig EBF_MODULE
+	bool "Embedfire Modules"
+
+if EBF_MODULE
+
+config EBF_DHT11
+	tristate "dht11"
+
+config DS18B20
+	tristate "ds18b20"
+
+config INFRARED
+	tristate "infrared"
+
+endif # EBF_MODULE
+
+endmenu

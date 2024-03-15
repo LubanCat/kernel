@@ -1,0 +1,168 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/input/linux-event-codes.h>
+
+/ {
+	compatible = "rockchip,rk3568";
+
+	fragment@0 {
+		target = <&i2c5>;
+
+		__overlay__ {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			xl9535: xl9535@21 {
+				compatible = "nxp,pca9535";
+				reg = <0x21>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_xl9535>;
+				gpio-controller;
+		        #gpio-cells = <2>;
+				interrupt-parent = <&gpio1>;
+				interrupts = <2 IRQ_TYPE_LEVEL_LOW>;
+                #interrupt-cells = <2>;
+				interrupt-controller;
+			};
+		};
+	};
+
+    fragment@1 {
+        target-path = "/";
+        __overlay__ {
+            Keys {
+                    compatible = "gpio-keys";
+                    pinctrl-names = "default";
+                    #address-cells = <1>;
+                    #size-cells = <0>;
+                    status = "okay";
+                    //autorepeat;
+                    Key0{
+                        label = "KEY_0";
+                        linux,code=<KEY_0>;
+                        gpio-hog;
+                        gpios = <&xl9535 3 GPIO_ACTIVE_LOW>;
+                        interrupt-parent = <&xl9535>;
+                        interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
+                    };
+
+                    Key1{
+						label = "KEY_1";
+						linux,code=<KEY_1>;
+						gpio-hog;
+                        gpios = <&xl9535 4 GPIO_ACTIVE_LOW>;
+                        interrupt-parent = <&xl9535>;
+                        interrupts = <4 IRQ_TYPE_LEVEL_LOW>;
+				    };
+
+                    Key2{
+						label = "KEY_2";
+						linux,code=<KEY_2>;
+						gpio-hog;
+                        gpios = <&xl9535 5 GPIO_ACTIVE_LOW>;
+                        interrupt-parent = <&xl9535>;
+                        interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
+				    };
+                };
+
+            Coder_sw {
+				compatible = "gpio-keys";
+				status = "okay";
+                #address-cells = <1>;
+                #size-cells = <0>;
+				coder_sw{
+					label = "coder_sw";
+					linux,code=<KEY_3>;
+					debounce-interval = <5>;
+					gpios = <&xl9535 7 GPIO_ACTIVE_LOW>;
+					interrupt-parent = <&xl9535>;
+					interrupts = <7 IRQ_TYPE_LEVEL_LOW>;
+					};
+				};
+
+			Coder_A{
+				compatible = "gpio-keys";
+				status = "okay";
+                #address-cells = <1>;
+                #size-cells = <0>;
+				coder_A{
+					label = "coder_A";
+					linux,code=<250>; 
+					debounce-interval = <1>;
+					gpios = <&xl9535 12 GPIO_ACTIVE_HIGH>;
+					interrupt-parent = <&xl9535>;
+					interrupts = <12 IRQ_TYPE_EDGE_RISING>;
+					};
+				};
+
+			Coder_B{
+				compatible = "gpio-keys";
+				status = "okay";
+                #address-cells = <1>;
+                #size-cells = <0>;
+				coder_B{
+					label = "coder_B";
+					linux,code=<251>; 
+					debounce-interval = <1>;
+					gpios = <&xl9535 13 GPIO_ACTIVE_HIGH>;
+					interrupt-parent = <&xl9535>;
+					interrupts = <13 IRQ_TYPE_EDGE_RISING>;
+					};
+				};
+			Coder_C{
+				compatible = "gpio-keys";
+				status = "okay";
+                #address-cells = <1>;
+                #size-cells = <0>;
+				coder_C{
+					label = "coder_C";
+					linux,code=<252>; 
+					debounce-interval = <1>;
+					gpios = <&xl9535 14 GPIO_ACTIVE_HIGH>;
+					interrupt-parent = <&xl9535>;
+					interrupts = <14 IRQ_TYPE_EDGE_RISING>;
+					};
+				};
+            };
+        };
+
+    fragment@2 {
+        target-path = "/";
+		__overlay__ {
+		dht11{
+			#address-cells = <1>;
+			#size-cells = <1>;
+            compatible = "fire,temphum_dht11";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_dht11>;
+			linux,open-drain;
+			dht11_pin = <&gpio1 RK_PB1 GPIO_ACTIVE_HIGH>;
+			status = "okay";
+			};
+		};
+	};
+
+    fragment@3 {
+		target = <&pinctrl>;
+		__overlay__ {
+		xl9535 {
+			pinctrl_xl9535:pinctrl_xl9535{
+				rockchip,pins =
+					<1 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>;
+				};
+			};
+        dht11 {
+			pinctrl_dht11: pinctrl_dht11{
+				rockchip,pins =
+					<1 RK_PB1 RK_FUNC_GPIO &pcfg_pull_up>;
+				};
+			};
+		};
+	};
+};
+
