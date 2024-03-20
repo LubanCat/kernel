@@ -43,6 +43,7 @@
 #include <linux/etherdevice.h>
 #include <linux/delay.h>
 #include <linux/mii.h>
+#include <linux/of.h>
 #include <linux/if_vlan.h>
 #include <linux/crc32.h>
 #include <linux/interrupt.h>
@@ -10407,6 +10408,29 @@ rtl8125_setup_mqs_reg(struct rtl8125_private *tp)
         }
 }
 
+static int
+rtl8125_led_configuration(struct rtl8125_private *tp)
+{
+        u32 led_ledsel2;
+        u32 led_ledsel3;
+        int ret;
+
+        ret = of_property_read_u32(tp->pci_dev->dev.of_node,
+                                  "realtek,led-ledsel2", &led_ledsel2);
+        if (ret)
+                return ret;
+        
+        ret = of_property_read_u32(tp->pci_dev->dev.of_node,
+                                  "realtek,led-ledsel3", &led_ledsel3);
+        if (ret)
+                return ret;
+                
+        RTL_W16(tp, CustomLED2, led_ledsel2);
+        RTL_W16(tp, CustomLED3, led_ledsel3);
+
+        return 0;
+}
+
 static void
 rtl8125_init_software_variable(struct net_device *dev)
 {
@@ -10838,7 +10862,9 @@ rtl8125_init_software_variable(struct net_device *dev)
         if (tp->InitRxDescType == RX_DESC_RING_TYPE_3)
                 tp->rtl8125_rx_config |= EnableRxDescV3;
 
-        tp->NicCustLedValue = RTL_R16(tp, CustomLED);
+        rtl8125_led_configuration(tp);
+
+        tp->NicCustLedValue = RTL_R16(tp, CustomLED3);
 
         tp->wol_opts = rtl8125_get_hw_wol(tp);
         tp->wol_enabled = (tp->wol_opts) ? WOL_ENABLED : WOL_DISABLED;
