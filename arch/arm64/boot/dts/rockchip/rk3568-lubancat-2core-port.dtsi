@@ -169,7 +169,9 @@ else
 				 JL2XXX_LED2_LINK10   | \
 				 JL2XXX_LED2_LINK100  | \
 				 JL2XXX_LED2_LINK1000 | \
-				 JL2XXX_LED2_ACTIVITY )>;
+				 JL2XXX_LED2_ACTIVITY )>; //JL phy
+
+		realtek,led-data = <0x6d60>;  //8211F phy
 	};
 };
 
@@ -230,7 +232,9 @@ else
 				 JL2XXX_LED2_LINK10   | \
 				 JL2XXX_LED2_LINK100  | \
 				 JL2XXX_LED2_LINK1000 | \
-				 JL2XXX_LED2_ACTIVITY )>;
+				 JL2XXX_LED2_ACTIVITY )>;  //JL phy
+
+		realtek,led-data = <0x6d60>;  //8211F phy
 	};
 };
 
