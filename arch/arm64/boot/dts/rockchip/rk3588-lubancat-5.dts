@@ -308,22 +308,6 @@
 	};
 };
 
-&rockchip_suspend {
-	status = "disabled";
-	rockchip,sleep-debug-en = <1>;
-	rockchip,sleep-mode-config = <
-		(0
-		| RKPM_SLP_ARMOFF_DDRPD 
-		)
-	>;
-	rockchip,wakeup-config = <
-		(0
-		| RKPM_GPIO_WKUP_EN
-		| RKPM_CPU0_WKUP_EN
-		)
-	>;
-};
-
 // &pwm11 {
 // 	pinctrl-0 = <&pwm11m1_pins>;
 // 	status = "okay";
