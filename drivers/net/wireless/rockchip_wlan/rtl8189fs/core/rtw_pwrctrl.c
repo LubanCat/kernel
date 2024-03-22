@@ -90,7 +90,7 @@ void _ips_enter(_adapter *padapter)
 
 	if (rf_off == pwrpriv->change_rfpwrstate) {
 		pwrpriv->bpower_saving = _TRUE;
-		RTW_PRINT("nolinked power save enter\n");
+		RTW_WARN("nolinked power save enter\n");
 
 		if (pwrpriv->ips_mode == IPS_LEVEL_2)
 			pwrpriv->bkeepfwalive = _TRUE;
@@ -139,7 +139,7 @@ int _ips_leave(_adapter *padapter)
 		pwrpriv->pwr_saving_time += rtw_get_passing_time_ms(pwrpriv->pwr_saving_start_time);
 #endif /* CONFIG_RTW_CFGVEDNOR_LLSTATS */
 
-		RTW_PRINT("nolinked power save leave\n");
+		RTW_WARN("nolinked power save leave\n");
 
 		RTW_INFO("==> ips_leave.....LED(0x%08x)...\n", rtw_read32(padapter, 0x4c));
 		pwrpriv->bips_processing = _FALSE;

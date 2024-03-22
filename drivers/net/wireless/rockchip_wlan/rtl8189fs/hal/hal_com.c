@@ -1304,7 +1304,7 @@ void rtw_hal_dump_macaddr(void *sel, _adapter *adapter)
 		iface = dvobj->padapters[i];
 		if (iface) {
 			rtw_hal_get_hwreg(iface, HW_VAR_MAC_ADDR, mac_addr);
-			RTW_PRINT_SEL(sel, ADPT_FMT"- hw port(%d) mac_addr ="MAC_FMT"\n",
+			RTW_WARN( ADPT_FMT"- hw port(%d) mac_addr ="MAC_FMT"\n",
 				ADPT_ARG(iface), iface->hw_port, MAC_ARG(mac_addr));
 		}
 	}
@@ -3361,7 +3361,7 @@ static void rtw_hal_set_macaddr_port(_adapter *adapter, u8 *val)
 		return;
 	hwport = get_hw_port(adapter);
 
-	RTW_INFO("%s "ADPT_FMT"- hw port(%d) mac_addr ="MAC_FMT"\n",  __func__,
+	RTW_WARN("%s "ADPT_FMT"- hw port(%d) mac_addr ="MAC_FMT"\n",  __func__,
 		 ADPT_ARG(adapter), hwport, MAC_ARG(val));
 
 #ifdef RTW_HALMAC
@@ -3431,7 +3431,7 @@ static void rtw_hal_get_macaddr_port(_adapter *adapter, u8 *mac_addr)
 		mac_addr[idx] = rtw_read8(GET_PRIMARY_ADAPTER(adapter), (reg_macid + idx));
 #endif /* !RTW_HALMAC */
 
-	RTW_INFO("%s "ADPT_FMT"- hw port(%d) mac_addr ="MAC_FMT"\n",  __func__,
+	RTW_WARN("%s "ADPT_FMT"- hw port(%d) mac_addr ="MAC_FMT"\n",  __func__,
 		 ADPT_ARG(adapter), adapter->hw_port, MAC_ARG(mac_addr));
 }
 
