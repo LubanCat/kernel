@@ -2111,7 +2111,7 @@ dw_hdmi_rockchip_select_output(struct drm_connector_state *conn_state,
 		DRM_MODE_FLAG_3D_FRAME_PACKING)
 		pixclock *= 2;
 
-	if (hdmi->is_hdmi_qp && mode.clock >= 600000)
+	if (hdmi->is_hdmi_qp && mode.clock >= 300000)
 		*color_format = RK_IF_FORMAT_YCBCR420;
 
 	if (!sink_is_hdmi) {
