@@ -1,0 +1,9 @@
+config SERIAL_99xx
+	tristate "99xx/8250/16550 and compatible serial support"
+	select SERIAL_CORE
+
+config SERIAL_CH99xx_EXAR
+	tristate "99xx/8250/16550 Exar/Commtech PCI/PCIe device support"
+	depends on SERIAL_8250_PCI
+	depends on SERIAL_99xx
+	default SERIAL_8250

@@ -1,0 +1,1 @@
+obj-$(CONFIG_SERIAL_CH99xx_EXAR)   += ax99100_spi.o ax99100_sp.o 

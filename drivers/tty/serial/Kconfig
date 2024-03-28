@@ -15,6 +15,7 @@ config SERIAL_EARLYCON
 	  enabled when early_param is processed.
 
 source "drivers/tty/serial/8250/Kconfig"
+source "drivers/tty/serial/99xx/Kconfig"
 
 comment "Non-8250 serial port support"
 
