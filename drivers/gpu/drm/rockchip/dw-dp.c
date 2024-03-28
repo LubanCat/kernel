@@ -486,8 +486,6 @@ struct dw_dp_output_format {
 };
 
 static const struct dw_dp_output_format possible_output_fmts[] = {
-	{ MEDIA_BUS_FMT_RGB101010_1X30, DRM_COLOR_FORMAT_RGB444,
-	  DPTX_VM_RGB_10BIT, 10, 30 },
 	{ MEDIA_BUS_FMT_RGB888_1X24, DRM_COLOR_FORMAT_RGB444,
 	  DPTX_VM_RGB_8BIT, 8, 24 },
 	{ MEDIA_BUS_FMT_YUV10_1X30, DRM_COLOR_FORMAT_YCRCB444,
