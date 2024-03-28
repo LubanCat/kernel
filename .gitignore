@@ -160,3 +160,7 @@ x509.genkey
 
 # Documentation toolchain
 sphinx_*/
+
+*.dtb*
+*.scr
+extboot*
