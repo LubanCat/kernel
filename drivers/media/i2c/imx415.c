@@ -209,6 +209,7 @@ struct imx415 {
 	struct clk		*xvclk;
 	struct gpio_desc	*reset_gpio;
 	struct gpio_desc	*power_gpio;
+	struct gpio_desc	*test_gpio;
 	struct regulator_bulk_data supplies[IMX415_NUM_SUPPLIES];
 
 	struct pinctrl		*pinctrl;
@@ -1096,6 +1097,7 @@ static const struct imx415_mode supported_modes[] = {
 		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
 		.xvclk = IMX415_XVCLK_FREQ_37M,
 	},
+#if 0
 	{
 		.bus_fmt = MEDIA_BUS_FMT_SGBRG10_1X10,
 		.width = 3864,
@@ -1291,6 +1293,7 @@ static const struct imx415_mode supported_modes[] = {
 		.vc[PAD3] = V4L2_MBUS_CSI2_CHANNEL_1,//M->csi wr2
 		.xvclk = IMX415_XVCLK_FREQ_37M,
 	},
+#endif
 };
 
 static const struct imx415_mode supported_modes_2lane[] = {
@@ -2336,6 +2339,10 @@ static int __imx415_start_stream(struct imx415 *imx415)
 			return ret;
 		}
 	}
+	if (!IS_ERR(imx415->test_gpio)) {
+		gpiod_direction_output(imx415->test_gpio, 0);
+		dev_info(&imx415->client->dev,"start_stream test gpio set low");
+	}
 	return imx415_write_reg(imx415->client, IMX415_REG_CTRL_MODE,
 				IMX415_REG_VALUE_08BIT, 0);
 }
@@ -2345,6 +2352,10 @@ static int __imx415_stop_stream(struct imx415 *imx415)
 	imx415->has_init_exp = false;
 	if (imx415->is_thunderboot)
 		imx415->is_first_streamoff = true;
+	if (!IS_ERR(imx415->test_gpio)) {
+		gpiod_direction_output(imx415->test_gpio, 1);
+		dev_info(&imx415->client->dev,"stop_stream test gpio set high");
+	}
 	return imx415_write_reg(imx415->client, IMX415_REG_CTRL_MODE,
 				IMX415_REG_VALUE_08BIT, 1);
 }
@@ -2975,6 +2986,9 @@ static int imx415_probe(struct i2c_client *client,
 	imx415->power_gpio = devm_gpiod_get(dev, "power", GPIOD_ASIS);
 	if (IS_ERR(imx415->power_gpio))
 		dev_warn(dev, "Failed to get power-gpios\n");
+	imx415->test_gpio = devm_gpiod_get(dev, "test", GPIOD_OUT_HIGH);
+	if (IS_ERR(imx415->power_gpio))
+		dev_warn(dev, "Failed to get test-gpios\n");
 	imx415->pinctrl = devm_pinctrl_get(dev);
 	if (!IS_ERR(imx415->pinctrl)) {
 		imx415->pins_default =
