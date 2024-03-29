@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0
 
+dtb-$(CONFIG_CPU_RK3562) += rk3562-lubancat-rk_series.dtb
+dtb-$(CONFIG_CPU_RK3562) += rk3562-lubancat-1hs.dtb
+
 dtb-$(CONFIG_CPU_RK3588) += rk3588-lubancat-rk_series.dtb
 dtb-$(CONFIG_CPU_RK3588) += rk3588-lubancat-5.dtb
 dtb-$(CONFIG_CPU_RK3588) += rk3588-lubancat-5io.dtb
