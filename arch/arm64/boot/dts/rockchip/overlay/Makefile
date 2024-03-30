@@ -50,6 +50,9 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3566-lubancat-1h-edp-in-vp0-overlay.dtbo \
 	rk3566-lubancat-1h-lvds-10.1-in-vp0-overlay.dtbo \
 	rk3566-lubancat-1h-lvds-edp-touch-overlay.dtbo \
+	rk3566-lubancat-1h-bsd206-lvds-in-vp0-overlay.dtbo \
+	rk3566-lubancat-1h-bsdn10-lvds-in-vp0-overlay.dtbo \
+	rk3566-lubancat-1h-bsdn81-edp-in-vp0-overlay.dtbo \
 	rk3566-lubancat-1io-rs485-1-overlay.dtbo \
 	rk3566-lubancat-1io-rs485-2-overlay.dtbo \
 	rk3566-lubancat-1io-dsi0-in-vp0-7.0-1024x600-overlay.dtbo \
