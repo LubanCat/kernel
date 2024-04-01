@@ -18,7 +18,7 @@
 #include "rk3588-linux.dtsi"
 
 / {
-	model = "Embedfire LubanCat";
+	model = "Embedfire LubanCat-RK3588";
 	compatible = "rockchip,rk3588s-lubancat", "rockchip,rk3588";
 
 	leds: leds {

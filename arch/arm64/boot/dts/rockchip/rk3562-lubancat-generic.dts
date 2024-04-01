@@ -17,7 +17,7 @@
 #include "rk3562-linux.dtsi"
 
 / {
-	model = "Embedfire RK3562 LubanCat";
+	model = "Embedfire LubanCat-RK3562";
 	compatible = "embedfire,rk3562-lubancat", "rockchip,rk3562";
 
 	adc-keys {
