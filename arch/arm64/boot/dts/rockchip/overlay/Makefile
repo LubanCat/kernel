@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
 ifeq ($(CONFIG_ARCH_ROCKCHIP), y)
 
+dtbo-$(CONFIG_CPU_RK3528) += \
+	rk3528-lubancat-uart6-m1-overlay.dtbo
+
 dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-i2c2-m4-overlay.dtbo \
 	rk3588-lubancat-i2c3-m1-overlay.dtbo \
@@ -66,7 +69,6 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-uart3-m0-overlay.dtbo \
 	rk3588-lubancat-can0-m0-overlay.dtbo \
 	rk3588-lubancat-can2-m0-overlay.dtbo
-
 
 endif
 
