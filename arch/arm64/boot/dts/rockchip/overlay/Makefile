@@ -4,6 +4,9 @@ ifeq ($(CONFIG_ARCH_ROCKCHIP), y)
 dtbo-$(CONFIG_CPU_RK3528) += \
 	rk3528-lubancat-uart6-m1-overlay.dtbo
 
+dtbo-$(CONFIG_CPU_RK3562) += \
+	rk3562-lubancat-1hs-lvds-10.1-800x1280-overlay.dtbo
+
 dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-i2c2-m4-overlay.dtbo \
 	rk3588-lubancat-i2c3-m1-overlay.dtbo \

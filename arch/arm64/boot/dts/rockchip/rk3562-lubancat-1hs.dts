@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Copyright (c) 2022 Rockchip Electronics Co., Ltd.
+ * Copyright (c) 2024 Rockchip Electronics Co., Ltd.
  *
  */
 
@@ -16,9 +16,21 @@
 #include "rk3562.dtsi"
 #include "rk3562-linux.dtsi"
 
+//#include "rk3562-lubancat-lvds-10.1-800x1280.dtsi"
+#include "rk3562-lubancat-mipi-5.0-1080x1920.dtsi"
+
+//#include "rk3562-lubancat-1hs-cam0.dtsi"
+//#include "rk3562-lubancat-1hs-cam1.dtsi"
+//#include "rk3562-lubancat-1hs-cam2.dtsi"
+//#include "rk3562-lubancat-1hs-cam3.dtsi"
+
 / {
 	model = "Embedfire RK3562 LubanCat-1HS";
 	compatible = "embedfire,rk3562-lubancat-1hs", "rockchip,rk3562";
+
+	aliases {
+		gpio5 = &gpio5;
+	};
 
 	adc-keys {
 		compatible = "adc-keys";
@@ -159,6 +171,21 @@
 		vin-supply = <&vcc5v0_usb>;
 	};
 
+	mipi_dsi_power: mipi-dsi-power-regulator {
+		compatible = "regulator-fixed";
+		enable-active-high;
+		gpio = <&gpio3 RK_PB0 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&mipi_dsi_pwr_en>;
+		regulator-name = "mipi_dsi_power";
+		regulator-always-on;
+		vin-supply = <&vdd_5v>;
+	};
+
+	test-power {
+		status = "okay";
+	};
+
 	leds: leds {
 		status = "okay";
 		compatible = "gpio-leds";
@@ -188,33 +215,112 @@
 
 	rk809_sound: rk809-sound {
 		status = "okay";
-		compatible = "simple-audio-card";
-		simple-audio-card,format = "i2s";
-		simple-audio-card,name = "rockchip,rk809-codec";
-		simple-audio-card,mclk-fs = <256>;
-		simple-audio-card,widgets =
-			"Microphone", "Mic Jack",
-			"Headphone", "Headphone Jack";
-		simple-audio-card,routing =
-			"Mic Jack", "MICBIAS1",
-			"IN1P", "Mic Jack",
-			"Headphone Jack", "HPOL",
-			"Headphone Jack", "HPOR";
-		simple-audio-card,cpu {
-			sound-dai = <&sai0>;
+		compatible = "rockchip,multicodecs-card";
+		rockchip,card-name = "rockchip-rk809";
+		hp-det-gpio = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
+		hp-con-gpio = <&gpio0 RK_PA6 GPIO_ACTIVE_HIGH>;
+		io-channels = <&saradc0 4>;
+		io-channel-names = "adc-detect";
+		keyup-threshold-microvolt = <1800000>;
+		poll-interval = <100>;
+		rockchip,format = "i2s";
+		rockchip,mclk-fs = <256>;
+		rockchip,cpu = <&sai0>;
+		rockchip,codec = <&rk809_codec>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&hp_det>;
+		play-pause-key {
+			label = "playpause";
+			linux,code = <KEY_PLAYPAUSE>;
+			press-threshold-microvolt = <2000>;
 		};
-		simple-audio-card,codec {
-			sound-dai = <&rk809_codec>;
+
+		previous-song-key {
+			label = "previoussong";
+			linux,code = <KEY_PREVIOUSSONG>;
+			press-threshold-microvolt = <145000>;
+		};
+
+		next-song-key {
+			label = "nextsong";
+			linux,code = <KEY_NEXTSONG>;
+			press-threshold-microvolt = <290000>;
 		};
 	};
 
-	rk_headset: rk-headset {
+	backlight_lvds_mipi: backlight-lvds-mipi {
 		status = "okay";
-		compatible = "rockchip_headset";
-		headset_gpio = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
+		compatible = "pwm-backlight";
+		pwms = <&pwm12 0 50000 0>;
+		enable-gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
+		brightness-levels = <
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 88  89  90  91  92  93  94  95
+			 96  97  98  99 100 101 102 103
+			104 105 106 107 108 109 110 111
+			112 113 114 115 116 117 118 119
+			120 121 122 123 124 125 126 127
+			128 129 130 131 132 133 134 135
+			136 137 138 139 140 141 142 143
+			144 145 146 147 148 149 150 151
+			152 153 154 155 156 157 158 159
+			160 161 162 163 164 165 166 167
+			168 169 170 171 172 173 174 175
+			176 177 178 179 180 181 182 183
+			184 185 186 187 188 189 190 191
+			192 193 194 195 196 197 198 199
+			200 201 202 203 204 205 206 207
+			208 209 210 211 212 213 214 215
+			216 217 218 219 220 221 222 223
+			224 225 226 227 228 229 230 231
+			232 233 234 235 236 237 238 239
+			240 241 242 243 244 245 246 247
+			248 249 250 251 252 253 254 255
+		>;
+		default-brightness-level = <200>;
+	};
+
+	ext_wifi_32k_clk: external-32k-clock {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <32768>;
+		clock-output-names = "ext_wifi_32k_clk";
+	};
+
+	sdio_pwrseq: sdio-pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		clocks = <&ext_wifi_32k_clk>;
+		clock-names = "ext_clock";
 		pinctrl-names = "default";
-		pinctrl-0 = <&hp_det>;
-		io-channels = <&saradc0 4>;
+		pinctrl-0 = <&wifi_wl_reg_on>;
+
+		/*
+		 * On the module itself this is one of these (depending
+		 * on the actual card populated):
+		 * - SDIO_RESET_L_WL_REG_ON
+		 * - PDN (power down when low)
+		 */
+		reset-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_LOW>;
+	};
+
+	wireless_wlan: wireless-wlan {
+		compatible = "wlan-platdata";
+		rockchip,grf = <&sys_grf>;
+		wifi_chip_type = "rtl8189es";
+		pinctrl-names = "default";
+		pinctrl-0 = <&wifi_host_wake_irq>;
+		WIFI,host_wake_irq = <&gpio0 RK_PC7 GPIO_ACTIVE_LOW>;
+		status = "okay";
 	};
 };
 
@@ -222,15 +328,37 @@
 	cpu-supply = <&vdd_cpu>;
 };
 
+&rockchip_suspend {
+	status = "okay";
+};
+
 &dfi {
 	status = "okay";
 };
 
 &display_subsystem {
+	devfreq = <&dmc>;
 	status = "okay";
 };
 
 &dmc {
+	vop-bw-dmc-freq = <
+	/* min_bw(MB/s) max_bw(MB/s) freq(KHz) */
+		0   286 324000
+		287 99999   528000
+	>;
+	vop-frame-bw-dmc-freq = <
+	/* min_bw(MB/s) max_bw(MB/s) freq(KHz) */
+		0   620 324000
+		621 99999   780000
+	>;
+	cpu-bw-dmc-freq = <
+	/* min_bw(MB/s) max_bw(MB/s) freq(KHz) */
+		0   350 324000
+		351 400 528000
+		401 99999   780000
+	>;
+
 	center-supply = <&vdd_logic>;
 	status = "okay";
 };
@@ -297,21 +425,31 @@
 	status = "okay";
 };
 
-&saradc0 {
-	status = "okay";
-	vref-supply = <&vcca_1v8>;
-};
-
-&saradc1 {
-	status = "okay";
-	vref-supply = <&vcca_1v8>;
-};
-
-&pwm4 {
+&pmu_mailbox {
 	status = "okay";
 };
 
-&pwm6 {
+&rkcif {
+	status = "okay";
+};
+
+&rkcif_mmu {
+	status = "okay";
+};
+
+&rkisp {
+	status = "okay";
+};
+
+&rkisp_mmu {
+	status = "okay";
+};
+
+&csi2_dphy0_hw {
+	status = "okay";
+};
+
+&csi2_dphy1_hw {
 	status = "okay";
 };
 
@@ -322,6 +460,150 @@
 			 &i2s0m0_sclk
 			 &i2s0m0_sdi0
 			 &i2s0m0_sdo0>;
+};
+
+&saradc0 {
+	status = "okay";
+	vref-supply = <&vcca_1v8>;
+};
+
+&saradc1 {
+	status = "okay";
+	vref-supply = <&vcca_1v8>;
+};
+
+&uart2 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart2m1_xfer>;
+};
+
+&uart3 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart3m1_xfer>;
+};
+
+&uart4 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart4m0_xfer>;
+};
+
+&uart7 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart7m0_xfer>;
+};
+
+&uart8 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart8m0_xfer>;
+};
+
+&uart9 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart9m1_xfer>;
+};
+
+&pwm3 {
+	compatible = "rockchip,remotectl-pwm";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm3m0_pins>;
+	remote_pwm_id = <3>;
+	handle_cpu_id = <1>;
+	remote_support_psci = <0>;
+	status = "okay";
+
+	ir_key_lubancat{
+	rockchip,usercode = <0xff00>;
+	rockchip,key_table =
+		<0xeb   KEY_POWER>,
+		<0xec   KEY_MENU>,
+		<0xfe   KEY_BACK>,
+		<0xb7   KEY_HOME>,
+		<0xa3   KEY_WWW>,
+		<0xf4   KEY_VOLUMEUP>,
+		<0xa7   KEY_VOLUMEDOWN>,
+		<0xf8   KEY_REPLY>,
+		<0xfc   KEY_UP>,
+		<0xfd   KEY_DOWN>,
+		<0xf1   KEY_LEFT>,
+		<0xe5   KEY_RIGHT>;
+	};
+
+	ir_key2 {
+		rockchip,usercode = <0xf708>;
+		rockchip,key_table =
+			<0x28   KEY_POWER>,
+			<0xfe   KEY_SETUP>,
+			<0xa4   KEY_MUTE>,
+			<0x6d   KEY_UP>,
+			<0x68   KEY_LEFT>,
+			<0x64   KEY_ENTER>,
+			<0x60   KEY_RIGHT>,
+			<0x27   KEY_DOWN>,
+			<0x3c   KEY_MENU>,
+			<0x7d   KEY_HOME>,
+			<0x2b   KEY_BACK>,
+			<0x7c   KEY_VOLUMEDOWN>,
+			<0x79   KEY_VOLUMEUP>,
+			<0x57   KEY_AUDIO>,
+			<0x5d   KEY_SUBTITLE>,
+			<0x99   KEY_PHONE>,
+			<0xfd   KEY_WWW>,
+			<0xfc   KEY_F1>,
+			<0x7e   KEY_TV>;
+	};
+
+	ir_key3 {
+		rockchip,usercode = <0x1dcc>;
+		rockchip,key_table =
+			<0xee   KEY_REPLY>,
+			<0xf0   KEY_BACK>,
+			<0xf8   KEY_UP>,
+			<0xbb   KEY_DOWN>,
+			<0xef   KEY_LEFT>,
+			<0xed   KEY_RIGHT>,
+			<0xfc   KEY_HOME>,
+			<0xf1   KEY_VOLUMEUP>,
+			<0xfd   KEY_VOLUMEDOWN>,
+			<0xb7   KEY_SEARCH>,
+			<0xff   KEY_POWER>,
+			<0xf3   KEY_MUTE>,
+			<0xbf   KEY_MENU>,
+			<0xf9   0x191>,
+			<0xf5   0x192>,
+			<0xb3   388>,
+			<0xbe   KEY_1>,
+			<0xba   KEY_2>,
+			<0xb2   KEY_3>,
+			<0xbd   KEY_4>,
+			<0xf9   KEY_5>,
+			<0xb1   KEY_6>,
+			<0xfc   KEY_7>,
+			<0xf8   KEY_8>,
+			<0xb0   KEY_9>,
+			<0xb6   KEY_0>,
+			<0xb5   KEY_BACKSPACE>;
+	};
+};
+
+&pwm4 {
+	status = "okay";
+	pinctrl-0 = <&pwm4m0_pins>;
+};
+
+&pwm6 {
+	status = "okay";
+	pinctrl-0 = <&pwm6m0_pins>;
+};
+
+&pwm12 {
+	status = "okay";
+	pinctrl-0 = <&pwm12m1_pins>;
 };
 
 &i2c0 {
@@ -441,6 +723,8 @@
 			};
 
 			vdda0v9_image: LDO_REG1 {
+				regulator-always-on;
+				regulator-boot-on;
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <900000>;
 				regulator-name = "vdda0v9_image";
@@ -467,7 +751,7 @@
 				regulator-max-microvolt = <900000>;
 				regulator-name = "vdda0v9_pmu";
 				regulator-state-mem {
-				regulator-on-in-suspend;
+					regulator-on-in-suspend;
 					regulator-suspend-microvolt = <900000>;
 				};
 			};
@@ -524,12 +808,14 @@
 				regulator-max-microvolt = <1800000>;
 				regulator-name = "vcca1v8_pmu";
 				regulator-state-mem {
-				regulator-on-in-suspend;
+					regulator-on-in-suspend;
 					regulator-suspend-microvolt = <1800000>;
 				};
 			};
 
 			vcca1v8_image: LDO_REG9 {
+				regulator-always-on;
+				regulator-boot-on;
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <1800000>;
 				regulator-name = "vcca1v8_image";
@@ -568,16 +854,19 @@
 			};
 		};
 
+		rk809_rtc: rtc {
+			status = "disabled";
+		};
+
 		rk809_codec: codec {
-			#sound-dai-cells = <0>;
+			#sound-dai-cells = <1>;
 			compatible = "rockchip,rk809-codec", "rockchip,rk817-codec";
 			clocks = <&mclkout_sai0>;
 			clock-names = "mclk";
 			assigned-clocks = <&mclkout_sai0>;
 			assigned-clock-rates = <12288000>;
 			pinctrl-names = "default";
-			pinctrl-0 = <&i2s0m0_mclk &spk_ctl_gpio>;
-			spk-ctl-gpios = <&gpio0 RK_PA6 GPIO_ACTIVE_HIGH>;
+			pinctrl-0 = <&i2s0m0_mclk>;
 			hp-volume = <20>;
 			spk-volume = <3>;
 			//mic-in-differential;
@@ -596,6 +885,33 @@
 		interrupt-parent = <&gpio0>;
 		interrupts = <RK_PA5 IRQ_TYPE_LEVEL_LOW>;
 		wakeup-source;
+	};
+
+	gpio5: gpio-expander@21 {
+		compatible = "nxp,pca9535";
+		status = "okay";
+		reg = <0x21>;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c1m1_xfer>;
+	clock-frequency = <100000>;
+
+	gt911_lvds_mipi: gt911@5d {
+		status = "okay";
+		compatible = "goodix,gt911";
+		reg = <0x5d>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <RK_PC5 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&gpio3 RK_PC6 GPIO_ACTIVE_LOW>;
+		irq-gpios = <&gpio3 RK_PC5 GPIO_ACTIVE_HIGH>;
+		touchscreen-inverted-x = <1>;
+		touchscreen-inverted-y = <1>;
 	};
 };
 
@@ -628,6 +944,22 @@
 	status = "okay";
 };
 
+&sdmmc1 {
+	max-frequency = <150000000>;
+	supports-sdio;
+	bus-width = <4>;
+	disable-wp;
+	cap-sd-highspeed;
+	cap-sdio-irq;
+	keep-power-in-suspend;
+	pinctrl-names = "default";
+	pinctrl-0 = <&sdmmc1_bus4 &sdmmc1_cmd &sdmmc1_clk>;
+	sd-uhs-sdr104;
+	mmc-pwrseq = <&sdio_pwrseq>;
+	non-removable;
+	status = "okay";
+};
+
 &gmac0 {
 	/* Use rgmii-rxid mode to disable rx delay inside Soc */
 	phy-mode = "rgmii-rxid";
@@ -638,7 +970,7 @@
 	/* Reset time is 20ms, 100ms for rtl8211f */
 	snps,reset-delays-us = <0 20000 100000>;
 
-	tx_delay = <0x1b>;
+	tx_delay = <0x1e>;
 	/* rx_delay = <0x3f>; */
 
 	pinctrl-names = "default";
@@ -657,9 +989,6 @@
 	rgmii_phy: phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x1>;
-		clocks = <&cru CLK_GMAC_ETH_OUT2IO>;
-		assigned-clocks = <&cru CLK_GMAC_ETH_OUT2IO>;
-		assigned-clock-rates = <25000000>;
 	};
 };
 
@@ -678,6 +1007,14 @@
 &u2phy_otg {
 	status = "okay";
 	vbus-supply = <&usb30_otg_vbus>;
+};
+
+&usb_host0_ehci {
+	status = "okay";
+};
+
+&usb_host0_ohci {
+	status = "okay";
 };
 
 /* USB 3.0 OTG/pcie2x1 Combo PHY */
@@ -703,15 +1040,19 @@
 		};
 	};
 
-	headphone {
-		hp_det: hp-det {
-			rockchip,pins = <0 RK_PA0 RK_FUNC_GPIO &pcfg_pull_none>;
+	lcd {
+		mipi_dsi_pwr_en: mipi-dsi-pwr-en {
+			rockchip,pins = <3 RK_PB0 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		lcd_rst_gpio: lcd-rst-gpio {
+			rockchip,pins = <3 RK_PB5 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 	};
 
-	rk809_spk {
-		spk_ctl_gpio: spk_ctl_gpio {
-			rockchip,pins = <1 RK_PB1 RK_FUNC_GPIO &pcfg_pull_up>;
+	sound {
+		hp_det: hp-det {
+			rockchip,pins = <0 RK_PA0 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
@@ -728,6 +1069,16 @@
 	rtc {
 		hym8563_int: hym8563-int {
 			rockchip,pins = <0 RK_PA5 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+
+	wifi {
+		wifi_wl_reg_on: wifi-wl-reg-on {
+			rockchip,pins = <0 RK_PC6 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+
+		wifi_host_wake_irq: wifi-host-wake-irq {
+			rockchip,pins = <0 RK_PC7 RK_FUNC_GPIO &pcfg_pull_down>;
 		};
 	};
 };
