@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017  Realtek Corporation.
@@ -40,6 +39,7 @@
 #define	ODM_REG_RXRF_A3_11N			0x3C
 #define	ODM_REG_T_METER_92D_11N			0x42
 #define	ODM_REG_T_METER_88E_11N			0x42
+#define	ODM_REF_RF_DF_11N			0xDF
 
 
 

@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -1473,7 +1472,7 @@ void _phy_pi_mode_switch8188f(struct dm_struct *dm, boolean pi_mode)
 
 boolean
 phy_simularity_compare_8188f(struct dm_struct *dm, s32 result[][8], u8 c1,
-			     u8 c2)
+			     u8 c2, boolean is2t)
 {
 	u32 i, j, diff, simularity_bit_map, bound = 0;
 	u8 final_candidate[2] = {0xFF, 0xFF}; /* for path A and path B */
@@ -1481,12 +1480,11 @@ phy_simularity_compare_8188f(struct dm_struct *dm, s32 result[][8], u8 c1,
 	/* #if !(DM_ODM_SUPPORT_TYPE & ODM_AP) */
 	/*	bool		is2T = IS_92C_SERIAL( hal_data->version_id);
 	 * #else */
-	boolean is2T = true;
 	/* #endif */
 
 	s32 tmp1 = 0, tmp2 = 0;
 
-	if (is2T)
+	if (is2t)
 		bound = 8;
 	else
 		bound = 4;
@@ -1867,6 +1865,9 @@ void _phy_lc_calibrate_8188f(struct dm_struct *dm, boolean is2T)
 		ODM_delay_ms(10);
 	}
 
+	if (cnt == 100)
+		RF_DBG(dm, DBG_RF_LCK, "LCK time out\n");
+
 	/*Recover channel number*/
 	odm_set_rf_reg(dm, RF_PATH_A, RF_CHNLBW, RFREGOFFSETMASK, lc_cal);
 
@@ -1981,7 +1982,7 @@ void phy_iq_calibrate_8188f(void *dm_void, boolean is_recovery)
 		_phy_iq_calibrate_8188f(dm, result, i, false);
 
 		if (i == 1) {
-			is12simular = phy_simularity_compare_8188f(dm, result, 0, 1);
+			is12simular = phy_simularity_compare_8188f(dm, result, 0, 1, true);
 			if (is12simular) {
 				final_candidate = 0;
 				RF_DBG(dm, DBG_RF_IQK,
@@ -1992,7 +1993,7 @@ void phy_iq_calibrate_8188f(void *dm_void, boolean is_recovery)
 		}
 
 		if (i == 2) {
-			is13simular = phy_simularity_compare_8188f(dm, result, 0, 2);
+			is13simular = phy_simularity_compare_8188f(dm, result, 0, 2, true);
 			if (is13simular) {
 				final_candidate = 0;
 				RF_DBG(dm, DBG_RF_IQK,
@@ -2002,7 +2003,7 @@ void phy_iq_calibrate_8188f(void *dm_void, boolean is_recovery)
 				break;
 			}
 
-			is23simular = phy_simularity_compare_8188f(dm, result, 1, 2);
+			is23simular = phy_simularity_compare_8188f(dm, result, 1, 2, true);
 
 			if (is23simular) {
 				final_candidate = 1;

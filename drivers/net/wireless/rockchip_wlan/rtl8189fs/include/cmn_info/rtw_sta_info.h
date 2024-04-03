@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
@@ -80,12 +79,20 @@ enum channel_width {
 enum rf_type {
 	RF_1T1R			= 0,
 	RF_1T2R			= 1,
-	RF_2T2R			= 2,
-	RF_2T3R			= 3,
-	RF_2T4R			= 4,
-	RF_3T3R			= 5,
-	RF_3T4R			= 6,
-	RF_4T4R			= 7,
+	RF_2T1R			= 2,
+	RF_2T2R			= 3,
+	RF_1T3R			= 4,
+	RF_2T3R			= 5,
+	RF_3T1R			= 6,
+	RF_3T2R			= 7,
+	RF_3T3R			= 8,
+	RF_1T4R			= 9,
+	RF_2T4R			= 10,
+	RF_3T4R			= 11,
+	RF_4T1R			= 12,
+	RF_4T2R			= 13,
+	RF_4T3R			= 14,
+	RF_4T4R			= 15,
 	RF_TYPE_MAX,
 };
 
@@ -224,6 +231,7 @@ struct phydm_phyinfo_fw_struct {
 };
 
 struct phydm_phyinfo_struct {
+	boolean		physts_rpt_valid; /* @if physts_rpt_valid is false, please ignore the parsing result in this structure*/
 	u8		rx_pwdb_all;
 	u8		signal_quality;				/* OFDM: signal_quality=rx_mimo_signal_quality[0], CCK: signal qualityin 0-100 index. */
 	u8		rx_mimo_signal_strength[4];	/* RSSI in 0~100 index */

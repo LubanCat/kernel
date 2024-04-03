@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2016 - 2017 Realtek Corporation.
@@ -129,6 +128,10 @@ void hal_btcoex_wifionly_switchband_notify(PADAPTER padapter)
 		ex_hal8822c_wifi_only_switchbandnotify(&GLBtCoexistWifiOnly, is_5g);
 #endif
 
+#ifdef CONFIG_RTL8814B
+	else if (IS_HARDWARE_TYPE_8814B(padapter))
+		ex_hal8814b_wifi_only_switchbandnotify(&GLBtCoexistWifiOnly, is_5g);
+#endif
 }
 
 void hal_btcoex_wifionly_scan_notify(PADAPTER padapter)
@@ -153,6 +156,11 @@ void hal_btcoex_wifionly_scan_notify(PADAPTER padapter)
 #ifdef CONFIG_RTL8822C
 	else if (IS_HARDWARE_TYPE_8822C(padapter))
 		ex_hal8822c_wifi_only_scannotify(&GLBtCoexistWifiOnly, is_5g);
+#endif
+
+#ifdef CONFIG_RTL8814B
+	else if (IS_HARDWARE_TYPE_8814B(padapter))
+		ex_hal8814b_wifi_only_scannotify(&GLBtCoexistWifiOnly, is_5g);
 #endif
 }
 
@@ -179,6 +187,11 @@ void hal_btcoex_wifionly_connect_notify(PADAPTER padapter)
 	else if (IS_HARDWARE_TYPE_8822C(padapter))
 		ex_hal8822c_wifi_only_connectnotify(&GLBtCoexistWifiOnly, is_5g);
 #endif
+
+#ifdef CONFIG_RTL8814B
+	else if (IS_HARDWARE_TYPE_8814B(padapter))
+		ex_hal8814b_wifi_only_connectnotify(&GLBtCoexistWifiOnly, is_5g);
+#endif
 }
 
 void hal_btcoex_wifionly_hw_config(PADAPTER padapter)
@@ -204,6 +217,11 @@ void hal_btcoex_wifionly_hw_config(PADAPTER padapter)
 #ifdef CONFIG_RTL8822C
 	else if (IS_HARDWARE_TYPE_8822C(padapter))
 		ex_hal8822c_wifi_only_hw_config(pwifionlycfg);
+#endif
+
+#ifdef CONFIG_RTL8814B
+	else if (IS_HARDWARE_TYPE_8814B(padapter))
+		ex_hal8814b_wifi_only_hw_config(pwifionlycfg);
 #endif
 }
 

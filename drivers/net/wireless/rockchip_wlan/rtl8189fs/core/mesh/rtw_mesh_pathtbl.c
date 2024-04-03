@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -446,7 +445,7 @@ int rtw_mesh_path_add_gate(struct rtw_mesh_path *mpath)
 	exit_critical_bh(&mpath->state_lock);
 
 	if (ori_num_gates == 0) {
-		update_beacon(mpath->adapter, WLAN_EID_MESH_CONFIG, NULL, _TRUE);
+		update_beacon(mpath->adapter, WLAN_EID_MESH_CONFIG, NULL, _TRUE, 0);
 		#if CONFIG_RTW_MESH_CTO_MGATE_CARRIER
 		if (!rtw_mesh_cto_mgate_required(mpath->adapter))
 			rtw_netif_carrier_on(mpath->adapter->pnetdev);
@@ -506,7 +505,7 @@ void rtw_mesh_gate_del(struct rtw_mesh_table *tbl, struct rtw_mesh_path *mpath)
 	exit_critical_bh(&tbl->gates_lock);
 
 	if (ori_num_gates == 1) {
-		update_beacon(mpath->adapter, WLAN_EID_MESH_CONFIG, NULL, _TRUE);
+		update_beacon(mpath->adapter, WLAN_EID_MESH_CONFIG, NULL, _TRUE, 0);
 		#if CONFIG_RTW_MESH_CTO_MGATE_CARRIER
 		if (rtw_mesh_cto_mgate_required(mpath->adapter))
 			rtw_netif_carrier_off(mpath->adapter->pnetdev);

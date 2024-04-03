@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -19,6 +18,9 @@
 
 #ifndef BIT
 #define BIT(x)	(1 << (x))
+#endif
+#ifndef BIT_ULL
+#define BIT_ULL(x)	(1ULL << (x))
 #endif
 
 
@@ -659,6 +661,7 @@ typedef	enum _ELEMENT_ID {
 	/* vivi for WIFITest, 802.11h AP, 20100427 */
 	/* 2010/12/26 MH The definition we can declare always!! */
 	EID_PowerCap				= 33,
+	EID_TPC				= 35,
 	EID_SupportedChannels		= 36,
 	EID_ChlSwitchAnnounce		= 37,
 
@@ -731,19 +734,24 @@ typedef	enum _ELEMENT_ID {
 
 #define WLAN_ETHCONV_ENCAP		1
 #define WLAN_ETHCONV_RFC1042	2
-#define WLAN_ETHCONV_8021h		3
+#define WLAN_ETHCONV_8021h	3
 
-#define cap_ESS BIT(0)
-#define cap_IBSS BIT(1)
-#define cap_CFPollable BIT(2)
-#define cap_CFRequest BIT(3)
-#define cap_Privacy BIT(4)
-#define cap_ShortPremble BIT(5)
-#define cap_PBCC	BIT(6)
-#define cap_ChAgility	BIT(7)
-#define cap_SpecMgmt	BIT(8)
-#define cap_QoS	BIT(9)
-#define cap_ShortSlot	BIT(10)
+#define cap_ESS 		BIT(0)
+#define cap_IBSS		BIT(1)
+#define cap_CFPollable		BIT(2)
+#define cap_CFRequest		BIT(3)
+#define cap_Privacy		BIT(4)
+#define cap_ShortPremble	BIT(5)
+#define cap_PBCC		BIT(6)
+#define cap_ChAgility		BIT(7)
+#define cap_SpecMgmt		BIT(8)
+#define cap_QoS 		BIT(9)
+#define cap_ShortSlot		BIT(10)
+#define cap_APSD		BIT(11)
+#define cap_RM			BIT(12)
+#define cap_DSSSOFDM		BIT(13)
+#define cap_DelayedBACK 	BIT(14)
+#define cap_ImmediateBACK	BIT(15)
 
 /*-----------------------------------------------------------------------------
 				Below is the definition for 802.11i / 802.1x
@@ -761,7 +769,7 @@ typedef	enum _ELEMENT_ID {
 #define _WEP_WPA_MIXED_PRIVACY_ 6	/*  WEP + WPA */
 #endif
 
-#define _MME_IE_LENGTH_  18
+#define _MME_IE_LENGTH_  26
 
 /*-----------------------------------------------------------------------------
 				Below is the definition for WMM
@@ -1271,9 +1279,6 @@ enum P2P_PROTO_WK_ID {
 	P2P_PRE_TX_PROVDISC_PROCESS_WK = 2,
 	P2P_PRE_TX_NEGOREQ_PROCESS_WK = 3,
 	P2P_PRE_TX_INVITEREQ_PROCESS_WK = 4,
-	P2P_AP_P2P_CH_SWITCH_PROCESS_WK = 5,
-	P2P_RO_CH_WK = 6,
-	P2P_CANCEL_RO_CH_WK = 7,
 };
 
 #ifdef CONFIG_P2P_PS
@@ -1315,6 +1320,12 @@ enum P2P_PS_MODE {
 
 #define IP_MCAST_MAC(mac)		((mac[0] == 0x01) && (mac[1] == 0x00) && (mac[2] == 0x5e))
 #define ICMPV6_MCAST_MAC(mac)	((mac[0] == 0x33) && (mac[1] == 0x33) && (mac[2] != 0xff))
+
+enum RTW_ROCH_WK_ID{
+	ROCH_RO_CH_WK,
+	ROCH_CANCEL_RO_CH_WK,
+	ROCH_AP_ROCH_CH_SWITCH_PROCESS_WK,
+};
 
 #ifdef CONFIG_IOCTL_CFG80211
 /* Regulatroy Domain */

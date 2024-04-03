@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -23,7 +22,7 @@
 /*
 #include <linux/kernel.h>
 #include <linux/if_arp.h>
-#include <linux/uaccess.h>
+#include <asm/uaccess.h>
 
 #include <linux/kernel.h>
 #include <linux/kthread.h>
@@ -37,6 +36,10 @@
 */
 
 #include <net/rtnetlink.h>
+
+#ifndef MIN
+#define MIN(x,y) (((x) < (y)) ? (x) : (y))
+#endif
 
 #ifdef DBG_MEM_ALLOC
 extern bool match_mstat_sniff_rules(const enum mstat_f flags, const size_t size);
@@ -172,7 +175,7 @@ struct sk_buff *rtw_cfg80211_vendor_event_alloc(
 int rtw_cfgvendor_send_async_event(struct wiphy *wiphy,
 	   struct net_device *dev, int event_id, const void  *data, int len)
 {
-	u16 kflags;
+	gfp_t kflags;
 	struct sk_buff *skb;
 
 	kflags = in_atomic() ? GFP_ATOMIC : GFP_KERNEL;
@@ -237,6 +240,10 @@ static int rtw_cfgvendor_send_cmd_reply(struct wiphy *wiphy,
 #define WIFI_FEATURE_CONTROL_ROAMING    0x800000    // Enable/Disable firmware roaming
 #define WIFI_FEATURE_IE_WHITELIST       0x1000000   // Support Probe IE white listing
 #define WIFI_FEATURE_SCAN_RAND          0x2000000   // Support MAC & Probe Sequence Number randomization
+#define WIFI_FEATURE_SET_TX_POWER_LIMIT 0x4000000   // Support Tx Power Limit setting
+#define WIFI_FEATURE_USE_BODY_HEAD_SAR  0x8000000   // Support Using Body/Head Proximity for SAR
+#define WIFI_FEATURE_SET_LATENCY_MODE   0x40000000  // Support Latency mode setting
+#define WIFI_FEATURE_P2P_RAND_MAC       0x80000000  // Support Support P2P MAC randomization
 // Add more features here
 
 #define MAX_FEATURE_SET_CONCURRRENT_GROUPS  3
@@ -246,13 +253,11 @@ int rtw_dev_get_feature_set(struct net_device *dev)
 {
 	_adapter *adapter = (_adapter *)rtw_netdev_priv(dev);
 	HAL_DATA_TYPE *HalData = GET_HAL_DATA(adapter);
-	HAL_VERSION *hal_ver = &HalData->version_id;
-
 	int feature_set = 0;
 
 	feature_set |= WIFI_FEATURE_INFRA;
 
-#ifdef CONFIG_IEEE80211_BAND_5GHZ
+#if CONFIG_IEEE80211_BAND_5GHZ
 	if (is_supported_5g(adapter_to_regsty(adapter)->wireless_mode))
 		feature_set |= WIFI_FEATURE_INFRA_5G;
 #endif
@@ -261,11 +266,11 @@ int rtw_dev_get_feature_set(struct net_device *dev)
 	feature_set |= WIFI_FEATURE_SOFT_AP;
 
 	feature_set |= WIFI_FEATURE_ADDITIONAL_STA;
-#ifdef CONFIG_RTW_CFGVEDNOR_LLSTATS
+#ifdef CONFIG_RTW_CFGVENDOR_LLSTATS
 	feature_set |= WIFI_FEATURE_LINK_LAYER_STATS;
-#endif /* CONFIG_RTW_CFGVEDNOR_LLSTATS */
+#endif /* CONFIG_RTW_CFGVENDOR_LLSTATS */
 
-#ifdef CONFIG_RTW_CFGVEDNOR_RSSIMONITOR
+#ifdef CONFIG_RTW_CFGVENDOR_RSSIMONITOR
         feature_set |= WIFI_FEATURE_RSSI_MONITOR;
 #endif
 
@@ -275,7 +280,9 @@ int rtw_dev_get_feature_set(struct net_device *dev)
 
 #ifdef CONFIG_RTW_WIFI_HAL
 	feature_set |= WIFI_FEATURE_CONFIG_NDO;
+#if defined(CONFIG_RTW_CFGVENDOR_RANDOM_MAC_OUI) || defined(CONFIG_RTW_SCAN_RAND)
 	feature_set |= WIFI_FEATURE_SCAN_RAND;
+#endif
 #endif
 
 	return feature_set;
@@ -1138,7 +1145,7 @@ exit:
 
 #endif /* RTT_SUPPORT */
 
-#ifdef CONFIG_RTW_CFGVEDNOR_LLSTATS
+#ifdef CONFIG_RTW_CFGVENDOR_LLSTATS
 enum {
     LSTATS_SUBCMD_GET_INFO = ANDROID_NL80211_SUBCMD_LSTATS_RANGE_START,
 	LSTATS_SUBCMD_SET_INFO,
@@ -1165,7 +1172,7 @@ static void LinkLayerStats(_adapter *padapter)
 
 		pwrpriv->on_time = rtw_get_passing_time_ms(pwrpriv->radio_on_start_time);
 
-		if (rtw_mi_check_fwstate(padapter, _FW_LINKED)) {
+		if (rtw_mi_check_fwstate(padapter, WIFI_ASOC_STATE)) {
 			if ( pwrpriv->bpower_saving == _TRUE ) {
 				pwrpriv->pwr_saving_time += rtw_get_passing_time_ms(pwrpriv->pwr_saving_start_time);
 				pwrpriv->pwr_saving_start_time = rtw_get_current_time();
@@ -1295,8 +1302,8 @@ static int rtw_cfgvendor_lstats_clear_info(struct wiphy *wiphy,
 	RTW_INFO("%s\n", __func__);
 	return err;
 }
-#endif /* CONFIG_RTW_CFGVEDNOR_LLSTATS */
-#ifdef CONFIG_RTW_CFGVEDNOR_RSSIMONITOR
+#endif /* CONFIG_RTW_CFGVENDOR_LLSTATS */
+#ifdef CONFIG_RTW_CFGVENDOR_RSSIMONITOR
 static int rtw_cfgvendor_set_rssi_monitor(struct wiphy *wiphy,
 	struct wireless_dev *wdev, const void  *data, int len)
 {
@@ -1341,7 +1348,7 @@ void rtw_cfgvendor_rssi_monitor_evt(_adapter *padapter) {
         rssi_monitor_evt data ;
         s8 rssi = precvpriv->rssi;
 
-        if (pwdev_priv->rssi_monitor_enable == 0 || check_fwstate(pmlmepriv, _FW_LINKED) != _TRUE)
+        if (pwdev_priv->rssi_monitor_enable == 0 || check_fwstate(pmlmepriv, WIFI_ASOC_STATE) != _TRUE)
                 return;
 
         if (rssi < pwdev_priv->rssi_monitor_max || rssi > pwdev_priv->rssi_monitor_min)
@@ -1367,7 +1374,7 @@ void rtw_cfgvendor_rssi_monitor_evt(_adapter *padapter) {
 exit:
 	return;
 }
-#endif /* CONFIG_RTW_CFGVEDNOR_RSSIMONITR */
+#endif /* CONFIG_RTW_CFGVENDOR_RSSIMONITR */
 
 #ifdef CONFIG_RTW_CFGVENDOR_WIFI_LOGGER
 static int rtw_cfgvendor_logger_start_logging(struct wiphy *wiphy,
@@ -1592,17 +1599,6 @@ void rtw_hal_pno_random_gen_mac_addr(PADAPTER adapter)
 #endif
 }
 
-void rtw_hal_set_hw_mac_addr(PADAPTER adapter, u8 *mac_addr)
-{
-	rtw_ps_deny(adapter, PS_DENY_IOCTL);
-	LeaveAllPowerSaveModeDirect(adapter);
-
-	rtw_hal_set_hwreg(adapter, HW_VAR_MAC_ADDR, mac_addr);
-#ifdef CONFIG_RTW_DEBUG
-	rtw_hal_dump_macaddr(RTW_DBGDUMP, adapter);
-#endif
-	rtw_ps_deny_cancel(adapter, PS_DENY_IOCTL);
-}
 
 static int rtw_cfgvendor_set_rand_mac_oui(struct wiphy *wiphy,
 		struct wireless_dev *wdev, const void  *data, int len)
@@ -1659,9 +1655,47 @@ static int rtw_cfgvendor_set_rand_mac_oui(struct wiphy *wiphy,
 
 	return err;
 }
-
 #endif
 
+#if defined(CONFIG_RTW_CFGVENDOR_RANDOM_MAC_OUI) || defined(CONFIG_RTW_SCAN_RAND)
+void rtw_hal_set_hw_mac_addr(PADAPTER adapter, u8 *mac_addr)
+{
+	rtw_ps_deny(adapter, PS_DENY_IOCTL);
+	LeaveAllPowerSaveModeDirect(adapter);
+
+#ifdef CONFIG_MI_WITH_MBSSID_CAM
+	rtw_hal_change_macaddr_mbid(adapter, mac_addr);
+#else
+	rtw_hal_set_hwreg(adapter, HW_VAR_MAC_ADDR, mac_addr);
+#endif
+#ifdef CONFIG_RTW_DEBUG
+	rtw_hal_dump_macaddr(RTW_DBGDUMP, adapter);
+#endif
+	rtw_ps_deny_cancel(adapter, PS_DENY_IOCTL);
+}
+#endif
+
+#ifdef CONFIG_RTW_CFGVENDOR_WIFI_OFFLOAD
+static int rtw_cfgvendor_start_mkeep_alive(struct wiphy *wiphy, struct wireless_dev *wdev,
+	const void *data, int len)
+{
+	int ret = WIFI_SUCCESS;
+
+	RTW_INFO("%s : TODO\n", __func__);
+
+	return ret;
+}
+
+static int rtw_cfgvendor_stop_mkeep_alive(struct wiphy *wiphy, struct wireless_dev *wdev,
+	const void *data, int len)
+{
+	int ret = WIFI_SUCCESS;
+
+	RTW_INFO("%s : TODO\n", __func__);
+
+	return ret;
+}
+#endif
 
 static int rtw_cfgvendor_set_nodfs_flag(struct wiphy *wiphy,
 	struct wireless_dev *wdev, const void *data, int len)
@@ -1842,7 +1876,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 		.doit = rtw_cfgvendor_rtt_get_capability
 	},
 #endif /* RTT_SUPPORT */
-#ifdef CONFIG_RTW_CFGVEDNOR_LLSTATS
+#ifdef CONFIG_RTW_CFGVENDOR_LLSTATS
 	{
 		{
 			.vendor_id = OUI_GOOGLE,
@@ -1876,8 +1910,8 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 #endif
 		.doit = rtw_cfgvendor_lstats_clear_info
 	},
-#endif /* CONFIG_RTW_CFGVEDNOR_LLSTATS */
-#ifdef CONFIG_RTW_CFGVEDNOR_RSSIMONITOR
+#endif /* CONFIG_RTW_CFGVENDOR_LLSTATS */
+#ifdef CONFIG_RTW_CFGVENDOR_RSSIMONITOR
         {
                 {
                         .vendor_id = OUI_GOOGLE,
@@ -1889,7 +1923,7 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 #endif
                 .doit = rtw_cfgvendor_set_rssi_monitor
         },
-#endif /* CONFIG_RTW_CFGVEDNOR_RSSIMONITOR */
+#endif /* CONFIG_RTW_CFGVENDOR_RSSIMONITOR */
 #ifdef CONFIG_RTW_CFGVENDOR_WIFI_LOGGER
 	{
 		{
@@ -2005,6 +2039,30 @@ static const struct wiphy_vendor_command rtw_vendor_cmds[] = {
 		.doit = rtw_cfgvendor_set_rand_mac_oui
 	},
 #endif
+#ifdef CONFIG_RTW_CFGVENDOR_WIFI_OFFLOAD
+	{
+		{
+			.vendor_id = OUI_GOOGLE,
+			.subcmd = WIFI_OFFLOAD_SUBCMD_START_MKEEP_ALIVE
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
+		.policy = VENDOR_CMD_RAW_DATA,
+#endif
+		.doit = rtw_cfgvendor_start_mkeep_alive
+	},
+	{
+		{
+			.vendor_id = OUI_GOOGLE,
+			.subcmd = WIFI_OFFLOAD_SUBCMD_STOP_MKEEP_ALIVE
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
+		.policy = VENDOR_CMD_RAW_DATA,
+#endif
+		.doit = rtw_cfgvendor_stop_mkeep_alive
+	},
+#endif
 	{
 		{
 			.vendor_id = OUI_GOOGLE,
@@ -2075,9 +2133,9 @@ static const struct  nl80211_vendor_cmd_info rtw_vendor_events[] = {
 	{ OUI_GOOGLE, RTT_EVENT_COMPLETE },
 #endif /* RTT_SUPPORT */
 
-#ifdef CONFIG_RTW_CFGVEDNOR_RSSIMONITOR
+#ifdef CONFIG_RTW_CFGVENDOR_RSSIMONITOR
 	{ OUI_GOOGLE, GOOGLE_RSSI_MONITOR_EVENT },
-#endif /* RTW_CFGVEDNOR_RSSIMONITR */
+#endif /* RTW_CFGVENDOR_RSSIMONITR */
 
 #if defined(GSCAN_SUPPORT) && 0
 	{ OUI_GOOGLE, GSCAN_EVENT_COMPLETE_SCAN },

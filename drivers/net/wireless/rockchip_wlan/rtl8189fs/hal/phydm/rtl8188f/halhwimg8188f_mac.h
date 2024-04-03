@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -25,9 +24,10 @@
 ******************************************************************************/
 
 void
-odm_read_and_config_mp_8188f_mac_reg( /* tc: Test Chip, mp: mp Chip*/
-				     struct dm_struct *dm);
-u32 odm_get_version_mp_8188f_mac_reg(void);
+odm_read_and_config_mp_8188f_mac_reg(/* tc: Test Chip, mp: mp Chip*/
+	struct	dm_struct *dm
+);
+u32	odm_get_version_mp_8188f_mac_reg(void);
 
 #endif
 #endif /* end of HWIMG_SUPPORT*/

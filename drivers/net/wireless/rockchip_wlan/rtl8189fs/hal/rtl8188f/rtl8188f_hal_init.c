@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -2883,7 +2882,6 @@ static void rtl8188f_read_chip_version(PADAPTER padapter)
 	pHalData->PolarityCtl = ((value32 & WL_HWPDN_SL) ? RT_POLARITY_HIGH_ACT : RT_POLARITY_LOW_ACT);
 #endif
 
-	rtw_hal_config_rftype(padapter);
 
 #if 0 /* mark for chage to use efuse */
 	if (IS_B_CUT(pHalData->version_id) || IS_C_CUT(pHalData->version_id)) {
@@ -3053,67 +3051,6 @@ void hal_notch_filter_8188f(_adapter *adapter, bool enable)
 	}
 }
 
-u8 rtl8188f_MRateIdxToARFRId(PADAPTER padapter, u8 rate_idx)
-{
-	u8 ret = 0;
-	enum rf_type rftype = (enum rf_type)GET_RF_TYPE(padapter);
-	switch (rate_idx) {
-
-	case RATR_INX_WIRELESS_NGB:
-		if (rftype == RF_1T1R)
-			ret = 1;
-		else
-			ret = 0;
-		break;
-
-	case RATR_INX_WIRELESS_N:
-	case RATR_INX_WIRELESS_NG:
-		if (rftype == RF_1T1R)
-			ret = 5;
-		else
-			ret = 4;
-		break;
-
-	case RATR_INX_WIRELESS_NB:
-		if (rftype == RF_1T1R)
-			ret = 3;
-		else
-			ret = 2;
-		break;
-
-	case RATR_INX_WIRELESS_GB:
-		ret = 6;
-		break;
-
-	case RATR_INX_WIRELESS_G:
-		ret = 7;
-		break;
-
-	case RATR_INX_WIRELESS_B:
-		ret = 8;
-		break;
-
-	case RATR_INX_WIRELESS_MC:
-		if (padapter->mlmeextpriv.cur_wireless_mode & WIRELESS_11BG_24N)
-			ret = 6;
-		else
-			ret = 7;
-		break;
-	case RATR_INX_WIRELESS_AC_N:
-		if (rftype == RF_1T1R) /* || padapter->MgntInfo.VHTHighestOperaRate <= MGN_VHT1SS_MCS9) */
-			ret = 10;
-		else
-			ret = 9;
-		break;
-
-	default:
-		ret = 0;
-		break;
-	}
-
-	return ret;
-}
-
 /* */
 /* Description: In normal chip, we should send some packet to Hw which will be used by Fw */
 /*			in FW LPS mode. The function is to fill the Tx descriptor of this packets, then */
@@ -3242,15 +3179,17 @@ void init_hal_spec_8188f(_adapter *adapter)
 	hal_spec->macid_num = 16;
 	hal_spec->sec_cam_ent_num = 16;
 	hal_spec->sec_cap = 0;
+	hal_spec->wow_cap = WOW_CAP_TKIP_OL;
 	hal_spec->macid_cap = MACID_DROP_INDIRECT;
 	hal_spec->macid_txrpt = 0x8100;
 	hal_spec->macid_txrpt_pgsz = 16;
 
 	hal_spec->rfpath_num_2g = 1;
 	hal_spec->rfpath_num_5g = 0;
-	hal_spec->txgi_max = 63;
-	hal_spec->txgi_pdbm = 2;
+	hal_spec->rf_reg_path_num = hal_spec->rf_reg_path_avail_num = 1;
+	hal_spec->rf_reg_trx_path_bmp = 0x11;
 	hal_spec->max_tx_cnt = 1;
+
 	hal_spec->tx_nss_num = 1;
 	hal_spec->rx_nss_num = 1;
 	hal_spec->band_cap = BAND_CAP_2G;
@@ -3258,15 +3197,16 @@ void init_hal_spec_8188f(_adapter *adapter)
 	hal_spec->port_num = 2;
 	hal_spec->proto_cap = PROTO_CAP_11B | PROTO_CAP_11G | PROTO_CAP_11N;
 
+	hal_spec->txgi_max = 63;
+	hal_spec->txgi_pdbm = 2;
+
 	hal_spec->wl_func = 0
 			    | WL_FUNC_P2P
 			    | WL_FUNC_MIRACAST
 			    | WL_FUNC_TDLS
 			    ;
 
-#if CONFIG_TX_AC_LIFETIME
 	hal_spec->tx_aclt_unit_factor = 1;
-#endif
 
 	hal_spec->pg_txpwr_saddr = 0x10;
 	hal_spec->pg_txgi_diff_factor = 1;
@@ -3785,9 +3725,8 @@ Hal_EfuseParseTxPowerInfo_8188F(
 )
 {
 	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(padapter);
-	TxPowerInfo24G pwrInfo24G;
 
-	hal_load_txpwr_info(padapter, &pwrInfo24G, NULL, PROMContent);
+	pHalData->txpwr_pg_mode = TXPWR_PG_WITH_PWR_IDX;
 
 	/* 2010/10/19 MH Add Regulator recognize for CU. */
 	if (!AutoLoadFail) {
@@ -3843,7 +3782,6 @@ Hal_EfuseParseChnlPlan_8188F(
 		, hwinfo ? hwinfo[EEPROM_ChannelPlan_8188F] : 0xFF
 		, padapter->registrypriv.alpha2
 		, padapter->registrypriv.channel_plan
-		, RTW_CHPLAN_WORLD_NULL
 		, AutoLoadFail
 	);
 }
@@ -4110,7 +4048,6 @@ u8	SCMapping_8188F(PADAPTER Adapter, struct pkt_attrib *pattrib)
 	return SCSettingOfDesc;
 }
 
-#if defined(CONFIG_CONCURRENT_MODE)
 void fill_txdesc_force_bmc_camid(struct pkt_attrib *pattrib, u8 *ptxdesc)
 {
 	if ((pattrib->encrypt > 0) && (!pattrib->bswenc)
@@ -4120,7 +4057,6 @@ void fill_txdesc_force_bmc_camid(struct pkt_attrib *pattrib, u8 *ptxdesc)
 		SET_TX_DESC_MACID_8188F(ptxdesc, pattrib->bmc_camid);
 	}
 }
-#endif
 
 static u8 fill_txdesc_sectype(struct pkt_attrib *pattrib)
 {
@@ -4227,10 +4163,10 @@ static void rtl8188f_fill_default_txdesc(
 		SET_TX_DESC_SEQ_8188F(pbuf, pattrib->seqnum);
 
 		SET_TX_DESC_SEC_TYPE_8188F(pbuf, fill_txdesc_sectype(pattrib));
-#if defined(CONFIG_CONCURRENT_MODE)
+
 		if (bmcst)
 			fill_txdesc_force_bmc_camid(pattrib, pbuf);
-#endif
+
 		fill_txdesc_vcs_8188f(padapter, pattrib, pbuf);
 
 #ifdef CONFIG_P2P
@@ -4438,46 +4374,35 @@ void rtl8188f_update_txdesc(struct xmit_frame *pxmitframe, u8 *pbuf)
 #endif
 }
 
-static void hw_var_set_monitor(PADAPTER Adapter, u8 variable, u8 *val)
+static void hw_var_set_monitor(PADAPTER adapter, u8 variable, u8 *val)
 {
-	u32	rcr_bits;
-	u16	value_rxfltmap2;
-	PHAL_DATA_TYPE pHalData = GET_HAL_DATA(Adapter);
-	struct mlme_priv *pmlmepriv = &(Adapter->mlmepriv);
+#ifdef CONFIG_WIFI_MONITOR
+	u32 tmp_32bit;
+	struct net_device *ndev = adapter->pnetdev;
+	struct mon_reg_backup *mon = &GET_HAL_DATA(adapter)->mon_backup;
 
-	if (*((u8 *)val) == _HW_STATE_MONITOR_) {
-#ifdef CONFIG_CUSTOMER_ALIBABA_GENERAL
-		rcr_bits = RCR_AAP | RCR_APM | RCR_AM | RCR_AB | RCR_APWRMGT | RCR_ADF | RCR_AMF | RCR_APP_PHYST_RXFF;
-#else
-		/* Receive all type */
-		rcr_bits = RCR_AAP | RCR_APM | RCR_AM | RCR_AB | RCR_APWRMGT | RCR_ADF | RCR_ACF | RCR_AMF | RCR_APP_PHYST_RXFF;
+	mon->known_rcr = 1;
+	rtw_hal_get_hwreg(adapter, HW_VAR_RCR, (u8 *)& mon->rcr);
 
+	/* Receive all type */
+	tmp_32bit = RCR_AAP | RCR_APP_PHYST_RXFF;
+
+	if (ndev->type == ARPHRD_IEEE80211_RADIOTAP) {
 		/* Append FCS */
-		rcr_bits |= RCR_APPFCS;
-#endif
-#if 0
-		/*
-		   CRC and ICV packet will drop in recvbuf2recvframe()
-		   We no turn on it.
-		 */
-		rcr_bits |= (RCR_ACRC32 | RCR_AICV);
-#endif
-
-		rtw_hal_get_hwreg(Adapter, HW_VAR_RCR, (u8 *)&pHalData->rcr_backup);
-		rtw_hal_set_hwreg(Adapter, HW_VAR_RCR, (u8 *)&rcr_bits);
-
-		/* Receive all data frames */
-		value_rxfltmap2 = 0xFFFF;
-		rtw_write16(Adapter, REG_RXFLTMAP2, value_rxfltmap2);
-
-#if 0
-		/* tx pause */
-		rtw_write8(padapter, REG_TXPAUSE, 0xFF);
-#endif
-	} else {
-		/* do nothing */
+		tmp_32bit |= RCR_APPFCS;
 	}
 
+	rtw_hal_set_hwreg(adapter, HW_VAR_RCR, (u8 *)& tmp_32bit);
+
+	/* Receive all data frames */
+	mon->known_rxfilter = 1;
+	mon->rxfilter0 = rtw_read16(adapter, REG_RXFLTMAP0_8188F);
+	mon->rxfilter1 = rtw_read16(adapter, REG_RXFLTMAP1_8188F);
+	mon->rxfilter2 = rtw_read16(adapter, REG_RXFLTMAP2_8188F);
+	rtw_write16(adapter, REG_RXFLTMAP0_8188F, 0xFFFF);
+	rtw_write16(adapter, REG_RXFLTMAP1_8188F, 0xFFFF);
+	rtw_write16(adapter, REG_RXFLTMAP2_8188F, 0xFFFF);
+#endif /* CONFIG_WIFI_MONITOR */
 }
 
 static void hw_var_set_opmode(PADAPTER padapter, u8 variable, u8 *val)
@@ -4489,9 +4414,21 @@ static void hw_var_set_opmode(PADAPTER padapter, u8 variable, u8 *val)
 	PHAL_DATA_TYPE pHalData = GET_HAL_DATA(padapter);
 
 	if (isMonitor == _TRUE) {
-		/* reset RCR from backup */
-		rtw_hal_set_hwreg(padapter, HW_VAR_RCR, (u8 *)&pHalData->rcr_backup);
-		rtw_hal_rcr_set_chk_bssid(padapter, MLME_ACTION_NONE);
+#ifdef CONFIG_WIFI_MONITOR
+		struct mon_reg_backup *backup = &GET_HAL_DATA(padapter)->mon_backup;
+
+		if (backup->known_rcr) {
+			backup->known_rcr = 0;
+			rtw_hal_set_hwreg(padapter, HW_VAR_RCR, (u8 *)&backup->rcr);
+			rtw_hal_rcr_set_chk_bssid(padapter, MLME_ACTION_NONE);
+		}
+		if (backup->known_rxfilter) {
+			backup->known_rxfilter = 0;
+			rtw_write16(padapter, REG_RXFLTMAP0_8188F, backup->rxfilter0);
+			rtw_write16(padapter, REG_RXFLTMAP1_8188F, backup->rxfilter1);
+			rtw_write16(padapter, REG_RXFLTMAP2_8188F, backup->rxfilter2);
+		}
+#endif /* CONFIG_WIFI_MONITOR */
 		isMonitor = _FALSE;
 	}
 
@@ -4810,7 +4747,7 @@ u8 SetHwReg8188F(PADAPTER padapter, u8 variable, u8 *val)
 		hw_var_set_opmode(padapter, variable, val);
 		break;
 
-	case HW_VAR_BASIC_RATE: 
+	case HW_VAR_BASIC_RATE:
 		rtw_var_set_basic_rate(padapter, val);
 	break;
 
@@ -4823,28 +4760,12 @@ u8 SetHwReg8188F(PADAPTER padapter, u8 variable, u8 *val)
 		break;
 
 	case HW_VAR_RESP_SIFS:
-#if 0
-		/* SIFS for OFDM Data ACK */
-		rtw_write8(padapter, REG_SIFS_CTX + 1, val[0]);
-		/* SIFS for OFDM consecutive tx like CTS data! */
-		rtw_write8(padapter, REG_SIFS_TRX + 1, val[1]);
-
-		rtw_write8(padapter, REG_SPEC_SIFS + 1, val[0]);
-		rtw_write8(padapter, REG_MAC_SPEC_SIFS + 1, val[0]);
-
-		/* 20100719 Joseph: Revise SIFS setting due to Hardware register definition change. */
-		rtw_write8(padapter, REG_R2T_SIFS + 1, val[0]);
-		rtw_write8(padapter, REG_T2T_SIFS + 1, val[0]);
-
-#else
-		/*SIFS_Timer = 0x0a0a0808; */
-		/*RESP_SIFS for CCK */
-		rtw_write8(padapter, REG_RESP_SIFS_CCK, val[0]); /* SIFS_T2T_CCK (0x08) */
-		rtw_write8(padapter, REG_RESP_SIFS_CCK + 1, val[1]); /*SIFS_R2T_CCK(0x08) */
-		/*RESP_SIFS for OFDM */
-		rtw_write8(padapter, REG_RESP_SIFS_OFDM, val[2]); /*SIFS_T2T_OFDM (0x0a) */
-		rtw_write8(padapter, REG_RESP_SIFS_OFDM + 1, val[3]); /*SIFS_R2T_OFDM(0x0a) */
-#endif
+		#ifdef RTW_SIFS_IOT_BY_CORE
+		/*
+		* set IOT value here or restore to default value:
+		* hal_data->init_reg_0x428, init_reg_0x514, init_reg_0x63a, init_reg_0x63c
+		*/
+		#endif
 		break;
 
 	case HW_VAR_ACK_PREAMBLE: {
@@ -4853,10 +4774,13 @@ u8 SetHwReg8188F(PADAPTER padapter, u8 variable, u8 *val)
 
 		/* Joseph marked out for Netgear 3500 TKIP channel 7 issue.(Temporarily) */
 		/*regTmp = (pHalData->nCur40MhzPrimeSC)<<5; */
-		regTmp = 0;
-		if (bShortPreamble)
-			regTmp |= 0x80;
-		rtw_write8(padapter, REG_RRSR + 2, regTmp);
+		regTmp = rtw_read8(padapter, REG_WMAC_TRXPTCL_CTL + 2);
+		if (bShortPreamble) {
+			regTmp |= BIT(1);/*668[17]*/
+		} else {
+			regTmp &= ~BIT(1);
+		}
+		rtw_write8(padapter, REG_WMAC_TRXPTCL_CTL + 2, regTmp);
 	}
 	break;
 
@@ -4999,6 +4923,7 @@ u8 SetHwReg8188F(PADAPTER padapter, u8 variable, u8 *val)
 					break;
 
 				RTW_INFO("%s: [HW_VAR_FIFO_CLEARN_UP] val=%x times:%d\n", __func__, val32, trycnt);
+				rtw_yield_os();
 			} while (--trycnt);
 			if (trycnt == 0)
 				RTW_INFO("[HW_VAR_FIFO_CLEARN_UP] Stop RX DMA failed......\n");
@@ -5124,6 +5049,7 @@ u8 SetHwReg8188F(PADAPTER padapter, u8 variable, u8 *val)
 	return ret;
 }
 
+#ifdef CONFIG_PROC_DEBUG
 struct qinfo_8188f {
 	u32 head:8;
 	u32 pkt_num:7;
@@ -5213,6 +5139,7 @@ static void dump_mac_txfifo_8188f(void *sel, _adapter *adapter)
 		RTW_PRINT_SEL(sel, "HPQ: %d, LPQ: %d, NPQ: %d, EPQ: %d, PUBQ: %d\n"
 			 , hpq, lpq, npq, epq, pubq);
 }
+#endif
 
 void rtl8188f_read_wmmedca_reg(PADAPTER adapter, u16 *vo_params, u16 *vi_params, u16 *be_params, u16 *bk_params)
 {
@@ -5358,12 +5285,14 @@ void GetHwReg8188F(PADAPTER padapter, u8 variable, u8 *val)
 		*val = rtw_read8(padapter, REG_SYS_CLKR);
 		break;
 #endif
+#ifdef CONFIG_PROC_DEBUG
 	case HW_VAR_DUMP_MAC_QUEUE_INFO:
 		dump_mac_qinfo_8188f(val, padapter);
 		break;
 	case HW_VAR_DUMP_MAC_TXFIFO:
 		dump_mac_txfifo_8188f(val, padapter);
 		break;
+#endif
 	default:
 		GetHwReg(padapter, variable, val);
 		break;
@@ -5512,9 +5441,6 @@ u8 GetHalDefVar8188F(PADAPTER padapter, HAL_DEF_VARIABLE variable, void *pval)
 	case HAL_DEF_RX_LDPC:
 		*((u8 *)pval) = _FALSE;
 		break;
-	case HAL_DEF_TX_STBC:
-		*((u8 *)pval) = 0;
-		break;
 	case HAL_DEF_RX_STBC:
 		*((u8 *)pval) = 1;
 		break;
@@ -5644,8 +5570,9 @@ void rtl8188f_set_hal_ops(struct hal_ops *pHalFunc)
 	pHalFunc->set_chnl_bw_handler = &PHY_SetSwChnlBWMode8188F;
 
 	pHalFunc->set_tx_power_level_handler = &PHY_SetTxPowerLevel8188F;
+	pHalFunc->set_txpwr_done = rtl8188f_set_txpwr_done;
 	pHalFunc->set_tx_power_index_handler = PHY_SetTxPowerIndex_8188F;
-	pHalFunc->get_tx_power_index_handler = &PHY_GetTxPowerIndex_8188F;
+	pHalFunc->get_tx_power_index_handler = hal_com_get_txpwr_idx;
 
 	pHalFunc->hal_dm_watchdog = &rtl8188f_HalDmWatchDog;
 	pHalFunc->SetBeaconRelatedRegistersHandler = &rtl8188f_SetBeaconRelatedRegisters;

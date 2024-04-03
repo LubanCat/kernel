@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -70,6 +69,11 @@
 #ifndef BIT
 	#define BIT(x)	(1 << (x))
 #endif
+#ifndef BIT_ULL
+#define BIT_ULL(x)	(1ULL << (x))
+#endif
+
+#define CHECK_BIT(a, b) (!!((a) & (b)))
 
 #define BIT0	0x00000001
 #define BIT1	0x00000002
@@ -108,6 +112,11 @@
 #define BIT34	0x0400000000
 #define BIT35	0x0800000000
 #define BIT36	0x1000000000
+
+#ifndef GENMASK
+#define GENMASK(h, l) \
+	(((~0UL) - (1UL << (l)) + 1) & (~0UL >> (BITS_PER_LONG - 1 - (h))))
+#endif
 
 extern int RTW_STATUS_CODE(int error_code);
 
@@ -303,6 +312,7 @@ u32 rtw_os_pkt_len(_pkt *pkt);
 extern void	_rtw_memcpy(void *dec, const void *sour, u32 sz);
 extern void _rtw_memmove(void *dst, const void *src, u32 sz);
 extern int	_rtw_memcmp(const void *dst, const void *src, u32 sz);
+extern int _rtw_memcmp2(const void *dst, const void *src, u32 sz);
 extern void	_rtw_memset(void *pbuf, int c, u32 sz);
 
 extern void	_rtw_init_listhead(_list *list);
@@ -393,6 +403,39 @@ extern void	rtw_udelay_os(int us);
 
 extern void rtw_yield_os(void);
 
+enum rtw_pwait_type {
+	RTW_PWAIT_TYPE_MSLEEP,
+	RTW_PWAIT_TYPE_USLEEP,
+	RTW_PWAIT_TYPE_YIELD,
+	RTW_PWAIT_TYPE_MDELAY,
+	RTW_PWAIT_TYPE_UDELAY,
+
+	RTW_PWAIT_TYPE_NUM,
+};
+
+#define RTW_PWAIT_TYPE_VALID(type) (type < RTW_PWAIT_TYPE_NUM)
+
+struct rtw_pwait_conf {
+	enum rtw_pwait_type type;
+	s32 wait_time;
+	s32 wait_cnt_lmt;
+};
+
+struct rtw_pwait_ctx {
+	struct rtw_pwait_conf conf;
+	s32 wait_cnt;
+	void (*wait_hdl)(int us);
+};
+
+extern const char *_rtw_pwait_type_str[];
+#define rtw_pwait_type_str(type) (RTW_PWAIT_TYPE_VALID(type) ? _rtw_pwait_type_str[type] : _rtw_pwait_type_str[RTW_PWAIT_TYPE_NUM])
+
+#define rtw_pwctx_reset(pwctx) (pwctx)->wait_cnt = 0
+#define rtw_pwctx_wait(pwctx) do { (pwctx)->wait_hdl((pwctx)->conf.wait_time); (pwctx)->wait_cnt++; } while(0)
+#define rtw_pwctx_waited(pwctx) ((pwctx)->wait_cnt)
+#define rtw_pwctx_exceed(pwctx) ((pwctx)->conf.wait_cnt_lmt >= 0 && (pwctx)->wait_cnt >= (pwctx)->conf.wait_cnt_lmt)
+
+int rtw_pwctx_config(struct rtw_pwait_ctx *pwctx, enum rtw_pwait_type type, s32 time, s32 cnt_lmt);
 
 extern void rtw_init_timer(_timer *ptimer, void *padapter, void *pfunc, void *ctx);
 
@@ -585,8 +628,20 @@ static inline int largest_bit(u32 bitmask)
 	return i;
 }
 
+static inline int largest_bit_64(u64 bitmask)
+{
+	int i;
+
+	for (i = 63; i >= 0; i--)
+		if (bitmask & BIT_ULL(i))
+			break;
+
+	return i;
+}
+
 #define rtw_abs(a) (a < 0 ? -a : a)
 #define rtw_min(a, b) ((a > b) ? b : a)
+#define rtw_max(a, b) ((a > b) ? a : b)
 #define rtw_is_range_a_in_b(hi_a, lo_a, hi_b, lo_b) (((hi_a) <= (hi_b)) && ((lo_a) >= (lo_b)))
 #define rtw_is_range_overlap(hi_a, lo_a, hi_b, lo_b) (((hi_a) > (lo_b)) && ((lo_a) < (hi_b)))
 
@@ -629,6 +684,7 @@ extern int ATOMIC_DEC_RETURN(ATOMIC_T *v);
 extern bool ATOMIC_INC_UNLESS(ATOMIC_T *v, int u);
 
 /* File operation APIs, just for linux now */
+extern int rtw_is_dir_readable(const char *path);
 extern int rtw_is_file_readable(const char *path);
 extern int rtw_is_file_readable_with_size(const char *path, u32 *sz);
 extern int rtw_readable_file_sz_chk(const char *path, u32 sz);
@@ -770,11 +826,13 @@ struct blacklist_ent {
 	systime exp_time;
 };
 
+#ifdef CONFIG_RTW_MESH
 int rtw_blacklist_add(_queue *blist, const u8 *addr, u32 timeout_ms);
 int rtw_blacklist_del(_queue *blist, const u8 *addr);
 int rtw_blacklist_search(_queue *blist, const u8 *addr);
 void rtw_blacklist_flush(_queue *blist);
 void dump_blacklist(void *sel, _queue *blist, const char *title);
+#endif
 
 /* String handler */
 

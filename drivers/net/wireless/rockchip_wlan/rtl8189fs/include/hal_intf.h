@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -42,6 +41,7 @@ enum _CHIP_TYPE {
 	RTL8710B,
 	RTL8192F,
 	RTL8822C,
+	RTL8814B,
 	MAX_CHIP_TYPE
 };
 
@@ -87,7 +87,6 @@ typedef enum _HW_VARIABLES {
 	HW_VAR_SEC_CFG,
 	HW_VAR_SEC_DK_CFG,
 	HW_VAR_BCN_VALID,
-	HW_VAR_RF_TYPE,
 	HW_VAR_FREECNT,
 
 	/* PHYDM odm->SupportAbility */
@@ -109,6 +108,7 @@ typedef enum _HW_VARIABLES {
 	HW_VAR_SET_RPWM,
 	HW_VAR_CPWM,
 	HW_VAR_H2C_FW_PWRMODE,
+	HW_VAR_H2C_FW_PWRMODE_RFON_CTRL,
 	HW_VAR_H2C_INACTIVE_IPS,
 	HW_VAR_H2C_PS_TUNE_PARAM,
 	HW_VAR_H2C_FW_JOINBSSRPT,
@@ -157,7 +157,6 @@ typedef enum _HW_VARIABLES {
 	HW_VAR_CHK_MGQ_CPU_EMPTY,
 	HW_VAR_DL_BCN_SEL,
 	HW_VAR_AMPDU_MAX_TIME,
-	HW_VAR_WIRELESS_MODE,
 	HW_VAR_USB_MODE,
 	HW_VAR_PORT_SWITCH,
 	HW_VAR_PORT_CFG,
@@ -212,12 +211,16 @@ typedef enum _HW_VARIABLES {
 	HW_VAR_ENABLE_RX_BAR,
 	HW_VAR_TSF_AUTO_SYNC,
 	HW_VAR_LPS_STATE_CHK,
+	HW_VAR_LPS_RFON_CHK,
 	#ifdef CONFIG_RTS_FULL_BW
 	HW_VAR_SET_RTS_BW,
 	#endif
 #if defined(CONFIG_PCI_HCI)
 	HW_VAR_ENSWBCN,
 #endif
+#ifdef CONFIG_WOWLAN
+	HW_VAR_VENDOR_WOW_MODE,
+#endif /* CONFIG_WOWLAN */
 } HW_VARIABLES;
 
 typedef enum _HAL_DEF_VARIABLE {
@@ -250,9 +253,8 @@ typedef enum _HAL_DEF_VARIABLE {
 	HAL_DEF_TX_PAGE_SIZE,
 	HAL_DEF_TX_PAGE_BOUNDARY,
 	HAL_DEF_TX_PAGE_BOUNDARY_WOWLAN,
+	HAL_DEF_TX_BUFFER_LAST_ENTRY,
 	HAL_DEF_ANT_DETECT,/* to do for 8723a */
-	HAL_DEF_PCI_SUUPORT_L1_BACKDOOR, /* Determine if the L1 Backdoor setting is turned on. */
-	HAL_DEF_PCI_AMD_L1_SUPPORT,
 	HAL_DEF_PCI_ASPM_OSC, /* Support for ASPM OSC, added by Roger, 2013.03.27. */
 	HAL_DEF_EFUSE_USAGE,	/* Get current EFUSE utilization. 2008.12.19. Added by Roger. */
 	HAL_DEF_EFUSE_BYTES,
@@ -346,7 +348,10 @@ struct hal_ops {
 	void (*set_tx_power_level_handler)(_adapter *adapter, u8 channel);
 	void (*set_txpwr_done)(_adapter *adapter);
 	void (*set_tx_power_index_handler)(_adapter *adapter, u32 powerindex, enum rf_path rfpath, u8 rate);
-	u8 (*get_tx_power_index_handler)(_adapter *adapter, enum rf_path rfpath, u8 rate, u8 bandwidth, u8 channel, struct txpwr_idx_comp *tic);
+
+	u8 (*get_tx_power_index_handler)(_adapter *adapter, enum rf_path rfpath, RATE_SECTION rs, enum MGN_RATE rate
+		, enum channel_width bw, BAND_TYPE band, u8 cch, u8 opch, struct txpwr_idx_comp *tic);
+	s8 (*get_txpwr_target_extra_bias)(_adapter *adapter, enum rf_path rfpath, RATE_SECTION rs, enum MGN_RATE rate, enum channel_width bw, BAND_TYPE band, u8 cch);
 
 	void	(*hal_dm_watchdog)(_adapter *padapter);
 
@@ -451,6 +456,7 @@ struct hal_ops {
 #ifdef CONFIG_PCI_TX_POLLING
 	void (*tx_poll_handler)(_adapter *adapter);
 #endif
+	void (*hci_flush)(_adapter *adapter, u32 queue);
 };
 
 typedef	enum _RT_EEPROM_TYPE {
@@ -696,6 +702,13 @@ uint rtw_hal_init(_adapter *padapter);
 #ifdef CONFIG_NEW_NETDEV_HDL
 uint rtw_hal_iface_init(_adapter *adapter);
 #endif
+
+enum rf_type rtw_chip_rftype_to_hal_rftype(_adapter *adapter, u8 limit);
+void dump_hal_runtime_trx_mode(void *sel, _adapter *adapter);
+void dump_hal_trx_mode(void *sel, _adapter *adapter);
+u8 rtw_hal_rfpath_init(_adapter *adapter);
+u8 rtw_hal_trxnss_init(_adapter *adapter);
+
 uint rtw_hal_deinit(_adapter *padapter);
 void rtw_hal_stop(_adapter *padapter);
 u8 rtw_hal_set_hwreg(PADAPTER padapter, u8 variable, u8 *val);
@@ -861,8 +874,12 @@ void rtw_hal_update_txpwr_level(_adapter *adapter);
 void rtw_hal_set_txpwr_done(_adapter *adapter);
 void rtw_hal_set_tx_power_index(_adapter *adapter, u32 powerindex
 	, enum rf_path rfpath, u8 rate);
-u8 rtw_hal_get_tx_power_index(_adapter *adapter, enum rf_path rfpath, u8 rate
-	, u8 bandwidth, u8 channel, struct txpwr_idx_comp *tic);
+
+u8 rtw_hal_get_tx_power_index(_adapter *adapter, enum rf_path rfpath
+	, RATE_SECTION rs, enum MGN_RATE rate, enum channel_width bw, BAND_TYPE band, u8 cch, u8 opch
+	, struct txpwr_idx_comp *tic);
+s8 rtw_hal_get_txpwr_target_extra_bias(_adapter *adapter, enum rf_path rfpath
+	, RATE_SECTION rs, enum MGN_RATE rate, enum channel_width bw, BAND_TYPE band, u8 cch);
 
 u8 rtw_hal_ops_check(_adapter *padapter);
 

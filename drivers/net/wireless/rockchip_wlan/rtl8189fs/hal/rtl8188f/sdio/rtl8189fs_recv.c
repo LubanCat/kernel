@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -16,21 +15,6 @@
 #define _RTL8188FS_RECV_C_
 
 #include <rtl8188f_hal.h>
-
-
-static s32 initrecvbuf(struct recv_buf *precvbuf, PADAPTER padapter)
-{
-	_rtw_init_listhead(&precvbuf->list);
-	_rtw_spinlock_init(&precvbuf->recvbuf_lock);
-
-	precvbuf->adapter = padapter;
-
-	return _SUCCESS;
-}
-static void freerecvbuf(struct recv_buf *precvbuf)
-{
-	_rtw_spinlock_free(&precvbuf->recvbuf_lock);
-}
 
 #ifdef CONFIG_SDIO_RX_COPY
 s32 rtl8188fs_recv_hdl(_adapter *padapter)
@@ -375,6 +359,10 @@ static void rtl8188fs_recv_tasklet(void *priv)
 }
 #endif
 
+#ifndef CONFIG_SDIO_RECVBUF_PWAIT_CONF_ARGS
+#define CONFIG_SDIO_RECVBUF_PWAIT_CONF_ARGS RTW_PWAIT_TYPE_MSLEEP, 10, 10
+#endif
+
 /*
  * Initialize recv private variable for hardware dependent
  * 1. recv buf
@@ -383,6 +371,7 @@ static void rtl8188fs_recv_tasklet(void *priv)
  */
 s32 rtl8188fs_init_recv_priv(PADAPTER padapter)
 {
+	struct registry_priv *regsty = adapter_to_regsty(padapter);
 	s32			res;
 	u32			i, n;
 	struct recv_priv	*precvpriv;
@@ -396,7 +385,10 @@ s32 rtl8188fs_init_recv_priv(PADAPTER padapter)
 	_rtw_init_queue(&precvpriv->free_recv_buf_queue);
 	_rtw_init_queue(&precvpriv->recv_buf_pending_queue);
 
-	n = NR_RECVBUFF * sizeof(struct recv_buf) + 4;
+	if (!is_primary_adapter(padapter))
+		goto exit;
+
+	n = regsty->recvbuf_nr * sizeof(struct recv_buf) + 4;
 	precvpriv->pallocated_recv_buf = rtw_zmalloc(n);
 	if (precvpriv->pallocated_recv_buf == NULL) {
 		res = _FAIL;
@@ -408,36 +400,16 @@ s32 rtl8188fs_init_recv_priv(PADAPTER padapter)
 
 	/* init each recv buffer */
 	precvbuf = (struct recv_buf *)precvpriv->precv_buf;
-	for (i = 0; i < NR_RECVBUFF; i++) {
-		res = initrecvbuf(precvbuf, padapter);
+	for (i = 0; i < regsty->recvbuf_nr; i++) {
+		res = sdio_initrecvbuf(precvbuf, padapter);
 		if (res == _FAIL)
 			break;
 
-		res = rtw_os_recvbuf_resource_alloc(padapter, precvbuf);
+		res = rtw_os_recvbuf_resource_alloc(padapter, precvbuf, MAX_RECVBUF_SZ);
 		if (res == _FAIL) {
-			freerecvbuf(precvbuf);
+			sdio_freerecvbuf(precvbuf);
 			break;
 		}
-
-#ifdef CONFIG_SDIO_RX_COPY
-		if (precvbuf->pskb == NULL) {
-			SIZE_PTR tmpaddr = 0;
-			SIZE_PTR alignment = 0;
-
-			precvbuf->pskb = rtw_skb_alloc(MAX_RECVBUF_SZ + RECVBUFF_ALIGN_SZ);
-
-			if (precvbuf->pskb) {
-				precvbuf->pskb->dev = padapter->pnetdev;
-
-				tmpaddr = (SIZE_PTR)precvbuf->pskb->data;
-				alignment = tmpaddr & (RECVBUFF_ALIGN_SZ - 1);
-				skb_reserve(precvbuf->pskb, (RECVBUFF_ALIGN_SZ - alignment));
-			}
-
-			if (precvbuf->pskb == NULL)
-				RTW_INFO("%s: alloc_skb fail!\n", __FUNCTION__);
-		}
-#endif
 
 		rtw_list_insert_tail(&precvbuf->list, &precvpriv->free_recv_buf_queue.queue);
 
@@ -447,6 +419,12 @@ s32 rtl8188fs_init_recv_priv(PADAPTER padapter)
 
 	if (res == _FAIL)
 		goto initbuferror;
+
+#ifdef CONFIG_SDIO_RECVBUF_AGGREGATION
+	precvpriv->recvbuf_agg = CONFIG_SDIO_RECVBUF_AGGREGATION_EN;
+#endif
+
+	rtw_pwctx_config(&precvpriv->recvbuf_pwait, CONFIG_SDIO_RECVBUF_PWAIT_CONF_ARGS);
 
 	/* 3 2. init tasklet */
 #ifdef PLATFORM_LINUX
@@ -465,14 +443,14 @@ initbuferror:
 		for (i = 0; i < n ; i++) {
 			rtw_list_delete(&precvbuf->list);
 			rtw_os_recvbuf_resource_free(padapter, precvbuf);
-			freerecvbuf(precvbuf);
+			sdio_freerecvbuf(precvbuf);
 			precvbuf++;
 		}
 		precvpriv->precv_buf = NULL;
 	}
 
 	if (precvpriv->pallocated_recv_buf) {
-		n = NR_RECVBUFF * sizeof(struct recv_buf) + 4;
+		n = regsty->recvbuf_nr * sizeof(struct recv_buf) + 4;
 		rtw_mfree(precvpriv->pallocated_recv_buf, n);
 		precvpriv->pallocated_recv_buf = NULL;
 	}
@@ -489,11 +467,15 @@ exit:
  */
 void rtl8188fs_free_recv_priv(PADAPTER padapter)
 {
+	struct registry_priv *regsty;
 	u32			i, n;
 	struct recv_priv	*precvpriv;
 	struct recv_buf		*precvbuf;
 
+	if (!is_primary_adapter(padapter))
+		return;
 
+	regsty = adapter_to_regsty(padapter);
 	precvpriv = &padapter->recvpriv;
 
 	/* 3 1. kill tasklet */
@@ -501,22 +483,35 @@ void rtl8188fs_free_recv_priv(PADAPTER padapter)
 	tasklet_kill(&precvpriv->recv_tasklet);
 #endif
 
+#ifdef CONFIG_SDIO_RECVBUF_PWAIT_RUNTIME_ADJUST
+	do {
+		precvbuf = rtw_dequeue_recvbuf(&precvpriv->free_recv_buf_queue);
+		if (!precvbuf)
+			break;
+
+		if (precvbuf->type == RBUF_TYPE_PWAIT_ADJ) {
+			sdio_freerecvbuf(precvbuf);
+			rtw_mfree(precvbuf, sizeof(*precvbuf) + sizeof(struct rtw_pwait_conf));
+		}
+	} while (1);
+#endif
+
 	/* 3 2. free all recv buffers */
 	precvbuf = (struct recv_buf *)precvpriv->precv_buf;
 	if (precvbuf) {
-		n = NR_RECVBUFF;
+		n = regsty->recvbuf_nr;
 		precvpriv->free_recv_buf_queue_cnt = 0;
 		for (i = 0; i < n ; i++) {
 			rtw_list_delete(&precvbuf->list);
 			rtw_os_recvbuf_resource_free(padapter, precvbuf);
-			freerecvbuf(precvbuf);
+			sdio_freerecvbuf(precvbuf);
 			precvbuf++;
 		}
 		precvpriv->precv_buf = NULL;
 	}
 
 	if (precvpriv->pallocated_recv_buf) {
-		n = NR_RECVBUFF * sizeof(struct recv_buf) + 4;
+		n = regsty->recvbuf_nr * sizeof(struct recv_buf) + 4;
 		rtw_mfree(precvpriv->pallocated_recv_buf, n);
 		precvpriv->pallocated_recv_buf = NULL;
 	}

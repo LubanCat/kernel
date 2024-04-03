@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -24,6 +23,7 @@
 #include <linux/init.h>
 #include <linux/slab.h>
 #include <linux/module.h>
+#include <linux/namei.h>
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 5))
 	#include <linux/kref.h>
 #endif
@@ -32,7 +32,7 @@
 #include <linux/inetdevice.h>
 #include <linux/skbuff.h>
 #include <linux/circ_buf.h>
-#include <linux/uaccess.h>
+#include <asm/uaccess.h>
 #include <asm/byteorder.h>
 #include <asm/atomic.h>
 #include <asm/io.h>
@@ -126,11 +126,6 @@
 
 #ifdef CONFIG_USB_HCI
 	typedef struct urb   *PURB;
-	#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22))
-		#ifdef CONFIG_USB_SUSPEND
-			#define CONFIG_AUTOSUSPEND	1
-		#endif
-	#endif
 #endif
 
 #if defined(CONFIG_RTW_GRO) && (!defined(CONFIG_RTW_NAPI))
@@ -388,6 +383,11 @@ __inline static void _set_timer(_timer *ptimer, u32 delay_time)
 __inline static void _cancel_timer(_timer *ptimer, u8 *bcancelled)
 {
 	*bcancelled = del_timer_sync(&ptimer->timer) == 1 ? 1 : 0;
+}
+
+__inline static void _cancel_timer_async(_timer *ptimer)
+{
+	del_timer(&ptimer->timer);
 }
 
 static inline void _init_workitem(_workitem *pwork, void *pfunc, void *cntx)

@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2019 Realtek Corporation.
@@ -22,7 +21,11 @@
 #define NUM_STA MACID_NUM_SW_LIMIT
 
 #ifndef CONFIG_RTW_MACADDR_ACL
+	#ifdef CONFIG_AP_MODE
 	#define CONFIG_RTW_MACADDR_ACL 1
+	#else
+	#define CONFIG_RTW_MACADDR_ACL 0
+	#endif
 #endif
 
 #ifndef CONFIG_RTW_PRE_LINK_STA
@@ -289,6 +292,7 @@ struct sta_info {
 	u8 rm_diag_token;
 #endif /* CONFIG_RTW_80211K */
 
+	systime	resp_nonenc_eapol_key_starttime;
 	uint	ieee8021x_blocked;	/* 0: allowed, 1:blocked */
 	uint	dot118021XPrivacy; /* aes, tkip... */
 	union Keytype	dot11tkiptxmickey;
@@ -296,6 +300,7 @@ struct sta_info {
 	union Keytype	dot118021x_UncstKey;
 	union pn48		dot11txpn;			/* PN48 used for Unicast xmit */
 	union pn48		dot11rxpn;			/* PN48 used for Unicast recv. */
+	ATOMIC_T	keytrack;
 #ifdef CONFIG_RTW_MESH
 	/* peer's GTK, RX only */
 	u8 group_privacy;
@@ -304,6 +309,7 @@ struct sta_info {
 	union pn48 gtk_pn;
 	#ifdef CONFIG_IEEE80211W
 	/* peer's IGTK, RX only */
+	enum security_type dot11wCipher;
 	u8 igtk_bmp;
 	u8 igtk_id;
 	union Keytype igtk;
@@ -383,6 +389,10 @@ struct sta_info {
 
 	unsigned int expire_to;
 
+	int flags;
+
+	u8 bpairwise_key_installed;
+
 #ifdef CONFIG_AP_MODE
 
 	_list asoc_list;
@@ -393,7 +403,6 @@ struct sta_info {
 	unsigned char chg_txt[128];
 
 	u16 capability;
-	int flags;
 
 	int dot8021xalg;/* 0:disable, 1:psk, 2:802.1x */
 	int wpa_psk;/* 0:disable, bit(0): WPA, bit(1):WPA2 */
@@ -402,7 +411,8 @@ struct sta_info {
 	int wpa_pairwise_cipher;
 	int wpa2_pairwise_cipher;
 
-	u8 bpairwise_key_installed;
+	u32 akm_suite_type;
+
 #ifdef CONFIG_RTW_80211R
 	u8 ft_pairwise_key_installed;
 #endif
@@ -455,9 +465,9 @@ struct sta_info {
 	u8 op_wfd_mode;
 #endif
 
-#ifdef CONFIG_TX_MCAST2UNI
+#if !defined(CONFIG_ACTIVE_KEEP_ALIVE_CHECK) && defined(CONFIG_80211N_HT)
 	u8 under_exist_checking;
-#endif /* CONFIG_TX_MCAST2UNI */
+#endif
 
 	u8 keep_alive_trycnt;
 
@@ -481,6 +491,8 @@ struct sta_info {
 #endif
 
 #ifdef CONFIG_IOCTL_CFG80211
+	u8 *pauth_frame;
+	u32 auth_len;
 	u8 *passoc_req;
 	u32 assoc_req_len;
 #endif
@@ -499,6 +511,11 @@ struct sta_info {
 	u8 curr_rx_rate_bmc;
 #ifdef CONFIG_RTS_FULL_BW
 	bool vendor_8812;
+#endif
+
+#ifdef CONFIG_RTW_TOKEN_BASED_XMIT
+	u8 tbtx_enable;			/* Does this sta_info support & enable TBTX function? */
+//	u8 tbtx_timeslot;		/* This sta_info belong to which time slot.	*/
 #endif
 
 	/*
@@ -690,7 +707,12 @@ struct	sta_priv {
 	#if CONFIG_RTW_PRE_LINK_STA
 	struct pre_link_sta_ctl_t pre_link_sta_ctl;
 	#endif
-
+#ifdef CONFIG_RTW_TOKEN_BASED_XMIT
+	u8 tbtx_asoc_list_cnt;
+	struct sta_info *token_holder[NR_MAXSTA_INSLOT];
+	struct sta_info *last_token_holder;
+	ATOMIC_T nr_token_keeper;
+#endif
 #endif /* CONFIG_AP_MODE */
 
 #ifdef CONFIG_ATMEL_RC_PATCH

@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -51,7 +50,6 @@
 	#define CONFIG_SET_SCAN_DENY_TIMER
 #endif
 
-#define CONFIG_AP_MODE
 #ifdef CONFIG_AP_MODE
 	#define CONFIG_NATIVEAP_MLME
 	#ifndef CONFIG_NATIVEAP_MLME
@@ -60,7 +58,6 @@
 	/* #define CONFIG_FIND_BEST_CHANNEL */
 #endif
 
-#define CONFIG_P2P
 #ifdef CONFIG_P2P
 	/* Added by Albert 20110812 */
 	/* The CONFIG_WFD is for supporting the Wi-Fi display */
@@ -117,6 +114,8 @@
 	#define CONFIG_ACTIVE_KEEP_ALIVE_CHECK
 #endif
 
+#define CONFIG_RX_PACKET_APPEND_FCS
+
 #define CONFIG_RF_POWER_TRIM
 
 #define DISABLE_BB_RF	0
@@ -127,16 +126,23 @@
  * Interface Related Config
  */
 #define CONFIG_SDIO_CHK_HCI_RESUME
-#define CONFIG_TX_AGGREGATION
-#define SDIO_FREE_XMIT_BUF_SEMA
-#define CONFIG_SDIO_RX_COPY
-#define CONFIG_XMIT_THREAD_MODE
-#define CONFIG_SDIO_TX_ENABLE_AVAL_INT
 
+#define CONFIG_SDIO_RX_COPY
 /* #define CONFIG_RECV_THREAD_MODE */
 #ifdef CONFIG_RECV_THREAD_MODE
 #define RTW_RECV_THREAD_HIGH_PRIORITY
 #endif/*CONFIG_RECV_THREAD_MODE*/
+#define CONFIG_SDIO_RECVBUF_AGGREGATION
+#define CONFIG_SDIO_RECVBUF_PWAIT
+#ifdef CONFIG_SDIO_RECVBUF_PWAIT
+#define CONFIG_SDIO_RECVBUF_PWAIT_RUNTIME_ADJUST
+#endif
+
+#define CONFIG_TX_AGGREGATION
+#define SDIO_FREE_XMIT_BUF_SEMA
+#define CONFIG_XMIT_THREAD_MODE
+#define CONFIG_SDIO_TX_ENABLE_AVAL_INT
+
 /*
  * Others
  */
@@ -206,7 +212,7 @@
 #endif /* CONFIG_POWER_SAVING */
 
 #ifdef CONFIG_WOWLAN
-	/* #define CONFIG_GTK_OL */
+	#define CONFIG_GTK_OL
 	/* #define CONFIG_ARP_KEEP_ALIVE */
 #endif /* CONFIG_WOWLAN */
 

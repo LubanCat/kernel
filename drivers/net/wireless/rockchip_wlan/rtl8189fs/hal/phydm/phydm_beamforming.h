@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017  Realtek Corporation.
@@ -46,7 +45,7 @@
 
 #define MAX_BEAMFORMEE_SU 2
 #define MAX_BEAMFORMER_SU 2
-#if (RTL8822B_SUPPORT == 1)
+#if ((RTL8822B_SUPPORT == 1) || (RTL8812F_SUPPORT == 1))
 #define MAX_BEAMFORMEE_MU 6
 #define MAX_BEAMFORMER_MU 1
 #else

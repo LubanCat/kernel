@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -33,6 +32,10 @@
 #if (RTL8822B_SUPPORT || RTL8821C_SUPPORT)
 	#define FAHM_SUPPORT
 #endif
+
+#if (RTL8822C_SUPPORT)
+	#define IFS_CLM_SUPPORT
+#endif
 	#define NHM_SUPPORT
 	#define CLM_SUPPORT
 
@@ -40,8 +43,8 @@
 	#define NHM_DYM_PW_TH_SUPPORT
 #endif
 
-#if (RTL8822B_SUPPORT)
-	/*#define PHYDM_PHYSTAUS_SMP_MODE*/
+#if (RTL8822C_SUPPORT)
+	#define PHYDM_PHYSTAUS_AUTO_SWITCH
 #endif
 
 /*#define PHYDM_TDMA_DIG_SUPPORT*/
@@ -84,6 +87,10 @@
 	#define	PHYDM_MP_SUPPORT
 #endif
 
+#if (RTL8822C_SUPPORT)
+	#define	PHYDM_CCK_RX_PATHDIV_SUPPORT
+#endif
+
 #if (RTL8822B_SUPPORT)
 	#define	PHYDM_TXA_CALIBRATION
 #endif
@@ -101,7 +108,7 @@
 	#define	CONFIG_ADAPTIVE_SOML
 #endif
 
-#if (RTL8192F_SUPPORT == 1)
+#if (RTL8192F_SUPPORT)
 	#define	CONFIG_8912F_SPUR_CALIBRATION
 #endif
 
@@ -138,7 +145,7 @@
 
 #endif
 
-#if (RTL8822C_SUPPORT)
+#if (RTL8822B_SUPPORT || RTL8822C_SUPPORT || RTL8192F_SUPPORT)
 	#define CONFIG_PATH_DIVERSITY
 #endif
 
@@ -153,6 +160,10 @@
 	#define	CONFIG_RECEIVER_BLOCKING
 #endif
 
+#if (RTL8821C_SUPPORT || RTL8822C_SUPPORT || RTL8822B_SUPPORT)
+	#define CONFIG_BW_INDICATION
+#endif
+
 #if (RTL8812A_SUPPORT || RTL8821A_SUPPORT || RTL8881A_SUPPORT ||\
 	RTL8192E_SUPPORT || RTL8723B_SUPPORT)
 	#define	CONFIG_RA_FW_DBG_CODE
@@ -161,9 +172,15 @@
 /* #ifdef CONFIG_SUPPORT_DYNAMIC_TXPWR */
 #define CONFIG_DYNAMIC_TX_TWR
 /* #endif */
+#if (RTL8822C_SUPPORT)
+#define PHYDM_HW_IGI
+#endif
 #define	CONFIG_PSD_TOOL
 #define PHYDM_SUPPORT_ADAPTIVITY
 #define	PHYDM_SUPPORT_CCKPD
+#if (defined(PHYDM_SUPPORT_CCKPD) && RTL8822C_SUPPORT)
+	#define PHYDM_DCC_ENHANCE
+#endif
 /*#define	CONFIG_RA_DYNAMIC_RTY_LIMIT*/
 #define CONFIG_ANT_DETECTION
 #define	CONFIG_BB_TXBF_API
@@ -193,5 +210,7 @@
 #if (RTL8822C_SUPPORT)
 	#define CONFIG_MU_RSOML
 #endif
+
+/*#define RA_MASK_BY_RX_UTILITY*/
 
 #endif

@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -401,6 +400,9 @@ void _InitWMACSetting(PADAPTER padapter)
 		| RCR_CBSSID_DATA | RCR_CBSSID_BCN | RCR_AMF
 		| RCR_HTC_LOC_CTRL
 		| RCR_APP_PHYST_RXFF | RCR_APP_ICV | RCR_APP_MIC
+		#ifdef CONFIG_RX_PACKET_APPEND_FCS
+		| RCR_APPFCS
+		#endif
 		#ifdef CONFIG_MAC_LOOPBACK_DRIVER
 		| RCR_AAP
 		| RCR_ADD3 | RCR_APWRMGT | RCR_ACRC32 | RCR_ADF
@@ -437,18 +439,11 @@ void _InitAdaptiveCtrl(PADAPTER padapter)
 	value32 &= ~RATE_BITMAP_ALL;
 	value32 |= RATE_RRSR_CCK_ONLY_1M;
 
-	#ifdef RTW_DYNAMIC_RRSR
-		rtw_phydm_set_rrsr(padapter, value32, TRUE);
-	#else
-		rtw_write32(padapter, REG_RRSR, value32);
-	#endif
+	rtw_phydm_set_rrsr(padapter, value32, TRUE);
+
 
 	/* CF-END Threshold */
 	/* m_spIoBase->rtw_write8(REG_CFEND_TH, 0x1); */
-
-	/* SIFS (used in NAV) */
-	value16 = _SPEC_SIFS_CCK(0x10) | _SPEC_SIFS_OFDM(0x10);
-	rtw_write16(padapter, REG_SPEC_SIFS, value16);
 
 	/* Retry Limit */
 	value16 = BIT_LRL(RL_VAL_STA) | BIT_SRL(RL_VAL_STA);
@@ -457,16 +452,6 @@ void _InitAdaptiveCtrl(PADAPTER padapter)
 
 void _InitEDCA(PADAPTER padapter)
 {
-	/* Set Spec SIFS (used in NAV) */
-	rtw_write16(padapter, REG_SPEC_SIFS, 0x100a);
-	rtw_write16(padapter, REG_MAC_SPEC_SIFS, 0x100a);
-
-	/* Set SIFS for CCK */
-	rtw_write16(padapter, REG_SIFS_CTX, 0x100a);
-
-	/* Set SIFS for OFDM */
-	rtw_write16(padapter, REG_SIFS_TRX, 0x100a);
-
 	/* TXOP */
 	rtw_write32(padapter, REG_EDCA_BE_PARAM, 0x005EA42B);
 	rtw_write32(padapter, REG_EDCA_BK_PARAM, 0x0000A44F);
@@ -941,41 +926,12 @@ static u32 rtl8188fs_hal_init(PADAPTER padapter)
 	{
 		pwrctrlpriv->rf_pwrstate = rf_on;
 
-		if (pwrctrlpriv->rf_pwrstate == rf_on) {
-			struct pwrctrl_priv *pwrpriv;
-			systime start_time;
-			u8 restore_iqk_rst;
-			u8 b2Ant;
-			u8 h2cCmdBuf;
+		/*phy_lc_calibrate_8188f(&pHalData->odmpriv);*/
+		halrf_lck_trigger(&pHalData->odmpriv);
 
-			pwrpriv = adapter_to_pwrctl(padapter);
+		pHalData->neediqk_24g = _TRUE;
 
-			/*phy_lc_calibrate_8188f(&pHalData->odmpriv);*/
-			halrf_lck_trigger(&pHalData->odmpriv);
-
-			#ifdef CONFIG_BT_COEXIST
-			/* Inform WiFi FW that it is the beginning of IQK */
-			h2cCmdBuf = 1;
-			FillH2CCmd8188F(padapter, H2C_8188F_BT_WLAN_CALIBRATION, 1, &h2cCmdBuf);
-
-			start_time = rtw_get_current_time();
-			do {
-				if (rtw_read8(padapter, 0x1e7) & 0x01)
-					break;
-
-				rtw_msleep_os(50);
-			} while (rtw_get_passing_time_ms(start_time) <= 400);
-			#endif
-			
-			pHalData->neediqk_24g = _TRUE;
-			#ifdef CONFIG_BT_COEXIST
-			/* Inform WiFi FW that it is the finish of IQK */
-			h2cCmdBuf = 0;
-			FillH2CCmd8188F(padapter, H2C_8188F_BT_WLAN_CALIBRATION, 1, &h2cCmdBuf);
-			#endif
-
-			odm_txpowertracking_check(&pHalData->odmpriv);
-		}
+		odm_txpowertracking_check(&pHalData->odmpriv);
 	}
 
 

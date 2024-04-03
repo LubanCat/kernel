@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -260,13 +259,16 @@ __inline  static uint get_WLAN_BSSID_EX_sz(WLAN_BSSID_EX *bss)
 struct beacon_keys {
 	u8 ssid[IW_ESSID_MAX_SIZE];
 	u32 ssid_len;
-	u8 bcn_channel;
-	u16 ht_cap_info;
-	u8 ht_info_infos_0_sco; /* bit0 & bit1 in infos[0] is second channel offset */
+	u8 ch;
+	u8 bw;
+	u8 offset;
+	u8 proto_cap; /* PROTO_CAP_XXX */
+	u8 rate_set[12];
+	u8 rate_num;
 	int encryp_protocol;
 	int pairwise_cipher;
 	int group_cipher;
-	int is_8021x;
+	u32 akm;
 };
 
 struct	wlan_network {
@@ -286,7 +288,6 @@ struct	wlan_network {
 	struct beacon_keys bcn_keys;
 	bool bcn_keys_valid;
 	WLAN_BSSID_EX	network; /* must be the last item */
-	WLAN_BCN_INFO	BcnInfo;
 };
 
 enum VRTL_CARRIER_SENSE {

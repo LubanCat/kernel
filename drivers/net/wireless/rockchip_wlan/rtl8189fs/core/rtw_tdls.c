@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -533,10 +532,9 @@ u8 *rtw_tdls_set_ht_cap(_adapter *padapter, u8 *pframe, struct pkt_attrib *pattr
 void rtw_tdls_process_vht_cap(_adapter *padapter, struct sta_info *ptdls_sta, u8 *data, u8 Length)
 {
 	struct rf_ctl_t *rfctl = adapter_to_rfctl(padapter);
-	struct hal_spec_t *hal_spec = GET_HAL_SPEC(padapter);
 	struct mlme_priv		*pmlmepriv = &padapter->mlmepriv;
 	struct vht_priv			*pvhtpriv = &pmlmepriv->vhtpriv;
-	u8	cur_ldpc_cap = 0, cur_stbc_cap = 0, rf_type = RF_1T1R, tx_nss = 0;
+	u8	cur_ldpc_cap = 0, cur_stbc_cap = 0, tx_nss = 0;
 	u16 cur_beamform_cap = 0;
 	u8	*pcap_mcs;
 
@@ -609,8 +607,7 @@ void rtw_tdls_process_vht_cap(_adapter *padapter, struct sta_info *ptdls_sta, u8
 	ptdls_sta->vhtpriv.ampdu_len = GET_VHT_CAPABILITY_ELE_MAX_RXAMPDU_FACTOR(data);
 
 	pcap_mcs = GET_VHT_CAPABILITY_ELE_RX_MCS(data);
-	rtw_hal_get_hwreg(padapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
-	tx_nss = rtw_min(rf_type_to_rf_tx_cnt(rf_type), hal_spec->tx_nss_num);
+	tx_nss = GET_HAL_TX_NSS(padapter);
 	rtw_vht_nss_to_mcsmap(tx_nss, ptdls_sta->vhtpriv.vht_mcs_map, pcap_mcs);
 	ptdls_sta->vhtpriv.vht_highest_rate = rtw_get_vht_highest_rate(ptdls_sta->vhtpriv.vht_mcs_map);
 }
@@ -1817,9 +1814,9 @@ int On_TDLS_Dis_Rsp(_adapter *padapter, union recv_frame *precv_frame)
 			issue_tdls_setup_req(padapter, &txmgmt, _FALSE);
 		}
 	}
+exit:
 #endif /* CONFIG_TDLS_AUTOSETUP */
 
-exit:
 	return ret;
 
 }
@@ -1914,13 +1911,15 @@ sint On_TDLS_Setup_Req(_adapter *padapter, union recv_frame *precv_frame, struct
 
 			switch (pIE->ElementID) {
 			case _SUPPORTEDRATES_IE_:
-				_rtw_memcpy(supportRate, pIE->data, pIE->Length);
-				supportRateNum = pIE->Length;
+				if (pIE->Length <= sizeof(supportRate)) {
+					_rtw_memcpy(supportRate, pIE->data, pIE->Length);
+					supportRateNum = pIE->Length;
+				}
 				break;
 			case _COUNTRY_IE_:
 				break;
 			case _EXT_SUPPORTEDRATES_IE_:
-				if (supportRateNum < sizeof(supportRate)) {
+				if ((supportRateNum + pIE->Length) <= sizeof(supportRate)) {
 					_rtw_memcpy(supportRate + supportRateNum, pIE->data, pIE->Length);
 					supportRateNum += pIE->Length;
 				}
@@ -1931,17 +1930,19 @@ sint On_TDLS_Setup_Req(_adapter *padapter, union recv_frame *precv_frame, struct
 				rsnie_included = 1;
 				if (prx_pkt_attrib->encrypt) {
 					prsnie = (u8 *)pIE;
-					/* Check CCMP pairwise_cipher presence. */
-					ppairwise_cipher = prsnie + 10;
-					_rtw_memcpy(ptdls_sta->TDLS_RSNIE, pIE->data, pIE->Length);
-					pairwise_count = *(u16 *)(ppairwise_cipher - 2);
-					for (k = 0; k < pairwise_count; k++) {
-						if (_rtw_memcmp(ppairwise_cipher + 4 * k, RSN_CIPHER_SUITE_CCMP, 4) == _TRUE)
-							ccmp_included = 1;
-					}
+					if (pIE->Length <= sizeof(ptdls_sta->TDLS_RSNIE)) {
+						/* Check CCMP pairwise_cipher presence. */
+						ppairwise_cipher = prsnie + 10;
+						_rtw_memcpy(ptdls_sta->TDLS_RSNIE, pIE->data, pIE->Length);
+						pairwise_count = *(u16 *)(ppairwise_cipher - 2);
+						for (k = 0; k < pairwise_count; k++) {
+							if (_rtw_memcmp(ppairwise_cipher + 4 * k, RSN_CIPHER_SUITE_CCMP, 4) == _TRUE)
+								ccmp_included = 1;
+						}
 
-					if (ccmp_included == 0)
-						txmgmt.status_code = _STATS_INVALID_RSNIE_;
+						if (ccmp_included == 0)
+							txmgmt.status_code = _STATS_INVALID_RSNIE_;
+					}
 				}
 				break;
 			case _EXT_CAP_IE_:
@@ -2096,13 +2097,15 @@ int On_TDLS_Setup_Rsp(_adapter *padapter, union recv_frame *precv_frame, struct 
 
 		switch (pIE->ElementID) {
 		case _SUPPORTEDRATES_IE_:
-			_rtw_memcpy(supportRate, pIE->data, pIE->Length);
-			supportRateNum = pIE->Length;
+			if (pIE->Length <= sizeof(supportRate)) {
+				_rtw_memcpy(supportRate, pIE->data, pIE->Length);
+				supportRateNum = pIE->Length;
+			}
 			break;
 		case _COUNTRY_IE_:
 			break;
 		case _EXT_SUPPORTEDRATES_IE_:
-			if (supportRateNum < sizeof(supportRate)) {
+			if ((supportRateNum + pIE->Length) <= sizeof(supportRate)) {
 				_rtw_memcpy(supportRate + supportRateNum, pIE->data, pIE->Length);
 				supportRateNum += pIE->Length;
 			}
@@ -2202,7 +2205,7 @@ int On_TDLS_Setup_Rsp(_adapter *padapter, union recv_frame *precv_frame, struct 
 
 			if (ptdls_sta->tdls_sta_state & TDLS_RESPONDER_STATE) {
 				ptdls_sta->tdls_sta_state |= TDLS_LINKED_STATE;
-				ptdls_sta->state |= _FW_LINKED;
+				ptdls_sta->state |= WIFI_ASOC_STATE;
 				_cancel_timer_ex(&ptdls_sta->handshake_timer);
 			}
 
@@ -2319,7 +2322,7 @@ int On_TDLS_Setup_Cfm(_adapter *padapter, union recv_frame *precv_frame, struct 
 
 		if (ptdls_sta->tdls_sta_state & TDLS_INITIATOR_STATE) {
 			ptdls_sta->tdls_sta_state |= TDLS_LINKED_STATE;
-			ptdls_sta->state |= _FW_LINKED;
+			ptdls_sta->state |= WIFI_ASOC_STATE;
 			_cancel_timer_ex(&ptdls_sta->handshake_timer);
 		}
 
@@ -2771,7 +2774,7 @@ void wfd_ie_tdls(_adapter *padapter, u8 *pframe, u32 *pktlen)
 
 	/* Value: */
 	/* Associated BSSID */
-	if (check_fwstate(pmlmepriv, _FW_LINKED) == _TRUE)
+	if (check_fwstate(pmlmepriv, WIFI_ASOC_STATE) == _TRUE)
 		_rtw_memcpy(wfdie + wfdielen, &pmlmepriv->assoc_bssid[0], ETH_ALEN);
 	else
 		_rtw_memset(wfdie + wfdielen, 0x00, ETH_ALEN);

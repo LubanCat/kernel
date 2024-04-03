@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -203,6 +202,10 @@ BOOLEAN efuse_IsMasked(PADAPTER pAdapter, u16 Offset)
 	if (IS_HARDWARE_TYPE_8822C(pAdapter))
 		return (IS_MASKED(8822C, _MUSB, Offset)) ? TRUE : FALSE;
 #endif
+#if defined(CONFIG_RTL8814B)
+	if (IS_HARDWARE_TYPE_8814B(pAdapter))
+		return (IS_MASKED(8814B, _MUSB, Offset)) ? TRUE : FALSE;
+#endif
 #endif /*CONFIG_USB_HCI*/
 
 #ifdef CONFIG_PCI_HCI
@@ -246,6 +249,10 @@ BOOLEAN efuse_IsMasked(PADAPTER pAdapter, u16 Offset)
 #if defined(CONFIG_RTL8822C)
 	if (IS_HARDWARE_TYPE_8822C(pAdapter))
 		return (IS_MASKED(8822C, _MPCIE, Offset)) ? TRUE : FALSE;
+#endif
+#if defined(CONFIG_RTL8814B)
+	if (IS_HARDWARE_TYPE_8814B(pAdapter))
+		return (IS_MASKED(8814B, _MPCIE, Offset)) ? TRUE : FALSE;
 #endif
 #endif /*CONFIG_PCI_HCI*/
 
@@ -351,6 +358,10 @@ void rtw_efuse_mask_array(PADAPTER pAdapter, u8 *pArray)
 	if (IS_HARDWARE_TYPE_8822C(pAdapter))
 		GET_MASK_ARRAY(8822C, _MUSB, pArray);
 #endif
+#if defined(CONFIG_RTL8814B)
+	if (IS_HARDWARE_TYPE_8814B(pAdapter))
+		GET_MASK_ARRAY(8814B, _MUSB, pArray);
+#endif
 #endif /*CONFIG_USB_HCI*/
 
 #ifdef CONFIG_PCI_HCI
@@ -393,6 +404,10 @@ void rtw_efuse_mask_array(PADAPTER pAdapter, u8 *pArray)
 #if defined(CONFIG_RTL8822C)
 	if (IS_HARDWARE_TYPE_8822C(pAdapter))
 		GET_MASK_ARRAY(8822C, _MPCIE, pArray);
+#endif
+#if defined(CONFIG_RTL8814B)
+	if (IS_HARDWARE_TYPE_8814B(pAdapter))
+		GET_MASK_ARRAY(8814B, _MPCIE, pArray);
 #endif
 #endif /*CONFIG_PCI_HCI*/
 
@@ -442,7 +457,6 @@ void rtw_efuse_mask_array(PADAPTER pAdapter, u8 *pArray)
 
 u16 rtw_get_efuse_mask_arraylen(PADAPTER pAdapter)
 {
-	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(pAdapter);
 
 #ifdef CONFIG_USB_HCI
 #if defined(CONFIG_RTL8188E)
@@ -497,6 +511,11 @@ u16 rtw_get_efuse_mask_arraylen(PADAPTER pAdapter)
 	if (IS_HARDWARE_TYPE_8822C(pAdapter))
 		return GET_MASK_ARRAY_LEN(8822C, _MUSB);
 #endif
+#if defined(CONFIG_RTL8814B)
+	if (IS_HARDWARE_TYPE_8814B(pAdapter)) {
+		return GET_MASK_ARRAY_LEN(8814B, _MUSB);
+	}
+#endif
 #endif /*CONFIG_USB_HCI*/
 
 #ifdef CONFIG_PCI_HCI
@@ -539,6 +558,10 @@ u16 rtw_get_efuse_mask_arraylen(PADAPTER pAdapter)
 #if defined(CONFIG_RTL8822C)
 	if (IS_HARDWARE_TYPE_8822C(pAdapter))
 		return GET_MASK_ARRAY_LEN(8822C, _MPCIE);
+#endif
+#if defined(CONFIG_RTL8814B)
+	if (IS_HARDWARE_TYPE_8814B(pAdapter))
+		return GET_MASK_ARRAY_LEN(8814B, _MPCIE);
 #endif
 #endif /*CONFIG_PCI_HCI*/
 
@@ -681,7 +704,6 @@ void rtw_efuse_analyze(PADAPTER	padapter, u8 Type, u8 Fake)
 	u16	eFuse_Addr = 0;
 	u8 offset, wden;
 	u16	 i, j;
-	u8	u1temp = 0;
 	u8	efuseHeader = 0, efuseExtHdr = 0, efuseData[EFUSE_MAX_WORD_UNIT*2] = {0}, dataCnt = 0;
 	u16	efuseHeader2Byte = 0;
 	u8	*eFuseWord = NULL;// [EFUSE_MAX_SECTION_NUM][EFUSE_MAX_WORD_UNIT];
@@ -700,6 +722,11 @@ void rtw_efuse_analyze(PADAPTER	padapter, u8 Type, u8 Fake)
 	u8	ParseEfuseExtHdr, ParseEfuseHeader, ParseOffset, ParseWDEN, ParseOffset2_0;
 
 	eFuseWord = rtw_zmalloc(EFUSE_MAX_SECTION_NUM * (EFUSE_MAX_WORD_UNIT * 2));
+
+	if (eFuseWord == NULL) {
+		RTW_INFO("%s:rtw_zmalloc eFuseWord = NULL !!\n", __func__);
+		return;
+	}
 
 	RTW_INFO("\n");
 	if (Type == 0) {
@@ -1222,6 +1249,7 @@ exit:
 	return status;
 }
 
+
 u8 rtw_efuse_map_write(PADAPTER adapter, u16 addr, u16 cnts, u8 *data)
 {
 	struct dvobj_priv *d;
@@ -1566,7 +1594,7 @@ exit:
 	if (efuse)
 		rtw_mfree(efuse, mapLen);
 	if (map)
-	rtw_mfree(map, mapLen);
+		rtw_mfree(map, mapLen);
 	return ret;
 }
 
@@ -3280,7 +3308,7 @@ int retriveAdaptorInfoFile(char *path, u8 *efuse_data)
 }
 #endif /* CONFIG_ADAPTOR_INFO_CACHING_FILE */
 
-u8 rtw_efuse_file_read(PADAPTER padapter, u8 *filepatch, u8 *buf, u32 len)
+u8 rtw_efuse_file_read(PADAPTER padapter, u8 *filepath, u8 *buf, u32 len)
 {
 	char *ptmpbuf = NULL, *ptr;
 	u8 val8;
@@ -3292,27 +3320,24 @@ u8 rtw_efuse_file_read(PADAPTER padapter, u8 *filepatch, u8 *buf, u32 len)
 	if (ptmpbuf == NULL)
 		return _FALSE;
 
-	count = rtw_retrieve_from_file(filepatch, ptmpbuf, bufsize);
+	count = rtw_retrieve_from_file(filepath, ptmpbuf, bufsize);
 	if (count <= 90) {
 		rtw_mfree(ptmpbuf, bufsize);
-		RTW_ERR("%s, filepatch %s, size=%d, FAIL!!\n", __FUNCTION__, filepatch, count);
+		RTW_ERR("%s, filepatch %s, size=%d, FAIL!!\n", __FUNCTION__, filepath, count);
 		return _FALSE;
 	}
-
 	i = 0;
 	j = 0;
 	ptr = ptmpbuf;
 	while ((j < len) && (i < count)) {
 		if (ptmpbuf[i] == '\0')
 			break;
-
 		ptr = strpbrk(&ptmpbuf[i], " \t\n\r");
 		if (ptr) {
 			if (ptr == &ptmpbuf[i]) {
 				i++;
 				continue;
 			}
-
 			/* Add string terminating null */
 			*ptr = 0;
 		} else {
@@ -3327,13 +3352,48 @@ u8 rtw_efuse_file_read(PADAPTER padapter, u8 *filepatch, u8 *buf, u32 len)
 			RTW_DBG("i=%d, j=%d, 0x%02x\n", i, j, buf[j]);
 			j++;
 		}
-
 		i = ptr - ptmpbuf + 1;
 	}
-
 	rtw_mfree(ptmpbuf, bufsize);
-	RTW_INFO("%s, filepatch %s, size=%d, done\n", __FUNCTION__, filepatch, count);
+	RTW_INFO("%s, filepatch %s, size=%d, done\n", __FUNCTION__, filepath, count);
 	return _TRUE;
+}
+
+
+u8 rtw_efuse_file_store(PADAPTER padapter, u8 *filepath, u8 *buf, u32 len)
+{
+	int err = 0, i = 0, j = 0, mapLen = 0 ;
+	char *cbuf, *pchr;
+
+	cbuf = rtw_zmalloc(len * 3);
+	pchr = cbuf;
+
+	if (filepath && buf) {
+		if (cbuf == NULL) {
+			RTW_INFO("%s, malloc cbuf _FAIL\n", __FUNCTION__);
+			err = _FAIL;
+		} else {
+			for (i = 0; i <= len; i += 16) {
+				for (j = 0; j < 16; j++)
+					pchr += sprintf(pchr, "%02X ", buf[i + j]);
+				pchr += sprintf(pchr, "\n");
+			}
+
+			err = rtw_store_to_file(filepath, cbuf, strlen(cbuf));
+			RTW_INFO("%s, rtw_store_to_file len=%d,err =%d, len(cbuf)=%zd\n", __FUNCTION__, len, err, strlen(cbuf));
+			if (err == strlen(cbuf)) {
+				err = _SUCCESS;
+				RTW_INFO("%s, filepatch %s, len=%d, done\n", __FUNCTION__, filepath, len);
+			} else {
+				err = _FAIL;
+				RTW_INFO("%s, filepatch %s, len=%d,err =%d, _FAIL\n", __FUNCTION__, filepath, len, err);
+			}
+		}
+	}
+	if (cbuf)
+		rtw_mfree(cbuf, len * 3);
+
+	return err;
 }
 
 #ifdef CONFIG_EFUSE_CONFIG_FILE
@@ -3438,7 +3498,7 @@ u32 rtw_read_macaddr_from_file(const char *path, u8 *buf)
 	u32 ret = _FAIL;
 
 	u8 file_data[17];
-	u32 read_size, pos = 0;
+	u32 read_size;
 	u8 addr[ETH_ALEN];
 
 	if (rtw_is_file_readable(path) != _TRUE) {

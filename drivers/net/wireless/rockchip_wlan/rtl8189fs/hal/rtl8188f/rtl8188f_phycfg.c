@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -330,9 +329,6 @@ PHY_QueryRFReg_8188F(
 {
 	u32 Original_Value, Readback_Value, BitShift;
 
-        if (eRFPath >= MAX_RF_PATH)
-                return 0;
-
 #if (DISABLE_BB_RF == 1)
 	return 0;
 #endif
@@ -373,9 +369,6 @@ PHY_SetRFReg_8188F(
 )
 {
 	u32		Original_Value, BitShift;
-
-        if (eRFPath >= MAX_RF_PATH)
-                return;
 
 #if (DISABLE_BB_RF == 1)
 	return;
@@ -431,6 +424,27 @@ s32 PHY_MACConfig8188F(PADAPTER Adapter)
 		rtStatus = _SUCCESS;
 #endif/*CONFIG_EMBEDDED_FWIMG */
 	}
+
+#ifdef RTW_SIFS_INIT_BY_CORE
+	/* Set Spec SIFS (used in NAV) */
+	rtw_write16(Adapter, REG_SPEC_SIFS, 0x100a);
+	rtw_write16(Adapter, REG_MAC_SPEC_SIFS, 0x100a);
+
+	/* Set SIFS for CCK */
+	rtw_write16(Adapter, REG_SIFS_CTX, 0x100a);
+
+	/* Set SIFS for OFDM */
+	rtw_write16(Adapter, REG_SIFS_TRX, 0x100a);
+
+	/* RESP_SIFS for CCK */
+	rtw_write8(Adapter, REG_RESP_SIFS_CCK, 0x08); /* SIFS_T2T_CCK (0x08) */
+	rtw_write8(Adapter, REG_RESP_SIFS_CCK + 1, 0x08); /*SIFS_R2T_CCK(0x08) */
+	/* RESP_SIFS for OFDM */
+	rtw_write8(Adapter, REG_RESP_SIFS_OFDM, 0x0a); /* SIFS_T2T_OFDM (0x0a) */
+	rtw_write8(Adapter, REG_RESP_SIFS_OFDM + 1, 0x0a); /* SIFS_R2T_OFDM(0x0a) */
+#endif
+
+	rtw_hal_init_sifs_backup(Adapter);
 
 	return rtStatus;
 }
@@ -645,7 +659,6 @@ PHY_RFConfig8188F(
 		PADAPTER	Adapter
 )
 {
-	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(Adapter);
 	int		rtStatus = _SUCCESS;
 
 	/* */
@@ -683,6 +696,51 @@ PHY_ConfigRFWithParaFile_8188F(
 	return _SUCCESS;
 }
 
+#ifdef CONFIG_FW_OFFLOAD_SET_TXPWR_IDX
+bool phy_set_txpwr_idx_offload(_adapter *adapter)
+{
+	return GET_HAL_DATA(adapter)->intf_start
+		#ifdef CONFIG_MP_INCLUDED
+		&& !rtw_mp_mode_check(adapter)
+		#endif
+		;
+}
+
+s32 rtw_hal_h2c_txpwr_idx_offload(_adapter *adapter)
+{
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
+	u8 data[H2C_TXPWR_IDX_OFFLOAD_LEN] = {0};
+	s32 ret;
+
+	_rtw_memcpy(data, hal_data->txpwr_idx_offload_buf, 3);
+	SET_H2CCMD_TXPWR_IDX_EN(data, 1);
+
+	ret = rtw_hal_fill_h2c_cmd(adapter, H2C_TXPWR_IDX_OFFLOAD, H2C_TXPWR_IDX_OFFLOAD_LEN, data);
+	if (ret != _SUCCESS)
+		RTW_WARN("%s fail\n", __func__);
+
+	return ret;
+}
+
+s32 phy_set_txpwr_offload_8188f(_adapter *adapter)
+{
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
+	struct submit_ctx *sctx = &hal_data->txpwr_idx_offload_sctx;
+	s32 ret = _SUCCESS;
+
+	rtw_sctx_init(sctx, 500);
+	ret = rtw_hal_h2c_txpwr_idx_offload(adapter);
+	if (ret != _SUCCESS)
+		goto exit;
+
+	/* wait till rpt done or timeout */
+	ret = c2h_txpwr_idx_offload_wait(adapter);
+
+exit:
+	return ret;
+}
+#endif /* CONFIG_FW_OFFLOAD_SET_TXPWR_IDX */
+
 /**************************************************************************************************************
  *   Description:
  *       The low-level interface to set TxAGC , called by both MP and Normal Driver.
@@ -698,6 +756,21 @@ PHY_SetTxPowerIndex_8188F(
 		u8					Rate
 )
 {
+#ifdef CONFIG_FW_OFFLOAD_SET_TXPWR_IDX
+	if (phy_set_txpwr_idx_offload(Adapter)) {
+		HAL_DATA_TYPE *hal_data = GET_HAL_DATA(Adapter);
+
+		if (Rate == MGN_11M)
+			hal_data->txpwr_idx_offload_buf[CCK] = PowerIndex;
+		else if (Rate == MGN_54M)
+			hal_data->txpwr_idx_offload_buf[OFDM] = PowerIndex;
+		else if (Rate == MGN_MCS7)
+			hal_data->txpwr_idx_offload_buf[HT_1SS] = PowerIndex;
+
+		return;
+	}
+#endif
+
 	if (RFPath == RF_PATH_A || RFPath == RF_PATH_B) {
 		switch (Rate) {
 		case MGN_1M:
@@ -772,44 +845,6 @@ PHY_SetTxPowerIndex_8188F(
 	}
 }
 
-u8
-PHY_GetTxPowerIndex_8188F(
-		PADAPTER			pAdapter,
-		enum rf_path			RFPath,
-		u8					Rate,
-		u8					BandWidth,
-		u8					Channel,
-	struct txpwr_idx_comp *tic
-)
-{
-	PHAL_DATA_TYPE pHalData = GET_HAL_DATA(pAdapter);
-	struct hal_spec_t *hal_spec = GET_HAL_SPEC(pAdapter);
-	s16 power_idx;
-	u8 pg = 0;
-	s8 by_rate_diff = 0, limit = 0, tpt_offset = 0;
-	BOOLEAN bIn24G = _FALSE;
-
-	pg = phy_get_pg_txpwr_idx(pAdapter, RFPath, Rate, RF_1TX, BandWidth, Channel, &bIn24G);
-
-	by_rate_diff = PHY_GetTxPowerByRate(pAdapter, BAND_ON_2_4G, RFPath, Rate);
-	limit = PHY_GetTxPowerLimit(pAdapter, NULL, (u8)(!bIn24G), pHalData->current_channel_bw, RFPath, Rate, RF_1TX, pHalData->current_channel);
-
-	tpt_offset = PHY_GetTxPowerTrackingOffset(pAdapter, RFPath, Rate);
-
-	if (tic)
-		txpwr_idx_comp_set(tic, RF_1TX, pg, by_rate_diff, limit, tpt_offset, 0, 0, 0);
-
-	by_rate_diff = by_rate_diff > limit ? limit : by_rate_diff;
-	power_idx = pg + by_rate_diff + tpt_offset;
-
-	if (power_idx < 0)
-		power_idx = 0;
-	else if (power_idx > hal_spec->txgi_max)
-		power_idx = hal_spec->txgi_max;
-
-	return power_idx;
-}
-
 void
 PHY_SetTxPowerLevel8188F(
 		PADAPTER		Adapter,
@@ -817,6 +852,16 @@ PHY_SetTxPowerLevel8188F(
 )
 {
 	phy_set_tx_power_level_by_path(Adapter, Channel, RF_PATH_A);
+}
+
+void rtl8188f_set_txpwr_done(_adapter *adapter)
+{
+	/* TODO: for not offload case */
+
+#ifdef CONFIG_FW_OFFLOAD_SET_TXPWR_IDX
+	if (phy_set_txpwr_idx_offload(adapter))
+		phy_set_txpwr_offload_8188f(adapter);
+#endif
 }
 
 /* A workaround to eliminate the 2400MHz, 2440MHz, 2480MHz spur of 8188F. (Asked by David.) */
@@ -1162,48 +1207,6 @@ phy_SwChnl8188F(
 }
 
 void
-phy_SwChnlAndSetBwMode8188F(
-	PADAPTER		Adapter
-)
-{
-	HAL_DATA_TYPE		*pHalData = GET_HAL_DATA(Adapter);
-
-	if (Adapter->bNotifyChannelChange) {
-		RTW_INFO("[%s] bSwChnl=%d, ch=%d, bSetChnlBW=%d, bw=%d\n",
-			 __func__,
-			 pHalData->bSwChnl,
-			 pHalData->current_channel,
-			 pHalData->bSetChnlBW,
-			 pHalData->current_channel_bw);
-	}
-
-	if (RTW_CANNOT_RUN(Adapter))
-		return;
-
-	if (pHalData->bSwChnl) {
-		phy_SwChnl8188F(Adapter);
-		pHalData->bSwChnl = _FALSE;
-	}
-
-	if (pHalData->bSetChnlBW) {
-		phy_PostSetBwMode8188F(Adapter);
-		pHalData->bSetChnlBW = _FALSE;
-	}
-
-	if (pHalData->bNeedIQK == _TRUE) {
-		if (pHalData->neediqk_24g == _TRUE) {
-
-			halrf_iqk_trigger(&pHalData->odmpriv, _FALSE);
-			pHalData->bIQKInitialized = _TRUE;
-			pHalData->neediqk_24g = _FALSE;
-		}
-		pHalData->bNeedIQK = _FALSE;
-	}
-
-	rtw_hal_set_tx_power_level(Adapter, pHalData->current_channel);
-}
-
-void
 PHY_HandleSwChnlAndSetBW8188F(
 		PADAPTER			Adapter,
 		BOOLEAN				bSwitchChannel,
@@ -1215,17 +1218,7 @@ PHY_HandleSwChnlAndSetBW8188F(
 		u8					CenterFrequencyIndex1
 )
 {
-	/*static BOOLEAN		bInitialzed = _FALSE; */
-	PHAL_DATA_TYPE		pHalData = GET_HAL_DATA(Adapter);
-	u8					tmpChannel = pHalData->current_channel;
-	enum channel_width	tmpBW = pHalData->current_channel_bw;
-	u8					tmpnCur40MhzPrimeSC = pHalData->nCur40MhzPrimeSC;
-	u8					tmpnCur80MhzPrimeSC = pHalData->nCur80MhzPrimeSC;
-	u8					tmpCenterFrequencyIndex1 = pHalData->CurrentCenterFrequencyIndex1;
-	struct mlme_ext_priv	*pmlmeext = &Adapter->mlmeextpriv;
-
-	/* RTW_INFO("=> PHY_HandleSwChnlAndSetBW8188F: bSwitchChannel %d, bSetBandWidth %d\n", bSwitchChannel, bSetBandWidth); */
-	/* RTW_INFO("=> %s: ChnlWidth %d\n", __func__, ChnlWidth); */
+	PHAL_DATA_TYPE pHalData = GET_HAL_DATA(Adapter);
 
 	/*check is swchnl or setbw */
 	if (!bSwitchChannel && !bSetBandWidth) {
@@ -1233,85 +1226,57 @@ PHY_HandleSwChnlAndSetBW8188F(
 		return;
 	}
 
+	if (RTW_CANNOT_RUN(Adapter))
+		return;
+
 	/*skip change for channel or bandwidth is the same */
 	if (bSwitchChannel) {
-		/*if(pHalData->current_channel != ChannelNum) */
-		{
+		if (pHalData->current_channel != ChannelNum) {
 			if (HAL_IsLegalChannel(Adapter, ChannelNum))
 				pHalData->bSwChnl = _TRUE;
 		}
 	}
 
 	if (bSetBandWidth) {
-#if 0
-		if (bInitialzed == _FALSE) {
-			bInitialzed = _TRUE;
+		if ((pHalData->current_channel_bw != ChnlWidth) || (pHalData->nCur40MhzPrimeSC != ExtChnlOffsetOf40MHz) || (pHalData->CurrentCenterFrequencyIndex1 != CenterFrequencyIndex1))
 			pHalData->bSetChnlBW = _TRUE;
-		} else if ((pHalData->current_channel_bw != ChnlWidth) || (pHalData->nCur40MhzPrimeSC != ExtChnlOffsetOf40MHz) || (pHalData->CurrentCenterFrequencyIndex1 != CenterFrequencyIndex1))
-			pHalData->bSetChnlBW = _TRUE;
-#else
-		pHalData->bSetChnlBW = _TRUE;
-#endif
 	}
 
-	if (!pHalData->bSetChnlBW && !pHalData->bSwChnl) {
-		/* RTW_INFO("<= PHY_HandleSwChnlAndSetBW8188F: bSwChnl %d, bSetChnlBW %d\n", pHalData->bSwChnl, pHalData->bSetChnlBW); */
-		return;
-	}
+	if (Adapter->bNotifyChannelChange)
+		RTW_INFO("[%s] bSwChnl=%d, ch=%d, bSetChnlBW=%d, bw=%d\n", __func__,
+			 pHalData->bSwChnl, ChannelNum, pHalData->bSetChnlBW, ChnlWidth);
 
+	if (!pHalData->bSetChnlBW && !pHalData->bSwChnl)
+		goto exit_iqk;
 
-	if (pHalData->bSwChnl) {
-		pHalData->current_channel = ChannelNum;
-		pHalData->CurrentCenterFrequencyIndex1 = ChannelNum;
-	}
+	pHalData->bSwChnl = _TRUE;
+	pHalData->bSetChnlBW = _TRUE;
 
+	pHalData->current_channel = ChannelNum;
+	pHalData->CurrentCenterFrequencyIndex1 = ChannelNum;
 
-	if (pHalData->bSetChnlBW) {
-		pHalData->current_channel_bw = ChnlWidth;
-#if 0
-		if (ExtChnlOffsetOf40MHz == EXTCHNL_OFFSET_LOWER)
-			pHalData->nCur40MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_UPPER;
-		else if (ExtChnlOffsetOf40MHz == EXTCHNL_OFFSET_UPPER)
-			pHalData->nCur40MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_LOWER;
-		else
-			pHalData->nCur40MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
+	pHalData->current_channel_bw = ChnlWidth;
+	pHalData->nCur40MhzPrimeSC = ExtChnlOffsetOf40MHz;
+	pHalData->nCur80MhzPrimeSC = ExtChnlOffsetOf80MHz;
+	pHalData->CurrentCenterFrequencyIndex1 = CenterFrequencyIndex1;
 
-		if (ExtChnlOffsetOf80MHz == EXTCHNL_OFFSET_LOWER)
-			pHalData->nCur80MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_UPPER;
-		else if (ExtChnlOffsetOf80MHz == EXTCHNL_OFFSET_UPPER)
-			pHalData->nCur80MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_LOWER;
-		else
-			pHalData->nCur80MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
-#else
-		pHalData->nCur40MhzPrimeSC = ExtChnlOffsetOf40MHz;
-		pHalData->nCur80MhzPrimeSC = ExtChnlOffsetOf80MHz;
-#endif
+	phy_SwChnl8188F(Adapter);
+	pHalData->bSwChnl = _FALSE;
 
-		pHalData->CurrentCenterFrequencyIndex1 = CenterFrequencyIndex1;
-	}
+	phy_PostSetBwMode8188F(Adapter);
+	pHalData->bSetChnlBW = _FALSE;
 
-	/*Switch workitem or set timer to do switch channel or setbandwidth operation */
-	if (!RTW_CANNOT_RUN(Adapter))
-		phy_SwChnlAndSetBwMode8188F(Adapter);
-	else {
-		if (pHalData->bSwChnl) {
-			pHalData->current_channel = tmpChannel;
-			pHalData->CurrentCenterFrequencyIndex1 = tmpChannel;
+	rtw_hal_set_tx_power_level(Adapter, pHalData->current_channel);
+
+exit_iqk:
+	if (pHalData->bNeedIQK == _TRUE) {
+		if (pHalData->neediqk_24g == _TRUE) {
+			halrf_iqk_trigger(&pHalData->odmpriv, _FALSE);
+			pHalData->bIQKInitialized = _TRUE;
+			pHalData->neediqk_24g = _FALSE;
 		}
-		if (pHalData->bSetChnlBW) {
-			pHalData->current_channel_bw = tmpBW;
-			pHalData->nCur40MhzPrimeSC = tmpnCur40MhzPrimeSC;
-			pHalData->nCur80MhzPrimeSC = tmpnCur80MhzPrimeSC;
-			pHalData->CurrentCenterFrequencyIndex1 = tmpCenterFrequencyIndex1;
-		}
+		pHalData->bNeedIQK = _FALSE;
 	}
-
-	/*RTW_INFO("Channel %d ChannelBW %d ",pHalData->current_channel, pHalData->current_channel_bw); */
-	/*RTW_INFO("40MhzPrimeSC %d 80MhzPrimeSC %d ",pHalData->nCur40MhzPrimeSC, pHalData->nCur80MhzPrimeSC); */
-	/*RTW_INFO("CenterFrequencyIndex1 %d\n",pHalData->CurrentCenterFrequencyIndex1); */
-
-	/*RTW_INFO("<= PHY_HandleSwChnlAndSetBW8188F: bSwChnl %d, bSetChnlBW %d\n",pHalData->bSwChnl,pHalData->bSetChnlBW); */
-
 }
 
 void

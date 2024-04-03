@@ -1,7 +1,6 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
- * Copyright(c) 2009-2010 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2020 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -13,23 +12,17 @@
  * more details.
  *
  *****************************************************************************/
+#ifndef __RTW_NLRTW_H_
+#define __RTW_NLRTW_H_
 
-#ifndef __RTW_WIFI_REGD_H__
-#define __RTW_WIFI_REGD_H__
+#ifdef CONFIG_RTW_NLRTW
+int rtw_nlrtw_init(void);
+int rtw_nlrtw_deinit(void);
+int rtw_nlrtw_ch_util_rpt(_adapter *adapter, u8 n_rpts, u8 *val, u8 **mac_addr);
+#else
+static inline int rtw_nlrtw_init(void) {return _FAIL;}
+static inline int rtw_nlrtw_deinit(void) {return _FAIL;}
+static inline int rtw_nlrtw_ch_util_rpt(_adapter *adapter, u8 n_rpts, u8 *val, u8 **mac_addr) {return _FAIL;}
+#endif
 
-struct country_code_to_enum_rd {
-	u16 countrycode;
-	const char *iso_name;
-};
-
-enum country_code_type_t {
-	COUNTRY_CODE_USER = 0,
-
-	/*add new channel plan above this line */
-	COUNTRY_CODE_MAX
-};
-
-void rtw_regd_apply_flags(struct wiphy *wiphy);
-int rtw_regd_init(struct wiphy *wiphy);
-
-#endif /* __RTW_WIFI_REGD_H__ */
+#endif /* __RTW_NLRTW_H_ */

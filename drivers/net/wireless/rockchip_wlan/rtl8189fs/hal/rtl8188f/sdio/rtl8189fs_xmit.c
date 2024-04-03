@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -99,7 +98,7 @@ query_free_page:
 		}
 #ifdef CONFIG_SDIO_TX_ENABLE_AVAL_INT
 		if (!bUpdatePageNum) {
-			rtw_hal_sdio_avail_page_threshold_en(padapter, PageIdx);
+			rtw_hal_sdio_avail_page_threshold_en(padapter, PageIdx, pxmitbuf->pg_num);
 
 			/* Total number of page is NOT available, so update current FIFO status */
 			HalQueryTxBufferStatus8188FSdio(padapter);
@@ -592,14 +591,14 @@ thread_return rtl8188fs_xmit_thread(thread_context context)
 	s32 ret;
 	PADAPTER padapter;
 	struct xmit_priv *pxmitpriv;
-	u8 thread_name[20] = "RTWHALXT";
+	u8 thread_name[20] = {0};
 
 
 	ret = _SUCCESS;
 	padapter = (PADAPTER)context;
 	pxmitpriv = &padapter->xmitpriv;
 
-	rtw_sprintf(thread_name, 20, "%s-"ADPT_FMT, thread_name, ADPT_ARG(padapter));
+	rtw_sprintf(thread_name, 20, "RTWHALXT-"ADPT_FMT, ADPT_ARG(padapter));
 	thread_enter(thread_name);
 
 	RTW_INFO("start "FUNC_ADPT_FMT"\n", FUNC_ADPT_ARG(padapter));
@@ -679,8 +678,7 @@ s32 rtl8188fs_hal_xmit(PADAPTER padapter, struct xmit_frame *pxmitframe)
 	    (pxmitframe->attrib.ether_type != 0x0806) &&
 	    (pxmitframe->attrib.ether_type != 0x888e) &&
 	    (pxmitframe->attrib.dhcp_pkt != 1)) {
-		if (padapter->mlmepriv.LinkDetectInfo.bBusyTraffic == _TRUE)
-			rtw_issue_addbareq_cmd(padapter, pxmitframe);
+		rtw_issue_addbareq_cmd(padapter, pxmitframe, _TRUE);
 	}
 #endif
 

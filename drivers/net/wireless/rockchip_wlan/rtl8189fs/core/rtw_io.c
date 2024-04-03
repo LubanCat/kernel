@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -503,10 +502,14 @@ struct rtw_io_sniff_ent {
 	} u;
 	bool trace;
 	char *tag;
+	bool (*assert_protsel)(_adapter *adapter, u32 addr, u8 len);
 };
 
 #define RTW_IO_SNIFF_RANGE_ENT(_chip, _hci, _addr, _end_addr, _trace, _tag) \
 	{.chip = _chip, .hci = _hci, .addr = _addr, .u.end_addr = _end_addr, .trace = _trace, .tag = _tag, .type = RTW_IO_SNIFF_TYPE_RANGE,}
+
+#define RTW_IO_SNIFF_RANGE_PROT_ENT(_chip, _hci, _addr, _end_addr, _assert_protsel, _tag) \
+	{.chip = _chip, .hci = _hci, .addr = _addr, .u.end_addr = _end_addr, .trace = 1, .assert_protsel = _assert_protsel, .tag = _tag, .type = RTW_IO_SNIFF_TYPE_RANGE,}
 
 #define RTW_IO_SNIFF_VALUE_ENT(_chip, _hci, _addr, _mask, _val, _equal, _trace, _tag) \
 	{.chip = _chip, .hci = _hci, .addr = _addr, .u.vm.mask = _mask, .u.vm.val = _val, .u.vm.equal = _equal, .trace = _trace, .tag = _tag, .type = RTW_IO_SNIFF_TYPE_VALUE,}
@@ -529,6 +532,10 @@ const struct rtw_io_sniff_ent read_sniff[] = {
 	RTW_IO_SNIFF_RANGE_ENT(MAX_CHIP_TYPE, 0, 0x522, 0x522, 0, "read TXPAUSE"),
 	RTW_IO_SNIFF_DIS_ENT(MAX_CHIP_TYPE, 0, 0x02, 0x3, 0, "0x02[1:0] not all 1"),
 #endif
+#ifdef DBG_IO_PROT_SEL
+	RTW_IO_SNIFF_RANGE_PROT_ENT(MAX_CHIP_TYPE, 0, 0x1501, 0x1513, rtw_assert_protsel_port, "protsel port"),
+	RTW_IO_SNIFF_RANGE_PROT_ENT(MAX_CHIP_TYPE, 0, 0x153a, 0x153b, rtw_assert_protsel_atimdtim, "protsel atimdtim"),
+#endif
 };
 
 const int read_sniff_num = sizeof(read_sniff) / sizeof(struct rtw_io_sniff_ent);
@@ -538,6 +545,12 @@ const struct rtw_io_sniff_ent write_sniff[] = {
 	RTW_IO_SNIFF_EN_ENT(MAX_CHIP_TYPE, RTW_SDIO, 0x02, 0x1FC, 1, "SDIO 0x02[8:2] not all 0"),
 	RTW_IO_SNIFF_EN_ENT(MAX_CHIP_TYPE, RTW_USB, 0x02, 0x1E0, 1, "USB 0x02[8:5] not all 0"),
 	RTW_IO_SNIFF_EN_ENT(MAX_CHIP_TYPE, RTW_PCIE, 0x02, 0x01C, 1, "PCI 0x02[4:2] not all 0"),
+#endif
+#ifdef DBG_IO_SIFS_SETTING
+	RTW_IO_SNIFF_RANGE_ENT(MAX_CHIP_TYPE, 0, 0x428, 0x429, 0, "SIFS"),
+	RTW_IO_SNIFF_RANGE_ENT(MAX_CHIP_TYPE, 0, 0x514, 0x517, 0, "SIFS"),
+	RTW_IO_SNIFF_RANGE_ENT(MAX_CHIP_TYPE, 0, 0x63a, 0x63b, 0, "SIFS"),
+	RTW_IO_SNIFF_RANGE_ENT(MAX_CHIP_TYPE, 0, 0x63c, 0x63f, 0, "SIFS"),
 #endif
 #ifdef DBG_IO_8822C_1TX_PATH_EN
 	RTW_IO_SNIFF_VALUE_ENT(RTL8822C, 0, 0x1a04, 0xc0000000, 0x02, 1, 0, "write tx_path_en_cck A enabled"),
@@ -564,6 +577,10 @@ static bool match_io_sniff_ranges(_adapter *adapter
 
 	/* check if IO range after sniff end address */
 	if (addr > sniff->u.end_addr)
+		return 0;
+
+	if (sniff->assert_protsel &&
+	    sniff->assert_protsel(adapter, addr, len))
 		return 0;
 
 	return 1;
@@ -733,6 +750,52 @@ bool match_rf_write_sniff_ranges(_adapter *adapter, u8 path, u32 addr, u32 mask)
 	}
 
 	return _FALSE;
+}
+
+void dbg_rtw_reg_read_monitor(_adapter *adapter, u32 addr, u32 len, u32 val, const char *caller, const int line)
+{
+	if (match_read_sniff(adapter, addr, len, val)) {
+		switch (len) {
+		case 1:
+			RTW_INFO("DBG_IO %s:%d read8(0x%04x) return 0x%02x\n"
+				, caller, line, addr, val);
+			break;
+		case 2:
+			RTW_INFO("DBG_IO %s:%d read16(0x%04x) return 0x%04x\n"
+				, caller, line, addr, val);
+			break;
+		case 4:
+			RTW_INFO("DBG_IO %s:%d read32(0x%04x) return 0x%08x\n"
+				, caller, line, addr, val);
+			break;
+		default:
+			RTW_INFO("DBG_IO %s:%d readN(0x%04x, %u)\n"
+				, caller, line, addr, len);
+		}
+	}
+}
+
+void dbg_rtw_reg_write_monitor(_adapter *adapter, u32 addr, u32 len, u32 val, const char *caller, const int line)
+{
+	if (match_write_sniff(adapter, addr, len, val)) {
+		switch (len) {
+		case 1:
+			RTW_INFO("DBG_IO %s:%d write8(0x%04x, 0x%02x)\n"
+				, caller, line, addr, val);
+			break;
+		case 2:
+			RTW_INFO("DBG_IO %s:%d write16(0x%04x, 0x%04x)\n"
+				, caller, line, addr, val);
+			break;
+		case 4:
+			RTW_INFO("DBG_IO %s:%d write32(0x%04x, 0x%08x)\n"
+				, caller, line, addr, val);
+			break;
+		default:
+			RTW_INFO("DBG_IO %s:%d rtw_writeN(0x%04x, %u)\n"
+				, caller, line, addr, len);
+		}
+	}
 }
 
 u8 dbg_rtw_read8(_adapter *adapter, u32 addr, const char *caller, const int line)

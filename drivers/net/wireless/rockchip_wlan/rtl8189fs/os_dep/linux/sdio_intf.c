@@ -1,7 +1,6 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2019 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -44,10 +43,6 @@ static int wlan_en_gpio = -1;
 #define dev_to_sdio_func(d)     container_of(d, struct sdio_func, dev)
 #endif
 
-#ifdef CONFIG_WOWLAN
-static struct mmc_host *mmc_host = NULL;
-#endif
-
 static const struct sdio_device_id sdio_ids[] = {
 #ifdef CONFIG_RTL8723B
 	{ SDIO_DEVICE(0x024c, 0xB723), .driver_data = RTL8723B},
@@ -88,6 +83,7 @@ static const struct sdio_device_id sdio_ids[] = {
 #ifdef CONFIG_RTL8192F
 	{ SDIO_DEVICE(0x024c, 0x818C), .driver_data = RTL8192F},/*A CUT*/
 	{ SDIO_DEVICE(0x024c, 0xF192), .driver_data = RTL8192F},/*B CUT*/
+	{ SDIO_DEVICE(0x024c, 0xA725), .driver_data = RTL8192F},/*8725AS*/
 #endif /* CONFIG_RTL8192F */
 
 #ifdef CONFIG_RTL8821C
@@ -177,10 +173,14 @@ int sdio_alloc_irq(struct dvobj_priv *dvobj)
 	sdio_claim_host(func);
 
 	err = sdio_claim_irq(func, &sd_sync_int_hdl);
-	if (err) {
+	if (err && err != -EBUSY) {
 		dvobj->drv_dbg.dbg_sdio_alloc_irq_error_cnt++;
 		RTW_PRINT("%s: sdio_claim_irq FAIL(%d)!\n", __func__, err);
+	} else if (err == -EBUSY) {
+		RTW_DBG("%s: sdio_claim_irq -EBUSY\n", __func__);
+		err = 0;
 	} else {
+		RTW_DBG("%s: sdio_claim_irq SUCCESS\n", __func__);
 		dvobj->drv_dbg.dbg_sdio_alloc_irq_cnt++;
 		dvobj->irq_alloc = 1;
 	}
@@ -206,8 +206,10 @@ void sdio_free_irq(struct dvobj_priv *dvobj)
 			if (err) {
 				dvobj->drv_dbg.dbg_sdio_free_irq_error_cnt++;
 				RTW_ERR("%s: sdio_release_irq FAIL(%d)!\n", __func__, err);
-			} else
+			} else {
+				RTW_DBG("%s: sdio_release_irq SUCCESS\n", __func__);
 				dvobj->drv_dbg.dbg_sdio_free_irq_cnt++;
+			}
 			sdio_release_host(func);
 		}
 		dvobj->irq_alloc = 0;
@@ -361,6 +363,106 @@ void dump_sdio_card_info(void *sel, struct dvobj_priv *dvobj)
 
 #define SDIO_CARD_INFO_DUMP(dvobj)	dump_sdio_card_info(RTW_DBGDUMP, dvobj)
 
+#ifdef DBG_SDIO
+#if (DBG_SDIO >= 2)
+void rtw_sdio_dbg_reg_free(struct dvobj_priv *d)
+{
+	struct sdio_data *sdio;
+	u8 *buf;
+	u32 size;
+
+
+	sdio = &d->intf_data;
+
+	buf = sdio->dbg_msg;
+	size = sdio->dbg_msg_size;
+	if (buf){
+		sdio->dbg_msg = NULL;
+		sdio->dbg_msg_size = 0;
+		rtw_mfree(buf, size);
+	}
+
+	buf = sdio->reg_mac;
+	if (buf) {
+		sdio->reg_mac = NULL;
+		rtw_mfree(buf, 0x800);
+	}
+
+	buf = sdio->reg_mac_ext;
+	if (buf) {
+		sdio->reg_mac_ext = NULL;
+		rtw_mfree(buf, 0x800);
+	}
+
+	buf = sdio->reg_local;
+	if (buf) {
+		sdio->reg_local = NULL;
+		rtw_mfree(buf, 0x100);
+	}
+
+	buf = sdio->reg_cia;
+	if (buf) {
+		sdio->reg_cia = NULL;
+		rtw_mfree(buf, 0x200);
+	}
+}
+
+void rtw_sdio_dbg_reg_alloc(struct dvobj_priv *d)
+{
+	struct sdio_data *sdio;
+	u8 *buf;
+
+
+	sdio = &d->intf_data;
+
+	buf = _rtw_zmalloc(0x800);
+	if (buf)
+		sdio->reg_mac = buf;
+
+	buf = _rtw_zmalloc(0x800);
+	if (buf)
+		sdio->reg_mac_ext = buf;
+
+	buf = _rtw_zmalloc(0x100);
+	if (buf)
+		sdio->reg_local = buf;
+
+	buf = _rtw_zmalloc(0x200);
+	if (buf)
+		sdio->reg_cia = buf;
+}
+#endif /* DBG_SDIO >= 2 */
+
+static void sdio_dbg_init(struct dvobj_priv *d)
+{
+	struct sdio_data *sdio;
+
+
+	sdio = &d->intf_data;
+
+	sdio->cmd52_err_cnt = 0;
+	sdio->cmd53_err_cnt = 0;
+
+#if (DBG_SDIO >= 1)
+	sdio->reg_dump_mark = 0;
+#endif /* DBG_SDIO >= 1 */
+
+#if (DBG_SDIO >= 3)
+	sdio->dbg_enable = 0;
+	sdio->err_stop = 0;
+	sdio->err_test = 0;
+	sdio->err_test_triggered = 0;
+#endif /* DBG_SDIO >= 3 */
+}
+
+static void sdio_dbg_deinit(struct dvobj_priv *d)
+{
+#if (DBG_SDIO >= 2)
+	rtw_sdio_dbg_reg_free(d);
+#endif /* DBG_SDIO >= 2 */
+}
+#endif /* DBG_SDIO */
+
 u32 sdio_init(struct dvobj_priv *dvobj)
 {
 	PSDIO_DATA psdio_data;
@@ -407,6 +509,11 @@ u32 sdio_init(struct dvobj_priv *dvobj)
 	)
 		psdio_data->sd3_bus_mode = _TRUE;
 #endif
+
+#ifdef DBG_SDIO
+	sdio_dbg_init(dvobj);
+#endif /* DBG_SDIO */
+
 	SDIO_CARD_INFO_DUMP(dvobj);
 
 
@@ -437,6 +544,10 @@ void sdio_deinit(struct dvobj_priv *dvobj)
 
 		sdio_release_host(func);
 	}
+
+#ifdef DBG_SDIO
+	sdio_dbg_deinit(dvobj);
+#endif /* DBG_SDIO */
 }
 
 u8 sdio_get_num_of_func(struct dvobj_priv *dvobj)
@@ -456,8 +567,10 @@ static void rtw_decide_chip_type_by_device_id(struct dvobj_priv *dvobj, const st
 #endif
 
 #if defined(CONFIG_RTL8723B)
-	dvobj->chip_type = RTL8723B;
-	dvobj->HardwareType = HARDWARE_TYPE_RTL8723BS;
+	if (dvobj->chip_type == RTL8723B) {
+		dvobj->HardwareType = HARDWARE_TYPE_RTL8723BS;
+		RTW_INFO("CHIP TYPE: RTL8723B\n");
+	}
 #endif
 
 #if defined(CONFIG_RTL8821A)
@@ -668,6 +781,10 @@ static void sd_intf_start(PADAPTER padapter)
 		return;
 	}
 
+#if (CONFIG_RTW_SDIO_RELEASE_IRQ >= 2)
+	sdio_alloc_irq(adapter_to_dvobj(padapter));
+#endif
+
 	/* hal dep */
 	rtw_hal_enable_interrupt(padapter);
 }
@@ -681,6 +798,10 @@ static void sd_intf_stop(PADAPTER padapter)
 
 	/* hal dep */
 	rtw_hal_disable_interrupt(padapter);
+
+#if (CONFIG_RTW_SDIO_RELEASE_IRQ >= 2)
+	sdio_free_irq(adapter_to_dvobj(padapter));
+#endif
 }
 
 
@@ -793,7 +914,7 @@ static void rtw_sdio_primary_adapter_deinit(_adapter *padapter)
 {
 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
 
-	if (check_fwstate(pmlmepriv, _FW_LINKED))
+	if (check_fwstate(pmlmepriv, WIFI_ASOC_STATE))
 		rtw_disassoc_cmd(padapter, 0, RTW_CMDF_DIRECTLY);
 
 #ifdef CONFIG_AP_MODE
@@ -859,7 +980,6 @@ static int rtw_drv_init(
 #ifdef CONFIG_CONCURRENT_MODE
 	int i;
 #endif
-	struct net_device *pnetdev;
 	PADAPTER padapter = NULL;
 	struct dvobj_priv *dvobj;
 
@@ -935,8 +1055,10 @@ static int rtw_drv_init(
 	rtd2885_wlan_netlink_sendMsg("linkup", "8712");
 #endif
 
+#if (CONFIG_RTW_SDIO_RELEASE_IRQ <= 1)
 	if (sdio_alloc_irq(dvobj) != _SUCCESS)
 		goto os_ndevs_deinit;
+#endif
 
 #ifdef CONFIG_GPIO_WAKEUP
 #ifdef CONFIG_PLATFORM_ARM_SUN6I
@@ -960,7 +1082,9 @@ static int rtw_drv_init(
 
 	status = _SUCCESS;
 
+#if (CONFIG_RTW_SDIO_RELEASE_IRQ <= 1)
 os_ndevs_deinit:
+#endif
 	if (status != _SUCCESS)
 		rtw_os_ndevs_deinit(dvobj);
 free_if_vir:
@@ -1064,13 +1188,21 @@ extern int pm_netdev_close(struct net_device *pnetdev, u8 bnormal);
 static int rtw_sdio_suspend(struct device *dev)
 {
 	struct sdio_func *func = dev_to_sdio_func(dev);
-	struct dvobj_priv *psdpriv = sdio_get_drvdata(func);
+	struct dvobj_priv *psdpriv;
 	struct pwrctrl_priv *pwrpriv = NULL;
 	_adapter *padapter = NULL;
 	struct debug_priv *pdbgpriv = NULL;
 	int ret = 0;
-	u8 ch, bw, offset;
+#ifdef CONFIG_RTW_SDIO_PM_KEEP_POWER
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 34))
+	mmc_pm_flag_t pm_flag = 0;
+#endif
+#endif
 
+	if (dev == NULL)
+		goto exit;
+
+	psdpriv = sdio_get_drvdata(func);
 	if (psdpriv == NULL)
 		goto exit;
 
@@ -1090,7 +1222,6 @@ static int rtw_sdio_suspend(struct device *dev)
 
 	ret = rtw_suspend_common(padapter);
 
-exit:
 #ifdef CONFIG_RTW_SDIO_PM_KEEP_POWER
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 34))
 	/* Android 4.0 don't support WIFI close power */
@@ -1098,22 +1229,20 @@ exit:
 	/* this is sprd's bug in Android 4.0, but sprd don't */
 	/* want to fix it. */
 	/* we have test power under 8723as, power consumption is ok */
-	if (func) {
-		mmc_pm_flag_t pm_flag = 0;
-		pm_flag = sdio_get_host_pm_caps(func);
-		RTW_INFO("cmd: %s: suspend: PM flag = 0x%x\n", sdio_func_id(func), pm_flag);
-		if (!(pm_flag & MMC_PM_KEEP_POWER)) {
-			RTW_INFO("%s: cannot remain alive while host is suspended\n", sdio_func_id(func));
-			if (pdbgpriv)
-				pdbgpriv->dbg_suspend_error_cnt++;
-			return -ENOSYS;
-		} else {
-			RTW_INFO("cmd: suspend with MMC_PM_KEEP_POWER\n");
-			sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
-		}
+	pm_flag = sdio_get_host_pm_caps(func);
+	RTW_INFO("cmd: %s: suspend: PM flag = 0x%x\n", sdio_func_id(func), pm_flag);
+	if (!(pm_flag & MMC_PM_KEEP_POWER)) {
+		RTW_INFO("%s: cannot remain alive while host is suspended\n", sdio_func_id(func));
+		if (pdbgpriv)
+			pdbgpriv->dbg_suspend_error_cnt++;
+		return -ENOSYS;
+	} else {
+		RTW_INFO("cmd: suspend with MMC_PM_KEEP_POWER\n");
+		sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
 	}
 #endif
 #endif
+exit:
 	return ret;
 }
 int rtw_resume_process(_adapter *padapter)
@@ -1174,7 +1303,7 @@ static int rtw_sdio_resume(struct device *dev)
 
 }
 
-static int rtw_drv_entry(void)
+static int __init rtw_drv_entry(void)
 {
 	int ret = 0;
 
@@ -1198,6 +1327,7 @@ static int rtw_drv_entry(void)
 	sdio_drvpriv.drv_registered = _TRUE;
 	rtw_suspend_lock_init();
 	rtw_drv_proc_init();
+	rtw_nlrtw_init();
 	rtw_ndev_notifier_register();
 	rtw_inetaddr_notifier_register();
 
@@ -1206,6 +1336,7 @@ static int rtw_drv_entry(void)
 		sdio_drvpriv.drv_registered = _FALSE;
 		rtw_suspend_lock_uninit();
 		rtw_drv_proc_deinit();
+		rtw_nlrtw_deinit();
 		rtw_ndev_notifier_unregister();
 		rtw_inetaddr_notifier_unregister();
 		RTW_INFO("%s: register driver failed!!(%d)\n", __FUNCTION__, ret);
@@ -1222,7 +1353,7 @@ exit:
 	return ret;
 }
 
-static void rtw_drv_halt(void)
+static void __exit rtw_drv_halt(void)
 {
 	RTW_PRINT("module exit start\n");
 
@@ -1236,6 +1367,7 @@ static void rtw_drv_halt(void)
 
 	rtw_suspend_lock_uninit();
 	rtw_drv_proc_deinit();
+	rtw_nlrtw_deinit();
 	rtw_ndev_notifier_unregister();
 	rtw_inetaddr_notifier_unregister();
 
@@ -1259,60 +1391,8 @@ int rtw_sdio_set_power(int on)
 }
 #endif /* CONFIG_PLATFORM_INTEL_BYT */
 
-#include "rtw_version.h"
-#include <linux/rfkill-wlan.h>
-extern int get_wifi_chip_type(void);
-extern int rockchip_wifi_power(int on);
-extern int rockchip_wifi_set_carddetect(int val);
-
-int rockchip_wifi_init_module_rtkwifi(void)
-{
-//#ifdef CONFIG_WIFI_LOAD_DRIVER_WHEN_KERNEL_BOOTUP
-//    int type = get_wifi_chip_type();
-//    if (type < WIFI_AP6XXX_SERIES || type == WIFI_ESP8089) return 0;
-//#endif
-    printk("\n");
-    printk("=======================================================\n");
-    printk("==== Launching Wi-Fi driver! (Powered by Rockchip) ====\n");
-    printk("=======================================================\n");
-    printk("Realtek 8189FS SDIO WiFi driver (Powered by Rockchip,Ver %s) init.\n", DRIVERVERSION);
-
-    rockchip_wifi_power(1);
-    rockchip_wifi_set_carddetect(1);    
-    
-    return rtw_drv_entry();
-
-}
-
-void rockchip_wifi_exit_module_rtkwifi(void)
-{
-//#ifdef CONFIG_WIFI_LOAD_DRIVER_WHEN_KERNEL_BOOTUP
-//    int type = get_wifi_chip_type();
-//    if (type < WIFI_AP6XXX_SERIES || type == WIFI_ESP8089) return;
-//#endif
-    printk("\n");
-    printk("=======================================================\n");
-    printk("==== Dislaunching Wi-Fi driver! (Powered by Rockchip) ====\n");
-    printk("=======================================================\n");
-    printk("Realtek 8189FS SDIO WiFi driver (Powered by Rockchip,Ver %s) init.\n", DRIVERVERSION);
-
-    rtw_drv_halt();
-    
-    rockchip_wifi_set_carddetect(0);
-    rockchip_wifi_power(0);
-
-}
-
-#ifdef CONFIG_WIFI_BUILD_MODULE
-module_init(rockchip_wifi_init_module_rtkwifi);
-module_exit(rockchip_wifi_exit_module_rtkwifi);
-#else
-#ifdef CONFIG_WIFI_LOAD_DRIVER_WHEN_KERNEL_BOOTUP
-late_initcall(rockchip_wifi_init_module_rtkwifi);
-module_exit(rockchip_wifi_exit_module_rtkwifi);
-#else
-EXPORT_SYMBOL(rockchip_wifi_init_module_rtkwifi);
-EXPORT_SYMBOL(rockchip_wifi_exit_module_rtkwifi);
+module_init(rtw_drv_entry);
+module_exit(rtw_drv_halt);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0))
+MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
 #endif
-#endif
-

@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -90,16 +89,6 @@ PHY_SetTxPowerIndex_8723B(
 		u32					PowerIndex,
 		enum rf_path			RFPath,
 		u8					Rate
-);
-
-u8
-PHY_GetTxPowerIndex_8723B(
-		PADAPTER			pAdapter,
-		enum rf_path			RFPath,
-		u8					Rate,
-		u8					BandWidth,
-		u8					Channel,
-	struct txpwr_idx_comp *tic
 );
 
 void

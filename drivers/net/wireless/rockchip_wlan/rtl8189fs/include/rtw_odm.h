@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2013 - 2017 Realtek Corporation.
@@ -83,8 +82,9 @@ void rtw_odm_get_perpkt_rssi(void *sel, _adapter *adapter);
 void rtw_odm_acquirespinlock(_adapter *adapter,	enum rt_spinlock_type type);
 void rtw_odm_releasespinlock(_adapter *adapter,	enum rt_spinlock_type type);
 
-u8 rtw_odm_get_dfs_domain(struct dvobj_priv *dvobj);
-u8 rtw_odm_dfs_domain_unknown(struct dvobj_priv *dvobj);
+struct dm_struct;
+s16 rtw_odm_get_tx_power_mbm(struct dm_struct *dm, u8 rfpath, u8 rate, u8 bw, u8 cch);
+
 #ifdef CONFIG_DFS_MASTER
 void rtw_odm_radar_detect_reset(_adapter *adapter);
 void rtw_odm_radar_detect_disable(_adapter *adapter);

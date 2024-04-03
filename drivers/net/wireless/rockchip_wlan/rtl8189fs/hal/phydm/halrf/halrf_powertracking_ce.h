@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017  Realtek Corporation.
@@ -200,6 +199,7 @@ struct dm_rf_calibration_struct {
 	u8 bb_swing_idx_cck_base;
 	u8 default_ofdm_index;
 	u8 default_cck_index;
+	s8 default_txagc_index;
 	boolean bb_swing_flag_cck;
 
 	s8 absolute_ofdm_swing_idx[MAX_RF_PATH];

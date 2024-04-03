@@ -1,7 +1,6 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2019 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -40,7 +39,8 @@
 #define RTL8721D_SUPPORT				0
 #define RTL8812F_SUPPORT				0
 #define RTL8197G_SUPPORT				0
-#define RTL8721D_SUPPORT				0
+#define RTL8710C_SUPPORT				0
+
 
 /*#if (RTL8188E_SUPPORT==1)*/
 #define RATE_ADAPTIVE_SUPPORT			0
@@ -48,9 +48,6 @@
 
 #ifdef CONFIG_MULTIDRV
 #endif
-
-/*feature for all IC*/
-#define RTW_DYNAMIC_RRSR
 
 #ifdef CONFIG_RTL8188E
 	#undef RTL8188E_SUPPORT
@@ -60,6 +57,10 @@
 	#define RTL8188E_SUPPORT				1
 	#define RATE_ADAPTIVE_SUPPORT			1
 	#define POWER_TRAINING_ACTIVE			1
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
 #endif
 
 #ifdef CONFIG_RTL8812A
@@ -74,6 +75,10 @@
 		#define SUPPORT_MU_BF				0
 	#endif /*CONFIG_BEAMFORMING*/
 	#define CONFIG_RTS_FULL_BW
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
 #endif
 
 #ifdef CONFIG_RTL8821A
@@ -88,6 +93,10 @@
 		#define SUPPORT_MU_BF				0
 	#endif
 	#define CONFIG_RTS_FULL_BW
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
 #endif
 
 #ifdef CONFIG_RTL8192E
@@ -97,6 +106,10 @@
 		#define CONFIG_FW_C2H_PKT
 	#endif
 	#define CONFIG_RTS_FULL_BW
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
 #endif
 
 #ifdef CONFIG_RTL8192F
@@ -114,6 +127,17 @@
 		#define CONFIG_P2P_PS_NOA_USE_MACID_SLEEP
 	#endif
 	#define CONFIG_RTS_FULL_BW
+/*	#define CONFIG_NARROWBAND_SUPPORTING	*/
+	#ifdef CONFIG_NARROWBAND_SUPPORTING
+		#define CONFIG_NB_VALUE		RTW_NB_CONFIG_NONE	/*RTW_NB_CONFIG_WIDTH_10 or RTW_NB_CONFIG_WIDTH_5	*/
+	#endif
+	#ifdef CONFIG_WOWLAN
+		#define CONFIG_WOW_PATTERN_IN_TXFIFO
+	#endif
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
 #endif
 
 #ifdef CONFIG_RTL8723B
@@ -123,6 +147,10 @@
 		#define CONFIG_FW_C2H_PKT
 	#endif
 	#define CONFIG_RTS_FULL_BW
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
 #endif
 
 #ifdef CONFIG_RTL8723D
@@ -138,6 +166,10 @@
 		#define CONFIG_RTW_CUSTOMER_STR
 	#endif
 	#define CONFIG_RTS_FULL_BW
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
 #endif
 
 #ifdef CONFIG_RTL8814A
@@ -152,6 +184,10 @@
 		#define SUPPORT_MU_BF				0
 	#endif
 	#define CONFIG_RTS_FULL_BW
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
 #endif
 
 #ifdef CONFIG_RTL8703B
@@ -164,6 +200,10 @@
 		#define CONFIG_RTW_MAC_HIDDEN_RPT
 	#endif
 	#define CONFIG_RTS_FULL_BW
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
 #endif
 
 #ifdef CONFIG_RTL8188F
@@ -179,6 +219,10 @@
 		#define CONFIG_RTW_CUSTOMER_STR
 	#endif
 	#define CONFIG_RTS_FULL_BW
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
 #endif
 
 #ifdef CONFIG_RTL8188GTV
@@ -194,6 +238,14 @@
 		#define CONFIG_RTW_CUSTOMER_STR
 	#endif
 	#define CONFIG_RTS_FULL_BW
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
+
+	#if defined(CONFIG_USB_HCI) && !defined(CONFIG_FW_OFFLOAD_SET_TXPWR_IDX)
+	#define CONFIG_FW_OFFLOAD_SET_TXPWR_IDX
+	#endif
 #endif
 
 #ifdef CONFIG_RTL8822B
@@ -203,7 +255,6 @@
 		#define CONFIG_FW_C2H_PKT
 	#endif /* CONFIG_FW_C2H_PKT */
 	#define RTW_TX_PA_BIAS	/* Adjust TX PA Bias from eFuse */
-	#define CONFIG_DFS	/* Enable 5G band 2&3 channel */
 	#define RTW_AMPDU_AGG_RETRY_AND_NEW
 
 	#ifdef CONFIG_WOWLAN
@@ -243,7 +294,10 @@
 	#endif /* RTW_IQK_FW_OFFLOAD */
 
 	/* Checksum offload feature */
-	/*#define CONFIG_TCP_CSUM_OFFLOAD_TX*/ /* not ready */
+	/*#define CONFIG_TCP_CSUM_OFFLOAD_TX*/
+	#if defined(CONFIG_TCP_CSUM_OFFLOAD_TX) && !defined(CONFIG_RTW_NETIF_SG)
+		#define CONFIG_RTW_NETIF_SG
+	#endif
 	#define CONFIG_TCP_CSUM_OFFLOAD_RX
 
 	#define CONFIG_ADVANCE_OTA
@@ -274,17 +328,24 @@
 		#define CONFIG_P2P_PS_NOA_USE_MACID_SLEEP
 	#endif
 	#define CONFIG_RTS_FULL_BW
+
+	#ifdef CONFIG_LPS
+		#define CONFIG_LPS_ACK	/* Supported after FW v30 & v27.9 */
+	#endif
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
 #endif /* CONFIG_RTL8822B */
 
 #ifdef CONFIG_RTL8822C
 	#undef RTL8822C_SUPPORT
 	#define RTL8822C_SUPPORT				1
-	#define DBG_LA_MODE
+	/*#define DBG_LA_MODE*/
 	#ifndef CONFIG_FW_C2H_PKT
 		#define CONFIG_FW_C2H_PKT
 	#endif /* CONFIG_FW_C2H_PKT */
 	#define RTW_TX_PA_BIAS	/* Adjust TX PA Bias from eFuse */
-	#define CONFIG_DFS	/* Enable 5G band 2&3 channel */
 
 	#ifdef CONFIG_WOWLAN
 		#define CONFIG_GTK_OL
@@ -310,9 +371,15 @@
 		#define RTW_BEAMFORMING_VERSION_2
 	#endif /* CONFIG_BEAMFORMING */
 
-	#ifndef CONFIG_RTW_MAC_HIDDEN_RPT
-		#define CONFIG_RTW_MAC_HIDDEN_RPT
-	#endif /* CONFIG_RTW_MAC_HIDDEN_RPT */
+	#ifdef CONFIG_NO_FW
+		#ifdef CONFIG_RTW_MAC_HIDDEN_RPT
+			#undef CONFIG_RTW_MAC_HIDDEN_RPT
+		#endif
+	#else
+		#ifndef CONFIG_RTW_MAC_HIDDEN_RPT
+			#define CONFIG_RTW_MAC_HIDDEN_RPT
+		#endif
+	#endif
 
 	#ifndef DBG_RX_DFRAME_RAW_DATA
 		#define DBG_RX_DFRAME_RAW_DATA
@@ -321,18 +388,11 @@
 	#ifndef RTW_IQK_FW_OFFLOAD
 		/* #define RTW_IQK_FW_OFFLOAD */
 	#endif /* RTW_IQK_FW_OFFLOAD */
-
-	/* Checksum offload feature */
-	/* #define CONFIG_TX_CSUM_OFFLOAD */
-	#if defined(CONFIG_TX_CSUM_OFFLOAD) && !defined(CONFIG_RTW_NETIF_SG)
-		#define CONFIG_RTW_NETIF_SG
-	#endif
-	#define CONFIG_TCP_CSUM_OFFLOAD_RX
-
 	#define CONFIG_ADVANCE_OTA
 
 	#ifdef CONFIG_MCC_MODE
 		#define CONFIG_MCC_MODE_V2
+		#define CONFIG_MCC_PHYDM_OFFLOAD
 	#endif /* CONFIG_MCC_MODE */
 
 	#if defined(CONFIG_TDLS) && defined(CONFIG_TDLS_CH_SW)
@@ -353,15 +413,32 @@
 	#define CONFIG_HW_P0_TSF_SYNC
 	#define CONFIG_BCN_RECV_TIME
 
+	/*#define CONFIG_TCP_CSUM_OFFLOAD_TX*/
+	#if defined(CONFIG_TCP_CSUM_OFFLOAD_TX) && !defined(CONFIG_RTW_NETIF_SG)
+		#define CONFIG_RTW_NETIF_SG
+	#endif
+	#define CONFIG_TCP_CSUM_OFFLOAD_RX
+
 	#ifdef CONFIG_P2P_PS
 		#define CONFIG_P2P_PS_NOA_USE_MACID_SLEEP
 	#endif
 	#define CONFIG_RTS_FULL_BW
+	
 	#ifdef CONFIG_LPS
+		#define CONFIG_LPS_ACK	/* Supported after FW v07 */
 		#define CONFIG_LPS_1T1R /* Supported after FW v07 */
 	#endif
 
 	#define CONFIG_BT_EFUSE_MASK
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
+	#ifndef CONFIG_TXPWR_PG_WITH_TSSI_OFFSET
+	#define CONFIG_TXPWR_PG_WITH_TSSI_OFFSET
+	#endif
+
+	#define CONFIG_RTL8822C_XCAP_NEW_POLICY
 #endif /* CONFIG_RTL8822C */
 
 #ifdef CONFIG_RTL8821C
@@ -403,6 +480,16 @@
 		#define CONFIG_P2P_PS_NOA_USE_MACID_SLEEP
 	#endif
 	#define CONFIG_RTS_FULL_BW
+
+	#ifdef CONFIG_LPS
+		/* #define CONFIG_LPS_ACK */	/* Supported after FW v25 */
+	#endif
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
+
+	#define CONFIG_BT_EFUSE_MASK
 #endif /*CONFIG_RTL8821C*/
 
 #ifdef CONFIG_RTL8710B
@@ -412,6 +499,109 @@
 		#define CONFIG_FW_C2H_PKT
 	#endif
 	#define CONFIG_RTS_FULL_BW
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
 #endif
+
+#ifdef CONFIG_RTL8814B
+	#undef RTL8814B_SUPPORT
+	#define RTL8814B_SUPPORT				1
+	#ifndef CONFIG_FW_C2H_PKT
+		#define CONFIG_FW_C2H_PKT
+	#endif /* CONFIG_FW_C2H_PKT */
+	#define RTW_TX_PA_BIAS	/* Adjust TX PA Bias from eFuse */
+	#define RTW_AMPDU_AGG_RETRY_AND_NEW
+
+	#ifdef CONFIG_WOWLAN
+		#define CONFIG_GTK_OL
+		/*#define CONFIG_ARP_KEEP_ALIVE*/
+
+		#ifdef CONFIG_GPIO_WAKEUP
+			#ifndef WAKEUP_GPIO_IDX
+				#define WAKEUP_GPIO_IDX	6	/* WIFI Chip Side */
+			#endif /* !WAKEUP_GPIO_IDX */
+		#endif /* CONFIG_GPIO_WAKEUP */
+	#endif /* CONFIG_WOWLAN */
+
+	#ifdef CONFIG_CONCURRENT_MODE
+		/*#define CONFIG_AP_PORT_SWAP*/
+		#define CONFIG_FW_MULTI_PORT_SUPPORT
+	#endif /* CONFIG_CONCURRENT_MODE */
+
+	/*
+	 * Beamforming related definition
+	 */
+	/* Only support new beamforming mechanism */
+	#ifdef CONFIG_BEAMFORMING
+		#define RTW_BEAMFORMING_VERSION_2
+	#endif /* CONFIG_BEAMFORMING */
+
+	#ifndef DBG_RX_DFRAME_RAW_DATA
+		#define DBG_RX_DFRAME_RAW_DATA
+	#endif /* DBG_RX_DFRAME_RAW_DATA */
+
+	#ifndef RTW_IQK_FW_OFFLOAD
+		#define RTW_IQK_FW_OFFLOAD
+	#endif /* RTW_IQK_FW_OFFLOAD */
+
+	/* Checksum offload feature */
+	/*#define CONFIG_TCP_CSUM_OFFLOAD_TX*/ /* not ready */
+	#define CONFIG_TCP_CSUM_OFFLOAD_RX
+
+	#define CONFIG_ADVANCE_OTA
+
+	#ifdef CONFIG_MCC_MODE
+		#define CONFIG_MCC_MODE_V2
+		#define CONFIG_MCC_PHYDM_OFFLOAD
+	#endif /* CONFIG_MCC_MODE */
+
+	#if defined(CONFIG_TDLS) && defined(CONFIG_TDLS_CH_SW)
+		#define CONFIG_TDLS_CH_SW_V2
+	#endif
+
+	#ifndef RTW_CHANNEL_SWITCH_OFFLOAD
+		#ifdef CONFIG_TDLS_CH_SW_V2
+			#define RTW_CHANNEL_SWITCH_OFFLOAD
+		#endif
+	#endif /* RTW_CHANNEL_SWITCH_OFFLOAD */
+
+	#if defined(CONFIG_RTW_MESH) && !defined(RTW_PER_CMD_SUPPORT_FW)
+		/* Supported since fw v22.1 */
+		#define RTW_PER_CMD_SUPPORT_FW
+	#endif /* RTW_PER_CMD_SUPPORT_FW */
+	#define CONFIG_SUPPORT_FIFO_DUMP
+	#define CONFIG_HW_P0_TSF_SYNC
+	#define CONFIG_BCN_RECV_TIME
+	#ifdef CONFIG_P2P_PS
+		#define CONFIG_P2P_PS_NOA_USE_MACID_SLEEP
+	#endif
+	#define CONFIG_RTS_FULL_BW
+
+	#define CONFIG_PROTSEL_PORT
+	#define CONFIG_PROTSEL_ATIMDTIM
+	#define CONFIG_PROTSEL_MACSLEEP
+
+	#define CONFIG_HAS_HW_VAR_BCN_CTRL_ADDR
+	#define CONFIG_HAS_HW_VAR_BCN_FUNC
+	#define CONFIG_HAS_HW_VAR_MLME_DISCONNECT
+	#define CONFIG_HAS_HW_VAR_MLME_JOIN
+	#define CONFIG_HAS_HW_VAR_CORRECT_TSF
+	#define CONFIG_HAS_TX_BEACON_PAUSE
+
+	#define CONFIG_RTW_TX_NPATH_EN		/* 8814B is always 4TX */
+
+	#ifdef CONFIG_LPS
+		#define CONFIG_LPS_ACK	/* Supported after FW v04 */
+	#endif
+
+	#ifndef CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#define CONFIG_TXPWR_PG_WITH_PWR_IDX
+	#endif
+	#ifndef CONFIG_TXPWR_PG_WITH_TSSI_OFFSET
+	#define CONFIG_TXPWR_PG_WITH_TSSI_OFFSET
+	#endif
+#endif /* CONFIG_RTL8814B */
 
 #endif /*__HAL_IC_CFG_H__*/

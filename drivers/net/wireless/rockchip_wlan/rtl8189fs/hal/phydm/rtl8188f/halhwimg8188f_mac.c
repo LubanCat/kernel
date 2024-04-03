@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -61,18 +60,14 @@ check_positive(
 			(dm->type_apa & 0xFF00)  << 16;
 
 	PHYDM_DBG(dm, ODM_COMP_INIT,
-		  "===> %s (cond1, cond2, cond3, cond4) = (0x%X 0x%X 0x%X 0x%X)\n",
-		  __func__, cond1, cond2, cond3, cond4);
+	"===> check_positive (cond1, cond2, cond3, cond4) = (0x%X 0x%X 0x%X 0x%X)\n", cond1, cond2, cond3, cond4);
 	PHYDM_DBG(dm, ODM_COMP_INIT,
-		  "===> %s (driver1, driver2, driver3, driver4) = (0x%X 0x%X 0x%X 0x%X)\n",
-		  __func__, driver1, driver2, driver3, driver4);
+	"===> check_positive (driver1, driver2, driver3, driver4) = (0x%X 0x%X 0x%X 0x%X)\n", driver1, driver2, driver3, driver4);
 
 	PHYDM_DBG(dm, ODM_COMP_INIT,
-		  "	(Platform, Interface) = (0x%X, 0x%X)\n",
-		  dm->support_platform, dm->support_interface);
+	"	(Platform, Interface) = (0x%X, 0x%X)\n", dm->support_platform, dm->support_interface);
 	PHYDM_DBG(dm, ODM_COMP_INIT,
-		  "	(Board, Package) = (0x%X, 0x%X)\n", dm->board_type,
-		  dm->package_type);
+	"	(Board, Package) = (0x%X, 0x%X)\n", dm->board_type, dm->package_type);
 
 
 	/*============== value Defined Check ===============*/
@@ -186,7 +181,9 @@ u32 array_mp_8188f_mac_reg[] = {
 		0x50F, 0x00000000,
 		0x512, 0x0000001C,
 		0x514, 0x0000000A,
+		0x515, 0x0000000E,
 		0x516, 0x0000000A,
+		0x517, 0x0000000E,
 		0x525, 0x0000004F,
 		0x550, 0x00000010,
 		0x551, 0x00000010,
@@ -213,6 +210,7 @@ u32 array_mp_8188f_mac_reg[] = {
 		0x642, 0x00000040,
 		0x643, 0x00000000,
 		0x652, 0x000000C8,
+		0x66A, 0x00000020,
 		0x66E, 0x00000005,
 		0x700, 0x00000021,
 		0x701, 0x00000043,
@@ -226,17 +224,19 @@ u32 array_mp_8188f_mac_reg[] = {
 };
 
 void
-odm_read_and_config_mp_8188f_mac_reg(struct dm_struct *dm)
+odm_read_and_config_mp_8188f_mac_reg(
+	struct	dm_struct *dm
+)
 {
 	u32	i = 0;
 	u8	c_cond;
 	boolean	is_matched = true, is_skipped = false;
-	u32	array_len = sizeof(array_mp_8188f_mac_reg) / sizeof(u32);
+	u32	array_len = sizeof(array_mp_8188f_mac_reg)/sizeof(u32);
 	u32	*array = array_mp_8188f_mac_reg;
 
 	u32	v1 = 0, v2 = 0, pre_v1 = 0, pre_v2 = 0;
 
-	PHYDM_DBG(dm, ODM_COMP_INIT, "===> %s\n", __func__);
+	PHYDM_DBG(dm, ODM_COMP_INIT, "===> odm_read_and_config_mp_8188f_mac_reg\n");
 
 	while ((i + 1) < array_len) {
 		v1 = array[i];
@@ -244,13 +244,13 @@ odm_read_and_config_mp_8188f_mac_reg(struct dm_struct *dm)
 
 		if (v1 & (BIT(31) | BIT(30))) {/*positive & negative condition*/
 			if (v1 & BIT(31)) {/* positive condition*/
-				c_cond  = (u8)((v1 & (BIT(29) | BIT(28))) >> 28);
+				c_cond  = (u8)((v1 & (BIT(29)|BIT(28))) >> 28);
 				if (c_cond == COND_ENDIF) {/*end*/
 					is_matched = true;
 					is_skipped = false;
 					PHYDM_DBG(dm, ODM_COMP_INIT, "ENDIF\n");
 				} else if (c_cond == COND_ELSE) { /*else*/
-					is_matched = is_skipped ? false : true;
+					is_matched = is_skipped?false:true;
 					PHYDM_DBG(dm, ODM_COMP_INIT, "ELSE\n");
 				} else {/*if , else if*/
 					pre_v1 = v1;
@@ -280,7 +280,7 @@ odm_read_and_config_mp_8188f_mac_reg(struct dm_struct *dm)
 u32
 odm_get_version_mp_8188f_mac_reg(void)
 {
-		return 38;
+		return 45;
 }
 
 #endif /* end of HWIMG_SUPPORT*/

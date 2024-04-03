@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -275,8 +274,6 @@ void hal_ReadPAType_8814A(
 		u8		*pLNAType
 );
 
-void hal_ReadPowerTrackingType_8814A(PADAPTER Adapter, u8 *PROMContent, BOOLEAN AutoloadFail);
-
 void hal_GetRxGainOffset_8814A(
 	PADAPTER	Adapter,
 	u8 			*PROMContent,
@@ -321,11 +318,14 @@ void rtl8814_stop_thread(PADAPTER padapter);
 	BOOLEAN	InterruptRecognized8814AE(PADAPTER Adapter);
 	void	UpdateInterruptMask8814AE(PADAPTER Adapter, u32 AddMSR, u32 AddMSR1, u32 RemoveMSR, u32 RemoveMSR1);
 	void	InitMAC_TRXBD_8814AE(PADAPTER Adapter);
+	void rtl8814ae_reset_desc_ring(_adapter *padapter);
 	u16	get_txbd_rw_reg(u16 ff_hwaddr);
 #endif
 
 #ifdef CONFIG_BT_COEXIST
 	void rtl8814a_combo_card_WifiOnlyHwInit(PADAPTER Adapter);
 #endif
+
+void rtl8814ae_hci_flush(PADAPTER Adapter, u32 queue);
 
 #endif /* __RTL8188E_HAL_H__ */

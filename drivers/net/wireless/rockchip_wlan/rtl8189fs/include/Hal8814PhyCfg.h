@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  * Copyright(c) 2007 - 2017 Realtek Corporation.
@@ -124,16 +123,6 @@ phy_get_tx_power_index_8814a(
 		u8				Rate,
 		enum channel_width BandWidth,
 		u8				Channel
-);
-
-u8
-PHY_GetTxPowerIndex8814A(
-		PADAPTER		Adapter,
-		enum rf_path		RFPath,
-		u8				Rate,
-		u8				BandWidth,
-		u8				Channel,
-	struct txpwr_idx_comp *tic
 );
 
 void
