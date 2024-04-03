@@ -2034,9 +2034,9 @@ static ssize_t gpio_store(struct kobject *kobj, struct kobj_attribute *attr,
 		}
 
 		if (rk312x->hp_ctl_gpio) {
-		gpiod_set_value(rk312x->hp_ctl_gpio, 1);
-		DBG("%s : enable hp gpio \n",__func__);
-	}
+			gpiod_set_value(rk312x->hp_ctl_gpio, 1);
+			DBG("%s : enable hp gpio \n",__func__);
+		}
 		break;
 	default:
 		DBG(KERN_ERR"--rk312x codec %s-- unknown cmd\n", __func__);
@@ -2105,14 +2105,14 @@ static void hpdet_work_func(struct work_struct *work)
 	DBG("%s GRF_SOC_STATUS0 -- 0x%x\n", __func__, val);
 	if (val & 0x80000000) {
 		DBG("%s hp det high\n", __func__);
-		DBG("%s no headset\n", __func__);
-		extcon_set_state_sync(rk312x_priv->edev,
-				      EXTCON_JACK_HEADPHONE, false);
-	} else {
-		DBG("%s hp det low\n", __func__);
 		DBG("%s headset inserted\n", __func__);
 		extcon_set_state_sync(rk312x_priv->edev,
 				      EXTCON_JACK_HEADPHONE, true);
+	} else {
+		DBG("%s hp det low\n", __func__);
+		DBG("%s no headset\n", __func__);
+		extcon_set_state_sync(rk312x_priv->edev,
+				      EXTCON_JACK_HEADPHONE, false);
 	}
 	return;
 }
