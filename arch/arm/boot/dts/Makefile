@@ -1035,6 +1035,8 @@ dtb-$(CONFIG_ARCH_ROCKCHIP) += \
 	rk3126c-evb-ddr3-v10-linux-slc.dtb \
 	rk3128-evb-ddr3-v10-linux.dtb \
 	rk3128-evb-ddr3-v10-linux-spi-nand.dtb \
+	rk3128-lubancat-0h.dtb \
+	rk3128-lubancat-generic.dtb \
 	rk3188-bqedison2qc.dtb \
 	rk3188-px3-evb.dtb \
 	rk3188-radxarock.dtb \
@@ -1470,3 +1472,5 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
 	aspeed-bmc-opp-zaius.dtb \
 	aspeed-bmc-portwell-neptune.dtb \
 	aspeed-bmc-quanta-q71l.dtb
+
+subdir-y	:= $(dts-dirs) overlay
