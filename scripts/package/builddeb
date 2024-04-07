@@ -168,10 +168,11 @@ fi
 
 if is_enabled CONFIG_ARCH_ROCKCHIP; then
 	mkdir -p "$tmpdir/boot/uEnv"
- 	cp $objtree/arch/arm64/boot/dts/rockchip/uEnv/uEnv*.txt "$tmpdir/boot/uEnv"
-	# if [ -f "$tmpdir/boot/dtb/${RK_KERNEL_DTS}.dtb" ]; then
-	# 	cp "$tmpdir/boot/dtb/${RK_KERNEL_DTS}.dtb" "$tmpdir/boot/rk-kernel.dtb"
-	# fi
+	if [ "$ARCH" = "arm64" ] ; then
+		cp $objtree/arch/arm64/boot/dts/rockchip/uEnv/uEnv*.txt "$tmpdir/boot/uEnv"
+	else
+		cp $objtree/arch/arm/boot/dts/uEnv/uEnv*.txt "$tmpdir/boot/uEnv"
+	fi
 fi
 
 if is_enabled CONFIG_MODULES; then
