@@ -48,20 +48,6 @@
 	model = "Embedfire LubanCat-4";
 	compatible = "rockchip,rk3588s-lubancat-4", "rockchip,rk3588";
 
-	adc_keys: adc-keys {
-		compatible = "adc-keys";
-		io-channels = <&saradc 1>;
-		io-channel-names = "buttons";
-		keyup-threshold-microvolt = <1800000>;
-		poll-interval = <100>;
-		
-		power {
-			label = "power";
-			linux,code = <KEY_POWER>;
-			press-threshold-microvolt = <1750>;
-		};
-	};
-
 	leds: leds {
 		status = "okay";
 		compatible = "gpio-leds";
