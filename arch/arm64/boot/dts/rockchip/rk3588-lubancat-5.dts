@@ -54,6 +54,20 @@
 		};
 	};
 
+	adc_keys: adc-keys {
+		compatible = "adc-keys";
+		io-channels = <&saradc 1>;
+		io-channel-names = "buttons";
+		keyup-threshold-microvolt = <1800000>;
+		poll-interval = <100>;
+		
+		power {
+			label = "power";
+			linux,code = <KEY_POWER>;
+			press-threshold-microvolt = <1750>;
+		};
+	};
+
 	leds: leds {
 		status = "okay";
 		compatible = "gpio-leds";
@@ -65,20 +79,6 @@
 			gpios = <&gpio0 RK_PD3 GPIO_ACTIVE_LOW>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&sys_led_pin>;
-		};
-
-		abc_led: abc-led {
-			label = "abc_led";
-			linux,default-trigger = "heartbeat";
-			default-state = "on";
-			gpios = <&gpio6 0 GPIO_ACTIVE_HIGH>;
-		};
-
-		def_led: def-led {
-			label = "def_led";
-			linux,default-trigger = "heartbeat";
-			default-state = "on";
-			gpios = <&gpio7 2 GPIO_ACTIVE_HIGH>;
 		};
 	};
 
@@ -1457,7 +1457,7 @@
 	/* Effective level used to trigger HPD: 0-low, 1-high */
 	hpd-trigger-level = <1>;
 	hdmirx-det-gpios = <&gpio1 RK_PD5 GPIO_ACTIVE_LOW>;
-	pinctrl-0 = <&hdmim1_rx_cec &hdmim1_rx_hpdin &hdmim1_rx_scl &hdmim1_rx_sda &hdmirx_det>;
+	pinctrl-0 = <&hdmim0_rx_cec &hdmim1_rx_hpdin &hdmim1_rx_scl &hdmim1_rx_sda &hdmirx_det>;
 	pinctrl-names = "default";
 };
 
