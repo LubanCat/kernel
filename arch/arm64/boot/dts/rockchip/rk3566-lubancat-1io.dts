@@ -7,8 +7,8 @@
  /dts-v1/;
 //核心板配置
 #include "rk3566-lubancat-1core-port.dtsi"
-
-
+// MIPI-DSI0屏幕
+#include "rk3566-lubancat-1io-dsi0.dtsi"
 // MIPI-DSI1屏幕
 #include "rk3566-lubancat-1io-dsi1.dtsi"
 //HDMI输出（与lvds二选一）
