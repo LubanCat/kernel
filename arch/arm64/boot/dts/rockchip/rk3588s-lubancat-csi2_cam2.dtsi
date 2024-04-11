@@ -136,7 +136,7 @@
 
 	ov8858: ov8858@36 {
 		compatible = "ovti,ov8858";
-		status = "okay";
+		status = "disabled";
 		reg = <0x36>;
 		clocks = <&ext_cam2_24m_clk>;
 		clock-names = "xvclk";
@@ -194,7 +194,7 @@
 
 	imx415_2: imx415-2@1a {
 		compatible = "sony,imx415";
-		status = "disabled";
+		status = "okay";
 		reg = <0x1a>;
 		clocks = <&ext_cam2_37m_clk>;
 		clock-names = "xvclk";

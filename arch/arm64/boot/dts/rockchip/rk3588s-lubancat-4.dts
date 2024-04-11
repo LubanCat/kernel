@@ -18,7 +18,7 @@
 #include "rk3588-linux.dtsi"
 
 // #include "rk3588s-lubancat-40pin.dtsi"
-// #include "rk3588s-lubancat-csi2.dtsi"
+#include "rk3588s-lubancat-csi2.dtsi"
 // #include "rk3588s-lubancat-csi2_cam0.dtsi"
 // #include "rk3588s-lubancat-csi2_cam1.dtsi"
 // #include "rk3588s-lubancat-csi2_cam2.dtsi"

@@ -11,91 +11,20 @@
 #include <dt-bindings/sensor-dev.h>
 
 / {
+	
 	fragment@0 {
-		target-path = "/";
-		
-		__overlay__ {
-			ext_cam2_37m_clk: external-camera-37m-clock {
-				compatible = "fixed-clock";
-				clock-frequency = <37125000>;
-				clock-output-names = "ext_cam2_37m_clk";
-				#clock-cells = <0>;
-			};
-
-			vdd_cam2_5v: vdd-cam2-5v-regulator {
-				compatible = "regulator-fixed";
-				regulator-name = "vdd_cam2_5v";
-				regulator-always-on;
-				regulator-boot-on;
-				regulator-min-microvolt = <3300000>;
-				regulator-max-microvolt = <3300000>;
-			};
-
-			cam2_dovdd: cam2-dovdd {
-				compatible = "regulator-fixed";
-				regulator-name = "cam2_dovdd";
-				regulator-always-on;
-				regulator-boot-on;
-				regulator-min-microvolt = <1800000>;
-				regulator-max-microvolt = <1800000>;
-				vin-supply = <&vdd_cam2_5v>;
-			};
-
-			cam2_avdd: cam2-avdd {
-				compatible = "regulator-fixed";
-				regulator-name = "cam2_avdd";
-				regulator-always-on;
-				regulator-boot-on;
-				regulator-min-microvolt = <2800000>;
-				regulator-max-microvolt = <2800000>;
-				vin-supply = <&vdd_cam2_5v>;
-			};
-
-			cam2_dvdd: cam2-dvdd {
-				compatible = "regulator-fixed";
-				regulator-name = "cam2_dvdd";
-				regulator-always-on;
-				regulator-boot-on;
-				regulator-min-microvolt = <1200000>;
-				regulator-max-microvolt = <1200000>;
-				vin-supply = <&vdd_cam2_5v>;
-			};
-		};
-	};
-
-	/* Link path: sensor->csi2_dphy0->mipi2_csi2->rkcif_mipi_lvds2--->rkcif_mipi_lvds2_sditf->rkisp0_vir2 */
-	fragment@1 {
 		target = <&i2c6>;	
 
 		__overlay__ {
 			status = "okay";
-			pinctrl-names = "default";
-			pinctrl-0 = <&i2c6m3_xfer>;
-			#address-cells = <1>;
-			#size-cells = <0>;
+		};
+	};
+	
+	fragment@1 {
+		target = <&imx415_2>;	
 
-			imx415_2: imx415-2@1a {
-				compatible = "sony,imx415";
-				status = "okay";
-				reg = <0x1a>;
-				clocks = <&ext_cam2_37m_clk>;
-				clock-names = "xvclk";
-				avdd-supply = <&cam2_avdd>;
-				dovdd-supply = <&cam2_dovdd>;
-				dvdd-supply = <&cam2_dvdd>;
-				reset-gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_LOW>;
-
-				rockchip,camera-module-index = <2>;
-				rockchip,camera-module-facing = "back";
-				rockchip,camera-module-name = "CMK-OT2022-PX1";
-				rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
-				port {
-					imx415_out2: endpoint {
-						remote-endpoint = <&dphy0_in_imx415>;
-						data-lanes = <1 2 3 4>;
-					};
-				};
-			};
+		__overlay__ {
+			status = "okay";
 		};
 	};
 
@@ -112,31 +41,6 @@
 
 		__overlay__ {
 			status = "okay";
-
-			ports {
-				#address-cells = <1>;
-				#size-cells = <0>;			
-				port@0 {
-					reg = <0>;
-					#address-cells = <1>;
-					#size-cells = <0>;			
-
-					dphy0_in_imx415: endpoint@5 {
-						reg = <5>;
-						remote-endpoint = <&imx415_out2>;
-						data-lanes = <1 2 3 4>;
-					};
-				};			
-				port@1 {
-					reg = <1>;
-					#address-cells = <1>;
-					#size-cells = <0>;			
-					csidphy0_out: endpoint@0 {
-						reg = <0>;
-						remote-endpoint = <&mipi2_csi2_input>;
-					};
-				};
-			};
 		};
 	};
 
@@ -145,29 +49,6 @@
 
 		__overlay__ {
 			status = "okay";
-
-			ports {
-				#address-cells = <1>;
-				#size-cells = <0>;			
-				port@0 {
-					reg = <0>;
-					#address-cells = <1>;
-					#size-cells = <0>;			
-					mipi2_csi2_input: endpoint@1 {
-						reg = <1>;
-						remote-endpoint = <&csidphy0_out>;
-					};
-				};			
-				port@1 {
-					reg = <1>;
-					#address-cells = <1>;
-					#size-cells = <0>;			
-					mipi2_csi2_output: endpoint@0 {
-						reg = <0>;
-						remote-endpoint = <&cif_mipi2_in0>;
-					};
-				};
-			};
 		};
 	};
 
@@ -180,35 +61,23 @@
 	};
 
 	fragment@6 {
-		target = <&rkcif_mipi_lvds2>;	
+		target = <&rkcif_mmu>;	
 
 		__overlay__ {
 			status = "okay";
-
-			port {
-				cif_mipi2_in0: endpoint {
-					remote-endpoint = <&mipi2_csi2_output>;
-				};
-			};
 		};
 	};
 
 	fragment@7 {
-		target = <&rkcif_mipi_lvds2_sditf>;	
+		target = <&rkcif_mipi_lvds2>;	
 
 		__overlay__ {
 			status = "okay";
-
-			port {
-				mipi_lvds2_sditf: endpoint {
-					remote-endpoint = <&isp1_vir0>;
-				};
-			};
 		};
 	};
 
 	fragment@8 {
-		target = <&rkcif_mmu>;	
+		target = <&rkcif_mipi_lvds2_sditf>;	
 
 		__overlay__ {
 			status = "okay";
@@ -236,15 +105,6 @@
 
 		__overlay__ {
 			status = "okay";
-
-			port {
-				#address-cells = <1>;
-				#size-cells = <0>;			
-				isp1_vir0: endpoint@0 {
-					reg = <0>;
-					remote-endpoint = <&mipi_lvds2_sditf>;
-				};
-			};
 		};
 	};
 };
