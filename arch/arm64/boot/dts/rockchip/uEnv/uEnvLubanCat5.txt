@@ -5,7 +5,6 @@ cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 root
 enable_uboot_overlays=1
 #overlay_start
 
-
 #40pin
 #dtoverlay=/dtb/overlay/rk3588-lubancat-i2c3-m0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-i2c4-m3-overlay.dtbo
@@ -21,16 +20,29 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-pwm14-m2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-pwm15-ir-m3-overlay.dtbo
 
-# Display
+# 8k插件，开启之后vp0的hdmi0或者hdmi1能输出8k
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi-8k-overlay.dtbo
-dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-1080p-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-1080p-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-edp-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi0-overlay.dtbo
+
+# vp0 （插件只能同时开一个）
+dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp0-overlay.dtbo
-dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
+
+# vp1 （默认配置为dp0开启，打开设备树则关闭dp显示）
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dp0-disabled-overlay.dtbo
 
+# vp2 （插件只能同时开一个）
+dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-edp-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-800x1280-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-1024x600-overlay.dtbo
+
+# vp3 （插件只能同时开一个）
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-800x1280-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-1024x600-overlay.dtbo
+
+# cam
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam0-imx415-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam1-imx415-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam2-ov8858-overlay.dtbo
