@@ -11,6 +11,7 @@
 #include <linux/phy.h>
 #include <linux/module.h>
 #include <linux/delay.h>
+#include <linux/of.h>
 
 #define RTL821x_PHYSR				0x11
 #define RTL821x_PHYSR_DUPLEX			BIT(13)
@@ -26,6 +27,8 @@
 #define RTL821x_EXT_PAGE_SELECT			0x1e
 #define RTL821x_PAGE_SELECT			0x1f
 
+#define RTL8211F_LCR				0x10
+#define RTL8211F_EEELCR				0x11
 #define RTL8211F_PHYCR1				0x18
 #define RTL8211F_INSR				0x1d
 
@@ -182,6 +185,7 @@ static int rtl8211f_config_init(struct phy_device *phydev)
 {
 	struct device *dev = &phydev->mdio.dev;
 	u16 val_txdly, val_rxdly;
+	u32 led_data;
 	u16 val;
 	int ret;
 
@@ -241,6 +245,15 @@ static int rtl8211f_config_init(struct phy_device *phydev)
 		dev_dbg(dev,
 			"2ns RX delay was already %s (by pin-strapping RXD0 or bootloader configuration)\n",
 			val_rxdly ? "enabled" : "disabled");
+	}
+
+	ret = of_property_read_u32(dev->of_node,
+				   "realtek,led-data", &led_data);
+	if (!ret) {
+		phy_write(phydev, RTL821x_PAGE_SELECT, 0xd04);
+		phy_write(phydev, RTL8211F_LCR, led_data);
+		phy_write(phydev, RTL8211F_EEELCR, 0x0);
+		phy_write(phydev, RTL821x_PAGE_SELECT, 0x0);
 	}
 
 	return 0;
