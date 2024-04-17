@@ -244,4 +244,6 @@ source "drivers/headset_observe/Kconfig"
 
 source "drivers/rknpu/Kconfig"
 
+source "drivers/ebf_module/Kconfig"
+
 endmenu

@@ -1,0 +1,1 @@
+obj-$(CONFIG_INFRARED) := infra.o
