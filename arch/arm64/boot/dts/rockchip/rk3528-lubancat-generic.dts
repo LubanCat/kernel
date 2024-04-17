@@ -13,8 +13,8 @@
 
 / {
 
-	model = "LubanCat RK3528";
-	compatible = "rockchip,lubancat", "rockchip,rk3528";
+	model = "Embedfire LubanCat-RK3528";
+	compatible = "rockchip,rk3528-lubancat", "rockchip,rk3528";
 
 	chosen: chosen {
 		bootargs = "earlycon=uart8250,mmio32,0xff9f0000 console=ttyFIQ0 root=PARTUUID=614e0000-0000 rw rootwait";

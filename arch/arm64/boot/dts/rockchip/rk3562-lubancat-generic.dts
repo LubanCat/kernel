@@ -18,7 +18,7 @@
 
 / {
 	model = "Embedfire LubanCat-RK3562";
-	compatible = "embedfire,rk3562-lubancat", "rockchip,rk3562";
+	compatible = "rockchip,rk3562-lubancat", "rockchip,rk3562";
 
 	adc-keys {
 		compatible = "adc-keys";

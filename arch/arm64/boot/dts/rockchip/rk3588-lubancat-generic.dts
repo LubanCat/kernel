@@ -19,7 +19,7 @@
 
 / {
 	model = "Embedfire LubanCat-RK3588";
-	compatible = "rockchip,rk3588s-lubancat", "rockchip,rk3588";
+	compatible = "rockchip,rk3588-lubancat", "rockchip,rk3588";
 
 	leds: leds {
 		status = "okay";
