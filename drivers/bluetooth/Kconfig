@@ -220,6 +220,13 @@ config BT_HCIUART_RTL
 
 	  Say Y here to compile support for Realtek protocol.
 
+config BT_RTKBTUSB
+    tristate "RTK HCI USB driver" 
+    depends on USB
+    default y
+    help
+      RTK Bluetooth HCI USB driver
+
 config BT_HCIUART_QCA
 	bool "Qualcomm Atheros protocol support"
 	depends on BT_HCIUART
