@@ -52,6 +52,10 @@
 #define HOOK_LEVEL_LOW		204	//0.5V*1024/2.5
 #define HOOK_DEFAULT_VAL	1024
 
+#define IS_HOOK_MEDIA(x)	(((x)>=0) && ((x)<=30))
+#define IS_HOOK_VOLUMEUP(x)	(((x)>=60) && ((x)<=120))
+#define IS_HOOK_VOLUMEDOWN(x)	(((x)>=150) && ((x)<=210))
+
 #define BIT_HEADSET             BIT(0)
 #define BIT_HEADSET_NO_MIC      BIT(1)
 
@@ -91,6 +95,7 @@ struct headset_priv {
 	unsigned int hook_status : 1;
 	int isMic;
 	struct iio_channel *chan;
+	unsigned int key_code;
 	/* headset interrupt working will not check hook key  */
 	unsigned int heatset_irq_working;
 	int cur_headset_status;
@@ -340,6 +345,14 @@ static void hook_work_callback(struct work_struct *work)
 		headset->hook_status = HOOK_UP;
 	DBG("HOOK status is %s , adc value = %d hook_time = %d\n",
 	    headset->hook_status ? "down" : "up", val, headset->hook_time);
+	
+	if (IS_HOOK_MEDIA(val))
+		headset->key_code = KEY_MEDIA;
+	else if (IS_HOOK_VOLUMEUP(val))
+		headset->key_code = KEY_VOLUMEUP;
+	else if (IS_HOOK_VOLUMEDOWN(val))
+		headset->key_code = KEY_VOLUMEDOWN;
+
 	if (old_status == headset->hook_status) {
 		DBG("Hook adc read old_status == headset->hook_status=%d hook_time = %d\n",
 		    headset->hook_status, headset->hook_time);
@@ -355,7 +368,7 @@ static void hook_work_callback(struct work_struct *work)
 		goto out;
 	} else {
 		input_report_key(headset->input_dev,
-				 HOOK_KEY_CODE, headset->hook_status);
+				 headset->key_code, headset->hook_status);
 		input_sync(headset->input_dev);
 	}
 status_error:
@@ -393,6 +406,7 @@ int rk_headset_adc_probe(struct platform_device *pdev,
 	headset_info = headset;
 	headset->pdata = pdata;
 	headset->headset_status = HEADSET_OUT;
+	headset->key_code = KEY_MEDIA;
 	headset->heatset_irq_working = IDLE;
 	headset->hook_status = HOOK_UP;
 	headset->hook_time = HOOK_ADC_SAMPLE_TIME;
@@ -432,7 +446,9 @@ int rk_headset_adc_probe(struct platform_device *pdev,
 		dev_err(&pdev->dev, "failed to register input device\n");
 		goto failed;
 	}
-	input_set_capability(headset->input_dev, EV_KEY, HOOK_KEY_CODE);
+	input_set_capability(headset->input_dev, EV_KEY, KEY_MEDIA);
+	input_set_capability(headset->input_dev, EV_KEY, KEY_VOLUMEUP);
+	input_set_capability(headset->input_dev, EV_KEY, KEY_VOLUMEDOWN);
 	if (pdata->headset_gpio) {
 		unsigned long irq_type;
 
