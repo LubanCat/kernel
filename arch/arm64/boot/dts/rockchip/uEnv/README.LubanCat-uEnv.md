@@ -6,7 +6,7 @@
 
 #### 支持板卡：
 
-- LubanCat Zero 系列 基于RK3566
+- LubanCat0 系列 基于RK3566
 - LubanCat1 系列 基于RK3566
 - LubanCat2 系列 基于RK3568
 - LubanCat4 系列 基于RK3588s

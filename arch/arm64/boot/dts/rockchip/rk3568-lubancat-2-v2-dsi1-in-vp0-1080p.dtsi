@@ -1,0 +1,151 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+&route_dsi1 {
+	status = "okay";
+	connect = <&vp0_out_dsi1>;
+};
+
+&video_phy1 {
+	status = "okay";
+};
+
+&dsi1_in_vp1 {
+	status = "disabled";
+};
+
+&dsi1_in_vp0 {
+	status = "okay";
+};
+
+&dsi1 {
+	status = "okay";
+	power-supply = <&mipi_dsi1_power>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	dsi1_panel: panel@1 {
+		status = "okay";
+		compatible = "simple-panel-dsi";
+		reg = <0x0>;
+		backlight = <&backlight1>;
+
+		enable-delay-ms = <35>;
+		prepare-delay-ms = <6>;
+		reset-delay-ms = <0>;
+		init-delay-ms = <20>;
+		unprepare-delay-ms = <0>;
+		disable-delay-ms = <20>;
+
+		size,width = <74>;
+		size,height = <133>;
+
+		dsi,flags = <(MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_EOT_PACKET)>;
+		dsi,format = <MIPI_DSI_FMT_RGB888>;
+		dsi,lanes  = <4>;
+
+		panel-init-sequence = [
+			39 00 04 B9 FF 83 99
+			15 00 02 D2 77
+			39 00 10 B1 02 04 74 94 01 32 33 11 11 AB 4D 56 73 02 02
+			39 00 10 B2 00 80 80 AE 05 07 5A 11 00 00 10 1E 70 03 D4
+			15 00 02 36 02
+			39 00 2D B4 00 FF 02 C0 02 C0 00 00 08 00 04 06 00 32 04 0A 08 21 03 01 00 0F B8 8B 02 C0 02 C0 00 00 08 00 04 06 00 32 04 0A 08 01 00 0F B8 01
+			39 05 22 D3 00 00 00 00 00 00 06 00 00 10 04 00 04 00 00 00 00 00 00 00 00 00 00 01 00 05 05 07 00 00 00 05 40
+			39 05 21 D5 18 18 19 19 18 18 21 20 01 00 07 06 05 04 03 02 18 18 18 18 18 18 2F 2F 30 30 31 31 18 18 18 18
+			39 05 21 D6 18 18 19 19 40 40 20 21 06 07 00 01 02 03 04 05 40 40 40 40 40 40 2F 2F 30 30 31 31 40 40 40 40
+			39 00 11 D8 A2 AA 02 A0 A2 A8 02 A0 B0 00 00 00 B0 00 00 00
+			15 00 02 BD 01
+			39 00 11 D8 B0 00 00 00 B0 00 00 00 E2 AA 03 F0 E2 AA 03 F0
+			15 00 02 BD 02
+			39 00 09 D8 E2 AA 03 F0 E2 AA 03 F0
+			15 00 02 BD 00
+			39 00 03 B6 8D 8D
+			39 05 37 E0 00 0E 19 13 2E 39 48 44 4D 57 5F 66 6C 76 7F 85 8A 95 9A A4 9B AB B0 5C 58 64 77 00 0E 19 13 2E 39 48 44 4D 57 5F 66 6C 76 7F 85 8A 95 9A A4 9B AB B0 5C 58 64 77
+			05 C8 01 11
+			05 C8 01 29
+		];
+
+		panel-exit-sequence = [
+			05 78 01 28
+			05 00 01 10
+		];
+
+		disp_timings: display-timings {
+			native-mode = <&dsi1_timing>;
+			dsi1_timing: timing {
+				clock-frequency = <131376000>;
+				hactive = <1080>;
+				vactive = <1920>;
+				hsync-len = <10>;
+				hback-porch = <20>;
+				hfront-porch = <10>;
+				vsync-len = <5>;
+				vback-porch = <20>;
+				vfront-porch = <10>;
+				hsync-active = <0>;
+				vsync-active = <0>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+			};
+		};
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+				panel_in_dsi1: endpoint {
+					remote-endpoint = <&dsi1_out_panel>;
+				};
+			};
+		};
+	};
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@1 {
+			reg = <1>;
+			dsi1_out_panel: endpoint {
+				remote-endpoint = <&panel_in_dsi1>;
+			};
+		};
+	};
+};
+
+&i2c5 {
+	status = "okay";
+	clock-frequency = <100000>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	gt911_dsi1: gt911@5d {
+		status = "okay";
+		compatible = "goodix,gt911";
+		reg = <0x5d>;
+		touchscreen-inverted-x = <1>;
+		touchscreen-inverted-y = <1>;
+	};
+
+	gt928_dsi1: gt928@5d {
+		status = "okay";
+		compatible = "goodix,gt928";
+		reg = <0x5d>;
+		touchscreen-inverted-y;
+	};
+};
+
+&route_hdmi {
+	status = "disabled";
+};
+
+&hdmi_in_vp0 {
+	status = "disabled";
+};
+
+&hdmi_in_vp1 {
+	status = "disabled";
+};
+
+&hdmi {
+	status = "disabled";
+};

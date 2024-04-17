@@ -1,0 +1,76 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/ {
+
+	edp_panel: edp-panel {
+		compatible = "simple-panel";
+		backlight = <&backlight2>;
+		status = "okay";
+		power-supply = <&vdd_3v3_edp_lcd>;
+		enable-gpios = <&gpio2 RK_PD7 GPIO_ACTIVE_HIGH>;
+		//bus-format = <MEDIA_BUS_FMT_RBG888_1X24>;
+		prepare-delay-ms = <100>; //AUX通信前延时
+		enable-delay-ms = <100>;
+
+		display-timings {
+			native-mode = <&timing0>;
+
+			timing0: timing0 {
+				clock-frequency = <140000000>;
+				hactive = <1920>;
+				vactive = <1080>;
+				hfront-porch = <40>;
+				hsync-len = <40>;
+				hback-porch = <80>;
+				vfront-porch = <16>;
+				vsync-len = <8>;
+				vback-porch = <16>;
+				hsync-active = <0>;
+				vsync-active = <0>;
+				de-active = <0>;
+				pixelclk-active = <0>;
+			};
+		};
+
+		ports {
+			panel_in_edp: endpoint {
+				remote-endpoint = <&edp_out_panel>;
+			};
+		};
+	};
+};
+
+
+&edp {
+	status = "okay";
+	// hpd-gpios = <&gpio4 RK_PC4 GPIO_ACTIVE_HIGH>; //热插拔信号检测
+	force-hpd; //强制hpd，忽略物理hdp信号
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@1 {
+			reg = <1>;
+			edp_out_panel: endpoint@0 {
+				remote-endpoint = <&panel_in_edp>;
+			};
+		};
+	};
+};
+
+&route_edp {
+	status = "okay";
+	connect = <&vp1_out_edp>;
+};
+
+&edp_phy {
+	status = "okay";
+};
+
+&edp_in_vp0 {
+	status = "disabled";
+};
+
+&edp_in_vp1 {
+	status = "okay";
+};
