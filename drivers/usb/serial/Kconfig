@@ -112,6 +112,15 @@ config USB_SERIAL_CH341
 	  To compile this driver as a module, choose M here: the
 	  module will be called ch341.
 
+config USB_SERIAL_CH343
+	tristate "USB serial driver for ch342/ch343/ch344/ch347/ch9101/ch9102/ch9103/ch9143"
+	help
+	  Say Y here if you want to use a Winchiphead CH343 single port
+	  USB to serial adapter.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called ch343.
+
 config USB_SERIAL_WHITEHEAT
 	tristate "USB ConnectTech WhiteHEAT Serial Driver"
 	select USB_EZUSB_FX2
