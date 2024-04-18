@@ -207,25 +207,32 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&sys_status_led_pin>;
 		};
+	};
 
-		fan0: fan0 {
-			label = "fan0";
-			default-state = "on";
-			linux,default-trigger = "none";
-			gpios = <&gpio0 RK_PB7 GPIO_ACTIVE_HIGH>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&fan0_pin>;
-		};
+	fan0: pwm-fan0 {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		pwms = <&pwm0 0 50000 0>;
+		cooling-levels = <0 100 150 200 255>;
+		rockchip,temp-trips = <
+			40000	1
+			55000	2
+			60000	3
+			65000	4
+		>;
+	};
 
-		fan1: fan1 {
-			label = "fan1";
-			default-state = "on";
-			linux,default-trigger = "none";
-			gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&fan1_pin>;
-		};
-
+	fan1: pwm-fan1 {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		pwms = <&pwm7 0 50000 0>;
+		cooling-levels = <0 100 150 200 255>;
+		rockchip,temp-trips = <
+			40000	1
+			55000	2
+			60000	3
+			65000	4
+		>;
 	};
 
 	rk809_sound: rk809-sound {
@@ -349,7 +356,7 @@
 			 &i2s1m0_sdo0>;
 };
 
-&pwm4 {
+&pwm0 {
 	status = "okay";
 };
 
@@ -379,6 +386,14 @@
 		<0xf1   KEY_LEFT>,
 		<0xe5   KEY_RIGHT>;
 	};
+};
+
+&pwm4 {
+	status = "okay";
+};
+
+&pwm7 {
+	status = "okay";
 };
 
 &xin32k {
@@ -750,14 +765,6 @@
 	leds {
 		sys_status_led_pin: sys-status-led-pin {
 			rockchip,pins = <0 RK_PC7 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-
-		fan0_pin: fan0-pin {
-			rockchip,pins = <0 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-
-		fan1_pin: fan1-pin {
-			rockchip,pins = <0 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 };

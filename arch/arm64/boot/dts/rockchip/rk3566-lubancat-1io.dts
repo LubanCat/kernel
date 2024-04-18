@@ -56,15 +56,19 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&user_led2_pin>;
 		};
+	};
 
-		fan: fan {
-			label = "fan";
-			default-state = "on";
-			linux,default-trigger = "none";
-			gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&fan_pin>;
-		};
+	fan: pwm-fan {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		pwms = <&pwm2 0 50000 0>;
+		cooling-levels = <0 100 150 200 255>;
+		rockchip,temp-trips = <
+			40000	1
+			45000	2
+			50000	3
+			55000	4
+		>;
 	};
 
 	ext_cam_clk: external-camera0-clock {
@@ -515,6 +519,14 @@
 	status = "okay";
 };
 
+&pwm0 {
+	status = "okay";
+};
+
+&pwm2 {
+	status = "okay";
+};
+
 // 红外
 &pwm3 {
 	status = "okay";
@@ -544,16 +556,11 @@
 	};
 };
 
-&pwm0 {
-	status = "okay";
-};
-
 &i2c2 {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c2m1_xfer>;
 };
-
 
 &i2c0 {
 	rx8010: rx8010@32 {
@@ -580,7 +587,6 @@
 &pwm4 {
 	status = "okay";
 };
-
 
 &pwm5 {
 	status = "okay";
@@ -622,14 +628,11 @@
 	status = "okay";
 };
 
-
 &uart9 {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart9m1_xfer>;
 };
-
-
 
 /* USB OTG/USB Host_1 USB 2.0 Comb */
 &usb2phy0 {
@@ -705,7 +708,6 @@
 	status = "okay";
 };
 
-
 &pinctrl {
 	cam {
 		cam_pwr_en: cam_pwr_en {
@@ -743,11 +745,6 @@
 		user_led2_pin:user_led2_pin{
 			rockchip,pins = <2 RK_PC0 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
-
-		fan_pin: fan-pin {
-			rockchip,pins = <0 RK_PC1 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-
 	};
 
 	power{
