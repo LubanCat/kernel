@@ -1,0 +1,58 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/input/linux-event-codes.h>
+
+/ {
+	compatible = "rockchip,rk3568";
+
+	fragment@0 {
+		target = <&spi3>;
+
+		__overlay__ {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			// 40PIN引脚只预留SPI3 CS0引脚，如果有多个CS信号，可以使用gpio模拟cs 
+			pinctrl-names = "default", "high_speed";
+			pinctrl-0 = <&spi3m1_cs0 &spi3m1_pins>;
+			pinctrl-1 = <&spi3m1_cs0 &spi3m1_pins_hs>;
+
+			mcp2515: can@00 {
+				status = "okay";
+				compatible ="microchip,mcp2515";
+				reg = <0x00>;
+				clocks = <&mcp251x_clk>; 
+				interrupt-parent = <&gpio1>;  
+				interrupts = <RK_PB2 IRQ_TYPE_EDGE_FALLING>;
+				spi-max-frequency = <10000000>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&mcp2515_irq1_pins>;
+				poll_mode = <0>;
+				enable_dma = <1>;
+
+			};
+			mcp251x_clk:mcp251x-clk{
+				compatible="fixed-clock";
+				#clock-cells = <0>;
+				clock-frequency = <12000000>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&pinctrl>;
+		__overlay__ {
+		mcp2515 {
+			mcp2515_irq1_pins:mcp2515-irq1-pins{
+				rockchip,pins =
+					<1 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
+				};
+			};
+		};
+	};
+};

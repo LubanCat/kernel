@@ -32,6 +32,8 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk356x-lubancat-i2c3-m0-rtc-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-i2c3-m1-rtc-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-i2c5-m0-rtc-overlay.dtbo
+#spi-can
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1-spi-can-mcp2515-overlay.dtbo
 #display
 #dtoverlay=/dtb/overlay/rk3566-lubancat-dsi0-720p-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-dsi0-1080p-overlay.dtbo
