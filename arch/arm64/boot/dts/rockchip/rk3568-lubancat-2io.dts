@@ -6,7 +6,7 @@
  * LubanCat-2IO development board devicestree
  */
 
-#include "rk3568-lubancat-2core-port.dtsi"
+#include "rk3568-lubancat-2core.dtsi"
 
 //MIPI摄像头配置
 #include "rk3568-lubancat-csi2-double.dtsi"
