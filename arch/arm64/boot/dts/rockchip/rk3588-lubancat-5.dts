@@ -61,9 +61,9 @@
 		keyup-threshold-microvolt = <1800000>;
 		poll-interval = <100>;
 		
-		power {
-			label = "power";
-			linux,code = <KEY_POWER>;
+		up {
+			label = "up";
+			linux,code = <KEY_UP>;
 			press-threshold-microvolt = <1750>;
 		};
 	};
@@ -1138,16 +1138,6 @@
 
 &pwm4 {
 	pinctrl-0 = <&pwm4m0_pins>;
-	status = "okay";
-};
-
-&pwm2 {
-	pinctrl-0 = <&pwm2m0_pins>;
-	status = "okay";
-};
-
-&pwm6 {
-	pinctrl-0 = <&pwm6m0_pins>;
 	status = "okay";
 };
 
