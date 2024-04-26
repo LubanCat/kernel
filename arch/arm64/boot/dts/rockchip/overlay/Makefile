@@ -22,6 +22,10 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-uart9-m2-overlay.dtbo \
 	rk3588-lubancat-5-cam0-imx415-overlay.dtbo \
 	rk3588-lubancat-5-cam1-imx415-overlay.dtbo \
+	rk3588-lubancat-5-cam2-imx415-overlay.dtbo \
+	rk3588-lubancat-5-cam3-imx415-overlay.dtbo \
+	rk3588-lubancat-5-cam4-imx415-overlay.dtbo \
+	rk3588-lubancat-5-cam5-imx415-overlay.dtbo \
 	rk3588-lubancat-5-cam2-ov8858-overlay.dtbo \
 	rk3588-lubancat-5-cam3-ov8858-overlay.dtbo \
 	rk3588-lubancat-5-cam4-ov8858-overlay.dtbo \

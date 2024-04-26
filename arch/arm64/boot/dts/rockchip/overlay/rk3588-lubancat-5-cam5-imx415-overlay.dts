@@ -20,7 +20,7 @@
 	};
 
 	fragment@1 {
-		target = <&dphy5_ov8858>;
+		target = <&dphy5_imx415>;
 		__overlay__ {
 			status = "okay";
 		};
@@ -101,14 +101,6 @@
 
 	fragment@11 {
 		target = <&rkisp1_vir2>;
-
-		__overlay__ {
-			status = "okay";
-		};
-	};
-
-	fragment@12 {
-		target = <&dphy5_dw9714>;
 
 		__overlay__ {
 			status = "okay";
