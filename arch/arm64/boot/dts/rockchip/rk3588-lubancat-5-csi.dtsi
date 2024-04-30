@@ -1518,7 +1518,7 @@
 
 	port {
 		mipi_lvds1_sditf: endpoint {
-			remote-endpoint = <&isp0_vir1>;
+			remote-endpoint = <&isp1_vir0>;
 		};
 	};
 };
@@ -1558,7 +1558,7 @@
 
 	port {
 		mipi_lvds3_sditf: endpoint {
-			remote-endpoint = <&isp1_vir0>;
+			remote-endpoint = <&isp0_vir1>;
 		};
 	};
 };
@@ -1634,7 +1634,7 @@
 
 		isp0_vir1: endpoint@0 {
 			reg = <0>;
-			remote-endpoint = <&mipi_lvds1_sditf>;
+			remote-endpoint = <&mipi_lvds3_sditf>;
 		};
 	};
 };
@@ -1670,7 +1670,7 @@
 
 		isp1_vir0: endpoint@0 {
 			reg = <0>;
-			remote-endpoint = <&mipi_lvds3_sditf>;
+			remote-endpoint = <&mipi_lvds1_sditf>;
 		};
 	};
 };
