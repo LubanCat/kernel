@@ -1038,14 +1038,14 @@ static __maybe_unused const struct regval imx415_linear_10bit_1920x1080_891M_reg
 	{0x3008, 0x7f},
 	{0x300A, 0x5b},
 	{0x3034, 0x05},
-	{0x301C, 0x04},
+	// {0x301C, 0x04},
 	{0x3020, 0x01},
 	{0x3021, 0x01},
 	{0x3022, 0x01},
 	{0x3024, 0xCA},
 	{0x3025, 0x08},
-	{0x3028, 0x98},
-	{0x3029, 0x08},
+	{0x3028, 0x4c},
+	{0x3029, 0x04},
 	{0x3031, 0x00},
 	{0x3032, 0x00},
 	{0x3033, 0x05},
@@ -1341,7 +1341,7 @@ static __maybe_unused const struct regval imx415_linear_12bit_1284x720_2376M_reg
 	{REG_NULL, 0x00},
 };
 
-static __maybe_unused const struct regval imx415_linear_10bit_1280x720_891M_regs_2lane[] = {
+static __maybe_unused const struct regval imx415_linear_10bit_1284x720_891M_regs_2lane[] = {
 	{0x3008, 0x5D},
 	{0x300A, 0x42},
 	{0x301C, 0x04},
@@ -1353,12 +1353,10 @@ static __maybe_unused const struct regval imx415_linear_10bit_1280x720_891M_regs
 	{0x3028, 0xA4},
 	{0x3029, 0x01},
 	{0x3031, 0x00},
-	{0x3032, 0x00},
 	{0x3033, 0x00},
-	{0x3034, 0x05},
 	{0x3040, 0x88},
 	{0x3041, 0x02},
-	{0x3042, 0x00},
+	{0x3042, 0x08},
 	{0x3043, 0x0A},
 	{0x3044, 0xF0},
 	{0x3045, 0x02},
@@ -1370,8 +1368,8 @@ static __maybe_unused const struct regval imx415_linear_10bit_1280x720_891M_regs
 	{0x30D9, 0x02},
 	{0x30DA, 0x01},
 	{0x3116, 0x23},
-	{0x3118, 0xC6},
-	{0x3119, 0x00},
+	{0x3118, 0x08},
+	{0x3119, 0x01},
 	{0x311A, 0xE7},
 	{0x311E, 0x23},
 	{0x32D4, 0x21},
@@ -1477,8 +1475,6 @@ static __maybe_unused const struct regval imx415_linear_10bit_1280x720_891M_regs
 	{0x4001, 0x01},
 	{0x4004, 0xC0},
 	{0x4005, 0x06},
-	{0x400C, 0x00},
-	{0x4074, 0x01},
 	{0x4018, 0xE7},
 	{0x401A, 0x8F},
 	{0x401C, 0x8F},
@@ -1736,37 +1732,17 @@ static const struct imx415_mode supported_modes_2lane[] = {
 	{
 		/* 1H period = (1100 clock) = (1100 * 1 / 74.25MHz) */
 		.bus_fmt = MEDIA_BUS_FMT_SGBRG10_1X10,
-		.width = 1920,
-		.height = 1080,
+		.width = 1944,
+		.height = 1096,
 		.max_fps = {
 			.numerator = 10000,
-			.denominator = 600000,
+			.denominator = 300000,
 		},
 		.exp_def = 0x08ca - 0x08,
-		.hts_def = 0x0898 * IMX415_2LANES * 2,
+		.hts_def = 0x0800,
 		.vts_def = 0x08ca,
 		.global_reg_list = NULL,
 		.reg_list = imx415_linear_10bit_1920x1080_891M_regs_2lane,
-		.hdr_mode = NO_HDR,
-		.mipi_freq_idx = 1,
-		.bpp = 10,
-		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
-		.xvclk = IMX415_XVCLK_FREQ_37M,
-	},
-	{
-		/* 1H period = (1100 clock) = (1100 * 1 / 74.25MHz) */
-		.bus_fmt = MEDIA_BUS_FMT_SGBRG10_1X10,
-		.width = 1280,
-		.height = 720,
-		.max_fps = {
-			.numerator = 10000,
-			.denominator = 900000,
-		},
-		.exp_def = 0x07AB-8,
-		.hts_def = 0x01A4 * IMX415_2LANES * 2,
-		.vts_def = 0x07AB,
-		.global_reg_list = NULL,
-		.reg_list = imx415_linear_10bit_1280x720_891M_regs_2lane,
 		.hdr_mode = NO_HDR,
 		.mipi_freq_idx = 1,
 		.bpp = 10,
@@ -3003,6 +2979,8 @@ static int imx415_enum_frame_interval(struct v4l2_subdev *sd,
 #define DST_HEIGHT_2160 2160
 #define DST_WIDTH_1920 1920
 #define DST_HEIGHT_1080 1080
+#define DST_WIDTH_1280 1280
+#define DST_HEIGHT_720 720
 
 /*
  * The resolution of the driver configuration needs to be exactly
@@ -3030,6 +3008,11 @@ static int imx415_get_selection(struct v4l2_subdev *sd,
 			sel->r.width = DST_WIDTH_1920;
 			sel->r.top = CROP_START(imx415->cur_mode->height, DST_HEIGHT_1080);
 			sel->r.height = DST_HEIGHT_1080;
+		} else if (imx415->cur_mode->width == 1284) {
+			sel->r.left = CROP_START(imx415->cur_mode->width, DST_WIDTH_1280);
+			sel->r.width = DST_WIDTH_1280;
+			sel->r.top = CROP_START(imx415->cur_mode->height, DST_HEIGHT_720);
+			sel->r.height = DST_HEIGHT_720;
 		} else {
 			sel->r.left = CROP_START(imx415->cur_mode->width, imx415->cur_mode->width);
 			sel->r.width = imx415->cur_mode->width;
