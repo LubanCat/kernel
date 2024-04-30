@@ -154,10 +154,9 @@
 		regulator-name = "vccio_sd";
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <3300000>;
-		gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
+		gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_LOW>;
 		vin-supply = <&vcc5v0_sys>;
-		states = <1800000 0x0
-			  3300000 0x1>;
+		states = <1800000 0x1 3300000 0x0>;
 	};
 
 	vdd_logic: vdd-logic {
@@ -505,7 +504,6 @@
 	max-frequency = <150000000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_det &sdmmc_bus4>;
-	rockchip,default-sample-phase = <90>;
 	supports-sd;
 	sd-uhs-sdr12;
 	sd-uhs-sdr25;
