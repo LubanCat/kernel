@@ -14,6 +14,13 @@
 #include <dt-bindings/sensor-dev.h>
 #include "rk3566.dtsi"
 
+// hdmi
+#include "rk3566-lubancat-hdmi.dtsi"
+
+// mipi
+// #include "rk3566-lubancat-dsi0-rpi.dtsi"
+
+
 / {
     model = "EmbedFire LubanCat RK3566 CM4";
     compatible = "embedfire,rk3566-lubancat-cm4", "rockchip,rk3566";
@@ -94,6 +101,13 @@
         };
     };
 
+	ext_cam_25m_clk: external-camera-25m-clock {
+		compatible = "fixed-clock";
+		clock-frequency = <25000000>;
+		clock-output-names = "ext_cam_25m_clk";
+		#clock-cells = <0>;
+	};
+
     dc_5v: dc-5v {
         compatible = "regulator-fixed";
         regulator-name = "dc_5v";
@@ -113,6 +127,12 @@
         vin-supply = <&dc_5v>;
     };
 
+	mipi_dsi0_power: mipi-dsi0-power-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "mipi_dsi0_power";
+		regulator-always-on;
+	};
+
     vcc3v3_sys: vcc3v3-sys {
         compatible = "regulator-fixed";
         regulator-name = "vcc3v3_sys";
@@ -123,71 +143,52 @@
         vin-supply = <&vcc5v0_sys>;
     };
 
-	// sdio_pwrseq: sdio-pwrseq {
-    //     compatible = "mmc-pwrseq-simple";
-    //     clocks = <&rk809 1>;
-    //     clock-names = "ext_clock";
-    //     pinctrl-names = "default";
-    //     pinctrl-0 = <&wifi_enable_h>;
-    //     post-power-on-delay-ms = <200>;
-    //     reset-gpios = <&gpio3 RK_PD5 GPIO_ACTIVE_LOW>;
-    // };
+	sdio_pwrseq: sdio-pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		pinctrl-names = "default";
+		pinctrl-0 = <&wifi_enable_h>;
+		reset-gpios = <&gpio0 RK_PC5 GPIO_ACTIVE_LOW>;
+	};
 
-    // wireless_wlan: wireless-wlan {
-    //     compatible = "wlan-platdata";
-    //     rockchip,grf = <&grf>;
-    //     //wifi_chip_type = "ap6398s";
-    //     wifi_chip_type = "ap6256";
-        
-    //     status = "okay";
-    // };
+	wireless_wlan: wireless-wlan {
+		compatible = "wlan-platdata";
+		rockchip,grf = <&grf>;
+		wifi_chip_type = "ap6256";
+		pinctrl-names = "default";
+		pinctrl-0 = <&wifi_host_wake_irq>;
+		WIFI,host_wake_irq = <&gpio0 RK_PC6 GPIO_ACTIVE_LOW>;
+		status = "okay";
+	};
 
-    // wireless_bluetooth: wireless-bluetooth {
-    //     compatible = "bluetooth-platdata";
-    //     clocks = <&rk809 1>;
-    //     clock-names = "ext_clock";
-    //     //wifi-bt-power-toggle;
-    //     //uart_rts_gpios = <&gpio2 RK_PB1 GPIO_ACTIVE_LOW>;
-    //     pinctrl-names = "default", "rts_gpio";
-    //     pinctrl-0 = <&uart8m0_rtsn>;
-    //     pinctrl-1 = <&uart8_gpios>;
-    //     //BT,reset_gpio    = <&gpio3 RK_PA0 GPIO_ACTIVE_HIGH>;
-    //     //BT,wake_gpio     = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
-    //     //BT,wake_host_irq = <&gpio3 RK_PA2 GPIO_ACTIVE_HIGH>;
-    //     status = "okay";
-    // };
-
-	// bt_uart1: wireless_bluetooth: wireless-bluetooth {
-	// 	compatible = "bluetooth-platdata";
-	// 	clocks = <&rk809 1>;
-	// 	clock-names = "ext_clock";
-	// 	//wifi-bt-power-toggle;
-	// 	uart_rts_gpios = <&gpio2 RK_PB1 GPIO_ACTIVE_LOW>;
-	// 	pinctrl-names = "default", "rts_gpio";
-	// 	pinctrl-0 = <&uart1m0_rtsn>;
-	// 	pinctrl-1 = <&uart1_gpios>;
-	// 	BT,reset_gpio    = <&gpio4 RK_PB2 GPIO_ACTIVE_HIGH>;	//BT_REG_ON_H
-	// 	BT,wake_gpio     = <&gpio4 RK_PB5 GPIO_ACTIVE_HIGH>;	//HOST_WAKE_BT_H
-	// 	BT,wake_host_irq = <&gpio4 RK_PB4 GPIO_ACTIVE_HIGH>;	//BT_WAKE_HOST_H
-	// 	status = "okay";
-	// };
+    wireless_bluetooth: wireless-bluetooth {
+        compatible = "bluetooth-platdata";
+        clocks = <&rk809 1>;
+        clock-names = "ext_clock";
+        //wifi-bt-power-toggle;
+        uart_rts_gpios = <&gpio2 RK_PB5 GPIO_ACTIVE_LOW>;
+        pinctrl-names = "default", "rts_gpio";
+        pinctrl-0 = <&uart1m0_rtsn>;
+        pinctrl-1 = <&uart1_gpios>;
+        BT,reset_gpio    = <&gpio2 RK_PB7 GPIO_ACTIVE_HIGH>;
+        status = "okay";
+    };
 };
 
-// &sdmmc1 {
-// 	max-frequency = <150000000>;
-// 	supports-sdio;
-// 	bus-width = <4>;
-// 	disable-wp;
-// 	cap-sd-highspeed;
-// 	cap-sdio-irq;
-// 	keep-power-in-suspend;
-// 	mmc-pwrseq = <&sdio_pwrseq>;
-// 	non-removable;
-// 	pinctrl-names = "default";
-// 	pinctrl-0 = <&sdmmc1_bus4 &sdmmc1_cmd &sdmmc1_clk>;
-// 	sd-uhs-sdr104;
-// 	status = "okay";
-// };
+&sdmmc1 {
+	max-frequency = <150000000>;
+	supports-sdio;
+	bus-width = <4>;
+	disable-wp;
+	cap-sd-highspeed;
+	cap-sdio-irq;
+	keep-power-in-suspend;
+	pinctrl-names = "default";
+	pinctrl-0 = <&sdmmc1_bus4 &sdmmc1_cmd &sdmmc1_clk>;
+	sd-uhs-sdr104;
+	mmc-pwrseq = <&sdio_pwrseq>;
+	non-removable;
+	status = "okay";
+};
 
 &saradc {
     vref-supply = <&vcca_1v8>;
@@ -567,7 +568,7 @@
     pmuio2-supply = <&vcc3v3_pmu>;
     vccio1-supply = <&vccio_acodec>;
     vccio3-supply = <&vccio_sd>;
-    vccio4-supply = <&vcc_3v3>;
+    vccio4-supply = <&vcc_1v8>;
     vccio5-supply = <&vcc_3v3>;
     vccio6-supply = <&vcc_3v3>;
     vccio7-supply = <&vcc_3v3>;
@@ -613,7 +614,7 @@
     vmmc-supply = <&vcc3v3_sd>;
     vqmmc-supply = <&vccio_sd>;
     pinctrl-names = "default";
-    pinctrl-0 = <&sdmmc0_bus4 &sdmmc0_clk &sdmmc0_cmd &sdmmc_det>;
+    pinctrl-0 = <&sdmmc0_bus4 &sdmmc0_clk &sdmmc0_cmd>;
     status = "okay";
 };
 
@@ -769,21 +770,92 @@
     };
 };
 
-&route_hdmi {
-    status = "okay";
-    connect = <&vp0_out_hdmi>;
+&i2c1 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	ov5647: ov5647@36 {
+		compatible = "ovti,ov5647";
+		status = "okay";
+		reg = <0x36>;
+		clocks = <&ext_cam_25m_clk>;
+		clock-names = "ext_cam_25m_clk";
+
+		port {
+			ov5647_out: endpoint {
+				remote-endpoint = <&dphy0_in_ov5647>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
 };
 
-&hdmi_in_vp0 {
-    status = "okay";
+&csi2_dphy_hw {
+	status = "okay";
 };
 
-&hdmi_in_vp1 {
-    status = "disabled";
+&csi2_dphy0 {
+	status = "okay";
+	
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			dphy0_in_ov5647: endpoint@4 {
+				reg = <4>;
+				remote-endpoint = <&ov5647_out>;
+				data-lanes = <1 2>;
+			};
+
+		};
+
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			dphy0_out: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&isp0_in>;
+			};
+		};
+	};
 };
 
-&hdmi {
-    status = "okay";
+&rkisp {
+	status = "okay";
+};
+
+&rkisp_mmu {
+	status = "okay";
+};
+
+&rkisp_vir0 {
+	status = "okay";
+
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		isp0_in: endpoint@0 {
+			reg = <0>;
+			// csi2 dphy端的 port名
+			remote-endpoint = <&dphy0_out>;
+		};
+	};
+};
+
+&rkcif_mmu {
+	status = "okay";
+};
+
+&rkcif {
+	status = "okay";
 };
 
 
@@ -804,10 +876,6 @@
         soc_slppin_rst: soc_slppin_rst {
             rockchip,pins = <0 RK_PA2 RK_FUNC_2 &pcfg_pull_none>;
         };
-
-        spk_ctl_gpio: spk_ctl_gpio {
-            rockchip,pins = <3 RK_PC5 RK_FUNC_GPIO &pcfg_pull_up>;
-        };
     };
 
 	leds {
@@ -818,7 +886,7 @@
 
 	sdio-pwrseq {
 		wifi_enable_h: wifi-enable-h {
-			rockchip,pins = <0 RK_PC4 RK_FUNC_GPIO &pcfg_pull_none>;
+			rockchip,pins = <0 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
@@ -828,18 +896,11 @@
 		};
 	};
 
-	wireless-bluetooth {
-		uart1_gpios: uart1-gpios {
-			rockchip,pins = <2 RK_PB5 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-	};
-	
-	sdmmc {
-		sdmmc_det: sdmmc-det {
-			rockchip,pins =
-				/* sdmmc0_det */
-				<0 RK_PA4 1 &pcfg_pull_down>;
-		};
-	};
+    wireless-bluetooth {
+        uart1_gpios: uart1-gpios {
+            rockchip,pins = <2 RK_PB5 RK_FUNC_GPIO &pcfg_pull_none>;
+        };
+    };
+
 
 };
