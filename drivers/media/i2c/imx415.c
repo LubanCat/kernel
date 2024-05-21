@@ -70,6 +70,7 @@
 #define IMX415_MAX_PIXEL_RATE		(MIPI_FREQ_891M / 10 * 2 * IMX415_4LANES)
 #define OF_CAMERA_HDR_MODE		"rockchip,camera-hdr-mode"
 #define DATA_LANES   			"rockchip,imx415-data-lanes"
+#define OF_CAMERA_CAPTURE_MODE   "rockchip,imx415-capture-mode"
 
 #define IMX415_XVCLK_FREQ_37M		37125000
 #define IMX415_XVCLK_FREQ_27M		27000000
@@ -239,7 +240,8 @@ struct imx415 {
 	u32			cur_vts;
 	bool			has_init_exp;
 	struct preisp_hdrae_exp_s init_hdrae_exp;
-	u8 lanes;
+	u32 lanes;
+	u32 capture_mode;
 };
 
 static struct rkmodule_csi_dphy_param dcphy_param = {
@@ -1180,6 +1182,153 @@ static __maybe_unused const struct regval imx415_linear_10bit_1920x1080_891M_reg
 	{REG_NULL, 0x00},
 };
 
+
+static __maybe_unused const struct regval imx415_linear_10bit_1920x1080_891M_regs_4lane[] = {
+	{0x3008, 0x7f},
+	{0x300A, 0x5b},
+	{0x3034, 0x05},
+	// {0x301C, 0x04},
+	{0x3020, 0x01},
+	{0x3021, 0x01},
+	{0x3022, 0x01},
+	{0x3024, 0xca},
+	{0x3025, 0x08},
+	{0x3028, 0x26},
+	{0x3029, 0x02},
+	{0x3031, 0x00},
+	{0x3032, 0x00},
+	{0x3033, 0x05},
+	{0x3050, 0xC4},
+	{0x3090, 0x14},
+	{0x30C1, 0x00},
+	{0x30D9, 0x02},
+	{0x30DA, 0x01},
+	{0x3116, 0x24},
+	{0x3118, 0xC0},
+	{0x311A, 0xE0},
+	{0x311E, 0x24},
+	{0x32D4, 0x21},
+	{0x32EC, 0xA1},
+	{0x344C, 0x2B},
+	{0x344D, 0x01},
+	{0x344E, 0xED},
+	{0x344F, 0x01},
+	{0x3450, 0xF6},
+	{0x3451, 0x02},
+	{0x3452, 0x7F},
+	{0x3453, 0x03},
+	{0x358A, 0x04},
+	{0x35A1, 0x02},
+	{0x35EC, 0x27},
+	{0x35EE, 0x8D},
+	{0x35F0, 0x8D},
+	{0x35F2, 0x29},
+	{0x36BC, 0x0C},
+	{0x36CC, 0x53},
+	{0x36CD, 0x00},
+	{0x36CE, 0x3C},
+	{0x36D0, 0x8C},
+	{0x36D1, 0x00},
+	{0x36D2, 0x71},
+	{0x36D4, 0x3C},
+	{0x36D6, 0x53},
+	{0x36D7, 0x00},
+	{0x36D8, 0x71},
+	{0x36DA, 0x8C},
+	{0x36DB, 0x00},
+	{0x3701, 0x00},
+	{0x3720, 0x00},
+	{0x3724, 0x02},
+	{0x3726, 0x02},
+	{0x3732, 0x02},
+	{0x3734, 0x03},
+	{0x3736, 0x03},
+	{0x3742, 0x03},
+	{0x3862, 0xE0},
+	{0x38CC, 0x30},
+	{0x38CD, 0x2F},
+	{0x395C, 0x0C},
+	{0x39A4, 0x07},
+	{0x39A8, 0x32},
+	{0x39AA, 0x32},
+	{0x39AC, 0x32},
+	{0x39AE, 0x32},
+	{0x39B0, 0x32},
+	{0x39B2, 0x2F},
+	{0x39B4, 0x2D},
+	{0x39B6, 0x28},
+	{0x39B8, 0x30},
+	{0x39BA, 0x30},
+	{0x39BC, 0x30},
+	{0x39BE, 0x30},
+	{0x39C0, 0x30},
+	{0x39C2, 0x2E},
+	{0x39C4, 0x2B},
+	{0x39C6, 0x25},
+	{0x3A42, 0xD1},
+	{0x3A4C, 0x77},
+	{0x3AE0, 0x02},
+	{0x3AEC, 0x0C},
+	{0x3B00, 0x2E},
+	{0x3B06, 0x29},
+	{0x3B98, 0x25},
+	{0x3B99, 0x21},
+	{0x3B9B, 0x13},
+	{0x3B9C, 0x13},
+	{0x3B9D, 0x13},
+	{0x3B9E, 0x13},
+	{0x3BA1, 0x00},
+	{0x3BA2, 0x06},
+	{0x3BA3, 0x0B},
+	{0x3BA4, 0x10},
+	{0x3BA5, 0x14},
+	{0x3BA6, 0x18},
+	{0x3BA7, 0x1A},
+	{0x3BA8, 0x1A},
+	{0x3BA9, 0x1A},
+	{0x3BAC, 0xED},
+	{0x3BAD, 0x01},
+	{0x3BAE, 0xF6},
+	{0x3BAF, 0x02},
+	{0x3BB0, 0xA2},
+	{0x3BB1, 0x03},
+	{0x3BB2, 0xE0},
+	{0x3BB3, 0x03},
+	{0x3BB4, 0xE0},
+	{0x3BB5, 0x03},
+	{0x3BB6, 0xE0},
+	{0x3BB7, 0x03},
+	{0x3BB8, 0xE0},
+	{0x3BBA, 0xE0},
+	{0x3BBC, 0xDA},
+	{0x3BBE, 0x88},
+	{0x3BC0, 0x44},
+	{0x3BC2, 0x7B},
+	{0x3BC4, 0xA2},
+	{0x3BC8, 0xBD},
+	{0x3BCA, 0xBD},
+	{0x4001, 0x03},
+	{0x4004, 0x48},
+	{0x4005, 0x09},
+	{0x400c, 0x00},
+	{0x4018, 0xE7},
+	{0x401A, 0x37},
+	{0x401C, 0x37},
+	{0x401E, 0xf7},
+	{0x401F, 0x00},
+	{0x4020, 0x3f},
+	{0x4022, 0x6F},
+	{0x4023, 0x00},
+	{0x4024, 0x3f},
+	{0x4026, 0x5f},
+	{0x4028, 0x2F},
+	{0x4074, 0x1},
+	{0x3002, 0x00},
+	//{0x3000, 0x00},
+	{REG_DELAY, 0x1E},//wait_ms(30)
+	{REG_NULL, 0x00},
+};
+
 /*
  * Xclk 27Mhz
  * 90.059fps
@@ -1529,6 +1678,26 @@ static const struct imx415_mode supported_modes[] = {
 		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
 		.xvclk = IMX415_XVCLK_FREQ_37M,
 	},
+	{
+		/* 1H period = (1100 clock) = (1100 * 1 / 74.25MHz) */
+		.bus_fmt = MEDIA_BUS_FMT_SGBRG10_1X10,
+		.width = 1944,
+		.height = 1096,
+		.max_fps = {
+			.numerator = 10000,
+			.denominator = 600000,
+		},
+		.exp_def = 0x08ca - 0x08,
+		.hts_def = 0x044c *2,
+		.vts_def = 0x08ca,
+		.global_reg_list = NULL,
+		.reg_list = imx415_linear_10bit_1920x1080_891M_regs_4lane,
+		.hdr_mode = NO_HDR,
+		.mipi_freq_idx = 1,
+		.bpp = 10,
+		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
+		.xvclk = IMX415_XVCLK_FREQ_37M,
+	},
 #if 0
 	{
 		.bus_fmt = MEDIA_BUS_FMT_SGBRG10_1X10,
@@ -1729,6 +1898,26 @@ static const struct imx415_mode supported_modes[] = {
 };
 
 static const struct imx415_mode supported_modes_2lane[] = {
+	{
+		/* 1H period = (1100 clock) = (1100 * 1 / 74.25MHz) */
+		.bus_fmt = MEDIA_BUS_FMT_SGBRG10_1X10,
+		.width = 3864,
+		.height = 2192,
+		.max_fps = {
+			.numerator = 10000,
+			.denominator = 150000,
+		},
+		.exp_def = 0x08ca - 0x08,
+		.hts_def = 0x0898 * IMX415_2LANES * 2,
+		.vts_def = 0x08ca,
+		.global_reg_list = NULL,
+		.reg_list = imx415_linear_10bit_3864x2192_891M_regs_2lane,
+		.hdr_mode = NO_HDR,
+		.mipi_freq_idx = 1,
+		.bpp = 10,
+		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
+		.xvclk = IMX415_XVCLK_FREQ_37M,
+	},
 	{
 		/* 1H period = (1100 clock) = (1100 * 1 / 74.25MHz) */
 		.bus_fmt = MEDIA_BUS_FMT_SGBRG10_1X10,
@@ -2476,7 +2665,7 @@ static long imx415_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	struct imx415 *imx415 = to_imx415(sd);
 	struct rkmodule_hdr_cfg *hdr;
 	struct rkmodule_channel_info *ch_info;
-	u32 i, h, w, stream;
+	u32 h, w, stream;
 	long ret = 0;
 	const struct imx415_mode *mode;
 	u64 pixel_rate = 0;
@@ -2499,50 +2688,41 @@ static long imx415_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		hdr->hdr_mode = imx415->cur_mode->hdr_mode;
 		break;
 	case RKMODULE_SET_HDR_CFG:
-		hdr = (struct rkmodule_hdr_cfg *)arg;
-		w = imx415->cur_mode->width;
-		h = imx415->cur_mode->height;
-		for (i = 0; i < imx415->cfg_num; i++) {
-			if (w == imx415->supported_modes[i].width &&
-			    h == imx415->supported_modes[i].height &&
-			    imx415->supported_modes[i].hdr_mode == hdr->hdr_mode) {
-				dev_info(&imx415->client->dev, "set hdr cfg, set mode to %d\n", i);
-				imx415_change_mode(imx415, &imx415->supported_modes[i]);
-				break;
-			}
-		}
-		if (i == imx415->cfg_num) {
-			dev_err(&imx415->client->dev,
-				"not find hdr mode:%d %dx%d config\n",
-				hdr->hdr_mode, w, h);
-			ret = -EINVAL;
-		} else {
-			mode = imx415->cur_mode;
-			if (imx415->streaming) {
-				ret = imx415_write_reg(imx415->client, IMX415_GROUP_HOLD_REG,
-					IMX415_REG_VALUE_08BIT, IMX415_GROUP_HOLD_START);
 
-				ret |= imx415_write_array(imx415->client, imx415->cur_mode->reg_list);
+		imx415_change_mode(imx415, &imx415->supported_modes[imx415->capture_mode]);
 
-				ret |= imx415_write_reg(imx415->client, IMX415_GROUP_HOLD_REG,
-					IMX415_REG_VALUE_08BIT, IMX415_GROUP_HOLD_END);
-				if (ret)
-					return ret;
-			}
-			w = mode->hts_def - imx415->cur_mode->width;
-			h = mode->vts_def - mode->height;
-			mutex_lock(&imx415->mutex);
-			__v4l2_ctrl_modify_range(imx415->hblank, w, w, 1, w);
-			__v4l2_ctrl_modify_range(imx415->vblank, h,
-				IMX415_VTS_MAX - mode->height,
-				1, h);
-			__v4l2_ctrl_s_ctrl(imx415->link_freq, mode->mipi_freq_idx);
-			pixel_rate = (u32)link_freq_items[mode->mipi_freq_idx] /
-				mode->bpp * 2 * lanes;
-			__v4l2_ctrl_s_ctrl_int64(imx415->pixel_rate,
-						 pixel_rate);
-			mutex_unlock(&imx415->mutex);
+		if(imx415->capture_mode == 0)
+			dev_info(&imx415->client->dev, "capture_mode is 3840x2160\n");
+		else if(imx415->capture_mode == 1)
+			dev_info(&imx415->client->dev, "capture_mode is 1920x1080\n");
+		else
+			dev_info(&imx415->client->dev, "not support capture_mode0\n");
+
+		mode = imx415->cur_mode;
+		if (imx415->streaming) {
+			ret = imx415_write_reg(imx415->client, IMX415_GROUP_HOLD_REG,
+				IMX415_REG_VALUE_08BIT, IMX415_GROUP_HOLD_START);
+
+			ret |= imx415_write_array(imx415->client, imx415->cur_mode->reg_list);
+
+			ret |= imx415_write_reg(imx415->client, IMX415_GROUP_HOLD_REG,
+				IMX415_REG_VALUE_08BIT, IMX415_GROUP_HOLD_END);
+			if (ret)
+				return ret;
 		}
+		w = mode->hts_def - imx415->cur_mode->width;
+		h = mode->vts_def - mode->height;
+		mutex_lock(&imx415->mutex);
+		__v4l2_ctrl_modify_range(imx415->hblank, w, w, 1, w);
+		__v4l2_ctrl_modify_range(imx415->vblank, h,
+			IMX415_VTS_MAX - mode->height,
+			1, h);
+		__v4l2_ctrl_s_ctrl(imx415->link_freq, mode->mipi_freq_idx);
+		pixel_rate = (u32)link_freq_items[mode->mipi_freq_idx] /
+			mode->bpp * 2 * lanes;
+		__v4l2_ctrl_s_ctrl_int64(imx415->pixel_rate,
+					 pixel_rate);
+		mutex_unlock(&imx415->mutex);
 		break;
 	case RKMODULE_SET_QUICK_STREAM:
 
@@ -3310,7 +3490,7 @@ static int imx415_probe(struct i2c_client *client,
 	struct v4l2_subdev *sd;
 	char facing[2];
 	int ret;
-	u32 i, hdr_mode ,lanes= 0;
+	u32 hdr_mode;
 
 	dev_info(dev, "driver version: %02x.%02x.%02x",
 		DRIVER_VERSION >> 16,
@@ -3341,12 +3521,11 @@ static int imx415_probe(struct i2c_client *client,
 	}
 	imx415->client = client;
 
-	ret = of_property_read_u32(node, DATA_LANES, &lanes);
+	ret = of_property_read_u32(node, DATA_LANES, &imx415->lanes);
 	if (ret) {
-		lanes = 4;
+		imx415->lanes = 4;
 		dev_warn(dev, " Get data lanes failed! 4 lanes default\n");
 	}
-	imx415->lanes = lanes;
 	if (imx415->lanes == IMX415_4LANES) {
 		imx415->supported_modes = supported_modes;
 		imx415->cfg_num = ARRAY_SIZE(supported_modes);
@@ -3357,14 +3536,15 @@ static int imx415_probe(struct i2c_client *client,
 	dev_info(dev, "detect imx415 lane %d\n",
 		imx415->lanes);
 
-	for (i = 0; i < imx415->cfg_num; i++) {
-		if (hdr_mode == imx415->supported_modes[i].hdr_mode) {
-			imx415->cur_mode = &imx415->supported_modes[i];
-			break;
-		}
+	imx415->is_thunderboot = IS_ENABLED(CONFIG_VIDEO_ROCKCHIP_THUNDER_BOOT_ISP);
+
+	ret = of_property_read_u32(node, OF_CAMERA_CAPTURE_MODE, &imx415->capture_mode);
+	if (ret) {
+		imx415->capture_mode = 0;
+		dev_warn(dev, " Get capture_mode failed! captrue revolution setting to 3840x2160\n");
 	}
 
-	imx415->is_thunderboot = IS_ENABLED(CONFIG_VIDEO_ROCKCHIP_THUNDER_BOOT_ISP);
+	imx415->cur_mode = &imx415->supported_modes[imx415->capture_mode];
 
 	imx415->xvclk = devm_clk_get(dev, "xvclk");
 	if (IS_ERR(imx415->xvclk)) {
