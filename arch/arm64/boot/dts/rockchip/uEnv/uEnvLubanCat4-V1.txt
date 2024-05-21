@@ -52,9 +52,12 @@ enable_uboot_overlays=1
 
 # CAM0
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-4-cam0-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-cam0-imx415-1080p-overlay.dtbo
 # CAM1
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-4-cam1-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-cam1-imx415-1080p-overlay.dtbo
 # CAM2
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-4-cam2-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-cam2-imx415-1080p-overlay.dtbo
 
 #overlay_end
