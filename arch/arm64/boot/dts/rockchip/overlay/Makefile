@@ -26,10 +26,12 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-5-cam3-imx415-overlay.dtbo \
 	rk3588-lubancat-5-cam4-imx415-overlay.dtbo \
 	rk3588-lubancat-5-cam5-imx415-overlay.dtbo \
-	rk3588-lubancat-5-cam2-ov8858-overlay.dtbo \
-	rk3588-lubancat-5-cam3-ov8858-overlay.dtbo \
-	rk3588-lubancat-5-cam4-ov8858-overlay.dtbo \
-	rk3588-lubancat-5-cam5-ov8858-overlay.dtbo \
+	rk3588-lubancat-5-cam0-imx415-1080p-overlay.dtbo \
+	rk3588-lubancat-5-cam1-imx415-1080p-overlay.dtbo \
+	rk3588-lubancat-5-cam2-imx415-1080p-overlay.dtbo \
+	rk3588-lubancat-5-cam3-imx415-1080p-overlay.dtbo \
+	rk3588-lubancat-5-cam4-imx415-1080p-overlay.dtbo \
+	rk3588-lubancat-5-cam5-imx415-1080p-overlay.dtbo \
 	rk3588-lubancat-5-dsi0-800x1280-overlay.dtbo \
 	rk3588-lubancat-5-dsi0-1024x600-overlay.dtbo \
 	rk3588-lubancat-5-dsi0-1080p-overlay.dtbo \
@@ -55,6 +57,9 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588s-lubancat-4-cam0-imx415-overlay.dtbo \
 	rk3588s-lubancat-4-cam1-imx415-overlay.dtbo \
 	rk3588s-lubancat-4-cam2-imx415-overlay.dtbo \
+	rk3588s-lubancat-4-cam0-imx415-1080p-overlay.dtbo \
+	rk3588s-lubancat-4-cam1-imx415-1080p-overlay.dtbo \
+	rk3588s-lubancat-4-cam2-imx415-1080p-overlay.dtbo \
 	rk3588s-lubancat-4-v1-dsi0-800x1280-overlay.dtbo \
 	rk3588s-lubancat-4-v1-dsi0-1024x600-overlay.dtbo \
 	rk3588s-lubancat-4-v1-dsi0-1080p-overlay.dtbo \
