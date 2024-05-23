@@ -1426,6 +1426,11 @@
 	reset-gpios = <&gpio2 RK_PB2 GPIO_ACTIVE_HIGH>;
 };
 
+&imx415 {
+	pwdn-gpios = <&gpio2 RK_PB1 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio2 RK_PB2 GPIO_ACTIVE_LOW>;
+};
+
 &sc132gs {
 	pwdn-gpios = <&gpio2 RK_PB1 GPIO_ACTIVE_HIGH>;
 	reset-gpios = <&gpio2 RK_PB2 GPIO_ACTIVE_HIGH>;

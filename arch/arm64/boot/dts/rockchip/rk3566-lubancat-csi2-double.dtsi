@@ -3,6 +3,14 @@
  * Copyright (c) 2020 Rockchip Electronics Co., Ltd.
  *
  */
+/ {
+	ext_cam_37m_clk: external-camera-37m-clock {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <37125000>;
+		clock-output-names = "ext_cam_37m_clk";
+	};
+};
 
 &i2c1 {
 	status = "okay";
@@ -113,6 +121,25 @@
 				remote-endpoint = <&dphy1_in_sc132gs>;
 				clock-lanes = <0>;
 				data-lanes = <1>;
+			};
+		};
+	};
+
+	imx415: imx415@1a {
+		status = "disabled";
+		compatible = "sony,imx415";
+		reg = <0x1a>;
+		clocks = <&ext_cam_37m_clk>;
+		clock-names = "xvclk";
+		power-domains = <&power RK3568_PD_VI>;
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "CMK-OT1522-FG3";
+		rockchip,camera-module-lens-name = "CS-P1150-IRC-8M-FAU";
+		port {
+			imx415_out: endpoint {
+				remote-endpoint = <&dphy1_in_imx415>;
+				data-lanes = <1 2>;
 			};
 		};
 	};
@@ -276,6 +303,12 @@
 				reg = <4>;
 				remote-endpoint = <&sc132gs_out>;
 				data-lanes = <1>;
+			};
+
+			dphy1_in_imx415: endpoint@5 {
+				reg = <5>;
+				remote-endpoint = <&imx415_out>;
+				data-lanes = <1 2>;
 			};
 		};
 

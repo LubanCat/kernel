@@ -645,6 +645,10 @@
 	reset-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_HIGH>;
 };
 
+&imx415 {
+	pwdn-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_LOW>;
+};
 
 //cam1-gpio-setting
 &cam1_ov5647 {
