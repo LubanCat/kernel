@@ -15,4 +15,11 @@
 			status = "okay";
 		};
 	};
+
+	fragment@2 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
 };

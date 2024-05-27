@@ -42,7 +42,7 @@
 };
 
 &i2c1 {
-	status = "okay";
+	status = "disabled";
 	// ov5648 Camare
 	dw9714: dw9714@0c {
 		status = "disabled";
@@ -175,7 +175,7 @@
 };
 
 &i2c5 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	// ov5648 Camare
 	cam1_dw9714: cam1_dw9714@0c {

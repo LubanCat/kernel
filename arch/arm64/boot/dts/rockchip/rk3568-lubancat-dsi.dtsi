@@ -80,7 +80,7 @@
 };
 
 &i2c1 {
-	status = "okay";
+	status = "disabled";
 	clock-frequency = <100000>;
 
 	gt911_dsi0: gt911@5d {
@@ -196,7 +196,7 @@
 };
 
 &i2c5 {
-	status = "okay";
+	status = "disabled";
 	clock-frequency = <100000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
