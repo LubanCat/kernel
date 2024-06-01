@@ -82,6 +82,7 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3568-lubancat-2-dsi1-in-vp0-10.1-800x1280-overlay.dtbo \
 	rk3568-lubancat-2-dsi1-in-vp0-1080p-overlay.dtbo \
 	rk3568-lubancat-2-dsi1-in-vp0-rpi-overlay.dtbo \
+	rk3568-lubancat-2n-xl9535-overlay.dtbo \
 	rk3568-lubancat-2io-rs485-1-overlay.dtbo \
 	rk3568-lubancat-2io-rs485-2-overlay.dtbo \
 	rk3568-lubancat-2io-edp-in-vp1-overlay.dtbo \
