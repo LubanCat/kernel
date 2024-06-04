@@ -620,6 +620,23 @@
 			regulator-off-in-suspend;
 		};
 	};
+
+	vdd_cpu: eta355d@60 {
+		compatible = "eta,eta355d";
+		reg = <0x60>;
+		fcs,suspend-voltage-selector = <1>;
+		regulator-name = "vdd_cpu";
+		regulator-min-microvolt = <712500>;
+		regulator-max-microvolt = <1390000>;
+		regulator-ramp-delay = <2300>;
+		regulator-always-on;
+		regulator-boot-on;
+		vin-supply = <&vcc5v0_sys>;
+		
+		regulator-state-mem {
+			regulator-off-in-suspend;
+		};
+	};
 */
 	rk809: pmic@20 {
 		compatible = "rockchip,rk809";
