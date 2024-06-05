@@ -84,7 +84,7 @@
 	};
 
 	fragment@9 {
-		target = <&rkisp0>;
+		target = <&rkisp1>;
 
 		__overlay__ {
 			status = "okay";
@@ -92,7 +92,7 @@
 	};
 
 	fragment@10 {
-		target = <&isp0_mmu>;
+		target = <&isp1_mmu>;
 
 		__overlay__ {
 			status = "okay";
@@ -100,7 +100,7 @@
 	};
 
 	fragment@11 {
-		target = <&rkisp0_vir1>;
+		target = <&rkisp1_vir0>;
 
 		__overlay__ {
 			status = "okay";
