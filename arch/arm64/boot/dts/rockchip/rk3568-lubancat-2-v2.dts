@@ -260,12 +260,12 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 };
 
 &gmac0 {
-	tx_delay = <0x18>;
+	tx_delay = <0x08>;
 	rx_delay = <0x07>;
 };	
 
 &gmac1 {
-	tx_delay = <0x22>;
+	tx_delay = <0x18>;
 	rx_delay = <0x07>;
 };	
 
