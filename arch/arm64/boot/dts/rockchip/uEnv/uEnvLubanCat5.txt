@@ -20,6 +20,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-pwm14-m2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-pwm15-ir-m3-overlay.dtbo
 
+# Display 显示输出配置
 # 8k插件，开启之后vp0的hdmi0或者hdmi1能输出8k
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi-8k-overlay.dtbo
 
