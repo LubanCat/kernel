@@ -93,7 +93,7 @@
 		reg = <0x36>;
 		clocks = <&ext_cam1_25m_clk>;
 		clock-names = "ext_cam1_25m_clk";
-		pwdn-gpios = <&gpio5 2 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio6 2 GPIO_ACTIVE_LOW>;
 		lens-focus = <&dphy2_dw9714>;
 
 		port {
@@ -113,8 +113,8 @@
 		dovdd-supply= <&cam1_dovdd>; /* 1.8v */
 		avdd-supply = <&cam1_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam1_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio5 2 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio5 3 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio6 2 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 3 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <0>;
@@ -142,8 +142,8 @@
 		dovdd-supply= <&cam1_dovdd>; /* 1.8v */
 		avdd-supply = <&cam1_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam1_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio5 2 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio5 3 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio6 2 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 3 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <0>;
@@ -171,8 +171,8 @@
 		dovdd-supply= <&cam1_dovdd>; /* 1.8v */
 		avdd-supply = <&cam1_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam1_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio5 2 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio5 3 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio6 2 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 3 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <2>;
@@ -200,8 +200,8 @@
 		dovdd-supply = <&cam1_dovdd>;
 		avdd-supply = <&cam1_avdd>;
 		dvdd-supply = <&cam1_dvdd>;
-		pwdn-gpios = <&gpio5 2 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio5 3 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio6 2 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 3 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <0>;
 		rockchip,camera-module-facing = "back";
