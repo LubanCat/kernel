@@ -310,7 +310,7 @@
 		 * - SDIO_RESET_L_WL_REG_ON
 		 * - PDN (power down when low)
 		 */
-		reset-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio0 RK_PB6 GPIO_ACTIVE_LOW>;
 	};
 
 	wireless_wlan: wireless-wlan {
@@ -319,7 +319,7 @@
 		wifi_chip_type = "rtl8189es";
 		pinctrl-names = "default";
 		pinctrl-0 = <&wifi_host_wake_irq>;
-		WIFI,host_wake_irq = <&gpio0 RK_PC7 GPIO_ACTIVE_LOW>;
+		WIFI,host_wake_irq = <&gpio0 RK_PB7 GPIO_ACTIVE_LOW>;
 		status = "okay";
 	};
 };
@@ -594,11 +594,6 @@
 &pwm0 {
 	status = "okay";
 	pinctrl-0 = <&pwm0m0_pins>;
-};
-
-&pwm6 {
-	status = "okay";
-	pinctrl-0 = <&pwm6m0_pins>;
 };
 
 &pwm12 {
@@ -1074,11 +1069,11 @@
 
 	wifi {
 		wifi_wl_reg_on: wifi-wl-reg-on {
-			rockchip,pins = <0 RK_PC6 RK_FUNC_GPIO &pcfg_pull_up>;
+			rockchip,pins = <0 RK_PB6 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 
 		wifi_host_wake_irq: wifi-host-wake-irq {
-			rockchip,pins = <0 RK_PC7 RK_FUNC_GPIO &pcfg_pull_down>;
+			rockchip,pins = <0 RK_PB7 RK_FUNC_GPIO &pcfg_pull_down>;
 		};
 	};
 };
