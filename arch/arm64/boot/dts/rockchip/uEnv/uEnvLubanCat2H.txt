@@ -5,8 +5,14 @@ cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 root
 enable_uboot_overlays=1
 #overlay_start
 
+#dtoverlay=/dtb/overlay/rk3568-lubancat-can1-m0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-canfd1-m0-overlay.dtbo
+
 # HDMI
 #dtoverlay=/dtb/overlay/rk3568-lubancat-hdmi-disabled-overlay.dtbo
+# lvds in vp0(开启该插件需要开启上面的hdmi关闭插件)
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-lvds-10.1-800x1280-overlay.dtbo
+
 # edp in vp1
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2h-edp-in-vp1-overlay.dtbo
 

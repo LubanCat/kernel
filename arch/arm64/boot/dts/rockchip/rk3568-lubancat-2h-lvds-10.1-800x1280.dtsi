@@ -18,6 +18,8 @@
 
 &dsi0 {
 	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
 	// rockchip,lane-rate = <480>;
 	dsi0_panel: panel@0 {
 		compatible = "simple-panel-dsi";
