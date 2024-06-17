@@ -17,7 +17,7 @@
 #include "rk3562-linux.dtsi"
 
 //#include "rk3562-lubancat-lvds-10.1-800x1280.dtsi"
-#include "rk3562-lubancat-mipi-5.0-1080x1920.dtsi"
+//#include "rk3562-lubancat-mipi-5.0-1080x1920.dtsi"
 
 //#include "rk3562-lubancat-1hs-cam0.dtsi"
 //#include "rk3562-lubancat-1hs-cam1.dtsi"
@@ -29,7 +29,7 @@
 	compatible = "embedfire,rk3562-lubancat-1hs", "rockchip,rk3562";
 
 	aliases {
-		gpio5 = &gpio5;
+		gpio6 = &gpio6;
 	};
 
 	adc-keys {
@@ -152,7 +152,7 @@
 		enable-active-high;
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
-		gpio = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio0 RK_PC4 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&usb30_otg_vbus_en>;
 		regulator-name = "usb30_otg_vbus";
@@ -164,7 +164,7 @@
 		enable-active-high;
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
-		gpio = <&gpio0 RK_PC2 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio0 RK_PC5 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&vcc5v0_usb20_hub_en>;
 		regulator-name = "vcc5v0_usb20_hub";
@@ -887,7 +887,7 @@
 		wakeup-source;
 	};
 
-	gpio5: gpio-expander@21 {
+	gpio6: gpio-expander@21 {
 		compatible = "nxp,pca9535";
 		status = "okay";
 		reg = <0x21>;
@@ -1058,11 +1058,11 @@
 
 	usb {
 		usb30_otg_vbus_en: usb30-otg-vbus-en {
-			rockchip,pins = <0 RK_PC0 RK_FUNC_GPIO &pcfg_pull_none>;
+			rockchip,pins = <0 RK_PC4 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 
 		vcc5v0_usb20_hub_en: vcc5v0-usb20-hub-en {
-			rockchip,pins = <0 RK_PC2 RK_FUNC_GPIO &pcfg_pull_none>;
+			rockchip,pins = <0 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
