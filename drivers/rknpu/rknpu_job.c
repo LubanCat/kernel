@@ -453,6 +453,7 @@ static void rknpu_job_next(struct rknpu_device *rknpu_dev, int core_index)
 	spin_unlock_irqrestore(&rknpu_dev->irq_lock, flags);
 
 	if (atomic_dec_and_test(&job->run_count)) {
+		rknpu_iommu_switch_domain(rknpu_dev, job->iommu_domain_id);
 		rknpu_job_commit(job);
 	}
 }
@@ -842,8 +843,6 @@ int rknpu_submit_ioctl(struct drm_device *dev, void *data,
 {
 	struct rknpu_device *rknpu_dev = dev_get_drvdata(dev->dev);
 	struct rknpu_submit *args = data;
-
-	rknpu_iommu_switch_domain(rknpu_dev, args->iommu_domain_id);
 
 	return rknpu_submit(rknpu_dev, args);
 }
