@@ -11,6 +11,12 @@
 		clock-output-names = "ext_cam_37m_clk";
 		#clock-cells = <0>;
 	};
+	ext_cam_27m_clk: external-camera-27m-clock {
+		compatible = "fixed-clock";
+		clock-frequency = <27000000>;
+		clock-output-names = "ext_cam_27m_clk";
+		#clock-cells = <0>;
+	};
 
 	vdd_cam_5v: vdd-cam-5v-regulator {
 		compatible = "regulator-fixed";
@@ -54,13 +60,45 @@
 
 
 &i2c1 {
-	status = "disabled";
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1m2_xfer>;
 
+	dw9714_0: dw9714-0@c {
+		status = "okay";
+		compatible = "dongwoon,dw9714";
+		reg = <0xc>;
+		rockchip,camera-module-index = <0>;
+		rockchip,vcm-max-current = <100>;
+		rockchip,vcm-start-current = <0>;
+		rockchip,vcm-rated-current = <100>;
+		rockchip,vcm-step-mode = <0xd>;
+		rockchip,vcm-dlc-enable = <0>;
+		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-t-src = <0>;
+		rockchip,camera-module-facing = "back";
+	};
+
+	gc5603_0: gc5603-0@31 {
+		compatible = "galaxycore,gc5603";
+		status = "okay";
+		reg = <0x31>;
+		clocks = <&ext_cam_27m_clk>;
+		clock-names = "ext_cam_27m_clk";
+		pwdn-gpios = <&gpio1 RK_PA3 GPIO_ACTIVE_LOW>;
+		rotation = <180>;
+
+		port {
+			gc5603_out0: endpoint {
+				remote-endpoint = <&dcphy0_in_gc5603>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
 	imx415_0: imx415-0@1a {
 		compatible = "sony,imx415";
-		status = "disabled";
+		status = "okay";
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
@@ -83,11 +121,11 @@
 };
 
 &mipi_dcphy0 {
-	status = "disabled";
+	status = "okay";
 };
 
 &csi2_dcphy0 {
-	status = "disabled";
+	status = "okay";
 	
 	ports {
 		#address-cells = <1>;
@@ -98,8 +136,14 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			dcphy0_in_imx415: endpoint@0 {
+			dcphy0_in_gc5603: endpoint@0 {
 				reg = <0>;
+				remote-endpoint = <&gc5603_out0>;
+				data-lanes = <1 2>;
+			};
+
+			dcphy0_in_imx415: endpoint@1 {
+				reg = <1>;
 				remote-endpoint = <&imx415_out0>;
 				data-lanes = <1 2 3 4>;
 			};
@@ -119,7 +163,7 @@
 };
 
 &mipi0_csi2 {
-	status = "disabled";
+	status = "okay";
 
 	ports {
 		#address-cells = <1>;
@@ -150,13 +194,45 @@
 };
 
 &i2c5 {
-	status = "disabled";
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c5m3_xfer>;
+	
+	dw9714_1: dw9714-1@c {
+		status = "okay";
+		compatible = "dongwoon,dw9714";
+		reg = <0xc>;
+		rockchip,camera-module-index = <0>;
+		rockchip,vcm-max-current = <100>;
+		rockchip,vcm-start-current = <0>;
+		rockchip,vcm-rated-current = <100>;
+		rockchip,vcm-step-mode = <0xd>;
+		rockchip,vcm-dlc-enable = <0>;
+		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-t-src = <0>;
+		rockchip,camera-module-facing = "back";
+	};
+
+	gc5603_1: gc5603-1@31 {
+		compatible = "galaxycore,gc5603";
+		status = "okay";
+		reg = <0x31>;
+		clocks = <&ext_cam_27m_clk>;
+		clock-names = "ext_cam_27m_clk";
+		pwdn-gpios = <&gpio4 RK_PA5 GPIO_ACTIVE_LOW>;
+		rotation = <180>;
+
+		port {
+			gc5603_out1: endpoint {
+				remote-endpoint = <&dcphy1_in_gc5603>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
 
 	imx415_1: imx415-1@1a {
 		compatible = "sony,imx415";
-		status = "disabled";
+		status = "okay";
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
@@ -179,11 +255,11 @@
 };
 
 &mipi_dcphy1 {
-	status = "disabled";
+	status = "okay";
 };
 
 &csi2_dcphy1 {
-	status = "disabled";
+	status = "okay";
 	
 	ports {
 		#address-cells = <1>;
@@ -193,9 +269,15 @@
 			reg = <0>;
 			#address-cells = <1>;
 			#size-cells = <0>;
-
-			dcphy1_in_imx415: endpoint@0 {
+			
+			dcphy1_in_gc5603: endpoint@0 {
 				reg = <0>;
+				remote-endpoint = <&gc5603_out1>;
+				data-lanes = <1 2>;
+			};
+
+			dcphy1_in_imx415: endpoint@1 {
+				reg = <1>;
 				remote-endpoint = <&imx415_out1>;
 				data-lanes = <1 2 3 4>;
 			};
@@ -215,7 +297,7 @@
 };
 
 &mipi1_csi2 {
-	status = "disabled";
+	status = "okay";
 
 	ports {
 		#address-cells = <1>;
@@ -246,13 +328,45 @@
 };
 
 &i2c6 {
-	status = "disabled";
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c6m3_xfer>;
 
+	dw9714: dw9714@c {
+		status = "okay";
+		compatible = "dongwoon,dw9714";
+		reg = <0xc>;
+		rockchip,camera-module-index = <0>;
+		rockchip,vcm-max-current = <100>;
+		rockchip,vcm-start-current = <0>;
+		rockchip,vcm-rated-current = <100>;
+		rockchip,vcm-step-mode = <0xd>;
+		rockchip,vcm-dlc-enable = <0>;
+		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-t-src = <0>;
+		rockchip,camera-module-facing = "back";
+	};
+
+	gc5603_2: gc5603_2@31 {
+		compatible = "galaxycore,gc5603";
+		status = "okay";
+		reg = <0x31>;
+		clocks = <&ext_cam_27m_clk>;
+		clock-names = "ext_cam_27m_clk";
+		pwdn-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_LOW>;
+		rotation = <180>;
+
+		port {
+			gc5603_out2: endpoint {
+				remote-endpoint = <&dphy0_in_gc5603>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
 	imx415_2: imx415-2@1a {
 		compatible = "sony,imx415";
-		status = "disabled";
+		status = "okay";
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
@@ -275,11 +389,11 @@
 };
 
 &csi2_dphy0_hw {
-	status = "disabled";
+	status = "okay";
 };
 
 &csi2_dphy0 {
-	status = "disabled";
+	status = "okay";
 	
 	ports {
 		#address-cells = <1>;
@@ -290,8 +404,14 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			dphy0_in_imx415: endpoint@0 {
+			dphy0_in_gc5603: endpoint@0 {
 				reg = <0>;
+				remote-endpoint = <&gc5603_out2>;
+				data-lanes = <1 2 3 4>;
+			};
+
+			dphy0_in_imx415: endpoint@1 {
+				reg = <1>;
 				remote-endpoint = <&imx415_out2>;
 				data-lanes = <1 2 3 4>;
 			};
@@ -311,7 +431,7 @@
 };
 
 &mipi2_csi2 {
-	status = "disabled";
+	status = "okay";
 
 	ports {
 		#address-cells = <1>;
@@ -343,15 +463,15 @@
 
 
 &rkcif {
-	status = "disabled";
+	status = "okay";
 };
 
 &rkcif_mmu {
-	status = "disabled";
+	status = "okay";
 };
 
 &rkcif_mipi_lvds {
-	status = "disabled";
+	status = "okay";
 
 	port {
 		cif_mipi0_in0: endpoint {
@@ -361,7 +481,7 @@
 };
 
 &rkcif_mipi_lvds_sditf {
-	status = "disabled";
+	status = "okay";
 
 	port {
 		mipi_lvds_sditf: endpoint {
@@ -371,7 +491,7 @@
 };
 
 &rkcif_mipi_lvds1 {
-	status = "disabled";
+	status = "okay";
 
 	port {
 		cif_mipi1_in0: endpoint {
@@ -381,7 +501,7 @@
 };
 
 &rkcif_mipi_lvds1_sditf {
-	status = "disabled";
+	status = "okay";
 
 	port {
 		mipi_lvds1_sditf: endpoint {
@@ -391,7 +511,7 @@
 };
 
 &rkcif_mipi_lvds2 {
-	status = "disabled";
+	status = "okay";
 
 	port {
 		cif_mipi2_in0: endpoint {
@@ -401,7 +521,7 @@
 };
 
 &rkcif_mipi_lvds2_sditf {
-	status = "disabled";
+	status = "okay";
 
 	port {
 		mipi_lvds2_sditf: endpoint {
@@ -411,15 +531,15 @@
 };
 
 &rkisp0 {
-	status = "disabled";
+	status = "okay";
 };
 
 &isp0_mmu {
-	status = "disabled";
+	status = "okay";
 };
 
 &rkisp0_vir0 {
-	status = "disabled";
+	status = "okay";
 
 	port {
 		#address-cells = <1>;
@@ -433,7 +553,7 @@
 };
 
 &rkisp0_vir1 {
-	status = "disabled";
+	status = "okay";
 
 	port {
 		#address-cells = <1>;
@@ -448,15 +568,15 @@
 
 
 &rkisp1 {
-	status = "disabled";
+	status = "okay";
 };
 
 &isp1_mmu {
-	status = "disabled";
+	status = "okay";
 };
 
 &rkisp1_vir0 {
-	status = "disabled";
+	status = "okay";
 
 	port {
 		#address-cells = <1>;
