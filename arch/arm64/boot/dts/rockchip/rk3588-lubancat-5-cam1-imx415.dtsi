@@ -34,15 +34,15 @@
 	status = "okay";
 };
 
-&rkisp0 {
+&rkisp1 {
 	status = "okay";
 };
 
-&isp0_mmu {
+&isp1_mmu {
 	status = "okay";
 };
 
-&rkisp0_vir1 {
+&rkisp1_vir0 {
 	status = "okay";
 };
 
