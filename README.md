@@ -1,4 +1,7 @@
-# 20240628：GC5603成功点亮，工作正常，i2c通信正常；
+# 20240628：GC5603成功点亮，工作正常，i2c通信正常：
+<img width="640" alt="image" src="https://github.com/shingoxy/kernel-RK3588s-5.10Stable/assets/36981700/4746dd40-b0f6-4a08-baa8-dca10cf66173">
+
+
 
 # 增加GC5603.c驱动并修改对应Kernel文件：
 1. drivers/media/i2c/增加GC5603.c文件；
