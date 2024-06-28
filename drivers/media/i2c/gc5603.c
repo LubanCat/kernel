@@ -48,12 +48,8 @@
 
 #define DRIVER_VERSION          KERNEL_VERSION(0, 0x01, 0x01)
 #define GC5603_NAME             "gc5603"
-#define GC5603_MEDIA_BUS_FMT    MEDIA_BUS_FMT_SRGGB10_1X10
-								//MEDIA_BUS_FMT_SBGGR10_1X10
-
 
 #define MIPI_FREQ_848M          423000000
-#define GC5603_XVCLK_FREQ       27000000
 
 #define GC5603_PAGE_SELECT      0xFE
 
@@ -103,6 +99,9 @@
 #define GC_MIRROR_BIT_MASK      BIT(0)
 #define GC_FLIP_BIT_MASK        BIT(1)
 
+#define GC5603_XVCLK_FREQ_24M		24000000
+#define GC5603_XVCLK_FREQ_27M       27000000
+
 static const char * const gc5603_supply_names[] = {
 	"dovdd",    /* Digital I/O power */
 	"avdd",     /* Analog power */
@@ -119,6 +118,7 @@ struct regval {
 };
 
 struct gc5603_mode {
+	u32 bus_fmt;
 	u32 width;
 	u32 height;
 	struct v4l2_fract max_fps;
@@ -128,6 +128,7 @@ struct gc5603_mode {
 	const struct regval *reg_list;
 	u32 hdr_mode;
 	u32 vc[PAD_MAX];
+	u32 xvclk;
 };
 
 struct gc5603 {
@@ -320,6 +321,7 @@ static const struct regval gc5603_2960x1666_regs_2lane[] = {
 
 static const struct gc5603_mode supported_modes[] = {
 	{
+		.bus_fmt = MEDIA_BUS_FMT_SGRBG10_1X10,
 		.width = 2960,
 		.height = 1666,
 		.max_fps = {
@@ -330,9 +332,9 @@ static const struct gc5603_mode supported_modes[] = {
 		.hts_def = 0x0C80,
 		.vts_def = 0x06D6,
 		.reg_list = gc5603_2960x1666_regs_2lane,
-		//.bus_fmt = MEDIA_BUS_FMT_SRGGB10_1X10,
 		.hdr_mode = NO_HDR,
 		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
+		.xvclk = GC5603_XVCLK_FREQ_24M
 	},
 };
 
@@ -740,7 +742,7 @@ err_free_handler:
 /* Calculate the delay in us by clock rate and clock cycles */
 static inline u32 gc5603_cal_delay(u32 cycles)
 {
-	return DIV_ROUND_UP(cycles, GC5603_XVCLK_FREQ / 1000 / 1000);
+	return DIV_ROUND_UP(cycles, GC5603_XVCLK_FREQ_24M / 1000 / 1000);
 }
 
 static int __gc5603_power_on(struct gc5603 *gc5603)
@@ -756,10 +758,10 @@ static int __gc5603_power_on(struct gc5603 *gc5603)
 			dev_err(dev, "could not set pins\n");
 	}
 
-	ret = clk_set_rate(gc5603->xvclk, GC5603_XVCLK_FREQ);
+	ret = clk_set_rate(gc5603->xvclk, GC5603_XVCLK_FREQ_24M);
 	if (ret < 0)
 		dev_warn(dev, "Failed to set xvclk rate (24MHz)\n");
-	if (clk_get_rate(gc5603->xvclk) != GC5603_XVCLK_FREQ)
+	if (clk_get_rate(gc5603->xvclk) != GC5603_XVCLK_FREQ_24M)
 		dev_warn(dev, "xvclk mismatched, modes are based on 24MHz\n");
 	ret = clk_prepare_enable(gc5603->xvclk);
 	if (ret < 0) {
@@ -921,7 +923,7 @@ static int gc5603_get_channel_info(struct gc5603 *gc5603, struct rkmodule_channe
 	ch_info->vc = gc5603->cur_mode->vc[ch_info->index];
 	ch_info->width = gc5603->cur_mode->width;
 	ch_info->height = gc5603->cur_mode->height;
-	ch_info->bus_fmt = GC5603_MEDIA_BUS_FMT;
+	ch_info->bus_fmt = gc5603->cur_mode->bus_fmt;
 	return 0;
 }
 
@@ -1153,7 +1155,7 @@ static int gc5603_enum_mbus_code(struct v4l2_subdev *sd,
 {
 	if (code->index != 0)
 		return -EINVAL;
-	code->code = GC5603_MEDIA_BUS_FMT;
+	code->code = supported_modes[code->index].bus_fmt;
 	return 0;
 }
 
@@ -1166,7 +1168,7 @@ static int gc5603_enum_frame_sizes(struct v4l2_subdev *sd,
 	if (fse->index >= gc5603->cfg_num)
 		return -EINVAL;
 
-	if (fse->code != GC5603_MEDIA_BUS_FMT)
+	if (fse->code != supported_modes[fse->index].bus_fmt)
 		return -EINVAL;
 
 	fse->min_width  = supported_modes[fse->index].width;
@@ -1211,7 +1213,7 @@ static int gc5603_enum_frame_interval(struct v4l2_subdev *sd,
 	if (fie->index >= gc5603->cfg_num)
 		return -EINVAL;
 
-	fie->code = GC5603_MEDIA_BUS_FMT;
+	fie->code = supported_modes[fie->index].bus_fmt;
 	fie->width = supported_modes[fie->index].width;
 	fie->height = supported_modes[fie->index].height;
 	fie->interval = supported_modes[fie->index].max_fps;
@@ -1230,7 +1232,7 @@ static int gc5603_set_fmt(struct v4l2_subdev *sd,
 	mutex_lock(&gc5603->mutex);
 
 	mode = gc5603_find_best_fit(gc5603, fmt);
-	fmt->format.code = GC5603_MEDIA_BUS_FMT;
+	fmt->format.code = mode->bus_fmt;
 	fmt->format.width = mode->width;
 	fmt->format.height = mode->height;
 	fmt->format.field = V4L2_FIELD_NONE;
@@ -1274,7 +1276,7 @@ static int gc5603_get_fmt(struct v4l2_subdev *sd,
 	} else {
 		fmt->format.width = mode->width;
 		fmt->format.height = mode->height;
-		fmt->format.code = GC5603_MEDIA_BUS_FMT;
+		fmt->format.code = mode->bus_fmt;
 		fmt->format.field = V4L2_FIELD_NONE;
 
 		/* format info: width/height/data type/virctual channel */
@@ -1300,7 +1302,7 @@ static int gc5603_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	/* Initialize try_fmt */
 	try_fmt->width = def_mode->width;
 	try_fmt->height = def_mode->height;
-	try_fmt->code = GC5603_MEDIA_BUS_FMT;
+	try_fmt->code = MEDIA_BUS_FMT_SRGGB10_1X10;
 	try_fmt->field = V4L2_FIELD_NONE;
 
 	mutex_unlock(&gc5603->mutex);

@@ -58,14 +58,15 @@
 	};
 };
 
-
+//CAM 0
+/* Link path: sensor->csi2_dcphy0->mipi0_csi2->rkcif_mipi_lvds--->rkcif_mipi_lvds_sditf->rkisp0_vir0 */
 &i2c1 {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1m2_xfer>;
 
 	dw9714_0: dw9714-0@c {
-		status = "okay";
+		status = "disabled";
 		compatible = "dongwoon,dw9714";
 		reg = <0xc>;
 		rockchip,camera-module-index = <0>;
@@ -84,9 +85,14 @@
 		status = "okay";
 		reg = <0x31>;
 		clocks = <&ext_cam_27m_clk>;
-		clock-names = "ext_cam_27m_clk";
+		clock-names = "xvclk";
 		pwdn-gpios = <&gpio1 RK_PA3 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
+		
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "GCDS01A";
+		rockchip,camera-module-lens-name = "NoLens";
 
 		port {
 			gc5603_out0: endpoint {
@@ -193,13 +199,16 @@
 	};
 };
 
+
+//CAM 1
+/* Link path: sensor->csi2_dcphy1->mipi1_csi2->rkcif_mipi_lvds1--->rkcif_mipi_lvds1_sditf->rkisp0_vir1 */
 &i2c5 {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c5m3_xfer>;
 	
 	dw9714_1: dw9714-1@c {
-		status = "okay";
+		status = "disabled";
 		compatible = "dongwoon,dw9714";
 		reg = <0xc>;
 		rockchip,camera-module-index = <0>;
@@ -218,9 +227,14 @@
 		status = "okay";
 		reg = <0x31>;
 		clocks = <&ext_cam_27m_clk>;
-		clock-names = "ext_cam_27m_clk";
+		clock-names = "xvclk";
 		pwdn-gpios = <&gpio4 RK_PA5 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
+
+		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "GCDS01A";
+		rockchip,camera-module-lens-name = "NoLens";
 
 		port {
 			gc5603_out1: endpoint {
@@ -327,13 +341,16 @@
 	};
 };
 
+
+//CAM2
+/* Link path: sensor->csi2_dphy1->mipi2_csi2->rkcif_mipi_lvds2--->rkcif_mipi_lvds2_sditf->rkisp0_vir2 */
 &i2c6 {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c6m3_xfer>;
 
 	dw9714: dw9714@c {
-		status = "okay";
+		status = "disabled";
 		compatible = "dongwoon,dw9714";
 		reg = <0xc>;
 		rockchip,camera-module-index = <0>;
@@ -352,10 +369,14 @@
 		status = "okay";
 		reg = <0x31>;
 		clocks = <&ext_cam_27m_clk>;
-		clock-names = "ext_cam_27m_clk";
+		clock-names = "xvclk";
 		pwdn-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
 
+		rockchip,camera-module-index = <2>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "GCDS01A";
+		rockchip,camera-module-lens-name = "NoLens";
 		port {
 			gc5603_out2: endpoint {
 				remote-endpoint = <&dphy0_in_gc5603>;
@@ -407,7 +428,7 @@
 			dphy0_in_gc5603: endpoint@0 {
 				reg = <0>;
 				remote-endpoint = <&gc5603_out2>;
-				data-lanes = <1 2 3 4>;
+				data-lanes = <1 2>;
 			};
 
 			dphy0_in_imx415: endpoint@1 {
