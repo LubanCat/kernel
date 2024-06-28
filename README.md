@@ -1,3 +1,5 @@
+# 20240628：GC5603成功点亮，工作正常，i2c通信正常；
+
 # 增加GC5603.c驱动并修改对应Kernel文件：
 1. drivers/media/i2c/增加GC5603.c文件；
 2. arch/arm64/boot/dts/rockchip/rk3588s-lubancat-csi2.dtsi修改Device tree；
