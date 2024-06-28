@@ -57,4 +57,7 @@ enable_uboot_overlays=1
 # CAM2
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-4-cam2-overlay.dtbo
 
+# 开启sata0, mini pcie接口可接msata硬盘
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-sata0-overlay.dtbo
+
 #overlay_end
