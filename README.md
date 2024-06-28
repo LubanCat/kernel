@@ -1,3 +1,14 @@
+# 增加GC5603.c驱动并修改对应Kernel文件：
+1. drivers/media/i2c/增加GC5603.c文件；
+2. arch/arm64/boot/dts/rockchip/rk3588s-lubancat-csi2.dtsi修改Device tree；
+3. arch/arm64/configs/lubancat_linux_rk3588_defconfig修改defconfig
+4. drivers/media/i2c/Kconfig增加gc5603.c编译
+5. drivers/media/i2c/Makefile增加gc5603.c编译
+6. drivers/phy/rockchip/phy-rockchip-csi2-dphy.c修改后增加cphy支持
+
+以上修改已经编译通过（2024年6月），将进行点亮验证。
+
+ 
 # How do I submit patches to Android Common Kernels
 
 1. BEST: Make all of your changes to upstream Linux. If appropriate, backport to the stable releases.

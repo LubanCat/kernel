@@ -139,7 +139,7 @@
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
-		// power-domains = <&power RK3588_PD_VI>;
+		power-domains = <&power RK3588_PD_VI>;
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
@@ -447,7 +447,7 @@
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
-		// power-domains = <&power RK3588_PD_VI>;
+		power-domains = <&power RK3588_PD_VI>;
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
@@ -547,8 +547,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio6 12 GPIO_ACTIVE_LOW>;
-		reset-gpios = <&gpio6 13 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio6 12 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 13 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <3>;
@@ -602,7 +602,7 @@
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
-		// power-domains = <&power RK3588_PD_VI>;
+		power-domains = <&power RK3588_PD_VI>;
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
@@ -702,8 +702,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio6 14 GPIO_ACTIVE_LOW>;
-		reset-gpios = <&gpio6 15 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio6 14 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio6 15 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <4>;
@@ -757,7 +757,7 @@
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
-		// power-domains = <&power RK3588_PD_VI>;
+		power-domains = <&power RK3588_PD_VI>;
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
@@ -857,8 +857,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio7 8 GPIO_ACTIVE_LOW>;
-		reset-gpios = <&gpio7 9 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio7 8 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio7 9 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <5>;
@@ -912,7 +912,7 @@
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
-		// power-domains = <&power RK3588_PD_VI>;
+		power-domains = <&power RK3588_PD_VI>;
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */

@@ -20,6 +20,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-pwm14-m2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-pwm15-ir-m3-overlay.dtbo
 
+# Display 显示输出配置
 # 8k插件，开启之后vp0的hdmi0或者hdmi1能输出8k
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi-8k-overlay.dtbo
 
@@ -44,19 +45,20 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
 
 # cam0
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam0-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam0-imx415-1080p-overlay.dtbo
 # cam1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam1-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam1-imx415-1080p-overlay.dtbo
 # cam2
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam2-imx415-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam2-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam2-imx415-1080p--overlay.dtbo
 # cam3
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam3-imx415-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam3-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam3-imx415-1080p-overlay.dtbo
 # cam4
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam4-imx415-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam4-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam4-imx415-1080p-overlay.dtbo
 # cam5
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam5-imx415-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam5-ov8858-overlay.dtbo
-
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam5-imx415-1080p-overlay.dtbo
 #overlay_end
