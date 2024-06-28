@@ -16,7 +16,7 @@
 #include "rk3562.dtsi"
 #include "rk3562-linux.dtsi"
 
-//#include "rk3562-lubancat-lvds-10.1-800x1280.dtsi"
+#include "rk3562-lubancat-lvds-10.1-800x1280.dtsi"
 //#include "rk3562-lubancat-mipi-5.0-1080x1920.dtsi"
 
 //#include "rk3562-lubancat-1hs-cam0.dtsi"
@@ -218,7 +218,8 @@
 		compatible = "rockchip,multicodecs-card";
 		rockchip,card-name = "rockchip-rk809";
 		hp-det-gpio = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
-		hp-con-gpio = <&gpio0 RK_PA6 GPIO_ACTIVE_HIGH>;
+//		hp-con-gpio = <&gpio0 RK_PA6 GPIO_ACTIVE_HIGH>;
+		spk-con-gpio = <&gpio0 RK_PA6 GPIO_ACTIVE_HIGH>;
 		io-channels = <&saradc0 4>;
 		io-channel-names = "adc-detect";
 		keyup-threshold-microvolt = <1800000>;
@@ -227,8 +228,24 @@
 		rockchip,mclk-fs = <256>;
 		rockchip,cpu = <&sai0>;
 		rockchip,codec = <&rk809_codec>;
+#if 0
+		rockchip,audio-routing =
+						"Headphone", "LOUT1",
+						"Headphone", "ROUT1",
+						"Speaker", "LOUT2",
+						"Speaker", "ROUT2",
+						"Headphone", "Headphone Power",
+						"Headphone", "Headphone Power",
+						"Speaker", "Speaker Power",
+						"Speaker", "Speaker Power",
+						"LINPUT1", "Main Mic",
+						"LINPUT2", "Main Mic",
+						"RINPUT1", "Headset Mic",
+						"RINPUT2", "Headset Mic";
+#endif
 		pinctrl-names = "default";
 		pinctrl-0 = <&hp_det>;
+
 		play-pause-key {
 			label = "playpause";
 			linux,code = <KEY_PLAYPAUSE>;
@@ -310,16 +327,33 @@
 		 * - SDIO_RESET_L_WL_REG_ON
 		 * - PDN (power down when low)
 		 */
+		post-power-on-delay-ms = <200>;
 		reset-gpios = <&gpio0 RK_PB6 GPIO_ACTIVE_LOW>;
 	};
 
 	wireless_wlan: wireless-wlan {
 		compatible = "wlan-platdata";
 		rockchip,grf = <&sys_grf>;
-		wifi_chip_type = "rtl8189es";
+		wifi_chip_type = "aic8800";
 		pinctrl-names = "default";
 		pinctrl-0 = <&wifi_host_wake_irq>;
-		WIFI,host_wake_irq = <&gpio0 RK_PB7 GPIO_ACTIVE_LOW>;
+		WIFI,host_wake_irq = <&gpio0 RK_PB7 GPIO_ACTIVE_HIGH>;
+		wakeup-source;
+		status = "okay";
+	};
+
+	wireless-bluetooth {
+		compatible = "bluetooth-platdata";
+		clocks = <&ext_wifi_32k_clk>;
+		clock-names = "ext_clock";
+		//wifi-bt-power-toggle;
+		uart_rts_gpios = <&gpio1 RK_PD3 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default", "rts_gpio";
+		pinctrl-0 = <&uart1m0_rtsn>;
+		pinctrl-1 = <&uart1_gpios>;
+		BT,reset_gpio    = <&gpio0 RK_PB5 GPIO_ACTIVE_LOW>;
+		BT,wake_gpio     = <&gpio0 RK_PB3 GPIO_ACTIVE_HIGH>;
+		BT,wake_host_irq = <&gpio0 RK_PB4 GPIO_ACTIVE_HIGH>;
 		status = "okay";
 	};
 };
@@ -470,6 +504,12 @@
 &saradc1 {
 	status = "okay";
 	vref-supply = <&vcca_1v8>;
+};
+
+&uart1 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&uart1m0_xfer &uart1m0_ctsn>;
 };
 
 &uart2 {
@@ -940,18 +980,19 @@
 };
 
 &sdmmc1 {
-	max-frequency = <150000000>;
-	supports-sdio;
+	max-frequency = <100000000>;
+	no-sd;
+	no-mmc;
 	bus-width = <4>;
 	disable-wp;
 	cap-sd-highspeed;
 	cap-sdio-irq;
 	keep-power-in-suspend;
+	mmc-pwrseq = <&sdio_pwrseq>;
+	non-removable;
 	pinctrl-names = "default";
 	pinctrl-0 = <&sdmmc1_bus4 &sdmmc1_cmd &sdmmc1_clk>;
 	sd-uhs-sdr104;
-	mmc-pwrseq = <&sdio_pwrseq>;
-	non-removable;
 	status = "okay";
 };
 
@@ -1067,13 +1108,21 @@
 		};
 	};
 
-	wifi {
+	sdio-pwrseq {
 		wifi_wl_reg_on: wifi-wl-reg-on {
-			rockchip,pins = <0 RK_PB6 RK_FUNC_GPIO &pcfg_pull_up>;
+			rockchip,pins = <0 RK_PB6 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
+	};
 
+	wireless-wlan {
 		wifi_host_wake_irq: wifi-host-wake-irq {
 			rockchip,pins = <0 RK_PB7 RK_FUNC_GPIO &pcfg_pull_down>;
+		};
+	};
+
+	wireless-bluetooth {
+		uart1_gpios: uart1-gpios {
+			rockchip,pins = <1 RK_PD3 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 };

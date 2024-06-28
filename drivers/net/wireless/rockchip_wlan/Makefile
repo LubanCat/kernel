@@ -21,3 +21,4 @@ obj-$(CONFIG_RTL8852BU)	+= rtl8852bu/
 obj-$(CONFIG_MVL88W8977)	+= mvl88w8977/
 obj-$(CONFIG_CYW_BCMDHD)	+= cywdhd/
 obj-$(CONFIG_INFINEON_DHD)	+= infineon/
+obj-$(CONFIG_AIC_WLAN_SUPPORT) += aic8800_sdio/
