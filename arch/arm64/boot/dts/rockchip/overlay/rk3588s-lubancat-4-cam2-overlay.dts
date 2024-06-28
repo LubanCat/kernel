@@ -117,9 +117,9 @@
 				clocks = <&ext_cam2_25m_clk>;
 				clock-names = "ext_cam_25m_clk";
 				pwdn-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_LOW>;
-				lens-focus = <&dw9714>;
+				lens-focus = <&dw9714_2>;
 				port {
-					ov5647_out: endpoint {
+					ov5647_out2: endpoint {
 						remote-endpoint = <&dphy0_in_ov5647>;
 						data-lanes = <1 2>;
 					};
@@ -143,10 +143,10 @@
 				rockchip,camera-module-facing = "back";
 				rockchip,camera-module-name = "THDS11073";
 				rockchip,camera-module-lens-name = "Largan-40122a1";
-				lens-focus = <&dw9714>;
+				lens-focus = <&dw9714_2>;
 				port {
 					/* MIPI CSI-2 bus endpoint */
-					ov5648_out: endpoint {
+					ov5648_out2: endpoint {
 						remote-endpoint = <&dphy0_in_ov5648>;
 						clock-lanes = <0>;
 						data-lanes = <1 2>;
@@ -156,7 +156,7 @@
 
 			ov8858_2: ov8858-2@36 {
 				compatible = "ovti,ov8858";
-				status = "okay";
+				status = "disabled";
 				reg = <0x36>;
 				clocks = <&ext_cam2_24m_clk>;
 				clock-names = "xvclk";
@@ -171,10 +171,10 @@
 				rockchip,camera-module-facing = "back";
 				rockchip,camera-module-name = "HS5885-BNSM1018-V01";
 				rockchip,camera-module-lens-name = "default";
-				lens-focus = <&dw9714>;
+				lens-focus = <&dw9714_2>;
 				port {
 					/* MIPI CSI-2 bus endpoint */
-					ov8858_out: endpoint {
+					ov8858_out2: endpoint {
 						remote-endpoint = <&dphy0_in_ov8858>;
 						clock-lanes = <0>;
 						data-lanes = <1 2>;
@@ -198,10 +198,10 @@
 				rockchip,camera-module-facing = "back";
 				rockchip,camera-module-name = "ZC-OV13850R2A-V1";
 				rockchip,camera-module-lens-name = "Largan-50064B31";
-				lens-focus = <&dw9714>;
+				lens-focus = <&dw9714_2>;
 				port {
 					/* MIPI CSI-2 bus endpoint */
-					ov13850_out: endpoint {
+					ov13850_out2: endpoint {
 						remote-endpoint = <&dphy0_in_ov13850>;
 						clock-lanes = <0>;
 						data-lanes = <1 2>;
@@ -211,7 +211,7 @@
 
 			imx415_2: imx415-2@1a {
 				compatible = "sony,imx415";
-				status = "disabled";
+				status = "okay";
 				reg = <0x1a>;
 				clocks = <&ext_cam2_37m_clk>;
 				clock-names = "xvclk";
@@ -257,22 +257,22 @@
 					#size-cells = <0>;
 					dphy0_in_ov5648: endpoint@1 {
 						reg = <1>;
-						remote-endpoint = <&ov5648_out>;
+						remote-endpoint = <&ov5648_out2>;
 						data-lanes = <1 2>;
 					};
 					dphy0_in_ov8858: endpoint@2 {
 						reg = <2>;
-						remote-endpoint = <&ov8858_out>;
+						remote-endpoint = <&ov8858_out2>;
 						data-lanes = <1 2>;
 					};
 					dphy0_in_ov13850: endpoint@3 {
 						reg = <3>;
-						remote-endpoint = <&ov13850_out>;
+						remote-endpoint = <&ov13850_out2>;
 						data-lanes = <1 2>;
 					};
 					dphy0_in_ov5647: endpoint@4 {
 						reg = <4>;
-						remote-endpoint = <&ov5647_out>;
+						remote-endpoint = <&ov5647_out2>;
 						data-lanes = <1 2>;
 					};
 					dphy0_in_imx415: endpoint@5 {
