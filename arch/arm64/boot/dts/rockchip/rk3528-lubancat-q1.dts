@@ -166,6 +166,7 @@
 		regulator-min-microvolt = <705000>;
 		regulator-max-microvolt = <1006000>;
 		regulator-init-microvolt = <900000>;
+		regulator-ramp-delay = <12500>;
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-settling-time-up-us = <250>;
@@ -180,6 +181,7 @@
 		regulator-min-microvolt = <746000>;
 		regulator-max-microvolt = <1201000>;
 		regulator-init-microvolt = <953000>;
+		regulator-ramp-delay = <12500>;
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-settling-time-up-us = <250>;
@@ -194,6 +196,7 @@
 		regulator-min-microvolt = <705000>;
 		regulator-max-microvolt = <1148000>;
 		regulator-init-microvolt = <900000>;
+		regulator-ramp-delay = <12500>;
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-settling-time-up-us = <250>;
