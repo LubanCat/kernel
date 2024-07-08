@@ -1548,7 +1548,7 @@ static u8 rtw_phydm_config_trx_path(_adapter *adapter)
 
 	hal_data->txpath = txpath;
 	hal_data->rxpath = rxpath;
-	dump_hal_runtime_trx_mode(RTW_DBGDUMP, adapter);
+	// dump_hal_runtime_trx_mode(RTW_DBGDUMP, adapter);
 	rst = _SUCCESS;
 
 exit:
