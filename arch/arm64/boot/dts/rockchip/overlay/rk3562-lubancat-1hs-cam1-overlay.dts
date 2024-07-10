@@ -209,7 +209,7 @@
 
             dphy2_imx415: imx415@1a {
             	compatible = "sony,imx415";
-            	status = "disabled";
+            	status = "okay";
             	reg = <0x1a>;
             	clocks = <&ext_cam1_37m_clk>;
             	clock-names = "xvclk";
