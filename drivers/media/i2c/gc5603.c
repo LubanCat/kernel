@@ -46,7 +46,7 @@
 #include <linux/slab.h>
 #include <linux/of_graph.h>
 
-#define DRIVER_VERSION          KERNEL_VERSION(0, 0x01, 0x01)
+#define DRIVER_VERSION          KERNEL_VERSION(0, 0x01, 0x08)
 #define GC5603_NAME             "gc5603"
 
 #define MIPI_FREQ_848M          423000000
@@ -154,13 +154,14 @@ struct gc5603 {
 	struct v4l2_ctrl    *v_flip;
 	struct mutex        mutex;
 	bool            streaming;
-	bool			power_on;
-	const struct gc5603_mode *cur_mode;
 	unsigned int        lane_num;
 	unsigned int        cfg_num;
 	unsigned int        pixel_rate;
+	bool			power_on;
+	const struct gc5603_mode *cur_mode;
 
-	u32         module_index;
+
+	u32         	module_index;
 	const char      *module_facing;
 	const char      *module_name;
 	const char      *len_name;
@@ -952,6 +953,9 @@ static long gc5603_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	struct rkmodule_channel_info *ch_info;
 
 	switch (cmd) {
+	case RKMODULE_GET_MODULE_INFO:
+		gc5603_get_module_inf(gc5603, (struct rkmodule_inf *)arg);
+		break;
 	case RKMODULE_GET_HDR_CFG:
 		hdr_cfg = (struct rkmodule_hdr_cfg *)arg;
 		hdr_cfg->esp.mode = HDR_NORMAL_VC;
@@ -960,9 +964,7 @@ static long gc5603_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	case RKMODULE_SET_HDR_CFG:
 	case RKMODULE_SET_CONVERSION_GAIN:
 		break;
-	case RKMODULE_GET_MODULE_INFO:
-		gc5603_get_module_inf(gc5603, (struct rkmodule_inf *)arg);
-		break;
+
 	case RKMODULE_AWB_CFG:
 		gc5603_set_awb_cfg(gc5603, (struct rkmodule_awb_cfg *)arg);
 		break;
@@ -1424,16 +1426,14 @@ static int gc5603_probe(struct i2c_client *client,
 	gc5603->client = client;
 	ret = of_property_read_u32(node, RKMODULE_CAMERA_MODULE_INDEX,
 				   &gc5603->module_index);
-	if (ret) {
-		dev_warn(dev, "could not get module index!\n");
-		gc5603->module_index = 0;
-	}
+
 	ret |= of_property_read_string(node, RKMODULE_CAMERA_MODULE_FACING,
 					   &gc5603->module_facing);
 	ret |= of_property_read_string(node, RKMODULE_CAMERA_MODULE_NAME,
 					   &gc5603->module_name);
 	ret |= of_property_read_string(node, RKMODULE_CAMERA_LENS_NAME,
 					   &gc5603->len_name);
+	dev_info(dev, "Module Information: index = %d, Facing = %s, ModuleName = %s, LensName = %s", gc5603->module_index, gc5603->module_facing, gc5603->module_name, gc5603->len_name);
 	if (ret) {
 		dev_err(dev,
 			"could not get module information!\n");
@@ -1458,11 +1458,7 @@ static int gc5603_probe(struct i2c_client *client,
 	if (IS_ERR(gc5603->pwdn_gpio))
 		dev_warn(dev, "Failed to get power-gpios\n");
 
-	ret = gc5603_configure_regulators(gc5603);
-	if (ret) {
-		dev_err(dev, "Failed to get power regulators\n");
-		return ret;
-	}
+
 
 	ret = gc5603_parse_of(gc5603);
 	if (ret != 0)
@@ -1485,6 +1481,11 @@ static int gc5603_probe(struct i2c_client *client,
 		dev_err(dev, "no pinctrl\n");
 	}
 
+	ret = gc5603_configure_regulators(gc5603);
+	if (ret) {
+		dev_err(dev, "Failed to get power regulators\n");
+		return ret;
+	}
 	mutex_init(&gc5603->mutex);
 
 	sd = &gc5603->subdev;
@@ -1504,7 +1505,8 @@ static int gc5603_probe(struct i2c_client *client,
 
 #ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
 	sd->internal_ops = &gc5603_internal_ops;
-	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
+				V4L2_SUBDEV_FL_HAS_EVENTS;
 #endif
 #if defined(CONFIG_MEDIA_CONTROLLER)
 	gc5603->pad.flags = MEDIA_PAD_FL_SOURCE;
@@ -1570,11 +1572,6 @@ static int gc5603_remove(struct i2c_client *client)
 	return 0;
 }
 
-static const struct i2c_device_id gc5603_match_id[] = {
-	{ "gc5603", 0 },
-	{ },
-};
-
 #if IS_ENABLED(CONFIG_OF)
 static const struct of_device_id gc5603_of_match[] = {
 	{ .compatible = "galaxycore,gc5603" },
@@ -1582,6 +1579,12 @@ static const struct of_device_id gc5603_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, gc5603_of_match);
 #endif
+static const struct i2c_device_id gc5603_match_id[] = {
+	{ "galaxycore, gc5603", 0 },
+	{ },
+};
+
+
 
 static struct i2c_driver gc5603_i2c_driver = {
 	.driver = {
@@ -1607,6 +1610,6 @@ static void __exit sensor_mod_exit(void)
 device_initcall_sync(sensor_mod_init);
 module_exit(sensor_mod_exit);
 
-MODULE_DESCRIPTION("GC2035 CMOS Image Sensor driver");
+MODULE_DESCRIPTION("GC5603 CMOS Image Sensor driver");
 MODULE_LICENSE("GPL v2");
 

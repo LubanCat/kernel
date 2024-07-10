@@ -5104,8 +5104,11 @@ int rkcif_update_sensor_info(struct rkcif_stream *stream)
 	}
 
 	stream->cifdev->active_sensor = sensor;
+	//printf("shingo: sensor = %s. \n", sensor->sd->name);
 
 	terminal_sensor = &stream->cifdev->terminal_sensor;
+	//printf("shingo: terminal sensor = %s. \n", terminal_sensor->sd->name);
+	
 	get_remote_terminal_sensor(stream, &terminal_sensor->sd);
 	if (terminal_sensor->sd) {
 		ret = v4l2_subdev_call(terminal_sensor->sd, pad, get_mbus_config,
