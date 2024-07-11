@@ -17,7 +17,7 @@
 #include "rk3562-linux.dtsi"
 
 #include "rk3562-lubancat-lvds-10.1-1280x800-bsdn10.dtsi"
-//#include "rk3562-lubancat-lvds-10.1-800x1280-hkby101r28hm25l.dtsi"
+//#include "rk3562-lubancat-lvds-10.1-800x1280.dtsi"
 //#include "rk3562-lubancat-mipi-5.0-1080x1920.dtsi"
 
 //#include "rk3562-lubancat-1hs-cam0.dtsi"
