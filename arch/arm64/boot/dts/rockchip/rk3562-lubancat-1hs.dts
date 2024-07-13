@@ -136,7 +136,7 @@
 
 	vdd_npu: vdd-npu {
 		compatible = "pwm-regulator";
-		pwms = <&pwm6 0 5000 1>;
+		pwms = <&pwm5 0 5000 1>;
 		regulator-name = "vdd_npu";
 		regulator-min-microvolt = <800000>;
 		regulator-max-microvolt = <1100000>;
@@ -635,6 +635,11 @@
 &pwm0 {
 	status = "okay";
 	pinctrl-0 = <&pwm0m0_pins>;
+};
+
+&pwm5 {
+	status = "okay";
+	pinctrl-0 = <&pwm5m0_pins>;
 };
 
 &pwm12 {
