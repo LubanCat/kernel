@@ -186,8 +186,13 @@ static int __init housekeeping_nohz_full_setup(char *str)
 {
 	unsigned long flags;
 
+#ifdef CONFIG_PREEMPT_RT
+	flags = HK_FLAG_WQ | HK_FLAG_TIMER | HK_FLAG_RCU |
+		HK_FLAG_MISC | HK_FLAG_KTHREAD;
+#else
 	flags = HK_FLAG_TICK | HK_FLAG_WQ | HK_FLAG_TIMER | HK_FLAG_RCU |
 		HK_FLAG_MISC | HK_FLAG_KTHREAD;
+#endif
 
 	return housekeeping_setup(str, flags);
 }
