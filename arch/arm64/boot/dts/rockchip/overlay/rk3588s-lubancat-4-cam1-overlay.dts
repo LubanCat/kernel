@@ -84,7 +84,7 @@
 		};
 	};
 
-	/* Link path: sensor->csi2_dphy1->mipi1_csi2->rkcif_mipi_lvds1--->rkcif_mipi_lvds1_sditf->rkisp0_vir1 */
+	/* Link path: sensor->csi2_dcphy1->mipi1_csi2->rkcif_mipi_lvds1--->rkcif_mipi_lvds1_sditf->rkisp0_vir1 */
 	fragment@1 {
 		target = <&i2c5>;
 
