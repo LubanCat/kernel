@@ -2,7 +2,19 @@
 ifeq ($(CONFIG_ARCH_ROCKCHIP), y)
 
 dtbo-$(CONFIG_CPU_RK3528) += \
-	rk3528-lubancat-uart6-m1-overlay.dtbo
+	rk3528-lubancat-i2c0-m1-overlay.dtbo \
+	rk3528-lubancat-i2c1-m0-overlay.dtbo \
+	rk3528-lubancat-i2c3-m1-overlay.dtbo \
+	rk3528-lubancat-i2c6-m0-overlay.dtbo \
+	rk3528-lubancat-pwm0-m0-overlay.dtbo \
+	rk3528-lubancat-pwm5-m1-overlay.dtbo \
+	rk3528-lubancat-pwm6-m0-overlay.dtbo \
+	rk3528-lubancat-pwm6-m1-overlay.dtbo \
+	rk3528-lubancat-spi0-m0-overlay.dtbo \
+	rk3528-lubancat-uart1-m0-overlay.dtbo \
+	rk3528-lubancat-uart3-m0-overlay.dtbo \
+	rk3528-lubancat-uart6-m1-overlay.dtbo \
+	rk3528-lubancat-uart7-m0-overlay.dtbo
 
 dtbo-$(CONFIG_CPU_RK3562) += \
 	rk3562-lubancat-1hs-lvds-10.1-800x1280-overlay.dtbo \
