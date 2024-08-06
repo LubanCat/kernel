@@ -34,7 +34,7 @@
 // #include "rk3588-lubancat-5io-dsi1-ebf410125_1080p.dtsi"
 
 //只有一帧
-#include "rk3588-lubancat-5io-cam0.dtsi"
+//#include "rk3588-lubancat-5io-cam0.dtsi"
 
 // #include "rk3588-lubancat-5io-cam1.dtsi"
 
@@ -1286,7 +1286,7 @@
 			 &gmac1_rgmii_clk
 			 &gmac1_rgmii_bus>;
 
-	tx_delay = <0x30>;
+	tx_delay = <0x18>;
 	/* rx_delay = <0x4f>; */
 
 	phy-handle = <&rgmii_phy1>;
