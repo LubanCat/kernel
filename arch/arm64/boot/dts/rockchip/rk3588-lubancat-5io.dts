@@ -1317,6 +1317,8 @@
 &pcie3x4 {
 	num-lanes = <2>;
 	vpcie3v3-supply = <&vcc3v3_m2_pcie>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pcie30x4m1_pins>;
 	status = "okay";
 };
 
