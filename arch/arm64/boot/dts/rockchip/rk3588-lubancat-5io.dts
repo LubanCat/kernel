@@ -17,35 +17,28 @@
 #include "rk3588.dtsi"
 #include "rk3588-linux.dtsi"
 
-//vp0
+// vp0
 #include "rk3588-lubancat-5io-hdmi0.dtsi"
 // #include "rk3588-lubancat-5io-hdmi1-in-vp0.dtsi"
 
-//vp1
+// vp1
 #include "rk3588-lubancat-5io-hdmi1.dtsi"
 
 #include "rk3588-lubancat-5io-hdmi-rx.dtsi"
 
-//vp2 二选一
+// vp2 二选一
 // #include "rk3588-lubancat-5io-dp0.dtsi"
 // #include "rk3588-lubancat-5io-dsi0-ebf410125_1080p.dtsi"
 
-//vp3
+// vp3
 // #include "rk3588-lubancat-5io-dsi1-ebf410125_1080p.dtsi"
 
-//只有一帧
-//#include "rk3588-lubancat-5io-cam0.dtsi"
-
+// Camera
+// #include "rk3588-lubancat-5io-cam0.dtsi"
 // #include "rk3588-lubancat-5io-cam1.dtsi"
-
-// i2c4失效，读不到任何i2c设备
 // #include "rk3588-lubancat-5io-cam2.dtsi"
-
 // #include "rk3588-lubancat-5io-cam3.dtsi"
-
-//i2c总线能读到马达的i2c 读不到摄像头的
 // #include "rk3588-lubancat-5io-cam4.dtsi"
-
 // #include "rk3588-lubancat-5io-cam5.dtsi"
 
 
