@@ -1,3 +1,7 @@
+# 20240710：RKAIQ正常工作，3AOK，但iqfile为copy os04a10的，颜色、LSC、AWB均不正常；
+![image](https://github.com/shingoxy/kernel-RK3588s-5.10Stable/assets/36981700/d51b1c1e-4d61-4433-b83b-e777f5db479d)
+
+
 # 20240628：GC5603成功点亮，工作正常，i2c通信正常：
 <img width="640" alt="image" src="https://github.com/shingoxy/kernel-RK3588s-5.10Stable/assets/36981700/4746dd40-b0f6-4a08-baa8-dca10cf66173">
 
