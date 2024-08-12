@@ -333,6 +333,26 @@
 			};
 		};
 	};
+
+	gc8613: gc8613@31 {
+		compatible = "galaxycore,gc8613";
+		status = "okay";
+		reg = <0x31>;
+		clocks = <&ext_cam_24m_clk>;
+		clock-names = "xvclk";
+		pwdn-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_LOW>;
+
+		rockchip,camera-module-index = <3>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "GCDS01A";
+		rockchip,camera-module-lens-name = "default";
+		port {
+			gc8613_out2: endpoint {
+				remote-endpoint = <&dphy0_in_gc8613>;
+				data-lanes = <1 2 3 4>;
+			};
+		};
+	};
 };
 
 &csi2_dphy0_hw {
@@ -360,6 +380,12 @@
 			dphy0_in_imx415: endpoint@1 {
 				reg = <1>;
 				remote-endpoint = <&imx415_out2>;
+				data-lanes = <1 2 3 4>;
+			};
+
+			dphy0_in_gc8613: endpoint@2 {
+				reg = <2>;
+				remote-endpoint = <&gc8613_out2>;
 				data-lanes = <1 2 3 4>;
 			};
 		};
