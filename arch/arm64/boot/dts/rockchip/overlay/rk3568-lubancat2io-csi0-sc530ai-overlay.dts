@@ -1,0 +1,24 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+
+/ {
+	fragment@2 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@3 {
+		target = <&sc530ai>;
+		__overlay__ {
+			status = "okay";
+
+			pwdn-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
+			reset-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};

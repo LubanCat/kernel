@@ -8,11 +8,24 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk356x-lubancat-csi0-ov8858-overlay.dtbo \
 	rk356x-lubancat-csi0-imx415-overlay.dtbo \
 	rk356x-lubancat-csi0-sc530ai-overlay.dtbo \
+	rk3566-lubancat0-csi0-sc530ai-overlay.dtbo \
+	rk3566-lubancat1h-csi0-sc530ai-overlay.dtbo \
+	rk3566-lubancat1io-csi0-sc530ai-overlay.dtbo \
+	rk3566-lubancat1n-csi0-sc530ai-overlay.dtbo \
+	rk3568-lubancat2-csi0-sc530ai-overlay.dtbo \
+	rk3568-lubancat2h-csi0-sc530ai-overlay.dtbo \
+	rk3568-lubancat2io-csi0-sc530ai-overlay.dtbo \
+	rk3568-lubancat2n-csi0-sc530ai-overlay.dtbo \
 	rk356x-lubancat-csi1-ov5648-overlay.dtbo \
 	rk356x-lubancat-csi1-ov8858-overlay.dtbo \
 	rk356x-lubancat-csi1-ov5647-overlay.dtbo \
 	rk356x-lubancat-csi1-sc132gs-overlay.dtbo \
 	rk356x-lubancat-csi1-sc530ai-overlay.dtbo \
+	rk3566-lubancat1h-csi1-sc530ai-overlay.dtbo \
+	rk3566-lubancat1io-csi1-sc530ai-overlay.dtbo \
+	rk3568-lubancat2h-csi1-sc530ai-overlay.dtbo  \
+	rk3568-lubancat2io-csi1-sc530ai-overlay.dtbo \
+	rk3568-lubancat2n-csi1-sc530ai-overlay.dtbo \
 	rk356x-lubancat-gmac1-disabled-overlay.dtbo \
 	rk356x-lubancat-i2c3-m0-overlay.dtbo \
 	rk356x-lubancat-i2c3-m1-overlay.dtbo \
