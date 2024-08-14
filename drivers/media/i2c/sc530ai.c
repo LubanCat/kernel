@@ -1665,6 +1665,8 @@ static int sc530ai_set_ctrl(struct v4l2_ctrl *ctrl)
 			val |= SC530AI_MIRROR_MASK;
 		else
 			val &= ~SC530AI_MIRROR_MASK;
+		val |= 0x3 << 1;
+		dev_info(&sc530ai->client->dev,"sc530ai==============V4L2_CID_HFLIP val is %d======================\n",val);
 		ret |= sc530ai_write_reg(sc530ai->client,
 					 SC530AI_FLIP_MIRROR_REG,
 					 SC530AI_REG_VALUE_08BIT, val);
@@ -1680,6 +1682,9 @@ static int sc530ai_set_ctrl(struct v4l2_ctrl *ctrl)
 			val |= SC530AI_FLIP_MASK;
 		else
 			val &= ~SC530AI_FLIP_MASK;
+		val |= 0x3 << 1;
+		val |= 0x3 << 5;
+ 		dev_info(&sc530ai->client->dev,"sc530ai==============V4L2_CID_VFLIP val is %d======================\n",val);
 		ret |= sc530ai_write_reg(sc530ai->client,
 					 SC530AI_FLIP_MIRROR_REG,
 					 SC530AI_REG_VALUE_08BIT,
