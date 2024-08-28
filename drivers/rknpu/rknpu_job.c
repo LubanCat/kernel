@@ -210,8 +210,9 @@ static inline int rknpu_job_wait(struct rknpu_job *job)
 					(elapse_time_us < args->timeout * 1000);
 			spin_unlock_irqrestore(&rknpu_dev->irq_lock, flags);
 			LOG_ERROR(
-				"job: %p, iommu domain id: %d, wait_count: %d, continue wait: %d, commit elapse time: %lldus, wait time: %lldus, timeout: %uus\n",
-				job, job->iommu_domain_id, wait_count,
+				"job: %p, mask: %#x, job iommu domain id: %d, dev iommu domain id: %d, wait_count: %d, continue wait: %d, commit elapse time: %lldus, wait time: %lldus, timeout: %uus\n",
+				job, args->core_mask, job->iommu_domain_id,
+				rknpu_dev->iommu_domain_id, wait_count,
 				continue_wait,
 				(job->hw_commit_time == 0 ? 0 : elapse_time_us),
 				ktime_us_delta(ktime_get(), job->timestamp),
@@ -452,10 +453,8 @@ static void rknpu_job_next(struct rknpu_device *rknpu_dev, int core_index)
 	job->hw_recoder_time = job->hw_commit_time;
 	spin_unlock_irqrestore(&rknpu_dev->irq_lock, flags);
 
-	if (atomic_dec_and_test(&job->run_count)) {
-		rknpu_iommu_switch_domain(rknpu_dev, job->iommu_domain_id);
+	if (atomic_dec_and_test(&job->run_count))
 		rknpu_job_commit(job);
-	}
 }
 
 static void rknpu_job_done(struct rknpu_job *job, int ret, int core_index)
@@ -485,6 +484,8 @@ static void rknpu_job_done(struct rknpu_job *job, int ret, int core_index)
 
 	if (atomic_dec_and_test(&job->interrupt_count)) {
 		int use_core_num = job->use_core_num;
+
+		rknpu_iommu_domain_put(rknpu_dev);
 
 		job->flags |= RKNPU_JOB_DONE;
 		job->ret = ret;
@@ -536,6 +537,11 @@ static void rknpu_job_schedule(struct rknpu_job *job)
 		atomic_set(&job->interrupt_count, job->use_core_num);
 	}
 
+	if (rknpu_iommu_domain_get_and_switch(rknpu_dev, job->iommu_domain_id)) {
+		job->ret = -EINVAL;
+		return;
+	}
+
 	spin_lock_irqsave(&rknpu_dev->irq_lock, flags);
 	for (i = 0; i < rknpu_dev->config->num_irqs; i++) {
 		if (job->args->core_mask & rknpu_core_mask(i)) {
@@ -558,6 +564,8 @@ static void rknpu_job_abort(struct rknpu_job *job)
 	struct rknpu_subcore_data *subcore_data = NULL;
 	unsigned long flags;
 	int i = 0;
+
+	rknpu_iommu_domain_put(rknpu_dev);
 
 	msleep(100);
 
