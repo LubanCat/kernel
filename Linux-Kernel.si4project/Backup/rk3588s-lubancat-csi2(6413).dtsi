@@ -17,18 +17,6 @@
 		clock-output-names = "ext_cam_27m_clk";
 		#clock-cells = <0>;
 	};
-	ext_cam_24m_clk: external-camera-24m-clock {
-		compatible = "fixed-clock";
-		clock-frequency = <24000000>;
-		clock-output-names = "ext_cam_24m_clk";
-		#clock-cells = <0>;
-	};
-	ext_cam_19d2m_clk: external-camera-19d2m-clock {
-		compatible = "fixed-clock";
-		clock-frequency = <19200000>;
-		clock-output-names = "ext_cam_19d2m_clk";
-		#clock-cells = <0>;
-	};
 
 	vdd_cam_5v: vdd-cam-5v-regulator {
 		compatible = "regulator-fixed";
@@ -70,32 +58,63 @@
 	};
 };
 
-//CAM 0
-/* Link path: sensor->csi2_dcphy0->mipi0_csi2->rkcif_mipi_lvds--->rkcif_mipi_lvds_sditf->rkisp0_vir0 */
+
 &i2c1 {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1m2_xfer>;
 
-	ov50h40_0: ov50h40@10 {
-		compatible = "ov,ov50h40";
-		status = "enabled";
-		reg = <0x10>;
-		clocks = <&ext_cam_19d2m_clk>;
+	dw9714_0: dw9714-0@c {
+		status = "okay";
+		compatible = "dongwoon,dw9714";
+		reg = <0xc>;
+		rockchip,camera-module-index = <0>;
+		rockchip,vcm-max-current = <100>;
+		rockchip,vcm-start-current = <0>;
+		rockchip,vcm-rated-current = <100>;
+		rockchip,vcm-step-mode = <0xd>;
+		rockchip,vcm-dlc-enable = <0>;
+		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-t-src = <0>;
+		rockchip,camera-module-facing = "back";
+	};
+
+	gc5603_0: gc5603-0@31 {
+		compatible = "galaxycore,gc5603";
+		status = "okay";
+		reg = <0x31>;
+		clocks = <&ext_cam_27m_clk>;
+		clock-names = "ext_cam_27m_clk";
+		pwdn-gpios = <&gpio1 RK_PA3 GPIO_ACTIVE_LOW>;
+		rotation = <180>;
+
+		port {
+			gc5603_out0: endpoint {
+				remote-endpoint = <&dcphy0_in_gc5603>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	imx415_0: imx415-0@1a {
+		compatible = "sony,imx415";
+		status = "okay";
+		reg = <0x1a>;
+		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
-		reset-gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_LOW>;
 
-		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-index = <0>;
 		rockchip,camera-module-facing = "back";
-		rockchip,camera-module-name = "Transsion";
-		rockchip,camera-module-lens-name = "CM401-OIS";
+		rockchip,camera-module-name = "CMK-OT2022-PX1";
+		rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
 		port {
-			ov50h40_0_out0: endpoint {
-				remote-endpoint = <&dcphy0_in_ov50h40>;
-				data-lanes = <1 2 3>;
+			imx415_out0: endpoint {
+				remote-endpoint = <&dcphy0_in_imx415>;
+				data-lanes = <1 2 3 4>;
 			};
 		};
 	};
@@ -117,10 +136,16 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			dcphy0_in_ov50h40: endpoint@0 {
+			dcphy0_in_gc5603: endpoint@0 {
 				reg = <0>;
-				remote-endpoint = <&ov50h40_0_out0>;
-				data-lanes = <1 2 3>;
+				remote-endpoint = <&gc5603_out0>;
+				data-lanes = <1 2>;
+			};
+
+			dcphy0_in_imx415: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&imx415_out0>;
+				data-lanes = <1 2 3 4>;
 			};
 		};
 
@@ -168,26 +193,35 @@
 	};
 };
 
-
-//CAM 1
-/* Link path: sensor->csi2_dcphy1->mipi1_csi2->rkcif_mipi_lvds1--->rkcif_mipi_lvds1_sditf->rkisp0_vir1 */
 &i2c5 {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c5m3_xfer>;
-
-	gc5603_1: gc5603@31 {
-		compatible = "galaxycore,gc5603";
-		status = "disabled";
-		reg = <0x31>;
-		clocks = <&ext_cam_24m_clk>;
-		clock-names = "xvclk";
-		pwdn-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_LOW>;
-
-		rockchip,camera-module-index = <1>;
+	
+	dw9714_1: dw9714-1@c {
+		status = "okay";
+		compatible = "dongwoon,dw9714";
+		reg = <0xc>;
+		rockchip,camera-module-index = <0>;
+		rockchip,vcm-max-current = <100>;
+		rockchip,vcm-start-current = <0>;
+		rockchip,vcm-rated-current = <100>;
+		rockchip,vcm-step-mode = <0xd>;
+		rockchip,vcm-dlc-enable = <0>;
+		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-t-src = <0>;
 		rockchip,camera-module-facing = "back";
-		rockchip,camera-module-name = "GCDS01A";
-		rockchip,camera-module-lens-name = "default";
+	};
+
+	gc5603_1: gc5603-1@31 {
+		compatible = "galaxycore,gc5603";
+		status = "okay";
+		reg = <0x31>;
+		clocks = <&ext_cam_27m_clk>;
+		clock-names = "ext_cam_27m_clk";
+		pwdn-gpios = <&gpio4 RK_PA5 GPIO_ACTIVE_LOW>;
+		rotation = <180>;
+
 		port {
 			gc5603_out1: endpoint {
 				remote-endpoint = <&dcphy1_in_gc5603>;
@@ -195,14 +229,37 @@
 			};
 		};
 	};
+
+	imx415_1: imx415-1@1a {
+		compatible = "sony,imx415";
+		status = "okay";
+		reg = <0x1a>;
+		clocks = <&ext_cam_37m_clk>;
+		clock-names = "xvclk";
+		avdd-supply = <&cam_avdd>;
+		dovdd-supply = <&cam_dovdd>;
+		dvdd-supply = <&cam_dvdd>;
+		reset-gpios = <&gpio4 RK_PA6 GPIO_ACTIVE_LOW>;
+
+		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "CMK-OT2022-PX1";
+		rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
+		port {
+			imx415_out1: endpoint {
+				remote-endpoint = <&dcphy1_in_imx415>;
+				data-lanes = <1 2 3 4>;
+			};
+		};
+	};
 };
 
 &mipi_dcphy1 {
-	status = "disabled";
+	status = "okay";
 };
 
 &csi2_dcphy1 {
-	status = "disabled";
+	status = "okay";
 	
 	ports {
 		#address-cells = <1>;
@@ -212,11 +269,17 @@
 			reg = <0>;
 			#address-cells = <1>;
 			#size-cells = <0>;
-
+			
 			dcphy1_in_gc5603: endpoint@0 {
 				reg = <0>;
 				remote-endpoint = <&gc5603_out1>;
 				data-lanes = <1 2>;
+			};
+
+			dcphy1_in_imx415: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&imx415_out1>;
+				data-lanes = <1 2 3 4>;
 			};
 		};
 
@@ -234,7 +297,7 @@
 };
 
 &mipi1_csi2 {
-	status = "disabled";
+	status = "okay";
 
 	ports {
 		#address-cells = <1>;
@@ -264,26 +327,35 @@
 	};
 };
 
-
-//CAM2
-/* Link path: sensor->csi2_dphy0->mipi2_csi2->cif_mipi2--->rkcif_mipi_lvds2->rkisp1_vir0 */
 &i2c6 {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c6m3_xfer>;
 
-	gc5603_2: gc5603@31 {
+	dw9714: dw9714@c {
+		status = "okay";
+		compatible = "dongwoon,dw9714";
+		reg = <0xc>;
+		rockchip,camera-module-index = <0>;
+		rockchip,vcm-max-current = <100>;
+		rockchip,vcm-start-current = <0>;
+		rockchip,vcm-rated-current = <100>;
+		rockchip,vcm-step-mode = <0xd>;
+		rockchip,vcm-dlc-enable = <0>;
+		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-t-src = <0>;
+		rockchip,camera-module-facing = "back";
+	};
+
+	gc5603_2: gc5603_2@31 {
 		compatible = "galaxycore,gc5603";
 		status = "okay";
 		reg = <0x31>;
-		clocks = <&ext_cam_24m_clk>;
-		clock-names = "xvclk";
+		clocks = <&ext_cam_27m_clk>;
+		clock-names = "ext_cam_27m_clk";
 		pwdn-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_LOW>;
+		rotation = <180>;
 
-		rockchip,camera-module-index = <1>;
-		rockchip,camera-module-facing = "back";
-		rockchip,camera-module-name = "GCDS01A";
-		rockchip,camera-module-lens-name = "default";
 		port {
 			gc5603_out2: endpoint {
 				remote-endpoint = <&dphy0_in_gc5603>;
@@ -292,9 +364,9 @@
 		};
 	};
 
-	imx415: imx415@1a {
+	imx415_2: imx415-2@1a {
 		compatible = "sony,imx415";
-		status = "disabled";
+		status = "okay";
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
@@ -310,26 +382,6 @@
 		port {
 			imx415_out2: endpoint {
 				remote-endpoint = <&dphy0_in_imx415>;
-				data-lanes = <1 2 3 4>;
-			};
-		};
-	};
-
-	gc8613: gc8613@31 {
-		compatible = "galaxycore,gc8613";
-		status = "okay";
-		reg = <0x31>;
-		clocks = <&ext_cam_24m_clk>;
-		clock-names = "xvclk";
-		pwdn-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_LOW>;
-
-		rockchip,camera-module-index = <3>;
-		rockchip,camera-module-facing = "back";
-		rockchip,camera-module-name = "GCDS01A";
-		rockchip,camera-module-lens-name = "default";
-		port {
-			gc8613_out2: endpoint {
-				remote-endpoint = <&dphy0_in_gc8613>;
 				data-lanes = <1 2 3 4>;
 			};
 		};
@@ -355,18 +407,12 @@
 			dphy0_in_gc5603: endpoint@0 {
 				reg = <0>;
 				remote-endpoint = <&gc5603_out2>;
-				data-lanes = <1 2>;
+				data-lanes = <1 2 3 4>;
 			};
 
 			dphy0_in_imx415: endpoint@1 {
 				reg = <1>;
 				remote-endpoint = <&imx415_out2>;
-				data-lanes = <1 2 3 4>;
-			};
-
-			dphy0_in_gc8613: endpoint@2 {
-				reg = <2>;
-				remote-endpoint = <&gc8613_out2>;
 				data-lanes = <1 2 3 4>;
 			};
 		};
@@ -445,7 +491,7 @@
 };
 
 &rkcif_mipi_lvds1 {
-	status = "disabled";
+	status = "okay";
 
 	port {
 		cif_mipi1_in0: endpoint {
@@ -455,7 +501,7 @@
 };
 
 &rkcif_mipi_lvds1_sditf {
-	status = "disabled";
+	status = "okay";
 
 	port {
 		mipi_lvds1_sditf: endpoint {
@@ -485,11 +531,11 @@
 };
 
 &rkisp0 {
-	status = "disabled";
+	status = "okay";
 };
 
 &isp0_mmu {
-	status = "disabled";
+	status = "okay";
 };
 
 &rkisp0_vir0 {
@@ -507,7 +553,7 @@
 };
 
 &rkisp0_vir1 {
-	status = "disabled";
+	status = "okay";
 
 	port {
 		#address-cells = <1>;

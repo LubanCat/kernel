@@ -20,13 +20,11 @@
  * V0.0X01.0X09 adjust supply sequence to suit spec
  */
 //#define DEBUG
-#include <linux/types.h>
 #include <linux/clk.h>
 #include <linux/device.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
 #include <linux/i2c.h>
-#include <linux/i2c-dev.h>
 #include <linux/module.h>
 #include <linux/pm_runtime.h>
 #include <linux/of.h>
@@ -47,15 +45,10 @@
 #include <linux/pinctrl/consumer.h>
 #include <linux/slab.h>
 #include <linux/of_graph.h>
-#include <linux/delay.h>
 
-#define OIS_On
-#ifdef OIS_On
-#define CM421_SLAVE_ADDR 		0x30
-#define CM421_REG_VALUE_16bit	2
-#endif
-#define DRIVER_VERSION          KERNEL_VERSION(0, 0x01, 0x08)
+#define DRIVER_VERSION          KERNEL_VERSION(0, 0x01, 0x01)
 #define GC5603_NAME             "gc5603"
+#define GC5603_MEDIA_BUS_FMT    MEDIA_BUS_FMT_SRGGB10_1X10
 
 #define MIPI_FREQ_848M          423000000
 
@@ -126,7 +119,7 @@ struct regval {
 };
 
 struct gc5603_mode {
-	u32 bus_fmt;
+	u32 bus_fmt
 	u32 width;
 	u32 height;
 	struct v4l2_fract max_fps;
@@ -162,14 +155,13 @@ struct gc5603 {
 	struct v4l2_ctrl    *v_flip;
 	struct mutex        mutex;
 	bool            streaming;
+	bool			power_on;
+	const struct gc5603_mode *cur_mode;
 	unsigned int        lane_num;
 	unsigned int        cfg_num;
 	unsigned int        pixel_rate;
-	bool			power_on;
-	const struct gc5603_mode *cur_mode;
 
-
-	u32         	module_index;
+	u32         module_index;
 	const char      *module_facing;
 	const char      *module_name;
 	const char      *len_name;
@@ -177,6 +169,7 @@ struct gc5603 {
 	struct rkmodule_lsc_cfg lsc_cfg;
 	u32			flip;
 };
+
 
 static const struct regval gc5603_2960x1666_regs_2lane[] = {
 //version 1.3
@@ -186,10 +179,12 @@ static const struct regval gc5603_2960x1666_regs_2lane[] = {
 //window 2960x1666
 //BGGR
     {0x03fe, 0xf0},
-	{0x03fe, 0x00},
-	{0x03fe, 0x10},
-	{0x03fe, 0x00},
-	{0x0a38, 0x02},
+    {0x03fe, 0x00},
+    {0x03fe, 0x10},
+    {0x03fe, 0x00},
+	{0x0202, 0x01},
+    {0x0203, 0x50},
+    {0x0a38, 0x02},
 	{0x0a38, 0x03},
 	{0x0a20, 0x07},
 	{0x061b, 0x03},
@@ -202,12 +197,12 @@ static const struct regval gc5603_2960x1666_regs_2lane[] = {
 	{0x0a35, 0x11},
 	{0x0a36, 0x5e},
 	{0x0a37, 0x03},
-	{0x0314, 0x50},
-	{0x0315, 0x32},
-	{0x031c, 0xce},
-	{0x0219, 0x57},
-	{0x0342, 0x04},
-	{0x0343, 0xb0},
+    {0x0314, 0x50},
+    {0x0315, 0x32},
+    {0x031c, 0xce},
+    {0x0219, 0x47},
+    {0x0342, 0x04},
+    {0x0343, 0xb0},
 	{0x0340, 0x06},
 	{0x0341, 0xd6},
 	{0x0345, 0x02},
@@ -228,30 +223,29 @@ static const struct regval gc5603_2960x1666_regs_2lane[] = {
 	{0x070c, 0x01},
 	{0x070e, 0xd2},
 	{0x070f, 0x05},
-	{0x0709, 0x40},
-	{0x0719, 0x40},
 	{0x0909, 0x07},
 	{0x0902, 0x04},
 	{0x0904, 0x0b},
 	{0x0907, 0x54},
 	{0x0908, 0x06},
 	{0x0903, 0x9d},
-	{0x072a, 0x1c},
-	{0x072b, 0x1c},
+	{0x072a, 0x1c},//18
+	{0x072b, 0x1c},//18
 	{0x0724, 0x2b},
 	{0x0727, 0x2b},
 	{0x1466, 0x18},
-	{0x1467, 0x15},
-	{0x1468, 0x15},
-	{0x1469, 0x70},
-	{0x146a, 0xe8},
+	{0x1467, 0x08},
+	{0x1468, 0x10},
+	{0x1469, 0x80},
+	{0x146a, 0xe8},//b8
+	{0x1412, 0x20},
 	{0x0707, 0x07},
 	{0x0737, 0x0f},
 	{0x0704, 0x01},
-	{0x0706, 0x02},
-	{0x0716, 0x02},
+	{0x0706, 0x03},
+	{0x0716, 0x03},
 	{0x0708, 0xc8},
-	{0x0718, 0xc8},
+	{0x0718, 0xc8}, 
 	{0x061a, 0x02},
 	{0x1430, 0x80},
 	{0x1407, 0x10},
@@ -260,18 +254,20 @@ static const struct regval gc5603_2960x1666_regs_2lane[] = {
 	{0x1438, 0x01},
 	{0x02ce, 0x03},
 	{0x0245, 0xc9},
-	{0x023a, 0x08},
+	{0x023a, 0x08},//3B
 	{0x02cd, 0x88},
 	{0x0612, 0x02},
 	{0x0613, 0xc7},
-	{0x0243, 0x03},
+	{0x0243, 0x03},//06
 	{0x0089, 0x03},
-	{0x0002, 0xab},		
+	{0x0002, 0xab},
 	{0x0040, 0xa3},
-	{0x0075, 0x64},
+	{0x0075, 0x64},//64
 	{0x0004, 0x0f},
 	{0x0053, 0x0a},
 	{0x0205, 0x0c},
+
+	//auto_load},
 	{0x0a67, 0x80},
 	{0x0a54, 0x0e},
 	{0x0a65, 0x10},
@@ -302,10 +298,9 @@ static const struct regval gc5603_2960x1666_regs_2lane[] = {
 	{0x0113, 0x02},
 	{0x0114, 0x01},
 	{0x0115, 0x10},
-	{0x0100, 0x09},
-	{0x0a70, 0x00},
-	{0x0080, 0x02},
-	{0x0a67, 0x00},
+	//{0x0a70, 0x00},
+	//{0x0080, 0x02},
+	//{0x0a67, 0x00},
 	{0x0052, 0x02},
 	{0x0076, 0x01},
 	{0x021a, 0x10},
@@ -327,7 +322,7 @@ static const struct regval gc5603_2960x1666_regs_2lane[] = {
 
 static const struct gc5603_mode supported_modes[] = {
 	{
-		.bus_fmt = MEDIA_BUS_FMT_SGRBG10_1X10,
+		.bus_fmt = GC5603_MEDIA_BUS_FMT
 		.width = 2960,
 		.height = 1666,
 		.max_fps = {
@@ -347,7 +342,6 @@ static const struct gc5603_mode supported_modes[] = {
 static const s64 link_freq_menu_items[] = {
 	MIPI_FREQ_848M
 };
-
 static int gc5603_write_reg(struct i2c_client *client, u16 reg,
                              u32 len, u32 val)
 {
@@ -426,88 +420,6 @@ static int gc5603_read_reg(struct i2c_client *client, u16 reg, unsigned int len,
 	dev_info(&client->dev,
 		"gc5603 read reg(0x%x val:0x%x) \n", reg, *val);
 }
-
-#ifdef OIS_On
-static int CM421_write_reg(struct i2c_client *client, 
-					unsigned char dev_addr, 
-					u16 reg, 
-					unsigned int len,
-					u32 val)
-{
-	u32 buf_i, val_i;
-	u8 buf[6];
-	u8 *val_p;
-	__be32 val_be;
-	int ret;
-
-    struct i2c_msg message;
-
-	if (len > 4)
-	    return -EINVAL;
-    
-    buf[0] = (reg >> 8) & 0xFF;//寄存器地址
-    buf[1] = (reg) & 0xFF;//寄存器地址
-	
-	val_be = cpu_to_be32(val);
-	val_p = (u8 *)&val_be;
-	buf_i = 2;
-	val_i = 4 - len;
-
-    while (val_i < 4)
-		buf[buf_i++] = val_p[val_i++];
-    
-    message.addr = dev_addr;//设备地址
-    message.buf = buf;
-    message.flags = 0;//写标志
-    message.len = 4;
-
-	ret = i2c_transfer(client->adapter, &message, 1);
-	if (ret < 0)
-	{
-		dev_err(&client->dev, "Failed to write 0x%x,0x%x\n", reg, val);
-		return -EIO;
-	}
-
-	return 0;
-}
-
-static int CM421_read_reg(struct i2c_client *client, 
-				unsigned char dev_addr,
-				u16 reg,
-			    unsigned int len,
-			    u32 *val)
-{
-	struct i2c_msg msgs[2];
-	u8 *data_be_p;
-	__be32 data_be = 0;
-	__be16 reg_addr_be = cpu_to_be16(reg);
-	int ret;
-
-	if (len > 4 || !len)
-		return -EINVAL;
-
-	data_be_p = (u8 *)&data_be;
-	/* Write register address */
-	msgs[0].addr = dev_addr;
-	msgs[0].flags = 0;
-	msgs[0].len = 2;
-	msgs[0].buf = (u8 *)&reg_addr_be;
-
-	/* Read data from register */
-	msgs[1].addr = dev_addr;
-	msgs[1].flags = I2C_M_RD;
-	msgs[1].len = len;
-	msgs[1].buf = &data_be_p[4 - len];
-
-	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
-	if (ret != ARRAY_SIZE(msgs))
-		return -EIO;
-
-	*val = be32_to_cpu(data_be);
-
-	return 0;
-}
-#endif
 static int gc5603_get_reso_dist(const struct gc5603_mode *mode,
 				struct v4l2_mbus_framefmt *framefmt)
 {
@@ -604,10 +516,7 @@ static int gc5603_set_gain(struct gc5603 *gc5603, u32 gain)
 	uint16_t i = 0;
 	uint16_t total = 0;
 	uint16_t temp = 0;
-#ifdef OIS_On
-	int tmp1, tmp2;
-	struct device *dev = &gc5603->client->dev;
-#endif
+
 
 	for (i = 0; i < total; i++) {
 		if ((gain_level_table[i] <= gain) && (gain < gain_level_table[i+1]))
@@ -636,13 +545,6 @@ static int gc5603_set_gain(struct gc5603 *gc5603, u32 gain)
 	
 	ret |= gc5603_write_reg(gc5603->client, 0x0064,gc5603_REG_VALUE_08BIT,(temp >> 6));
 	ret |= gc5603_write_reg(gc5603->client, 0x0065,gc5603_REG_VALUE_08BIT,((temp&0x3f) << 2) );
-#ifdef OIS_On
-	CM421_read_reg(gc5603->client, CM421_SLAVE_ADDR, 0x99ce, CM421_REG_VALUE_16bit, &tmp1);
-	dev_info(dev, "position 0x99ce= 0x%x\n", tmp1);
-	CM421_read_reg(gc5603->client, CM421_SLAVE_ADDR, 0x99d0, CM421_REG_VALUE_16bit, &tmp2);
-	dev_info(dev, "position 0x99d0= 0x%x\n", tmp2);
-#endif
-
 
 	return ret;
 }
@@ -1051,9 +953,6 @@ static long gc5603_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	struct rkmodule_channel_info *ch_info;
 
 	switch (cmd) {
-	case RKMODULE_GET_MODULE_INFO:
-		gc5603_get_module_inf(gc5603, (struct rkmodule_inf *)arg);
-		break;
 	case RKMODULE_GET_HDR_CFG:
 		hdr_cfg = (struct rkmodule_hdr_cfg *)arg;
 		hdr_cfg->esp.mode = HDR_NORMAL_VC;
@@ -1062,7 +961,9 @@ static long gc5603_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	case RKMODULE_SET_HDR_CFG:
 	case RKMODULE_SET_CONVERSION_GAIN:
 		break;
-
+	case RKMODULE_GET_MODULE_INFO:
+		gc5603_get_module_inf(gc5603, (struct rkmodule_inf *)arg);
+		break;
 	case RKMODULE_AWB_CFG:
 		gc5603_set_awb_cfg(gc5603, (struct rkmodule_awb_cfg *)arg);
 		break;
@@ -1187,11 +1088,7 @@ static int gc5603_s_stream(struct v4l2_subdev *sd, int on)
 {
 	struct gc5603 *gc5603 = to_gc5603(sd);
 	struct i2c_client *client = gc5603->client;
-	struct device *dev = &gc5603->client->dev;
 	int ret = 0;
-#ifdef OIS_On
-	int value2;
-#endif
 
 	mutex_lock(&gc5603->mutex);
 	on = !!on;
@@ -1217,21 +1114,6 @@ static int gc5603_s_stream(struct v4l2_subdev *sd, int on)
 	}
 
 	gc5603->streaming = on;
-#ifdef OIS_On
-	//Init OIS Function:
-	CM421_write_reg(gc5603->client, CM421_SLAVE_ADDR, 0x0018, CM421_REG_VALUE_16bit, 0x0001);
-	msleep(100);
-	CM421_write_reg(gc5603->client, CM421_SLAVE_ADDR, 0x9e18, CM421_REG_VALUE_16bit, 0x0002);
-	msleep(10);
-	CM421_write_reg(gc5603->client, CM421_SLAVE_ADDR, 0x0024, CM421_REG_VALUE_16bit, 0x0001);
-	msleep(400);
-	CM421_write_reg(gc5603->client, CM421_SLAVE_ADDR, 0x9b2c, CM421_REG_VALUE_16bit, 0x0001);
-	msleep(100);
-	CM421_write_reg(gc5603->client, CM421_SLAVE_ADDR, 0x9b2a, CM421_REG_VALUE_16bit, 0x0001);
-	msleep(200);
-	CM421_read_reg(gc5603->client, CM421_SLAVE_ADDR, 0x9b28, CM421_REG_VALUE_16bit, &value2);
-	dev_info(dev, "0x9b28 = 0x%x\n", value2);
-#endif
 
 unlock_and_return:
 	mutex_unlock(&gc5603->mutex);
@@ -1274,7 +1156,7 @@ static int gc5603_enum_mbus_code(struct v4l2_subdev *sd,
 {
 	if (code->index != 0)
 		return -EINVAL;
-	code->code = supported_modes[code->index].bus_fmt;
+	code->code = gc5603->supported_modes[code->index].bus_fmt;
 	return 0;
 }
 
@@ -1287,7 +1169,7 @@ static int gc5603_enum_frame_sizes(struct v4l2_subdev *sd,
 	if (fse->index >= gc5603->cfg_num)
 		return -EINVAL;
 
-	if (fse->code != supported_modes[fse->index].bus_fmt)
+	if (fse->code != gc5603->supported_modes[code->index].bus_fmt)
 		return -EINVAL;
 
 	fse->min_width  = supported_modes[fse->index].width;
@@ -1421,7 +1303,7 @@ static int gc5603_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	/* Initialize try_fmt */
 	try_fmt->width = def_mode->width;
 	try_fmt->height = def_mode->height;
-	try_fmt->code = MEDIA_BUS_FMT_SRGGB10_1X10;
+	try_fmt->code = GC5603_MEDIA_BUS_FMT;
 	try_fmt->field = V4L2_FIELD_NONE;
 
 	mutex_unlock(&gc5603->mutex);
@@ -1543,14 +1425,16 @@ static int gc5603_probe(struct i2c_client *client,
 	gc5603->client = client;
 	ret = of_property_read_u32(node, RKMODULE_CAMERA_MODULE_INDEX,
 				   &gc5603->module_index);
-
+	if (ret) {
+		dev_warn(dev, "could not get module index!\n");
+		gc5603->module_index = 0;
+	}
 	ret |= of_property_read_string(node, RKMODULE_CAMERA_MODULE_FACING,
 					   &gc5603->module_facing);
 	ret |= of_property_read_string(node, RKMODULE_CAMERA_MODULE_NAME,
 					   &gc5603->module_name);
 	ret |= of_property_read_string(node, RKMODULE_CAMERA_LENS_NAME,
 					   &gc5603->len_name);
-	dev_info(dev, "Module Information: index = %d, Facing = %s, ModuleName = %s, LensName = %s", gc5603->module_index, gc5603->module_facing, gc5603->module_name, gc5603->len_name);
 	if (ret) {
 		dev_err(dev,
 			"could not get module information!\n");
@@ -1575,7 +1459,11 @@ static int gc5603_probe(struct i2c_client *client,
 	if (IS_ERR(gc5603->pwdn_gpio))
 		dev_warn(dev, "Failed to get power-gpios\n");
 
-
+	ret = gc5603_configure_regulators(gc5603);
+	if (ret) {
+		dev_err(dev, "Failed to get power regulators\n");
+		return ret;
+	}
 
 	ret = gc5603_parse_of(gc5603);
 	if (ret != 0)
@@ -1598,11 +1486,6 @@ static int gc5603_probe(struct i2c_client *client,
 		dev_err(dev, "no pinctrl\n");
 	}
 
-	ret = gc5603_configure_regulators(gc5603);
-	if (ret) {
-		dev_err(dev, "Failed to get power regulators\n");
-		return ret;
-	}
 	mutex_init(&gc5603->mutex);
 
 	sd = &gc5603->subdev;
@@ -1622,8 +1505,7 @@ static int gc5603_probe(struct i2c_client *client,
 
 #ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
 	sd->internal_ops = &gc5603_internal_ops;
-	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
-				V4L2_SUBDEV_FL_HAS_EVENTS;
+	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 #endif
 #if defined(CONFIG_MEDIA_CONTROLLER)
 	gc5603->pad.flags = MEDIA_PAD_FL_SOURCE;
@@ -1689,6 +1571,11 @@ static int gc5603_remove(struct i2c_client *client)
 	return 0;
 }
 
+static const struct i2c_device_id gc5603_match_id[] = {
+	{ "gc5603", 0 },
+	{ },
+};
+
 #if IS_ENABLED(CONFIG_OF)
 static const struct of_device_id gc5603_of_match[] = {
 	{ .compatible = "galaxycore,gc5603" },
@@ -1696,12 +1583,6 @@ static const struct of_device_id gc5603_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, gc5603_of_match);
 #endif
-static const struct i2c_device_id gc5603_match_id[] = {
-	{ "galaxycore, gc5603", 0 },
-	{ },
-};
-
-
 
 static struct i2c_driver gc5603_i2c_driver = {
 	.driver = {
@@ -1727,6 +1608,6 @@ static void __exit sensor_mod_exit(void)
 device_initcall_sync(sensor_mod_init);
 module_exit(sensor_mod_exit);
 
-MODULE_DESCRIPTION("GC5603 CMOS Image Sensor driver");
+MODULE_DESCRIPTION("GC2035 CMOS Image Sensor driver");
 MODULE_LICENSE("GPL v2");
 
