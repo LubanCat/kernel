@@ -192,6 +192,7 @@
 				reg = <0x30>;
 				clocks = <&ext_cam_clk>;
 				clock-names = "xvclk";
+				rotation = <180>;
 				rockchip,camera-module-index = <2>;
 				rockchip,camera-module-facing = "back";
 				rockchip,camera-module-name = "CMK-OT2115-PC1";

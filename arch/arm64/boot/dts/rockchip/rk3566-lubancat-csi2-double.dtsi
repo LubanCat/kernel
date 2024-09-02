@@ -153,6 +153,7 @@
 		clock-names = "xvclk";
 		pwdn-gpios = <&gpio0 RK_PC3 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio0 RK_PC4 GPIO_ACTIVE_HIGH>;
+		rotation = <180>;
 		rockchip,camera-module-index = <2>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "CMK-OT2115-PC1";
@@ -290,6 +291,7 @@
 
 		pwdn-gpios = <&gpio2 RK_PB3 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio2 RK_PB4 GPIO_ACTIVE_HIGH>;
+		rotation = <180>;
 
 		rockchip,camera-module-index = <2>;
 		rockchip,camera-module-facing = "back";
