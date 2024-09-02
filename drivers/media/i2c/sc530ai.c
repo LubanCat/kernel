@@ -173,6 +173,7 @@ struct sc530ai {
 	struct gpio_desc	*reset_gpio;
 	struct gpio_desc	*pwdn_gpio;
 	struct regulator_bulk_data supplies[sc530ai_NUM_SUPPLIES];
+	bool   upside_down;
 
 	struct pinctrl		*pinctrl;
 	struct pinctrl_state	*pins_default;
@@ -1665,11 +1666,11 @@ static int sc530ai_set_ctrl(struct v4l2_ctrl *ctrl)
 			val |= SC530AI_MIRROR_MASK;
 		else
 			val &= ~SC530AI_MIRROR_MASK;
-		val |= 0x3 << 1;
-		dev_info(&sc530ai->client->dev,"sc530ai==============V4L2_CID_HFLIP val is %d======================\n",val);
 		ret |= sc530ai_write_reg(sc530ai->client,
 					 SC530AI_FLIP_MIRROR_REG,
-					 SC530AI_REG_VALUE_08BIT, val);
+					 SC530AI_REG_VALUE_08BIT,
+					 sc530ai->upside_down ? (val | (SC530AI_MIRROR_MASK)) : val);
+		//dev_info(&sc530ai->client->dev,"sc530ai==============V4L2_CID_HFLIP val is %d======================\n",val);
 		break;
 	case V4L2_CID_VFLIP:
 		ret = sc530ai_read_reg(sc530ai->client,
@@ -1682,13 +1683,11 @@ static int sc530ai_set_ctrl(struct v4l2_ctrl *ctrl)
 			val |= SC530AI_FLIP_MASK;
 		else
 			val &= ~SC530AI_FLIP_MASK;
-		val |= 0x3 << 1;
-		val |= 0x3 << 5;
- 		dev_info(&sc530ai->client->dev,"sc530ai==============V4L2_CID_VFLIP val is %d======================\n",val);
 		ret |= sc530ai_write_reg(sc530ai->client,
 					 SC530AI_FLIP_MIRROR_REG,
 					 SC530AI_REG_VALUE_08BIT,
-					 val);
+					 sc530ai->upside_down ? (val | SC530AI_FLIP_MASK) : val);
+		//dev_info(&sc530ai->client->dev,"sc530ai==============V4L2_CID_VFLIP val is %d======================\n",val);
 		break;
 	default:
 		dev_warn(&client->dev, "%s Unhandled id:0x%x, val:0x%x\n",
@@ -1863,6 +1862,7 @@ static int sc530ai_probe(struct i2c_client *client,
 	char facing[2];
 	int ret;
 	u32 i, hdr_mode = 0;
+	u32 rotation;
 
 	dev_info(dev, "driver version: %02x.%02x.%02x",
 		 DRIVER_VERSION >> 16,
@@ -1887,6 +1887,20 @@ static int sc530ai_probe(struct i2c_client *client,
 		return -EINVAL;
 	}
 
+	ret = fwnode_property_read_u32(dev_fwnode(&client->dev), "rotation",
+						&rotation);
+	if (!ret) {
+		switch (rotation) {
+		case 180:
+			sc530ai->upside_down = true;
+			break;
+		case 0:
+			break;
+		default:
+			dev_warn(dev, "%u degrees rotation is not supported, ignoring...\n",
+				rotation);
+		}
+	}
 	sc530ai->client = client;
 	for (i = 0; i < ARRAY_SIZE(supported_modes); i++) {
 		if (hdr_mode == supported_modes[i].hdr_mode) {
