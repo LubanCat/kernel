@@ -13,7 +13,7 @@
 
 &route_hdmi1{
 	status = "okay";
-	connect = <&vp1_out_hdmi1>;
+	connect = <&vp0_out_hdmi1>;
 };
 
 &hdmi1 {
@@ -24,16 +24,20 @@
 	status = "okay";
 };
 
+&hdptxphy_hdmi1 {
+	status = "okay";
+};
+
 &hdmi1_in_vp0 {
 	status = "disabled";
 };
 
 &hdmi1_in_vp1 {
-	status = "okay";
+	status = "disabled";
 };
 
 &hdmi1_in_vp2 {
-	status = "disabled";
+	status = "okay";
 };
 
 &i2s6_8ch {

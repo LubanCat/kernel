@@ -17,30 +17,45 @@
 #include "rk3588.dtsi"
 #include "rk3588-linux.dtsi"
 
-// vp0
-#include "rk3588-lubancat-5io-hdmi0.dtsi"
-// #include "rk3588-lubancat-5io-hdmi1-in-vp0.dtsi"
+/*
+ * Display
+ * 四屏异显(4K+4K+4K+2K)分配方案:
+ *   hdmi0  4K			-->  vp0
+ *   hdmi1  4K			-->  vp1
+ *   dp0 or dsi0  4K	-->  vp2
+ *   dsi1   2K			-->  vp3
+ * 三屏异显(8K+4K+2K)分配方案:(其中8K通过vp0与vp1合并实现)
+ * hdmi0、hdmi1 or dp0 8K --> vp0
+ * hdmi1、dp0 or dis0  4K --> vp2
+ * dsi1   2K              --> vp3
+ */
+/* 四屏异显(4K+4K+4K+2K), dp0与dsi0只能二选一 */
+// #include "rk3588-lubancat-5io-hdmi0-vp0.dtsi"
+// #include "rk3588-lubancat-5io-hdmi1-vp1.dtsi"
+// #include "rk3588-lubancat-5io-dp0-vp2.dtsi"
+// #include "rk3588-lubancat-5io-dsi0-vp2-1080p.dtsi"
+// #include "rk3588-lubancat-5io-dsi1-vp3-1080p.dtsi"
 
-// vp1
-#include "rk3588-lubancat-5io-hdmi1.dtsi"
+/* 三屏异显(8K+4K+2K), 注：每个vp只能绑定到一个接口 */
+// #include "rk3588-lubancat-5io-hdmi0-vp0.dtsi"
+// #include "rk3588-lubancat-5io-hdmi1-vp0.dtsi"
+// #include "rk3588-lubancat-5io-dp0-vp0.dtsi"
+// #include "rk3588-lubancat-5io-hdmi1-vp2.dtsi"
+// #include "rk3588-lubancat-5io-dp0-vp2.dtsi"
+// #include "rk3588-lubancat-5io-dsi0-vp2-1080p.dtsi"
+// #include "rk3588-lubancat-5io-dsi1-vp3-1080p.dtsi"
 
-#include "rk3588-lubancat-5io-hdmi-rx.dtsi"
+/* hdmi rx */
 
-// vp2 二选一
-// #include "rk3588-lubancat-5io-dp0.dtsi"
-// #include "rk3588-lubancat-5io-dsi0-ebf410125_1080p.dtsi"
+// #include "rk3588-lubancat-5io-hdmi-rx.dtsi"
 
-// vp3
-// #include "rk3588-lubancat-5io-dsi1-ebf410125_1080p.dtsi"
-
-// Camera
+/* Camera */
 // #include "rk3588-lubancat-5io-cam0.dtsi"
 // #include "rk3588-lubancat-5io-cam1.dtsi"
 // #include "rk3588-lubancat-5io-cam2.dtsi"
 // #include "rk3588-lubancat-5io-cam3.dtsi"
 // #include "rk3588-lubancat-5io-cam4.dtsi"
 // #include "rk3588-lubancat-5io-cam5.dtsi"
-
 
 / {
 	model = "Embedfire LubanCat-5IO";
@@ -1494,18 +1509,12 @@
 
 /* vp0 & vp1 splice for 8K output */
 &vp0 {
-	//assigned-clocks = <&cru DCLK_VOP0>;
-	//assigned-clock-parents = <&hdptxphy_hdmi_clk0>;
-
 	rockchip,plane-mask = <(1 << ROCKCHIP_VOP2_CLUSTER0 | 1 << ROCKCHIP_VOP2_ESMART0)>;
 	rockchip,primary-plane = <ROCKCHIP_VOP2_ESMART0>;
-	// cursor-win-id = <ROCKCHIP_VOP2_CLUSTER0>;
+	cursor-win-id = <ROCKCHIP_VOP2_CLUSTER0>;
 };
 
 &vp1 {
-	//assigned-clocks = <&cru DCLK_VOP1>;
-	//assigned-clock-parents = <&hdptxphy_hdmi_clk1>;
-
 	rockchip,plane-mask = <(1 << ROCKCHIP_VOP2_CLUSTER1 | 1 << ROCKCHIP_VOP2_ESMART1)>;
 	rockchip,primary-plane = <ROCKCHIP_VOP2_ESMART1>;
 	cursor-win-id = <ROCKCHIP_VOP2_CLUSTER1>;
@@ -1526,14 +1535,6 @@
 &display_subsystem {
 	clocks = <&hdptxphy_hdmi_clk0>, <&hdptxphy_hdmi_clk1>;
 	clock-names = "hdmi0_phy_pll", "hdmi1_phy_pll";
-};
-
-&hdptxphy_hdmi0 {
-	status = "okay";
-};
-
-&hdptxphy_hdmi1 {
-	status = "okay";
 };
 
 &hdptxphy_hdmi_clk0 {

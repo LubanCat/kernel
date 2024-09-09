@@ -22,6 +22,10 @@
 	status = "okay";
 };
 
+&hdptxphy_hdmi0 {
+	status = "okay";
+};
+
 &hdmi0_in_vp0 {
 	status = "okay";
 };
