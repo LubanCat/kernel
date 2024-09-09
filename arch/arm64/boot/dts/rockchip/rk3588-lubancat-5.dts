@@ -39,7 +39,7 @@
 
 / {
 	model = "Embedfire LubanCat-5";
-	compatible = "rockchip,rk3588-lubancat-5", "rockchip,rk3588";
+	compatible = "embedfire,rk3588-lubancat-5", "rockchip,rk3588";
 
 	/* If hdmirx node is disabled, delete the reserved-memory node here. */
 	reserved-memory {

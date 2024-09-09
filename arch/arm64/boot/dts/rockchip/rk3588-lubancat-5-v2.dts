@@ -10,7 +10,7 @@
 
 / {
 	model = "Embedfire LubanCat-5 V2";
-	compatible = "rockchip,rk3588-lubancat-5-v2", "rockchip,rk3588";
+	compatible = "embedfire,rk3588-lubancat-5-v2", "rockchip,rk3588";
 };
 
 &usbc0 {

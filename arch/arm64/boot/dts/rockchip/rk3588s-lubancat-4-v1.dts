@@ -10,5 +10,5 @@
 
 / {
 	model = "Embedfire LubanCat-4 V1";
-	compatible = "rockchip,rk3588s-lubancat-4-v1", "rockchip,rk3588";
+	compatible = "embedfire,rk3588s-lubancat-4-v1", "rockchip,rk3588";
 };
