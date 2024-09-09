@@ -52,8 +52,8 @@
 		status = "okay";
 		compatible = "gpio-leds";
 
-		sys_status_led: sys-status-led {
-			label = "sys_status_led";
+		sys_led: sys-led {
+			label = "sys_led";
 			linux,default-trigger = "heartbeat";
 			default-state = "on";
 			gpios = <&gpio4 RK_PB5 GPIO_ACTIVE_LOW>;

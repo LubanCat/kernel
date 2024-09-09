@@ -27,8 +27,8 @@
 		status = "okay";
 		compatible = "gpio-leds";
 
-		sys_status_led: sys_status_led {
-			label = "sys_status_led";
+		sys_led: sys_led {
+			label = "sys_led";
 			status = "okay";
 			linux,default-trigger = "heartbeat";
 			default-state = "on";
@@ -734,7 +734,7 @@
 	};
 
 	leds {
-		sys_status_led_pin: sys-status-led-pin {
+		sys_led_pin: sys-led-pin {
 			rockchip,pins = <0 RK_PC0 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 
