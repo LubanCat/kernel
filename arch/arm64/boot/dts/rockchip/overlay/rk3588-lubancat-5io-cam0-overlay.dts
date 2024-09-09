@@ -247,6 +247,8 @@
 				rockchip,camera-module-facing = "back";
 				rockchip,camera-module-name = "CMK-OT2115-PC1";
 				rockchip,camera-module-lens-name = "30IRC-F16";
+				rotation = <180>;
+
 				port {
 					sc530ai_out0: endpoint {
 						remote-endpoint = <&dcphy0_in_sc530ai>;
