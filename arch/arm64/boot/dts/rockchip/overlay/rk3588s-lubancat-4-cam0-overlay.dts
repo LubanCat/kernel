@@ -304,7 +304,7 @@
 						data-lanes = <1 2 3 4>;
 					};
 					dcphy0_in_sc530ai: endpoint@6 {
-						reg = <5>;
+						reg = <6>;
 						remote-endpoint = <&sc530ai_out0>;
 						data-lanes = <1 2 3 4>;
 					};
