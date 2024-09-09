@@ -23,7 +23,7 @@
 			assigned-clock-rates = <800000000>;
 		};
 	};
-
+#if 0
 	fragment@2 {
 		target = <&vp0>;
 
@@ -43,4 +43,5 @@
 			assigned-clock-rates;
 		};
 	};
+#endif
 };
