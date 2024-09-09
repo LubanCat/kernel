@@ -9,7 +9,7 @@ dtbo-$(CONFIG_CPU_RK3528) += \
 	rk3528-lubancat-pwm0-m0-overlay.dtbo \
 	rk3528-lubancat-pwm5-m1-overlay.dtbo \
 	rk3528-lubancat-pwm6-m0-overlay.dtbo \
-	rk3528-lubancat-pwm6-m1-overlay.dtbo \
+	rk3528-lubancat-pwm6-m2-overlay.dtbo \
 	rk3528-lubancat-spi0-m0-overlay.dtbo \
 	rk3528-lubancat-uart1-m0-overlay.dtbo \
 	rk3528-lubancat-uart3-m0-overlay.dtbo \
