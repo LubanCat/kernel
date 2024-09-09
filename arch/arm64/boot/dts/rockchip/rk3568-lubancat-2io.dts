@@ -791,7 +791,7 @@
 
 &u2phy1_host {
 	status = "okay";
-	phy-supply = <&vcc5v0_usb20_host2>;
+	phy-supply = <&vcc5v0_usb20_hub>;
 };
 
 &usb_host1_ehci {
