@@ -157,6 +157,10 @@ if is_enabled CONFIG_OF_EARLY_FLATTREE; then
 		# Only some architectures with OF support have this target
 		if [ -d "${srctree}/arch/$SRCARCH/boot/dts" ]; then
 			$MAKE -f $srctree/Makefile INSTALL_DTBS_PATH="$tmpdir/boot/dtb" dtbs_install
+			if [ -d "$tmpdir/boot/dtb/rockchip" ]; then
+				mv $tmpdir/boot/dtb/rockchip/* $tmpdir/boot/dtb/
+				rm -rf $tmpdir/boot/dtb/rockchip
+			fi
 		fi
 	else
 		# Only some architectures with OF support have this target
