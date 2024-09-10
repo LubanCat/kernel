@@ -218,7 +218,7 @@
 				avdd-supply = <&cam2_avdd>;
 				dovdd-supply = <&cam2_dovdd>;
 				dvdd-supply = <&cam2_dvdd>;
-				reset-gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_LOW>;
+				reset-gpios = <&gpio4 RK_PB2 GPIO_ACTIVE_LOW>;
 
 				rockchip,camera-module-index = <2>;
 				rockchip,camera-module-facing = "back";
