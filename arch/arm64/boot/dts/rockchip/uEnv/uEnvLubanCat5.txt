@@ -22,14 +22,25 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-pwm15-ir-m3-overlay.dtbo
 
 # Display
+# 规则1.每个vp对应一个显示接口，同一个vp同时只能开启一个屏幕
+# 规则2.显示8K,同时占用vp0和vp1,还要开启hdmi0-8k设备树插件来配置时钟
+# 规则3.根据规则1和规则2,如果hdmi0设置为8k的话,dp0不能连接显示器,或者把dp0-disabled插件打开。
+## vp0
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi-8k-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-1080p-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-1080p-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-edp-overlay.dtbo
-dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp0-overlay.dtbo
+dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi0-vp0-overlay.dtbo
+## vp1
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dp0-vp1-disabled-overlay.dtbo
+## vp2
 dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dp0-disabled-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-800x1280-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-edp-vp2-overlay.dtbo
+## vp3
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-800x1280-overlay.dtbo
 
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam0-imx415-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam1-imx415-overlay.dtbo
