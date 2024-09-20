@@ -145,6 +145,7 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-uart1-m1-overlay.dtbo \
 	rk3588-lubancat-uart3-m0-overlay.dtbo \
 	rk3588-lubancat-uart4-m2-overlay.dtbo \
+	rk3588-lubancat-uart5-m1-overlay.dtbo \
 	rk3588-lubancat-uart6-m1-overlay.dtbo \
 	rk3588-lubancat-uart7-m1-overlay.dtbo \
 	rk3588-lubancat-uart7-m2-overlay.dtbo \
