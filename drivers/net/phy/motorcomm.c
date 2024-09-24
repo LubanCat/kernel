@@ -1226,6 +1226,28 @@ int yt8521_resume(struct phy_device *phydev)
 	return 0;
 }
 
+static int yt8531_led_init(struct phy_device *phydev)
+{
+	int ret;
+
+	/* Led1 link*/
+	ret = ytphy_write_ext(phydev, 0xa00d, 0x2070);
+	if (ret < 0)
+		return ret;
+
+	/* Led2 act*/
+	ret = ytphy_write_ext(phydev, 0xa00e, 0x670);
+	if (ret < 0)
+		return ret;
+
+	/* led blinking mode*/
+	ret = ytphy_write_ext(phydev, 0xa00f, 0x7e);
+	if (ret < 0)
+		return ret;
+
+	return ret;
+}
+
 static int yt8531S_config_init(struct phy_device *phydev)
 {
 	int ret = 0;
@@ -1258,7 +1280,11 @@ static int yt8531_config_init(struct phy_device *phydev)
 #endif
 	if (ret < 0)
 		return ret;
-	
+
+	ret = yt8531_led_init(phydev);
+	if (ret < 0)
+		return ret;
+
 	return 0;
 }
 
