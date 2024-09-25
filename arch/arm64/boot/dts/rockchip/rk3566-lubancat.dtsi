@@ -311,7 +311,7 @@
 			hp-volume = <20>;
 			spk-volume = <3>;
 			//mic-in-differential;
-			status = "okay";
+			status = "disabled";
 		};
 	};
 };
