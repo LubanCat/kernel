@@ -120,6 +120,8 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3568-lubancat-2h-1080p-overlay.dtbo
 
 dtbo-$(CONFIG_CPU_RK3588) += \
+	rk3588-lubancat-4-xl9535-overlay.dtbo \
+	rk3588-lubancat-4-v1-xl9535-overlay.dtbo \
 	rk3588-lubancat-i2c2-m0-overlay.dtbo \
 	rk3588-lubancat-i2c2-m4-overlay.dtbo \
 	rk3588-lubancat-i2c3-m0-overlay.dtbo \
