@@ -632,6 +632,7 @@ static const struct usb_device_id option_ids[] = {
 { USB_DEVICE_AND_INTERFACE_INFO(0x2c7c, 0x0900, 0xff, 0x00, 0x00) },
 { USB_DEVICE_AND_INTERFACE_INFO(0x1782, 0x4d00, 0xff, 0x00, 0x00) },
 #endif
+	{ USB_DEVICE(0x1782, 0x4e00) }, /* AIR724UG */
 	{ USB_DEVICE(0x1286, 0x4e3c) },
 #if 1 //Added by Quectel
 	{ USB_DEVICE(0x05C6, 0x9090) }, /* Quectel UC15 */
@@ -2388,6 +2389,12 @@ static int option_probe(struct usb_serial *serial,
 		}
 	}
 #endif
+
+	/* AIR724UG */
+	if (serial->dev->descriptor.idVendor == cpu_to_le16(0x1782) && serial->dev->descriptor.idProduct == cpu_to_le16(0x4e00) && iface_desc->bInterfaceNumber <= 1)
+	{
+		return -ENODEV;
+	}
 
 	/* Never bind to the CD-Rom emulation interface	*/
 	if (iface_desc->bInterfaceClass == USB_CLASS_MASS_STORAGE)
