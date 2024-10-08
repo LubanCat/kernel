@@ -3,12 +3,12 @@
 
 / {
 	fragment@0 {
-		target = <&i2c8>;
+		target = <&i2c7>;
 
 		__overlay__ {
 			status = "okay";
 			pinctrl-names = "default";
-			pinctrl-0 = <&i2c8m2_xfer>;
+			pinctrl-0 = <&i2c7m3_xfer>;
 		};
 	};
 };
