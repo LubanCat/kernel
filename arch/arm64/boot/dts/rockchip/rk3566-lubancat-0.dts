@@ -337,6 +337,10 @@
 	status = "okay";
 };
 
+&rk809_codec {
+	status = "disabled";
+};
+
 &gmac1 {
 	phy-mode = "rgmii";
 	clock_in_out = "output";
