@@ -23,6 +23,7 @@
 		target = <&dcphy1_imx415>;
 		__overlay__ {
 			status = "okay";
+			rockchip,imx415-capture-mode=<1>;
 		};
 	};
 

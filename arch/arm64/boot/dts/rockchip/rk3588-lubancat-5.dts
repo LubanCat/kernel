@@ -30,12 +30,22 @@
 //vp3
 // #include "rk3588-lubancat-5-dsi1-ebf410125_1080p.dtsi"
 
+#include "rk3588-lubancat-5-csi.dtsi"
+// #include "rk3588-lubancat-5-cam-6x.dtsi"
+
 // #include "rk3588-lubancat-5-cam0.dtsi"
 // #include "rk3588-lubancat-5-cam1.dtsi"
 // #include "rk3588-lubancat-5-cam2.dtsi"
 // #include "rk3588-lubancat-5-cam3.dtsi"
 // #include "rk3588-lubancat-5-cam4.dtsi"
 // #include "rk3588-lubancat-5-cam5.dtsi"
+
+// #include "rk3588-lubancat-5-cam0-imx415.dtsi"
+// #include "rk3588-lubancat-5-cam1-imx415.dtsi"
+// #include "rk3588-lubancat-5-cam2-imx415.dtsi"
+// #include "rk3588-lubancat-5-cam3-imx415.dtsi"
+// #include "rk3588-lubancat-5-cam4-imx415.dtsi"
+// #include "rk3588-lubancat-5-cam5-imx415.dtsi"
 
 / {
 	model = "Embedfire LubanCat-5";
@@ -52,6 +62,20 @@
 			reusable;
 			reg = <0x0 (256 * 0x100000) 0x0 (256 * 0x100000)>;
 			linux,cma-default;
+		};
+	};
+
+	adc_keys: adc-keys {
+		compatible = "adc-keys";
+		io-channels = <&saradc 1>;
+		io-channel-names = "buttons";
+		keyup-threshold-microvolt = <1800000>;
+		poll-interval = <100>;
+
+		power {
+			label = "power";
+			linux,code = <KEY_POWER>;
+			press-threshold-microvolt = <1750>;
 		};
 	};
 
