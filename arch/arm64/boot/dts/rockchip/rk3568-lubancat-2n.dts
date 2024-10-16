@@ -772,6 +772,10 @@
 	};
 };
 
+&rockchip_suspend {
+    status = "okay";
+};
+
 //cam-gpio-setting
 &ov5647 {
     pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_LOW>;

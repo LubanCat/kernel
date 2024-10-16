@@ -879,6 +879,10 @@
 	};
 };
 
+&rockchip_suspend {
+    status = "okay";
+};
+
 // mipi dsi0 gpio set
 &dsi0_panel {
 	backlight = <&backlight>;
