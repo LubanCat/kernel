@@ -533,8 +533,8 @@
 	// tx_delay = <0x1a>;
 	// rx_delay = <0x0c>;
 
-	tx_delay = <0x10>;
-	rx_delay = <0x5>;
+	tx_delay = <0x20>;
+	rx_delay = <0x01>;
 
 	phy-handle = <&rgmii_phy1>;
 	status = "okay";
