@@ -33,21 +33,37 @@ enable_uboot_overlays=1
 #	dsi1   2K              --> vp3
 
 # 四屏异显(4K+4K+4K+2K), dp0与dsi0只能二选一
+## vp0
 dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi0-vp0-overlay.dtbo
+## vp1
 dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi1-vp1-overlay.dtbo
+## vp2
 dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dp0-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi0-vp2-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi0-vp2-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi0-vp2-800x1280-overlay.dtbo
+## vp3
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-800x1280-overlay.dtbo
 
 # 三屏异显(8K+4K+2K), 注：每个vp只能绑定到一个接口, 需开启8k显示设备树插件
+## vp0
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-display-8k-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi0-vp0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi1-vp0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dp0-vp0-overlay.dtbo
+## vp1
+## vp2
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi1-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dp0-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi0-vp2-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi0-vp2-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi0-vp2-800x1280-overlay.dtbo
+## vp3
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-800x1280-overlay.dtbo
 
 # hdmi rx
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi-rx-overlay.dtbo
