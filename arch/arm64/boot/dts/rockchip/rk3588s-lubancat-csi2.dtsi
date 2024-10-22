@@ -275,7 +275,7 @@
 };
 
 &csi2_dphy0_hw {
-	status = "disabled";
+	status = "okay";
 };
 
 &csi2_dphy0 {
