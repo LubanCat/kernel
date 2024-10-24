@@ -23,6 +23,11 @@
 // #include "rk3588s-lubancat-csi2_cam0.dtsi"
 // #include "rk3588s-lubancat-csi2_cam1.dtsi"
 // #include "rk3588s-lubancat-csi2_cam2.dtsi"
+#include "rk3588s-lubancat-4-csi.dtsi"
+// #include "rk3588s-lubancat-4-cam0-imx415.dtsi"
+// #include "rk3588s-lubancat-4-cam1-imx415.dtsi"
+// #include "rk3588s-lubancat-4-cam2-imx415.dtsi"
+
 
 /* 显示输出配置，
  * 同一个vp同时只能开启一个配置
