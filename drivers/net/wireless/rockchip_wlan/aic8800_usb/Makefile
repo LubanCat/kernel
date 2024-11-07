@@ -1,0 +1,2 @@
+obj-$(CONFIG_AIC8800_BT_USB_SUPPORT) += aic_btusb/
+obj-$(CONFIG_AIC_WLAN_USB_SUPPORT)    += aic8800/

@@ -1,0 +1,4 @@
+config AIC8800_BT_USB_SUPPORT
+	tristate "AIC8800 bt usb Support"
+	help
+	  This is support for aic bluetooth driver.

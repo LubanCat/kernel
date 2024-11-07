@@ -64,5 +64,6 @@ endif
 source "drivers/net/wireless/rockchip_wlan/cywdhd/Kconfig"
 source "drivers/net/wireless/rockchip_wlan/infineon/Kconfig"
 source "drivers/net/wireless/rockchip_wlan/aic8800_sdio/Kconfig"
+source "drivers/net/wireless/rockchip_wlan/aic8800_usb/Kconfig"
 
 endif # WL_ROCKCHIP
