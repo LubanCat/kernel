@@ -15,7 +15,8 @@ dtbo-$(CONFIG_CPU_RK3528) += \
 	rk3528-lubancat-uart1-m0-overlay.dtbo \
 	rk3528-lubancat-uart3-m0-overlay.dtbo \
 	rk3528-lubancat-uart6-m1-overlay.dtbo \
-	rk3528-lubancat-uart7-m0-overlay.dtbo
+	rk3528-lubancat-uart7-m0-overlay.dtbo \
+	rk3528-lubancat-peripheral-overlay.dtbo
 
 dtbo-$(CONFIG_CPU_RK3562) += \
 	rk3562-lubancat-1hs-lvds-10.1-800x1280-overlay.dtbo \
