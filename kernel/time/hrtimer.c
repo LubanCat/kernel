@@ -1806,7 +1806,7 @@ retry:
 	if (!ktime_before(now, cpu_base->softirq_expires_next)) {
 		cpu_base->softirq_expires_next = KTIME_MAX;
 		cpu_base->softirq_activated = 1;
-		raise_softirq_irqoff(HRTIMER_SOFTIRQ);
+		raise_hrtimer_softirq();
 	}
 
 	__hrtimer_run_queues(cpu_base, now, flags, HRTIMER_ACTIVE_HARD);
@@ -1919,7 +1919,7 @@ void hrtimer_run_queues(void)
 	if (!ktime_before(now, cpu_base->softirq_expires_next)) {
 		cpu_base->softirq_expires_next = KTIME_MAX;
 		cpu_base->softirq_activated = 1;
-		raise_softirq_irqoff(HRTIMER_SOFTIRQ);
+		raise_hrtimer_softirq();
 	}
 
 	__hrtimer_run_queues(cpu_base, now, flags, HRTIMER_ACTIVE_HARD);
@@ -1961,7 +1961,7 @@ void hrtimer_sleeper_start_expires(struct hrtimer_sleeper *sl,
 	 * fiddling with this decision is avoided at the call sites.
 	 */
 	if (IS_ENABLED(CONFIG_PREEMPT_RT) && sl->timer.is_hard)
-		mode |= HRTIMER_MODE_HARD;
+		mode |= (HRTIMER_MODE_HARD | HRTIMER_MODE_PINNED);
 
 	hrtimer_start_expires(&sl->timer, mode);
 }
@@ -2033,9 +2033,44 @@ int nanosleep_copyout(struct restart_block *restart, struct timespec64 *ts)
 	return -ERESTART_RESTARTBLOCK;
 }
 
+#ifdef CONFIG_PREEMPT_RT
+static int hrtimer_latency_ns = 50000;
+static int hrtimer_latency_valid_prio = 50;
+static unsigned int bad_latency;
+static unsigned int max_latency;
+module_param(hrtimer_latency_ns, int, 0644);
+module_param(hrtimer_latency_valid_prio, int, 0644);
+module_param(bad_latency, int, 0644);
+module_param(max_latency, int, 0644);
+#endif
+
 static int __sched do_nanosleep(struct hrtimer_sleeper *t, enum hrtimer_mode mode)
 {
 	struct restart_block *restart;
+#ifdef CONFIG_PREEMPT_RT
+	ktime_t softexpires, delta;
+
+	if (hrtimer_latency_ns && (current->prio <= hrtimer_latency_valid_prio) &&
+	   (current->hrtimer_softexpires == 0)) {
+		softexpires = hrtimer_get_softexpires(&t->timer);
+		if (mode & HRTIMER_MODE_REL)
+			current->hrtimer_softexpires = ktime_add_safe(softexpires, t->timer.base->get_time());
+		else
+			current->hrtimer_softexpires = softexpires;
+
+		delta = current->hrtimer_softexpires - t->timer.base->get_time();
+		if (delta <= hrtimer_latency_ns) {
+			while (t->timer.base->get_time() < current->hrtimer_softexpires)
+				;
+			current->hrtimer_softexpires = 0;
+
+			return 0;
+		}
+
+		softexpires -= hrtimer_latency_ns;
+		hrtimer_set_expires_range_ns(&t->timer, softexpires, 0);
+	}
+#endif
 
 	do {
 		set_current_state(TASK_INTERRUPTIBLE|TASK_FREEZABLE);
@@ -2051,8 +2086,30 @@ static int __sched do_nanosleep(struct hrtimer_sleeper *t, enum hrtimer_mode mod
 
 	__set_current_state(TASK_RUNNING);
 
+#ifdef CONFIG_PREEMPT_RT
+	if (!t->task) {
+		if (current->hrtimer_softexpires) {
+			if (current->hrtimer_softexpires < t->timer.base->get_time()) {
+				delta = t->timer.base->get_time() - current->hrtimer_softexpires;
+				if (delta > max_latency)
+					max_latency = delta;
+			} else {
+				delta = current->hrtimer_softexpires - t->timer.base->get_time();
+				if (delta > hrtimer_latency_ns)
+					bad_latency = delta;
+			}
+
+			while (t->timer.base->get_time() < current->hrtimer_softexpires)
+				;
+			current->hrtimer_softexpires = 0;
+		}
+
+		return 0;
+	}
+#else
 	if (!t->task)
 		return 0;
+#endif
 
 	restart = &current->restart_block;
 	if (restart->nanosleep.type != TT_NONE) {
