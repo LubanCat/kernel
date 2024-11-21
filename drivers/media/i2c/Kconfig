@@ -965,6 +965,28 @@ config VIDEO_GC08A3
 	  To compile this driver as a module, choose M here: the
 	  module will be called gc08a3.
 
+config VIDEO_GC5603
+	tristate "GalaxyCore GC5603 sensor support"
+	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+	depends on MEDIA_CAMERA_SUPPORT
+	select V4L2_FWNODE
+	help
+	  Support for the GalaxyCore GC5603 sensor.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called gc5603.
+
+config VIDEO_GC8613
+	tristate "GalaxyCore GC8613 sensor support"
+	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+	depends on MEDIA_CAMERA_SUPPORT
+	select V4L2_FWNODE
+	help
+	  Support for the GalaxyCore GC8613 sensor.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called gc8613.
+
 config VIDEO_GC1084
 	tristate "GalaxyCore GC1084 sensor support"
 	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
@@ -1578,6 +1600,17 @@ config VIDEO_OV50C40
 	help
 	  This is a Video4Linux2 sensor driver for the Omnivision
 	  OV50C40 camera sensor with a MIPI CSI-2 interface.
+
+config VIDEO_OV50H40
+	tristate "OmniVision OV50H40 sensor support"
+	depends on OF
+	depends on GPIOLIB && VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API
+	depends on MEDIA_CAMERA_SUPPORT
+	select V4L2_FWNODE
+	select VIDEO_OTP_EEPROM
+	help
+	  This is a Video4Linux2 sensor driver for the Omnivision
+	  OV50H40 camera sensor with a MIPI CSI-2 interface.
 
 config VIDEO_OV5640
 	tristate "OmniVision OV5640 sensor support"
