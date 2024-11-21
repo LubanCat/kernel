@@ -101,13 +101,13 @@
 /*=============================================*/
 
 /* Enable it if driver go into suspend/resume twice */
-#undef HX_CONFIG_FB
+//#undef HX_CONFIG_FB
 
 /* Enable it if driver go into suspend/resume twice */
-#undef HX_CONFIG_DRM
+//#undef HX_CONFIG_DRM
 
 /* Enable it if driver go into suspend/resume twice */
-#undef HX_CONFIG_PM
+//#undef HX_CONFIG_PM
 
 #if IS_ENABLED(CONFIG_DRM_MEDIATEK) && defined(HX_MTK_K510)
 #define HX_CONFIG_DRM_MTK

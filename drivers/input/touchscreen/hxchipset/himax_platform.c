@@ -921,7 +921,7 @@ int himax_int_register_trigger(void)
 	if (hx_s_ic_data->int_is_edge) {
 		I("%s edge triiger falling\n ", __func__);
 		ret = request_threaded_irq(client->irq, NULL, himax_ts_thread,
-			IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
 			client->name, ts);
 	}
 
@@ -1046,7 +1046,6 @@ static struct notifier_block driver_a_notifier = {
 };
 #endif
 
-#if defined(HX_CONFIG_DRM_PANEL)
 static int himax_common_suspend(struct device *dev)
 {
 	struct himax_ts_data *ts = dev_get_drvdata(dev);
@@ -1083,107 +1082,88 @@ static int himax_common_resume(struct device *dev)
 	himax_chip_common_resume(ts);
 	return 0;
 }
-#endif
 
-#if defined(HX_CONFIG_DRM_PANEL) && defined(HX_QCT_515)
-static void Hx_ts_panel_notifier_callback(enum panel_event_notifier_tag tag,
-		struct panel_event_notification *notification,
-		void *client_data)
+
+#if defined(HX_CONFIG_DRM)
+int drm_notifier_callback(struct notifier_block *self,
+		unsigned long event, void *data)
 {
-	struct himax_ts_data *ts = client_data;
+	struct msm_drm_notifier *evdata = data;
+	int *blank;
+	struct himax_ts_data *ts =
+		container_of(self, struct himax_ts_data, fb_notif);
 
-	if (!notification) {
-		E("%s:Invalid notification\n", __func__);
-		return;
-	}
+	if (!evdata || (evdata->id != 0))
+		return 0;
 
-	I("%s:Notification type:%d, early_trigger:%d", __func__,
-			notification->notif_type,
-			notification->notif_data.early_trigger);
-	switch (notification->notif_type) {
-	case DRM_PANEL_EVENT_UNBLANK:
-		if (notification->notif_data.early_trigger)
-#if defined(HX_CONTAINER_SPEED_UP)
-			queue_delayed_work(ts->ts_int_workqueue,
-				&ts->ts_int_work,
-				msecs_to_jiffies(DELAY_TIME));
-#endif
-		I("%s:resume notification pre commit\n", __func__);
-		else
-			himax_common_resume(&ts->client->dev);
-		break;
-	case DRM_PANEL_EVENT_BLANK:
-		if (notification->notif_data.early_trigger) {
-#if defined(HX_CONTAINER_SPEED_UP)
-			cancel_delayed_work(&ts->ts_int_work);
-			if (ts->ts_int_work != NULL)
-				flush_workqueue(ts->ts_int_work);
-#endif
+	D("DRM  %s\n", __func__);
+
+	if (evdata->data
+	&& event == MSM_DRM_EARLY_EVENT_BLANK
+	&& ts
+	&& ts->client) {
+		blank = evdata->data;
+		switch (*blank) {
+		case MSM_DRM_BLANK_POWERDOWN:
+			if (!ts->initialized)
+				return -ECANCELED;
 			himax_common_suspend(&ts->client->dev);
-		} else {
-			I("%s:suspend notification post commit\n", __func__);
+			break;
 		}
-		break;
-	case DRM_PANEL_EVENT_BLANK_LP:
-		I("%s:received lp event\n");
-		break;
-	case DRM_PANEL_EVENT_FPS_CHANGE:
-		I("%s:shashank:Received fps change old fps:%d new fps:%d\n",
-				__func__,
-				notification->notif_data.old_fps,
-				notification->notif_data.new_fps);
-		break;
-	default:
-		I("%s:notification serviced :%d\n", __func__,
-				notification->notif_type);
-		break;
 	}
 
-}
-#endif
+	if (evdata->data
+	&& event == MSM_DRM_EVENT_BLANK
+	&& ts
+	&& ts->client) {
+		blank = evdata->data;
+		switch (*blank) {
+		case MSM_DRM_BLANK_UNBLANK:
+			himax_common_resume(&ts->client->dev);
+			break;
+		}
+	}
 
-#if defined(HX_CONFIG_DRM_PANEL)
-static void himax_notifier_register(struct work_struct *work)
+	return 0;
+}
+#elif defined(HX_CONFIG_FB)
+int fb_notifier_callback(struct notifier_block *self,
+		unsigned long event, void *data)
 {
-	int ret = 0;
-#if defined(HX_QCT_515)
-	void *cookie = NULL;
-#endif
-	struct himax_ts_data *ts = container_of(work, struct himax_ts_data,
-			hx_work_att.work);
+	struct fb_event *evdata = data;
+	int *blank;
+	struct himax_ts_data *ts =
+	    container_of(self, struct himax_ts_data, hx_notif);
 
-	I("%s in\n", __func__);
-#if defined(HX_QCT_515)
-	if (g_hx_active_panel) {
-		cookie = panel_event_notifier_register(
-				PANEL_EVENT_NOTIFICATION_PRIMARY,
-				PANEL_EVENT_NOTIFIER_CLIENT_PRIMARY_TOUCH,
-				g_hx_active_panel,
-				&Hx_ts_panel_notifier_callback, ts);
-		if (!cookie) {
-			I("%s:Failed to register for panel events\n", __func__);
-			return;
+
+	I(" %s\n", __func__);
+
+	if (evdata
+	&& evdata->data
+	&& event == FB_EVENT_BLANK
+	&& ts
+	&& ts->client) {
+		blank = evdata->data;
+
+		switch (*blank) {
+		case FB_BLANK_UNBLANK:
+			himax_common_resume(&ts->client->dev);
+			break;
+		case FB_BLANK_POWERDOWN:
+		case FB_BLANK_HSYNC_SUSPEND:
+		case FB_BLANK_VSYNC_SUSPEND:
+		case FB_BLANK_NORMAL:
+			himax_common_suspend(&ts->client->dev);
+			break;
 		}
-		I("%s:registered for panel notifications panel: 0x%x\n",
-			__func__,
-			g_hx_active_panel);
-		ts->notifier_cookie = cookie;
-	} else {
-		I("%s:g_hx_active_panel is null,can not register.\n",
-			__func__);
 	}
-#endif
-	if (ret)
-		E("Unable to register fb_notifier: %d\n", ret);
+
+	return 0;
 }
 #endif
 
-#if defined(KERNEL_VER_6_06)
-int himax_chip_common_probe(struct i2c_client *client)
-#else
 int himax_chip_common_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
-#endif
 {
 	int ret = 0;
 	struct himax_ts_data *ts;

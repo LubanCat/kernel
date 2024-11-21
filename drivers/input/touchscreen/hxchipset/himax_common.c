@@ -2910,6 +2910,38 @@ void mapping_panel_id_from_dt(struct device_node *dt)
 }
 #endif
 
+#if defined(HX_CONFIG_DRM)
+static void himax_fb_register(struct work_struct *work)
+{
+	int ret = 0;
+
+	struct himax_ts_data *ts = container_of(work,
+			struct himax_ts_data, hx_work_att.work);
+
+	I("%s in\n", __func__);
+	ts->hx_notif.notifier_call = drm_notifier_callback;
+	ret = msm_drm_register_client(&ts->hx_notif);
+
+	if (ret)
+		E("Unable to register fb_notifier: %d\n", ret);
+}
+#elif defined(HX_CONFIG_FB)
+static void himax_fb_register(struct work_struct *work)
+{
+	int ret = 0;
+
+	struct himax_ts_data *ts = container_of(work, struct himax_ts_data,
+			hx_work_att.work);
+
+	I("%s in\n", __func__);
+	ts->hx_notif.notifier_call = fb_notifier_callback;
+	ret = fb_register_client(&ts->hx_notif);
+
+	if (ret)
+		E("Unable to register fb_notifier: %d\n", ret);
+}
+#endif
+
 int himax_chip_common_init(void)
 {
 	int ret = 0;
@@ -3132,11 +3164,31 @@ int himax_chip_common_init(void)
 	INIT_DELAYED_WORK(&ts->ts_int_work, himax_resume_work_func);
 #endif
 
+#if defined(HX_CONFIG_FB) || defined(HX_CONFIG_DRM)
+	ts->hx_att_wq = create_singlethread_workqueue("HMX_ATT_request");
+
+	if (!ts->hx_att_wq) {
+		E(" allocate himax_att_wq failed\n");
+		err = -ENOMEM;
+		goto err_get_intr_bit_failed;
+	}
+
+	INIT_DELAYED_WORK(&ts->hx_work_att, himax_fb_register);
+	queue_delayed_work(ts->hx_att_wq, &ts->hx_work_att,
+			msecs_to_jiffies(15000));
+#endif
+
 	ts->initialized = true;
 
 	I("%s: Now load:%s\n", __func__, HIMAX_DRIVER_VER);
 
 	return 0;
+
+#if defined(HX_CONFIG_FB) || defined(HX_CONFIG_DRM)
+err_get_intr_bit_failed:
+	cancel_delayed_work_sync(&ts->hx_work_att);
+	destroy_workqueue(ts->hx_att_wq);
+#endif
 
 #if defined(HX_CONTAINER_SPEED_UP)
 err_create_ts_resume_wq_failed:
