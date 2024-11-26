@@ -7,6 +7,9 @@ enable_uboot_overlays=1
 
 # HDMI
 #dtoverlay=/dtb/overlay/rk3568-lubancat-hdmi-disabled-overlay.dtbo
+# lvds in vp0(开启该插件需要开启上面的hdmi关闭插件)
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-bsdn10-lvds-in-vp0-overlay.dtbo
+
 # edp in vp1
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2h-edp-in-vp1-overlay.dtbo
 
