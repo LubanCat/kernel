@@ -1,0 +1,32 @@
+/dts-v1/;
+/plugin/; 
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/display/drm_mipi_dsi.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+
+/ {
+	fragment@0 {
+		target = <&i2c4>;
+
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <100000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			edp_gt911: edp_gt911@5d {
+				status = "okay";
+				compatible = "goodix,gt911";
+				reg = <0x5d>;
+				interrupt-parent = <&gpio3>;
+				interrupts = <RK_PB0 IRQ_TYPE_LEVEL_LOW>;
+				reset-gpios = <&gpio3 RK_PB6 GPIO_ACTIVE_LOW>;
+				irq-gpios = <&gpio3 RK_PB0 GPIO_ACTIVE_HIGH>;
+				touchscreen-inverted-x = <1>;
+				touchscreen-inverted-y = <1>;
+			};
+		};
+	};
+};

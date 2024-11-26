@@ -1,0 +1,74 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/display/drm_mipi_dsi.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+    fragment@0 {
+        target-path = "/";
+
+        __overlay__ {
+            dp0_sound: dp0-sound {
+                status = "okay";
+                compatible = "rockchip,hdmi";
+                rockchip,card-name= "rockchip-dp0";
+                rockchip,mclk-fs = <512>;
+                rockchip,cpu = <&spdif_tx2>;
+                rockchip,codec = <&dp0 1>;
+                rockchip,jack-det;
+            };
+        };
+    };
+
+    fragment@1 {
+        target = <&route_dp0>;
+
+        __overlay__ {
+            status = "okay";
+            connect = <&vp2_out_dp0>;
+        };
+    };
+
+    fragment@2 {
+        target = <&dp0>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@3 {
+        target = <&dp0_in_vp0>;
+
+        __overlay__ {
+            status = "disabled";
+        };
+    };
+
+    fragment@4 {
+        target = <&dp0_in_vp1>;
+
+         __overlay__ {
+            status = "disabled";
+        };       
+    };
+
+    fragment@5 {
+        target = <&dp0_in_vp2>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@6 {
+        target = <&spdif_tx2>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+};

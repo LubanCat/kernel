@@ -1,0 +1,43 @@
+
+/ {
+	hdmi0_sound: hdmi0-sound {
+		status = "okay";
+		compatible = "rockchip,hdmi";
+		rockchip,mclk-fs = <128>;
+		rockchip,card-name = "rockchip-hdmi0";
+		rockchip,cpu = <&i2s5_8ch>;
+		rockchip,codec = <&hdmi0>;
+		rockchip,jack-det;
+	};
+};
+
+&route_hdmi0{
+	status = "okay";
+	connect = <&vp0_out_hdmi0>;
+};
+
+&hdmi0 {
+	enable-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
+	cec-enable = "true";
+	status = "okay";
+};
+
+&hdptxphy_hdmi0 {
+	status = "okay";
+};
+
+&hdmi0_in_vp0 {
+	status = "okay";
+};
+
+&hdmi0_in_vp1 {
+	status = "disabled";
+};
+
+&hdmi0_in_vp2 {
+	status = "disabled";
+};
+
+&i2s5_8ch {
+	status = "okay";
+};

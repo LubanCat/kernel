@@ -1,0 +1,363 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+ /dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pwm/pwm.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/input/rk-input.h>
+#include <dt-bindings/display/drm_mipi_dsi.h>
+#include <dt-bindings/display/rockchip_vop.h>
+#include <dt-bindings/sensor-dev.h>
+#include <dt-bindings/phy/jlsemi-dt-phy.h>
+#include "rk3568.dtsi"
+#include "rk3568-lubancat.dtsi"
+
+/ {
+	compatible = "rockchip,lubancat-2core", "rockchip,rk3568";
+
+	vcc3v3_sys: vcc3v3-sys {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v3_sys";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&vcc5v0_sys>;
+	};
+
+	rk809_sound: rk809-sound {
+		status = "okay";
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "rockchip,rk809-codec";
+		simple-audio-card,mclk-fs = <256>;
+
+		simple-audio-card,cpu {
+			sound-dai = <&i2s1_8ch>;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&rk809_codec>;
+		};
+	};
+};
+
+&i2c0 {
+	status = "okay";
+	rk809: pmic@20 {
+		rk809_codec: codec {
+			//mic-in-differential;
+			capture-volume = <0>;
+			status = "okay";
+		};
+	};
+};
+
+&i2s1_8ch {
+	status = "okay";
+	rockchip,clk-trcm = <1>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2s1m0_sclktx
+			 &i2s1m0_lrcktx
+			 &i2s1m0_sdi0
+			 &i2s1m0_sdo0>;
+};
+
+&its {
+	status = "okay";
+};
+
+&pmu_io_domains {
+	status = "okay";
+	pmuio2-supply = <&vcc3v3_pmu>;
+	vccio1-supply = <&vccio_acodec>;
+	vccio3-supply = <&vccio_sd>;
+	vccio4-supply = <&vcc_1v8>;
+	vccio5-supply = <&vcc_3v3>;
+	vccio6-supply = <&vcc_1v8>;
+	vccio7-supply = <&vcc_3v3>;
+};
+
+&vad {
+	rockchip,audio-src = <&i2s1_8ch>;
+	rockchip,buffer-time-ms = <128>;
+	rockchip,det-channel = <0>;
+	rockchip,mode = <0>;
+};
+
+&vop {
+	status = "okay";
+	assigned-clocks = <&cru DCLK_VOP0>, <&cru DCLK_VOP1>;
+	assigned-clock-parents = <&pmucru PLL_HPLL>, <&cru PLL_VPLL>;
+};
+
+&vop_mmu {
+	status = "okay";
+};
+
+&vp0 {
+	rockchip,plane-mask = <(1 << ROCKCHIP_VOP2_CLUSTER0 | 1 << ROCKCHIP_VOP2_ESMART0 | 1 << ROCKCHIP_VOP2_SMART0)>;
+	rockchip,primary-plane = <ROCKCHIP_VOP2_SMART0>;
+};
+
+&vp1 {
+	rockchip,plane-mask = <(1 << ROCKCHIP_VOP2_CLUSTER1 | 1 << ROCKCHIP_VOP2_ESMART1 | 1 << ROCKCHIP_VOP2_SMART1)>;
+	rockchip,primary-plane = <ROCKCHIP_VOP2_SMART1>;
+};
+
+&sfc{
+	pinctrl-names = "default";
+	pinctrl-0 = <&fspi_pins>;
+	assigned-clock-rates = <50000000>;
+	status = "disabled";
+};
+
+&sdmmc0 {
+	status = "disabled";
+};
+
+/* USB OTG/USB Host_1 USB 2.0 Comb */
+&usb2phy0 {
+	status = "disabled";
+};
+
+&u2phy0_host {
+	status = "disabled";
+};
+
+&u2phy0_otg {
+	status = "disabled";
+};
+
+&usb_host0_ehci {
+	status = "disabled";
+};
+
+&usb_host0_ohci {
+	status = "disabled";
+};
+
+/* USB Host_2/USB Host_3 USB 2.0 Comb */
+&usb2phy1 {
+	status = "disabled";
+};
+
+&u2phy1_otg {
+	status = "disabled";
+};
+
+&u2phy1_host {
+	status = "disabled";
+};
+
+&usb_host1_ehci {
+	status = "disabled";
+};
+
+&usb_host1_ohci {
+	status = "disabled";
+};
+
+/* MULTI_PHY0 For SATA0, USB3.0 OTG0 */
+&combphy0_us {
+	status = "disabled";
+};
+
+&usbdrd30 {
+	status = "disabled";
+};
+
+/* MULTI_PHY0 For SATA0, USB3.0 OTG0 Only USB2.0 */
+&usbdrd_dwc3 {
+	phys = <&u2phy0_otg>;
+	phy-names = "usb2-phy";
+	extcon = <&usb2phy0>;
+	maximum-speed = "high-speed";
+	snps,dis_u2_susphy_quirk;
+	snps,usb2-lpm-disable;
+	status = "disabled";
+};
+
+&sata0 {
+	status = "disabled";
+};
+
+/* MULTI_PHY1 For SATA1, USB3.0 HOST1, QSGMII_M0 */
+&combphy1_usq {
+	status = "disabled";
+};
+
+&usbhost30 {
+	status = "disabled";
+};
+
+&usbhost_dwc3 {
+	status = "disabled";
+};
+
+/* MULTI_PHY2 For SATA2, PCIe2.0, QSGMII_M1 */
+&combphy2_psq {
+	status = "disabled";
+};
+
+&sata2 {
+	status = "disabled";
+};
+
+/* PCIe3.0x2 Comb */
+&pcie30phy {
+	status = "disabled";
+};
+
+&gmac0 {
+	phy-mode = "rgmii";
+	clock_in_out = "output";
+
+	snps,reset-gpio = <&gpio1 RK_PA1 GPIO_ACTIVE_LOW>;
+	snps,reset-active-low;
+	/* Reset time is 20ms, 100ms for rtl8211f */
+	snps,reset-delays-us = <0 75000 100000>;
+
+	assigned-clocks = <&cru SCLK_GMAC0_RX_TX>, <&cru SCLK_GMAC0>;
+	assigned-clock-parents = <&cru SCLK_GMAC0_RGMII_SPEED>, <&cru CLK_MAC0_2TOP>;
+	assigned-clock-rates = <0>, <125000000>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&gmac0_miim
+			 &gmac0_tx_bus2
+			 &gmac0_rx_bus2
+			 &gmac0_rgmii_clk
+			 &gmac0_rgmii_bus>;
+
+	tx_delay = <0x1c>;
+	rx_delay = <0x0d>;
+
+	phy-handle = <&rgmii_phy0>;
+	status = "disabled";
+};
+
+&mdio0 {
+	rgmii_phy0: phy@0 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x0>;
+		jl2xxx,led-enable = <(JL2XXX_LED_STATIC_OP_EN | JL1XXX_LED_MODE_EN)>;
+		jl2xxx,led-mode = <(JL2XXX_LED1_LINK10  | \
+				 JL2XXX_LED1_LINK100  | \
+				 JL2XXX_LED1_LINK1000 | \
+				 JL2XXX_LED2_LINK10   | \
+				 JL2XXX_LED2_LINK100  | \
+				 JL2XXX_LED2_LINK1000 | \
+				 JL2XXX_LED2_ACTIVITY )>; //JL phy
+
+		realtek,led-data = <0x6d60>;  //8211F phy
+	};
+};
+
+&uart8 {
+	status = "disabled";
+};
+
+&uart9 {
+	status = "disabled"; //Default to use DTBO
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart9m1_xfer>;
+};
+
+&sdmmc2 {
+	status = "disabled";
+};
+
+&gmac1 {
+	phy-mode = "rgmii";
+	clock_in_out = "output";
+
+	snps,reset-gpio = <&gpio0 RK_PC7 GPIO_ACTIVE_LOW>;
+	snps,reset-active-low;
+	/* Reset time is 20ms, 100ms for rtl8211f */
+	snps,reset-delays-us = <0 75000 100000>;
+
+	assigned-clocks = <&cru SCLK_GMAC1_RX_TX>, <&cru SCLK_GMAC1>;
+	assigned-clock-parents = <&cru SCLK_GMAC1_RGMII_SPEED>, <&cru CLK_MAC1_2TOP>;
+	assigned-clock-rates = <0>, <125000000>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&gmac1m1_miim
+			 &gmac1m1_tx_bus2
+			 &gmac1m1_rx_bus2
+			 &gmac1m1_rgmii_clk
+			 &gmac1m1_rgmii_bus>;
+
+	tx_delay = <0x20>;
+	rx_delay = <0x02>;
+
+	phy-handle = <&rgmii_phy1>;
+	status = "disabled";
+};
+
+&mdio1 {
+	rgmii_phy1: phy@0 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x0>;
+		jl2xxx,led-enable = <(JL2XXX_LED_STATIC_OP_EN | JL1XXX_LED_MODE_EN)>;
+		jl2xxx,led-mode = <(JL2XXX_LED1_LINK10  | \
+				 JL2XXX_LED1_LINK100  | \
+				 JL2XXX_LED1_LINK1000 | \
+				 JL2XXX_LED2_LINK10   | \
+				 JL2XXX_LED2_LINK100  | \
+				 JL2XXX_LED2_LINK1000 | \
+				 JL2XXX_LED2_ACTIVITY )>;  //JL phy
+
+		realtek,led-data = <0x6d60>;  //8211F phy
+	};
+};
+
+&i2c4 {
+	status = "disabled";
+};
+
+&can1 {
+	status = "disabled";
+	compatible = "rockchip,rk3568-can-2.0";
+	assigned-clocks = <&cru CLK_CAN1>;
+	assigned-clock-rates = <200000000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&can1m1_pins>;
+};
+
+&can2 {
+	status = "disabled";
+	compatible = "rockchip,rk3568-can-2.0";
+	pinctrl-names = "default";
+	assigned-clocks = <&cru CLK_CAN2>;
+	assigned-clock-rates = <200000000>;
+	pinctrl-0 = <&can2m0_pins>;
+};
+
+&i2s3_2ch {
+	status = "disabled";
+};
+
+&uart4 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart4m1_xfer>;
+};
+
+&i2c5 {
+	status = "disabled";
+};
+
+&uart3 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart3m1_xfer>;
+};
+
+&uart7 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart7m1_xfer>;
+};
+
+&i2c3 {
+	status = "disabled";
+};
