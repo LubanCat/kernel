@@ -1,0 +1,39 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target = <&imx415>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&dphy0_in_imx415>;
+		__overlay__ {
+			data-lanes = <1 2 3 4>;
+		};
+	};
+
+	fragment@3 {
+		target = <&imx415_out>;
+		__overlay__ {
+			data-lanes = <1 2 3 4>;
+		};
+	};
+
+	fragment@4 {
+		target = <&imx415>;
+		__overlay__ {
+			rockchip,imx415-data-lanes = <4>;
+		};
+	};
+};

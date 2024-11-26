@@ -83,6 +83,8 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3566-lubancat-1io-dsi1-in-vp0-rpi-overlay.dtbo \
 	rk3566-lubancat-1io-edp-in-vp0-overlay.dtbo \
 	rk3566-lubancat-1io-edp-touch-overlay.dtbo \
+	rk3566-lubancat-1io-bsdn81-edp-in-vp0-overlay.dtbo \
+	rk3566-lubancat-1io-test-csi0-imx415-overlay.dtbo \
 	rk3566-lubancat-dsi0-7.0-1024x600-overlay.dtbo \
 	rk3566-lubancat-dsi0-10.1-800x1280-overlay.dtbo \
 	rk3566-lubancat-dsi0-720p-overlay.dtbo \
