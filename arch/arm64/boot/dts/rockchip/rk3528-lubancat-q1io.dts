@@ -367,15 +367,18 @@
 	pinctrl-0 = <&i2c3m1_xfer>;
 	status = "okay";
 
-	bm8563: bm8563@51 {
-		compatible = "belling,bm8563";
+	hym8563: hym8563@51 {
+		status = "okay";
+		compatible = "haoyu,hym8563";
 		reg = <0x51>;
 		#clock-cells = <0>;
 		clock-frequency = <32768>;
-		//clock-output-names = "bm8563";
+		clock-output-names = "hym8563";
 		pinctrl-names = "default";
-		pinctrl-0 = <&bm8563_int>;
-		vdd-en-gpio = <&gpio1 RK_PA6 GPIO_ACTIVE_HIGH>;
+		pinctrl-0 = <&hym8563_int>;
+		interrupt-parent = <&gpio1>;
+		interrupts = <RK_PA6 IRQ_TYPE_LEVEL_LOW>;
+		wakeup-source;
 	};
 
 	es8388: es8388@11 {
