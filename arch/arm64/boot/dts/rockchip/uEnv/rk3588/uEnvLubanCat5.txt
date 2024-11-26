@@ -1,0 +1,63 @@
+uname_r=6.1.84-rk3588
+size=0x1000000
+cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
+
+enable_uboot_overlays=1
+#overlay_start
+
+
+#40pin
+#dtoverlay=/dtb/overlay/rk3588-lubancat-i2c3-m0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-i2c4-m3-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-uart3-m0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-uart1-m1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-spi0-m1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-i2c8-m2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm0-m2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm1-m2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm13-m1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm13-m2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm14-m1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm14-m2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-pwm15-ir-m3-overlay.dtbo
+
+# Display
+# 规则1.每个vp对应一个显示接口，同一个vp同时只能开启一个屏幕
+# 规则2.显示8K,同时占用vp0和vp1,还要开启hdmi0-8k设备树插件来配置时钟
+# 规则3.根据规则1和规则2,如果hdmi0设置为8k的话,dp0不能连接显示器,或者把dp0-disabled插件打开。
+## vp0
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi-8k-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp0-overlay.dtbo
+dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi0-vp0-overlay.dtbo
+## vp1
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dp0-vp1-disabled-overlay.dtbo
+## vp2
+dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-800x1280-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-edp-vp2-overlay.dtbo
+## vp3
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-800x1280-overlay.dtbo
+
+# cam0
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam0-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam0-imx415-1080p-overlay.dtbo
+# cam1
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam1-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam1-imx415-1080p-overlay.dtbo
+# cam2
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam2-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam2-imx415-1080p-overlay.dtbo
+# cam3
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam3-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam3-imx415-1080p-overlay.dtbo
+# cam4
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam4-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam4-imx415-1080p-overlay.dtbo
+# cam5
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam5-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam5-imx415-1080p-overlay.dtbo
+#overlay_end

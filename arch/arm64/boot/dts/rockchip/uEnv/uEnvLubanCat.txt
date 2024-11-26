@@ -1,0 +1,10 @@
+uname_r=6.1.84
+size=0x1000000
+cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
+
+enable_uboot_overlays=1
+#overlay_start
+
+#dtoverlay=
+
+#overlay_end

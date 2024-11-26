@@ -1,0 +1,20 @@
+uname_r=6.1.84-rk3562
+size=0x1000000
+cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
+
+enable_uboot_overlays=1
+#overlay_start
+
+# LVDS
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-lvds-10.1-800x1280-overlay.dtbo
+
+#CAM0
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-cam0-overlay.dtbo
+#CAM1
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-cam1-overlay.dtbo
+#CAM2
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-cam2-overlay.dtbo
+#CAM3
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-cam3-overlay.dtbo
+
+#overlay_end
