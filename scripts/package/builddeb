@@ -123,6 +123,9 @@ case $ARCH in
 um)
 	installed_image_path="usr/bin/linux-$version"
 	;;
+arm*)
+	installed_image_path="boot/Image-$version"
+	;;
 parisc|mips|powerpc)
 	installed_image_path="boot/vmlinux-$version"
 	;;
@@ -150,9 +153,32 @@ fi
 cp "$($MAKE -s -f $srctree/Makefile image_name)" "$tmpdir/$installed_image_path"
 
 if is_enabled CONFIG_OF_EARLY_FLATTREE; then
-	# Only some architectures with OF support have this target
-	if [ -d "${srctree}/arch/$SRCARCH/boot/dts" ]; then
-		$MAKE -f $srctree/Makefile INSTALL_DTBS_PATH="$tmpdir/usr/lib/$packagename" dtbs_install
+	if is_enabled CONFIG_ARCH_ROCKCHIP; then
+		# Only some architectures with OF support have this target
+		if [ -d "${srctree}/arch/$SRCARCH/boot/dts" ]; then
+			$MAKE -f $srctree/Makefile INSTALL_DTBS_PATH="$tmpdir/boot/dtb" dtbs_install
+			if [ -d "$tmpdir/boot/dtb/rockchip" ]; then
+				mv $tmpdir/boot/dtb/rockchip/* $tmpdir/boot/dtb/
+				rm -rf $tmpdir/boot/dtb/rockchip
+			fi
+		fi
+	else
+		# Only some architectures with OF support have this target
+		if [ -d "${srctree}/arch/$SRCARCH/boot/dts" ]; then
+			$MAKE -f $srctree/Makefile INSTALL_DTBS_PATH="$tmpdir/usr/lib/$packagename" dtbs_install
+		fi
+	fi
+fi
+
+if is_enabled CONFIG_ARCH_ROCKCHIP; then
+	mkdir -p "$tmpdir/boot/uEnv"
+	if [ "$ARCH" = "arm64" ] ; then
+		cp $objtree/arch/arm64/boot/dts/rockchip/uEnv/uEnv*.txt "$tmpdir/boot/uEnv"
+		cp $objtree/arch/arm64/boot/dts/rockchip/uEnv/${version#*-}/*.txt "$tmpdir/boot/uEnv"
+		sed -i "s/^uname_r=.*/uname_r=${version}/" $tmpdir/boot/uEnv/uEnv.txt
+		sed -i "s/^uname_r=.*/uname_r=${version}/" $tmpdir/boot/uEnv/uEnvLubanCat.txt
+	else
+		cp $objtree/arch/arm/boot/dts/uEnv/uEnv*.txt "$tmpdir/boot/uEnv"
 	fi
 fi
 
@@ -192,9 +218,7 @@ debhookdir=${KDEB_HOOKDIR:-/etc/kernel}
 for script in postinst postrm preinst prerm ; do
 	mkdir -p "$tmpdir$debhookdir/$script.d"
 	cat <<EOF > "$tmpdir/DEBIAN/$script"
-#!/bin/sh
-
-set -e
+#!/bin/bash -e
 
 # Pass maintainer script parameters to hook scripts
 export DEB_MAINT_PARAMS="\$*"
@@ -207,6 +231,10 @@ exit 0
 EOF
 	chmod 755 "$tmpdir/DEBIAN/$script"
 done
+
+sed '$d' "$tmpdir/DEBIAN/postinst" > "$tmpdir/DEBIAN/postinst.tmp"  && mv "$tmpdir/DEBIAN/postinst.tmp" "$tmpdir/DEBIAN/postinst"
+cat scripts/package/postinst_patch >> "$tmpdir/DEBIAN/postinst"
+chmod 755 "$tmpdir/DEBIAN/postinst"
 
 if [ "$ARCH" != "um" ]; then
 	if is_enabled CONFIG_MODULES; then
