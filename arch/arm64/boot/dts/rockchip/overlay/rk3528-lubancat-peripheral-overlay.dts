@@ -1,0 +1,13 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target = <&usbdrd_dwc3>;
+
+		__overlay__ {
+			dr_mode = "peripheral";
+		};
+	};
+};
+

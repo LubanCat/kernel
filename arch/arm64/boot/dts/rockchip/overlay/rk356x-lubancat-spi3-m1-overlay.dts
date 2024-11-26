@@ -1,0 +1,28 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+
+/ {
+	fragment@0 {
+		target = <&spi3>;
+
+		__overlay__ {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			// 40PIN引脚只预留SPI3 CS0引脚，如果有多个CS信号，可以使用gpio模拟cs 
+			pinctrl-names = "default", "high_speed";
+			pinctrl-0 = <&spi3m1_cs0 &spi3m1_pins>;
+			pinctrl-1 = <&spi3m1_cs0 &spi3m1_pins_hs>;
+
+			spi_dev@0 {
+				compatible = "rockchip,spidev";
+				reg = <0>; //chip select 0:cs0  1:cs1
+				spi-max-frequency = <24000000>; //spi output clock
+			};
+		};
+	};
+};

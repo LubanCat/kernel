@@ -1,0 +1,67 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2020 Rockchip Electronics Co., Ltd.
+ *
+ */
+
+#include "rk3568-lubancat-2-v2.dts"
+
+// MIPI-DSI屏幕
+// MIPI-DSI0
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-600p.dtsi"  //野火7寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-800p.dtsi"  //野火10寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-1080p.dtsi"  //野火5寸屏幕
+
+// MIPI-DSI1
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-600p.dtsi" //野火7寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-800p.dtsi"  //野火10寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-1080p.dtsi"  // 野火5寸屏幕
+/* 注意：
+V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
+如果需要MIPI-DSI+HDMI显示，
+请禁掉MIPI-DSI1相关引用dtsi，只开MIPI-DSI0。
+*/
+
+/ {
+	model = "EmbedFire LubanCat-2";
+	compatible = "embedfire,lubancat-2-v3", "rockchip,rk3568";		
+};
+
+&i2c0 {
+	hym8563: hym8563@51 {
+		compatible = "haoyu,hym8563";
+		status = "okay";
+		reg = <0x51>;
+		#clock-cells = <0>;
+		clock-frequency = <32768>;
+		clock-output-names = "hym8563";
+		rtc-irq-gpio = <&gpio0 RK_PC7 IRQ_TYPE_EDGE_FALLING>;
+    };
+};
+
+&rk809 {
+	rk809_rtc: rtc {
+		status = "disabled";
+	};	
+};
+
+&gmac0 {
+    tx_delay = <0x08>;
+    rx_delay = <0x07>;
+};
+
+&gmac1 {
+    tx_delay = <0x06>;
+    rx_delay = <0x07>;
+};
+
+&sys_led {
+	gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_LOW>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&sys_led_pin>;	
+};
+
+&sys_led_pin {
+	rockchip,pins = <1 RK_PA4 RK_FUNC_GPIO &pcfg_pull_none>;	
+};
+

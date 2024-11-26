@@ -1,0 +1,26 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+
+/ {
+	fragment@0 {
+		target = <&spi0>;
+
+		__overlay__ {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&spi0m1_cs0 &spi0m1_pins>;
+			num-cs = <1>;
+
+			spi_dev@0 {
+				compatible = "rockchip,spidev";
+				reg = <0>; //chip select 0:cs0  1:cs1
+				spi-max-frequency = <24000000>; //spi output clock
+			};
+		};
+	};
+};

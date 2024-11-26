@@ -1,0 +1,197 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/phy/jlsemi-dt-phy.h>
+#include "rk3566-lubancat-1core.dtsi"
+
+
+/ {
+	compatible = "embedfire,lubancat-1core-port", "rockchip,rk3566";
+};
+
+&sfc{
+	pinctrl-names = "default";
+	pinctrl-0 = <&fspi_pins>;
+	assigned-clock-rates = <50000000>;
+	status = "disabled";
+};
+
+&sdmmc0 {
+	status = "disabled";
+};
+
+/* USB OTG/USB Host_1 USB 2.0 Comb */
+&usb2phy0 {
+	status = "disabled";
+};
+
+&u2phy0_host {
+	status = "disabled";
+};
+
+&u2phy0_otg {
+	status = "disabled";
+};
+
+&usb_host0_ehci {
+	status = "disabled";
+};
+
+&usb_host0_ohci {
+	status = "disabled";
+};
+
+/* USB Host_2/USB Host_3 USB 2.0 Comb */
+&usb2phy1 {
+	status = "disabled";
+};
+
+&u2phy1_otg {
+	status = "disabled";
+};
+
+&u2phy1_host {
+	status = "disabled";
+};
+
+&usb_host1_ehci {
+	status = "disabled";
+};
+
+&usb_host1_ohci {
+	status = "disabled";
+};
+
+/* MULTI_PHY1 For SATA1, USB3.0 HOST1 */
+&combphy1_usq {
+	status = "disabled";
+};
+
+#if 1 //MULTI_PHY1
+/* MULTI_PHY1 For USB3.0 HOST1 */
+&usbhost30 {
+	status = "disabled";
+};
+
+&usbhost_dwc3 {
+	status = "disabled";
+};
+#else
+/* MULTI_PHY1 For SATA1 */
+&sata1 {
+	status = "disabled";
+};
+#endif //MULTI_PHY1
+
+/* MULTI_PHY1 For SATA2, PCIe2.0 */
+&combphy2_psq {
+	status = "disabled";
+};
+
+#if 1 //MULTI_PHY2
+// Default Set PCIe2.0, Use DTBO Switch
+/* MULTI_PHY2 For PCIe2.0 */
+&pcie2x1 {
+	status = "disabled";
+};
+#else
+/* MULTI_PHY2 For SATA2 */
+&sata2 {
+	status = "disabled";
+};
+#endif //MULTI_PHY2
+
+&uart6 {
+	status = "disabled";
+};
+
+&uart7 {
+	status = "disabled";
+};
+
+&uart1 {
+	status = "disabled";
+};
+
+&sdmmc2 {
+	status = "disabled";
+};
+
+&gmac1 {
+	phy-mode = "rgmii";
+	clock_in_out = "output";
+
+	snps,reset-gpio = <&gpio4 RK_PC0 GPIO_ACTIVE_LOW>;
+	snps,reset-active-low;
+	/* Reset time is 100ms, 100ms */
+	snps,reset-delays-us = <0 100000 100000>;
+
+	assigned-clocks = <&cru SCLK_GMAC1_RX_TX>, <&cru SCLK_GMAC1>;
+	assigned-clock-parents = <&cru SCLK_GMAC1_RGMII_SPEED>, <&cru CLK_MAC1_2TOP>;
+	assigned-clock-rates = <0>, <125000000>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&gmac1m1_miim
+			 &gmac1m1_tx_bus2_level3
+			 &gmac1m1_rx_bus2
+			 &gmac1m1_rgmii_clk_level2
+			 &gmac1m1_rgmii_bus_level3>;
+
+	// tx_delay = <0x1a>;
+	// rx_delay = <0x0c>;
+
+	tx_delay = <0x16>;
+	rx_delay = <0x06>;
+
+	phy-handle = <&rgmii_phy1>;
+	status = "disabled";
+};
+
+&mdio1 {
+	rgmii_phy1: phy@0 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x0>;
+		jl2xxx,led-enable = <(JL2XXX_LED_STATIC_OP_EN | JL1XXX_LED_MODE_EN)>;
+		jl2xxx,led-mode = <(JL2XXX_LED1_LINK10  | \
+				 JL2XXX_LED1_LINK100  | \
+				 JL2XXX_LED1_LINK1000 | \
+				 JL2XXX_LED2_LINK10   | \
+				 JL2XXX_LED2_LINK100  | \
+				 JL2XXX_LED2_LINK1000 | \
+				 JL2XXX_LED2_ACTIVITY )>;
+	};
+};
+
+&i2c4 {
+	status = "disabled";
+};
+
+&i2c2 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c2m1_xfer>;
+};
+
+&uart4 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart4m1_xfer>;
+};
+
+&i2c5 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c5m0_xfer>;
+};
+
+&uart3 {
+	status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart3m1_xfer>;
+};
+
+&i2c3 {
+	status = "disabled";
+};

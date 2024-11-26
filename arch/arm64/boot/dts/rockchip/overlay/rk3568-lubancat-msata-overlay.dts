@@ -1,0 +1,22 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target = <&pcie2x1>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@1 {
+		target = <&sata2>;
+
+		__overlay__ {
+			status = "okay";
+			vpcie3v3-supply = <&mini_pcie_3v3>;
+		};
+	};
+};
+

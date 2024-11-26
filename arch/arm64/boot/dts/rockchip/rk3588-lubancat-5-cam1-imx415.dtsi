@@ -1,0 +1,48 @@
+&i2c5 {
+	status = "okay";
+};
+
+&dcphy1_imx415 {
+	status = "okay";
+};
+
+&csi2_dcphy1 {
+	status = "okay";
+};
+
+&mipi1_csi2 {
+	status = "okay";
+};
+
+&mipi_dcphy1 {
+	status = "okay";
+};
+
+&rkcif {
+	status = "okay";
+};
+
+&rkcif_mipi_lvds1 {
+	status = "okay";
+};
+
+&rkcif_mipi_lvds1_sditf {
+	status = "okay";
+};
+
+&rkcif_mmu {
+	status = "okay";
+};
+
+&rkisp1 {
+	status = "okay";
+};
+
+&isp1_mmu {
+	status = "okay";
+};
+
+&rkisp1_vir0 {
+	status = "okay";
+};
+

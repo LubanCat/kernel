@@ -1,0 +1,383 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2020 Rockchip Electronics Co., Ltd.
+ *
+ */
+
+#include "rk3568-lubancat-2.dtsi"
+// 双摄像头
+#include "rk3568-lubancat-csi2-double.dtsi"
+#include "rk3568-lubancat-dsi.dtsi"
+
+// MIPI-DSI屏幕
+// MIPI-DSI0
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-7.0-1024x600.dtsi"  //野火7寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-10.1-800x1280.dtsi"  //野火10寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-1080p.dtsi"  //野火5寸屏幕
+
+// MIPI-DSI1
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-7.0-1024x600.dtsi" //野火7寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-10.1-800x1280.dtsi"  //野火10寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-1080p.dtsi"  // 野火5寸屏幕
+/* 注意：
+V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
+如果需要MIPI-DSI+HDMI显示，
+请禁掉MIPI-DSI1相关引用dtsi，只开MIPI-DSI0。
+*/
+
+/ {
+	model = "EmbedFire LubanCat-2";
+	compatible = "embedfire,lubancat-2-v2", "rockchip,rk3568";
+
+	mipi_dsi0_power: mipi-dsi0-power-regulator {
+		compatible = "regulator-fixed";
+		enable-active-high;
+		gpio = <&gpio3 RK_PC6 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&mipi_dsi0_pwr_en>;
+		regulator-name = "mipi_dsi0_power";
+		regulator-always-on;
+	};
+
+	mipi_dsi1_power: mipi-dsi1-power-regulator {
+		compatible = "regulator-fixed";
+		enable-active-high;
+		gpio = <&gpio3 RK_PC7 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&mipi_dsi1_pwr_en>;
+		regulator-name = "mipi_dsi1_power";
+		regulator-always-on;
+	};
+
+	vdd_cam1_5v: vdd-cam1-5v-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "vdd_cam1_5v";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio3 RK_PD1 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&cam1_pwr_en>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	cam1_dovdd: cam1-dovdd {
+		compatible = "regulator-fixed";
+		regulator-name = "cam1_dovdd";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		vin-supply = <&vdd_cam1_5v>;
+	};
+
+	cam1_avdd: cam1-avdd {
+		compatible = "regulator-fixed";
+		regulator-name = "cam1_avdd";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		vin-supply = <&vdd_cam1_5v>;
+	};
+
+	cam1_dvdd: cam1-dvdd {
+		compatible = "regulator-fixed";
+		regulator-name = "cam1_dvdd";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		vin-supply = <&vdd_cam1_5v>;
+	};
+
+	backlight1: backlight1 {
+		status = "okay";
+		compatible = "pwm-backlight";
+		pwms = <&pwm5 0 50000 0>;
+		brightness-levels = <
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 95  95  95  95  95  95  95  95
+			 88  89  90  91  92  93  94  95
+			 96  97  98  99 100 101 102 103
+			104 105 106 107 108 109 110 111
+			112 113 114 115 116 117 118 119
+			120 121 122 123 124 125 126 127
+			128 129 130 131 132 133 134 135
+			136 137 138 139 140 141 142 143
+			144 145 146 147 148 149 150 151
+			152 153 154 155 156 157 158 159
+			160 161 162 163 164 165 166 167
+			168 169 170 171 172 173 174 175
+			176 177 178 179 180 181 182 183
+			184 185 186 187 188 189 190 191
+			192 193 194 195 196 197 198 199
+			200 201 202 203 204 205 206 207
+			208 209 210 211 212 213 214 215
+			216 217 218 219 220 221 222 223
+			224 225 226 227 228 229 230 231
+			232 233 234 235 236 237 238 239
+			240 241 242 243 244 245 246 247
+			248 249 250 251 252 253 254 255
+		>;
+		default-brightness-level = <200>;
+	};
+};
+
+&pwm3 {
+	status = "okay";
+
+	compatible = "rockchip,remotectl-pwm";
+	interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
+	remote_pwm_id = <3>;
+	handle_cpu_id = <1>;
+	remote_support_psci = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm3_pins>;
+
+	ir_key_lubancat{
+		rockchip,usercode = <0x909>;
+		rockchip,key_table =
+			<0xf4   KEY_POWER>,
+			<0xe6   KEY_SLEEP>,
+			<0xe4   KEY_WAKEUP>,
+			<0xed   KEY_VOLUMEUP>,
+			<0xec   KEY_VOLUMEDOWN>,
+			<0xef   KEY_UP>,
+			<0xee   KEY_DOWN>;
+	};
+
+	ir_key1 {
+		rockchip,usercode = <0x4040>;
+		rockchip,key_table =
+			<0xf2	KEY_REPLY>,
+			<0xba	KEY_BACK>,
+			<0xf4	KEY_UP>,
+			<0xf1	KEY_DOWN>,
+			<0xef	KEY_LEFT>,
+			<0xee	KEY_RIGHT>,
+			<0xbd	KEY_HOME>,
+			<0xea	KEY_VOLUMEUP>,
+			<0xe3	KEY_VOLUMEDOWN>,
+			<0xe2	KEY_SEARCH>,
+			<0xb2	KEY_POWER>,
+			<0xbc	KEY_MUTE>,
+			<0xec	KEY_MENU>,
+			<0xbf	0x190>,
+			<0xe0	0x191>,
+			<0xe1	0x192>,
+			<0xe9	183>,
+			<0xe6	248>,
+			<0xe8	185>,
+			<0xe7	186>,
+			<0xf0	388>,
+			<0xbe	0x175>;
+	};
+
+	ir_key2 {
+		rockchip,usercode = <0xff00>;
+		rockchip,key_table =
+			<0xf9	KEY_HOME>,
+			<0xbf	KEY_BACK>,
+			<0xfb	KEY_MENU>,
+			<0xaa	KEY_REPLY>,
+			<0xb9	KEY_UP>,
+			<0xe9	KEY_DOWN>,
+			<0xb8	KEY_LEFT>,
+			<0xea	KEY_RIGHT>,
+			<0xeb	KEY_VOLUMEDOWN>,
+			<0xef	KEY_VOLUMEUP>,
+			<0xf7	KEY_MUTE>,
+			<0xe7	KEY_POWER>,
+			<0xfc	KEY_POWER>,
+			<0xa9	KEY_VOLUMEDOWN>,
+			<0xa8	KEY_VOLUMEDOWN>,
+			<0xe0	KEY_VOLUMEDOWN>,
+			<0xa5	KEY_VOLUMEDOWN>,
+			<0xab	183>,
+			<0xb7	388>,
+			<0xe8	388>,
+			<0xf8	184>,
+			<0xaf	185>,
+			<0xed	KEY_VOLUMEDOWN>,
+			<0xee	186>,
+			<0xb3	KEY_VOLUMEDOWN>,
+			<0xf1	KEY_VOLUMEDOWN>,
+			<0xf2	KEY_VOLUMEDOWN>,
+			<0xf3	KEY_SEARCH>,
+			<0xb4	KEY_VOLUMEDOWN>,
+			<0xbe	KEY_SEARCH>;
+	};
+
+	ir_key3 {
+		rockchip,usercode = <0x1dcc>;
+		rockchip,key_table =
+			<0xee	KEY_REPLY>,
+			<0xf0	KEY_BACK>,
+			<0xf8	KEY_UP>,
+			<0xbb	KEY_DOWN>,
+			<0xef	KEY_LEFT>,
+			<0xed	KEY_RIGHT>,
+			<0xfc	KEY_HOME>,
+			<0xf1	KEY_VOLUMEUP>,
+			<0xfd	KEY_VOLUMEDOWN>,
+			<0xb7	KEY_SEARCH>,
+			<0xff	KEY_POWER>,
+			<0xf3	KEY_MUTE>,
+			<0xbf	KEY_MENU>,
+			<0xf9	0x191>,
+			<0xf5	0x192>,
+			<0xb3	388>,
+			<0xbe	KEY_1>,
+			<0xba	KEY_2>,
+			<0xb2	KEY_3>,
+			<0xbd	KEY_4>,
+			<0xf9	KEY_5>,
+			<0xb1	KEY_6>,
+			<0xfc	KEY_7>,
+			<0xf8	KEY_8>,
+			<0xb0	KEY_9>,
+			<0xb6	KEY_0>,
+			<0xb5	KEY_BACKSPACE>;
+	};
+};
+
+&pwm5 {
+	status = "okay";
+};
+
+&rockchip_suspend {
+	status = "okay";
+};
+
+&gmac0 {
+	tx_delay = <0x18>;
+	rx_delay = <0x07>;
+};
+
+&gmac1 {
+	tx_delay = <0x22>;
+	rx_delay = <0x07>;
+};
+
+&vdd_cam_5v {
+	gpio = <&gpio3 RK_PD0 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&cam_pwr_en>;
+};
+
+&cam_pwr_en {
+	rockchip,pins = <3 RK_PD0 RK_FUNC_GPIO &pcfg_pull_none>;
+};
+
+//cam0-gpio-setting
+&ov5647 {
+	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_LOW>;
+};
+
+&ov5648 {
+	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
+};
+
+&ov8858 {
+	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
+};
+
+&sc132gs {
+	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
+};
+
+//cam1-gpio-setting
+&cam1_ov5647 {
+	pwdn-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_LOW>;
+};
+
+&cam1_ov5648 {
+	pwdn-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_LOW>;
+};
+
+&cam1_ov8858 {
+	pwdn-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_HIGH>;
+};
+
+&cam1_sc132gs {
+	pwdn-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_HIGH>;
+};
+
+// mipi dsi0 gpio set
+&dsi0_panel {
+	backlight = <&backlight>;
+	reset-gpios = <&gpio0 RK_PC5 GPIO_ACTIVE_LOW>;
+};
+
+&gt911_dsi0 {
+	interrupt-parent = <&gpio0>;
+	interrupts = <RK_PB5 IRQ_TYPE_LEVEL_LOW>;
+	reset-gpios = <&gpio0 RK_PB6 GPIO_ACTIVE_LOW>;
+	irq-gpios = <&gpio0 RK_PB5 GPIO_ACTIVE_HIGH>;
+};
+
+&gt928_dsi0 {
+	interrupt-parent = <&gpio0>;
+	interrupts = <RK_PB5 IRQ_TYPE_LEVEL_LOW>;
+	reset-gpios = <&gpio0 RK_PB6 GPIO_ACTIVE_LOW>;
+	irq-gpios = <&gpio0 RK_PB5 GPIO_ACTIVE_HIGH>;
+};
+
+// mipi dsi1 gpio set
+&dsi1_panel {
+	reset-gpios = <&gpio0 RK_PA6 GPIO_ACTIVE_LOW>;
+};
+
+&gt911_dsi1 {
+	interrupt-parent = <&gpio3>;
+	interrupts = <RK_PB0 IRQ_TYPE_LEVEL_LOW>;
+	reset-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_LOW>;
+	irq-gpios = <&gpio3 RK_PB0 GPIO_ACTIVE_HIGH>;
+};
+
+&gt928_dsi1 {
+	interrupt-parent = <&gpio3>;
+	interrupts = <RK_PB0 IRQ_TYPE_LEVEL_LOW>;
+	reset-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_LOW>;
+	irq-gpios = <&gpio3 RK_PB0 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&mipi_dsi1_irq>;
+};
+
+&pinctrl {
+	lcd {
+		mipi_dsi0_pwr_en: mipi-dsi0-pwr-en {
+			rockchip,pins = <3 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		mipi_dsi1_pwr_en: mipi-dsi1-pwr-en {
+			rockchip,pins = <3 RK_PC7 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		mipi_dsi1_irq: mipi-dsi1-irq {
+			rockchip,pins = <3 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+
+	cam {
+		cam1_pwr_en: cam1_pwr_en {
+			rockchip,pins = <3 RK_PD1 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+};

@@ -1,0 +1,151 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/display/drm_mipi_dsi.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/display/rockchip_vop.h>
+
+/ {
+	fragment@0 {
+		target = <&route_edp>;
+
+		__overlay__ {
+			status = "okay";
+			connect = <&vp0_out_edp>;
+		};
+	};
+
+	fragment@1 {
+		target = <&edp_phy>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&edp_in_vp0>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@3 {
+		target = <&edp_in_vp1>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@4 {
+		target = <&edp>;
+
+		__overlay__ {
+			status = "okay";
+			// hpd-gpios = <&gpio4 RK_PC4 GPIO_ACTIVE_HIGH>; //热插拔信号检测
+			force-hpd; //强制hpd，忽略物理hdp信号
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@1 {
+					reg = <1>;
+					edp_out_panel: endpoint@0 {
+						remote-endpoint = <&panel_in_edp>;
+					};
+				};
+			};
+		};
+	};
+
+	fragment@5 {
+		target-path = "/";
+
+		__overlay__ {
+			edp_panel: edp-panel {
+				compatible = "simple-panel";
+				backlight = <&backlight_lvds_edp>;
+				status = "okay";
+				//bus-format = <MEDIA_BUS_FMT_RBG888_1X24>;
+				prepare-delay-ms = <100>; //AUX通信前延时
+				enable-delay-ms = <100>;
+
+				display-timings {
+					native-mode = <&timing0>;
+
+					timing0: timing0 {
+						clock-frequency = <75590000>;
+						hactive = <1280>;
+						vactive = <800>;
+						
+						hfront-porch = <126>;
+						hsync-len = <100>;
+						hback-porch = <10>;
+
+						vfront-porch = <16>;
+						vsync-len = <12>;
+						vback-porch = <3>;						
+
+						hsync-active = <0>;
+						vsync-active = <0>;
+						de-active = <0>;
+						pixelclk-active = <0>;
+					};
+				};
+
+				ports {
+					panel_in_edp: endpoint {
+						remote-endpoint = <&edp_out_panel>;
+					};
+				};
+			};
+		};
+	};
+
+	fragment@6 {
+		target = <&route_hdmi>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@7 {
+		target = <&hdmi_in_vp0>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@8 {
+		target = <&hdmi_in_vp1>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@9 {
+		target = <&hdmi>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@10 {
+		target = <&vp0>;
+
+		__overlay__ {
+			rockchip,plane-mask = <(1 << ROCKCHIP_VOP2_CLUSTER0 | 1 << ROCKCHIP_VOP2_ESMART0 | \
+									1 << ROCKCHIP_VOP2_SMART0)>;
+			rockchip,primary-plane = <ROCKCHIP_VOP2_SMART0>;
+		};
+	};
+};
