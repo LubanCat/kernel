@@ -341,7 +341,7 @@
 	/* Reset time is 20ms, 100ms for rtl8211f */
 	snps,reset-delays-us = <0 20000 100000>;
 
-	tx_delay = <0x15>;
+	tx_delay = <0x1e>;
 	/* rx_delay = <0x3f>; */
 
 	pinctrl-names = "default";
