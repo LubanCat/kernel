@@ -167,6 +167,7 @@ struct sc530ai {
 	struct gpio_desc	*reset_gpio;
 	struct gpio_desc	*pwdn_gpio;
 	struct regulator_bulk_data supplies[sc530ai_NUM_SUPPLIES];
+	bool   upside_down;
 
 	struct pinctrl		*pinctrl;
 	struct pinctrl_state	*pins_default;
@@ -1765,7 +1766,8 @@ static int sc530ai_set_ctrl(struct v4l2_ctrl *ctrl)
 			val &= ~SC530AI_MIRROR_MASK;
 		ret |= sc530ai_write_reg(sc530ai->client,
 					 SC530AI_FLIP_MIRROR_REG,
-					 SC530AI_REG_VALUE_08BIT, val);
+					 SC530AI_REG_VALUE_08BIT,
+					 sc530ai->upside_down ? (val | SC530AI_MIRROR_MASK) : val);
 		break;
 	case V4L2_CID_VFLIP:
 		ret = sc530ai_read_reg(sc530ai->client,
@@ -1781,7 +1783,7 @@ static int sc530ai_set_ctrl(struct v4l2_ctrl *ctrl)
 		ret |= sc530ai_write_reg(sc530ai->client,
 					 SC530AI_FLIP_MIRROR_REG,
 					 SC530AI_REG_VALUE_08BIT,
-					 val);
+					 sc530ai->upside_down ? (val | SC530AI_FLIP_MASK) : val);
 		break;
 	default:
 		dev_warn(&client->dev, "%s Unhandled id:0x%x, val:0x%x\n",
@@ -1964,6 +1966,7 @@ static int sc530ai_probe(struct i2c_client *client,
 	char facing[2];
 	int ret;
 	u32 hdr_mode = 0;
+	u32 rotation;
 
 	dev_info(dev, "driver version: %02x.%02x.%02x",
 		 DRIVER_VERSION >> 16,
@@ -1986,6 +1989,22 @@ static int sc530ai_probe(struct i2c_client *client,
 	if (ret) {
 		dev_err(dev, "could not get module information!\n");
 		return -EINVAL;
+	}
+
+	/* optional indication of physical rotation of sensor */
+	ret = fwnode_property_read_u32(dev_fwnode(&client->dev), "rotation",
+						&rotation);
+	if (!ret) {
+		switch (rotation) {
+		case 180:
+			sc530ai->upside_down = true;
+			fallthrough;
+		case 0:
+			break;
+		default:
+			dev_warn(dev, "%u degrees rotation is not supported, ignoring...\n",
+				rotation);
+		}
 	}
 
 	sc530ai->is_thunderboot = IS_ENABLED(CONFIG_VIDEO_ROCKCHIP_THUNDER_BOOT_ISP);
