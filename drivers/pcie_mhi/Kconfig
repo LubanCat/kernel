@@ -1,0 +1,8 @@
+menu "Quectel PCIe MHI controllers"
+
+config QUECTTEL_MHI_BUS
+	tristate "Quectel Modem Host Interface (MHI) bus"
+	help
+	  Quectel Modem Bus driver for MHI protocol.
+
+endmenu
