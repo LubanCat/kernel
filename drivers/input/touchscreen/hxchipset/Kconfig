@@ -1,0 +1,98 @@
+#
+# Himax Touchscreen driver configuration
+#
+
+config TOUCHSCREEN_HIMAX_COMMON
+        tristate "HIMAX chipset touchscreen"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX CHIPSET touchscreens.
+
+config TOUCHSCREEN_HIMAX_IC_HX83102E
+        tristate "HIMAX chipset HX83102E function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX CHIPSET of HX83102E.
+
+config TOUCHSCREEN_HIMAX_IC_HX83102G
+        tristate "HIMAX chipset HX83102G function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX CHIPSET of HX83102G.
+
+config TOUCHSCREEN_HIMAX_IC_HX83108
+        tristate "HIMAX chipset HX83108 function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX CHIPSET of HX83108.
+
+config TOUCHSCREEN_HIMAX_IC_HX83102J
+        tristate "HIMAX chipset HX83102J function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX CHIPSET of HX83102J.
+
+config TOUCHSCREEN_HIMAX_IC_HX83112F
+        tristate "HIMAX chipset HX83112f function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX CHIPSET of HX83112F.
+
+config TOUCHSCREEN_HIMAX_IC_HX83121A
+        tristate "HIMAX chipset HX83121A function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX CHIPSET of HX83121A.
+
+config TOUCHSCREEN_HIMAX_IC_HX83122A
+        tristate "HIMAX chipset HX83122A function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX CHIPSET of HX83122A.
+
+config TOUCHSCREEN_HIMAX_IC_HX83123A
+        tristate "HIMAX chipset HX83123A function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX CHIPSET of HX83123A.
+
+config TOUCHSCREEN_HIMAX_IC_HX85200A
+        tristate "HIMAX chipset HX85200A function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX CHIPSET of HX85200A.
+
+config TOUCHSCREEN_HIMAX_IC_HX83132A
+        tristate "HIMAX chipset HX83132A function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX CHIPSET of HX83132A.
+
+config TOUCHSCREEN_HIMAX_DEBUG
+        bool "HIMAX debug function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX debug function.
+config TOUCHSCREEN_HIMAX_INSPECT
+        bool "HIMAX inspect function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for HIMAX inspect function.
+
+config TOUCHSCREEN_HIMAX_EMBEDDED_FIRMWARE
+	bool "HIMAX embedded firmware function"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables built-in FW inside kernel as binary array
+
+config HMX_DB
+	bool "HIMAX driver test over Dragon Board"
+	depends on TOUCHSCREEN_HIMAX_CHIPSET
+	help
+	  This enables support for HIMAX driver test over Dragon Board.
+
+config HIMAX_SUPPORT_KERNEL_419
+        bool "HIMAX support kernel 4.19"
+		depends on TOUCHSCREEN_HIMAX_CHIPSET
+		help
+		This enables support for support kernel 4.19.
