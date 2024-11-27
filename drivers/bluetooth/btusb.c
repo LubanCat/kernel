@@ -692,6 +692,9 @@ static const struct usb_device_id blacklist_table[] = {
 	/* Actions Semiconductor ATS2851 based devices */
 	{ USB_DEVICE(0x10d7, 0xb012), .driver_info = BTUSB_ACTIONS_SEMI },
 
+	/* Realtek 8852BE Bluetooth devices */
+	{ USB_DEVICE(0x0bda, 0xb85b), .driver_info = BTUSB_REALTEK },
+
 	/* Silicon Wave based devices */
 	{ USB_DEVICE(0x0c10, 0x0000), .driver_info = BTUSB_SWAVE },
 
