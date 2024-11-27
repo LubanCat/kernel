@@ -102,6 +102,7 @@ typedef struct RTK_sco_card {
 #define PRINT_CMD_EVENT         0
 #define PRINT_ACL_DATA          0
 #define PRINT_SCO_DATA          0
+#define PRINT_ISO_DATA          0
 
 #define RTKBT_DBG_FLAG          0
 
@@ -165,6 +166,7 @@ int mp_drv_mode = 0; /* 1 Mptool Fw; 0 Normal Fw */
 #define ROM_LMP_8723b               0x8723
 #define ROM_LMP_8821a               0X8821
 #define ROM_LMP_8761a               0X8761
+#define ROM_LMP_8761b               0X8761
 #define ROM_LMP_8703a               0x8723
 #define ROM_LMP_8763a               0x8763
 #define ROM_LMP_8703b               0x8703
@@ -172,6 +174,20 @@ int mp_drv_mode = 0; /* 1 Mptool Fw; 0 Normal Fw */
 #define ROM_LMP_8822b               0x8822
 #define ROM_LMP_8723d               0x8723
 #define ROM_LMP_8821c               0x8821
+#define ROM_LMP_8822c               0x8822
+#define ROM_LMP_8852a               0x8852
+#define ROM_LMP_8723f               0x8723
+#define ROM_LMP_8852b               0x8852
+#define ROM_LMP_8763c               0x8763
+#define ROM_LMP_8773b               0x8773
+#define ROM_LMP_8762a               0x8762
+#define ROM_LMP_8762b               0x8762
+#define ROM_LMP_8852c               0x8852
+#define ROM_LMP_8851a               0x8852
+#define ROM_LMP_8852bp              0x8852
+#define ROM_LMP_8851b               0x8851
+#define ROM_LMP_8822e               0x8822
+
 
 /* signature: Realtek */
 const uint8_t RTK_EPATCH_SIGNATURE[8] = {0x52,0x65,0x61,0x6C,0x74,0x65,0x63,0x68};
@@ -190,7 +206,32 @@ uint16_t project_id[] = {
     ROM_LMP_8822b,
     ROM_LMP_8723d,
     ROM_LMP_8821c,
-    ROM_LMP_NONE
+    ROM_LMP_NONE,
+    ROM_LMP_NONE,
+    ROM_LMP_8822c,  //0x0d
+    ROM_LMP_8761b,
+    ROM_LMP_NONE,
+    ROM_LMP_NONE,   //0x10
+    ROM_LMP_NONE,
+    ROM_LMP_8852a,  //0x12
+    ROM_LMP_8723f,
+    ROM_LMP_8852b,
+    ROM_LMP_8763c,  //bbpro2
+    ROM_LMP_8773b,  //bblite
+    ROM_LMP_8762a,  //bee
+    ROM_LMP_8762b,  //bee2
+    ROM_LMP_8852c,
+    ROM_LMP_NONE,
+    ROM_LMP_NONE,
+    ROM_LMP_NONE,
+    ROM_LMP_NONE,
+    ROM_LMP_NONE,
+    ROM_LMP_NONE,
+    ROM_LMP_NONE,
+    ROM_LMP_8822e,
+    ROM_LMP_8852bp,//34 8852bp
+    ROM_LMP_8851a,
+    ROM_LMP_8851b
 };
 struct rtk_eversion_evt {
     uint8_t status;
@@ -308,45 +349,16 @@ static inline struct sk_buff *bt_skb_alloc(unsigned int len, gfp_t how)
 #define HCI_BREDR    0x00
 #define HCI_AMP        0x01
 
+#define DRIVER_ON           1
+#define DEVICE_PROBED       2
+#define CHAR_OPENED         4
+#define CHAR_DLFW           8
+
 /* HCI device flags */
 enum {
-    HCI_UP,
-    HCI_INIT,
-    HCI_RUNNING,
-
-    HCI_PSCAN,
-    HCI_ISCAN,
-    HCI_AUTH,
-    HCI_ENCRYPT,
-    HCI_INQUIRY,
-
-    HCI_RAW,
-
-    HCI_RESET,
-};
-
-/*
- * BR/EDR and/or LE controller flags: the flags defined here should represent
- * states from the controller.
- */
-enum {
-    HCI_SETUP,
-    HCI_AUTO_OFF,
-    HCI_MGMT,
-    HCI_PAIRABLE,
-    HCI_SERVICE_CACHE,
-    HCI_LINK_KEYS,
-    HCI_DEBUG_KEYS,
+    HCI_UP,           //if char device is opened set this flag, clear flag when close
+    HCI_RUNNING,      //if usb transport has opened set this flag, clear flag when close
     HCI_UNREGISTER,
-
-    HCI_LE_SCAN,
-    HCI_SSP_ENABLED,
-    HCI_HS_ENABLED,
-    HCI_LE_ENABLED,
-    HCI_CONNECTABLE,
-    HCI_DISCOVERABLE,
-    HCI_LINK_SECURITY,
-    HCI_PENDING_CLASS,
 };
 
 /* HCI data types */
@@ -354,6 +366,7 @@ enum {
 #define HCI_ACLDATA_PKT        0x02
 #define HCI_SCODATA_PKT        0x03
 #define HCI_EVENT_PKT        0x04
+#define HCI_ISODATA_PKT        0x05
 #define HCI_VENDOR_PKT        0xff
 
 #define HCI_MAX_NAME_LENGTH        248
@@ -380,6 +393,7 @@ struct hci_ev_cmd_complete {
 #define HCI_EVENT_HDR_SIZE   2
 #define HCI_ACL_HDR_SIZE     4
 #define HCI_SCO_HDR_SIZE     3
+#define HCI_ISO_HDR_SIZE     4
 
 struct hci_command_hdr {
     __le16    opcode;        /* OCF & OGF */
@@ -401,6 +415,11 @@ struct hci_sco_hdr {
     __u8    dlen;
 } __packed;
 
+struct hci_iso_hdr {
+    __le16    handle;        /* Handle & Flags(PB, BC) */
+    __le16    dlen;
+} __packed;
+
 static inline struct hci_event_hdr *hci_event_hdr(const struct sk_buff *skb)
 {
     return (struct hci_event_hdr *) skb->data;
@@ -414,6 +433,11 @@ static inline struct hci_acl_hdr *hci_acl_hdr(const struct sk_buff *skb)
 static inline struct hci_sco_hdr *hci_sco_hdr(const struct sk_buff *skb)
 {
     return (struct hci_sco_hdr *) skb->data;
+}
+
+static inline struct hci_iso_hdr *hci_iso_hdr(const struct sk_buff *skb)
+{
+    return (struct hci_iso_hdr *) skb->data;
 }
 
 /* ---- HCI Ioctl requests structures ---- */
@@ -469,8 +493,6 @@ struct hci_dev {
 
     struct device        *parent;
     struct device        dev;
-
-    unsigned long        dev_flags;
 
     int (*open)(struct hci_dev *hdev);
     int (*close)(struct hci_dev *hdev);
@@ -591,6 +613,7 @@ static inline void hci_set_drvdata(struct hci_dev *hdev, void *data)
 
 #define CONFIG_MAC_OFFSET_GEN_1_2       (0x3C)      //MAC's OFFSET in config/efuse for realtek generation 1~2 bluetooth chip
 #define CONFIG_MAC_OFFSET_GEN_3PLUS     (0x44)      //MAC's OFFSET in config/efuse for rtk generation 3+ bluetooth chip
+#define CONFIG_MAC_OFFSET_GEN_4PLUS     (0x30)      //MAC's OFFSET in config/efuse for rtk generation 4+ bluetooth chip
 
 /*******************************
 **    Reasil patch code
@@ -607,8 +630,15 @@ static inline void hci_set_drvdata(struct hci_dev *hdev, void *data)
 #define CMD_HDR_LEN        sizeof(struct hci_command_hdr)
 #define EVT_HDR_LEN        sizeof(struct hci_event_hdr)
 #define CMD_CMP_LEN        sizeof(struct hci_ev_cmd_complete)
-#define MAX_PATCH_SIZE_24K (1024*24)
-#define MAX_PATCH_SIZE_40K (1024*40)
+
+#define MAX_PATCH_SIZE_24K            (1024*24 + 529)   //24K
+#define MAX_PATCH_SIZE_25K            (1024*25 + 529)   //25K for rtl8822b
+#define MAX_PATCH_SIZE_40K            (1024*40 + 529)   //40K
+#define MAX_PATCH_SIZE_49_2K          (0xC4CF + 529)   //49.2K 8723f
+#define MAX_PATCH_SIZE_69_2K          (0x114D0 + 529)  //69.2K 8852a
+#define MAX_PATCH_SIZE_65_2K          (0x104D0 + 529)   //65.2K 8852b
+#define MAX_PATCH_SIZE_78K            (1024*78 + 529)   //78K  8852c
+#define MAX_PATCH_SIZE_145K           (0x24620)        //145K 8822E
 
 enum rtk_endpoit {
     CTRL_EP = 0,
@@ -659,14 +689,15 @@ typedef struct {
 } __attribute__((packed)) download_rp;
 
 
-
-//Define ioctl cmd the same as HCIDEVUP in the kernel
-#define DOWN_FW_CFG  _IOW('H', 201, int)
+#define DOWN_FW_CFG             _IOW('E', 176, int)
 #ifdef CONFIG_SCO_OVER_HCI
-#define SET_ISO_CFG  _IOW('H', 202, int)
+#define SET_ISO_CFG             _IOW('E', 177, int)
 #endif
-#define GET_USB_INFO            _IOW('H', 203, int)
-#define RESET_CONTROLLER        _IOW('H', 204, int)
+#define RESET_CONTROLLER        _IOW('E', 178, int)
+#define DWFW_CMPLT              _IOW('E', 179, int)
+
+#define GET_USB_INFO            _IOR('E', 180, int)
+#define SET_ISO_MIN_HANDLE      _IOR('E', 181, int)
 
 /*  for altsettings*/
 #include <linux/fs.h>
@@ -675,6 +706,7 @@ typedef struct {
 
 static inline int getmacaddr(uint8_t * vnd_local_bd_addr)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 14)
     struct file  *bdaddr_file;
     mm_segment_t oldfs;
     char buf[FACTORY_BT_BDADDR_STORAGE_LEN];
@@ -710,6 +742,7 @@ static inline int getmacaddr(uint8_t * vnd_local_bd_addr)
         }
         return 0;
     }
+#endif
     return -1;
 }
 
