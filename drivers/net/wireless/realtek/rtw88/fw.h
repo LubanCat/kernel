@@ -29,6 +29,8 @@
 #define BCN_FILTER_CONNECTION_LOSS	1
 #define BCN_FILTER_CONNECTED		2
 #define BCN_FILTER_NOTIFY_BEACON_LOSS	3
+#define RTW_DEFAULT_CQM_THOLD		-70
+#define RTW_DEFAULT_CQM_HYST		4
 
 #define SCAN_NOTIFY_TIMEOUT  msecs_to_jiffies(10)
 
@@ -43,6 +45,8 @@
 #define RTW_PRI_CH_IDX			1
 #define RTW_OLD_PROBE_PG_CNT		2
 #define RTW_PROBE_PG_CNT		4
+
+#define RTW_DEBUG_DUMP_TIMES		10
 
 enum rtw_c2h_cmd_id {
 	C2H_CCX_TX_RPT = 0x03,
@@ -79,6 +83,36 @@ struct rtw_c2h_adaptivity {
 	u8 l2h;
 	u8 h2l;
 	u8 option;
+} __packed;
+
+struct rtw_c2h_ra_rpt {
+	u8 rate_sgi;
+	u8 mac_id;
+	u8 byte2;
+	u8 status;
+	u8 byte4;
+	u8 ra_ratio;
+	u8 bw;
+	u8 txcls_rate;
+} __packed;
+
+#define RTW_C2H_RA_RPT_RATE	GENMASK(6, 0)
+#define RTW_C2H_RA_RPT_SGI	BIT(7)
+
+struct rtw_h2c_register {
+	u32 w0;
+	u32 w1;
+} __packed;
+
+#define RTW_H2C_W0_CMDID		GENMASK(7, 0)
+
+/* H2C_CMD_DEFAULT_PORT command */
+#define RTW_H2C_DEFAULT_PORT_W0_PORTID	GENMASK(15, 8)
+#define RTW_H2C_DEFAULT_PORT_W0_MACID	GENMASK(23, 16)
+
+struct rtw_h2c_cmd {
+	__le32 msg;
+	__le32 msg_ext;
 } __packed;
 
 enum rtw_rsvd_packet_type {
@@ -344,10 +378,6 @@ struct rtw_fw_hdr_legacy {
 #define GET_CHAN_SWITCH_CENTRAL_CH(c2h_payload)	(c2h_payload[2])
 #define GET_CHAN_SWITCH_ID(c2h_payload)		(c2h_payload[3])
 #define GET_CHAN_SWITCH_STATUS(c2h_payload)	(c2h_payload[4])
-#define GET_RA_REPORT_RATE(c2h_payload)		(c2h_payload[0] & 0x7f)
-#define GET_RA_REPORT_SGI(c2h_payload)		((c2h_payload[0] & 0x80) >> 7)
-#define GET_RA_REPORT_BW(c2h_payload)		(c2h_payload[6])
-#define GET_RA_REPORT_MACID(c2h_payload)	(c2h_payload[1])
 
 #define GET_BCN_FILTER_NOTIFY_TYPE(c2h_payload)	(c2h_payload[1] & 0xf)
 #define GET_BCN_FILTER_NOTIFY_EVENT(c2h_payload)	(c2h_payload[1] & 0x10)
@@ -525,6 +555,7 @@ static inline void rtw_h2c_pkt_set_header(u8 *h2c_pkt, u8 sub_id)
 #define H2C_CMD_MEDIA_STATUS_RPT	0x01
 #define H2C_CMD_SET_PWR_MODE		0x20
 #define H2C_CMD_LPS_PG_INFO		0x2b
+#define H2C_CMD_DEFAULT_PORT		0x2c
 #define H2C_CMD_RA_INFO			0x40
 #define H2C_CMD_RSSI_MONITOR		0x42
 #define H2C_CMD_BCN_FILTER_OFFLOAD_P0	0x56
@@ -549,6 +580,8 @@ static inline void rtw_h2c_pkt_set_header(u8 *h2c_pkt, u8 sub_id)
 #define H2C_CMD_REMOTE_WAKE_CTRL	0x81
 #define H2C_CMD_AOAC_GLOBAL_INFO	0x82
 #define H2C_CMD_NLO_INFO		0x8C
+
+#define H2C_CMD_RECOVER_BT_DEV		0xD1
 
 #define SET_H2C_CMD_ID_CLASS(h2c_pkt, value)				       \
 	le32p_replace_bits((__le32 *)(h2c_pkt) + 0x00, value, GENMASK(7, 0))
@@ -749,6 +782,9 @@ static inline void rtw_h2c_pkt_set_header(u8 *h2c_pkt, u8 sub_id)
 #define SET_NLO_LOC_NLO_INFO(h2c_pkt, value)                                   \
 	le32p_replace_bits((__le32 *)(h2c_pkt) + 0x00, value, GENMASK(23, 16))
 
+#define SET_RECOVER_BT_DEV_EN(h2c_pkt, value)				       \
+	le32p_replace_bits((__le32 *)(h2c_pkt) + 0x00, value, BIT(8))
+
 #define GET_FW_DUMP_LEN(_header)					\
 	le32_get_bits(*((__le32 *)(_header) + 0x00), GENMASK(15, 0))
 #define GET_FW_DUMP_SEQ(_header)					\
@@ -786,11 +822,13 @@ static inline bool rtw_fw_feature_ext_check(struct rtw_fw_state *fw,
 	return !!(fw->feature_ext & feature);
 }
 
+void rtw_fw_dump_dbg_info(struct rtw_dev *rtwdev);
 void rtw_fw_c2h_cmd_rx_irqsafe(struct rtw_dev *rtwdev, u32 pkt_offset,
 			       struct sk_buff *skb);
 void rtw_fw_c2h_cmd_handle(struct rtw_dev *rtwdev, struct sk_buff *skb);
 void rtw_fw_send_general_info(struct rtw_dev *rtwdev);
 void rtw_fw_send_phydm_info(struct rtw_dev *rtwdev);
+void rtw_fw_default_port(struct rtw_dev *rtwdev, struct rtw_vif *rtwvif);
 
 void rtw_fw_do_iqk(struct rtw_dev *rtwdev, struct rtw_iqk_para *para);
 void rtw_fw_inform_rfk_status(struct rtw_dev *rtwdev, bool start);
@@ -808,8 +846,12 @@ void rtw_fw_coex_query_hid_info(struct rtw_dev *rtwdev, u8 sub_id, u8 data);
 
 void rtw_fw_bt_wifi_control(struct rtw_dev *rtwdev, u8 op_code, u8 *data);
 void rtw_fw_send_rssi_info(struct rtw_dev *rtwdev, struct rtw_sta_info *si);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
 void rtw_fw_send_ra_info(struct rtw_dev *rtwdev, struct rtw_sta_info *si,
 			 bool reset_ra_mask);
+#else
+void rtw_fw_send_ra_info(struct rtw_dev *rtwdev, struct rtw_sta_info *si);
+#endif
 void rtw_fw_media_status_report(struct rtw_dev *rtwdev, u8 mac_id, bool conn);
 void rtw_fw_update_wl_phy_info(struct rtw_dev *rtwdev);
 void rtw_fw_beacon_filter_config(struct rtw_dev *rtwdev, bool connect,
@@ -838,6 +880,7 @@ void rtw_fw_set_aoac_global_info_cmd(struct rtw_dev *rtwdev,
 				     u8 group_key_enc);
 
 void rtw_fw_set_nlo_info(struct rtw_dev *rtwdev, bool enable);
+void rtw_fw_set_recover_bt_device(struct rtw_dev *rtwdev);
 void rtw_fw_update_pkt_probe_req(struct rtw_dev *rtwdev,
 				 struct cfg80211_ssid *ssid);
 void rtw_fw_channel_switch(struct rtw_dev *rtwdev, bool enable);
@@ -857,5 +900,5 @@ int rtw_hw_scan_offload(struct rtw_dev *rtwdev, struct ieee80211_vif *vif,
 			bool enable);
 void rtw_hw_scan_status_report(struct rtw_dev *rtwdev, struct sk_buff *skb);
 void rtw_hw_scan_chan_switch(struct rtw_dev *rtwdev, struct sk_buff *skb);
-void rtw_hw_scan_abort(struct rtw_dev *rtwdev, struct ieee80211_vif *vif);
+void rtw_hw_scan_abort(struct rtw_dev *rtwdev);
 #endif

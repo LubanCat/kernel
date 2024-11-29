@@ -10,7 +10,9 @@
 #include "phy.h"
 #include "debug.h"
 #include "regd.h"
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 #include "sar.h"
+#endif
 
 struct phy_cfg_pair {
 	u32 addr;
@@ -18,7 +20,10 @@ struct phy_cfg_pair {
 };
 
 union phy_table_tile {
-	struct rtw_phy_cond cond;
+	struct {
+		struct rtw_phy_cond cond;
+		struct rtw_phy_cond2 cond2;
+	} __packed;
 	struct phy_cfg_pair cfg;
 };
 
@@ -123,7 +128,7 @@ static void rtw_phy_cck_pd_init(struct rtw_dev *rtwdev)
 
 void rtw_phy_set_edcca_th(struct rtw_dev *rtwdev, u8 l2h, u8 h2l)
 {
-	struct rtw_hw_reg_offset *edcca_th = rtwdev->chip->edcca_th;
+	const struct rtw_hw_reg_offset *edcca_th = rtwdev->chip->edcca_th;
 
 	rtw_write32_mask(rtwdev,
 			 edcca_th[EDCCA_TH_L2H_IDX].hw_reg.addr,
@@ -300,7 +305,7 @@ static void rtw_phy_stat_rssi(struct rtw_dev *rtwdev)
 
 	data.rtwdev = rtwdev;
 	data.min_rssi = U8_MAX;
-	rtw_iterate_stas_atomic(rtwdev, rtw_phy_stat_rssi_iter, &data);
+	rtw_iterate_stas(rtwdev, rtw_phy_stat_rssi_iter, &data);
 
 	dm_info->pre_min_rssi = dm_info->min_rssi;
 	dm_info->min_rssi = data.min_rssi;
@@ -527,6 +532,13 @@ static void rtw_phy_dig(struct rtw_dev *rtwdev)
 	 */
 	rtw_phy_dig_recorder(dm_info, cur_igi, fa_cnt);
 
+	/* Mitigate beacon loss and connectivity issues, mainly (only?)
+	 * in the 5 GHz band
+	 */
+	if (rtwdev->chip->id == RTW_CHIP_TYPE_8812A && rtwdev->beacon_loss &&
+	    linked && dm_info->total_fa_cnt < DIG_PERF_FA_TH_EXTRA_HIGH)
+		cur_igi = DIG_CVRG_MIN;
+
 	if (cur_igi != pre_igi)
 		rtw_phy_dig_write(rtwdev, cur_igi);
 }
@@ -544,7 +556,7 @@ static void rtw_phy_ra_info_update(struct rtw_dev *rtwdev)
 	if (rtwdev->watch_dog_cnt & 0x3)
 		return;
 
-	rtw_iterate_stas_atomic(rtwdev, rtw_phy_ra_info_update_iter, rtwdev);
+	rtw_iterate_stas(rtwdev, rtw_phy_ra_info_update_iter, rtwdev);
 }
 
 static u32 rtw_phy_get_rrsr_mask(struct rtw_dev *rtwdev, u8 rate_idx)
@@ -597,7 +609,7 @@ static void rtw_phy_rrsr_update(struct rtw_dev *rtwdev)
 	struct rtw_dm_info *dm_info = &rtwdev->dm_info;
 
 	dm_info->rrsr_mask_min = RRSR_RATE_ORDER_MAX;
-	rtw_iterate_stas_atomic(rtwdev, rtw_phy_rrsr_mask_min_iter, rtwdev);
+	rtw_iterate_stas(rtwdev, rtw_phy_rrsr_mask_min_iter, rtwdev);
 	rtw_write32(rtwdev, REG_RRSR, dm_info->rrsr_val_init & dm_info->rrsr_mask_min);
 }
 
@@ -1041,12 +1053,15 @@ void rtw_phy_setup_phy_cond(struct rtw_dev *rtwdev, u32 pkg)
 {
 	struct rtw_hal *hal = &rtwdev->hal;
 	struct rtw_efuse *efuse = &rtwdev->efuse;
-	struct rtw_phy_cond cond = {0};
+	struct rtw_phy_cond cond = {};
+	struct rtw_phy_cond2 cond2 = {};
 
 	cond.cut = hal->cut_version ? hal->cut_version : 15;
 	cond.pkg = pkg ? pkg : 15;
 	cond.plat = 0x04;
 	cond.rfe = efuse->rfe_option;
+	if (rtwdev->chip->id == RTW_CHIP_TYPE_8821C)
+		cond.rfe = efuse->rfe_option_full >> 3;
 
 	switch (rtw_hci_type(rtwdev)) {
 	case RTW_HCI_TYPE_USB:
@@ -1061,15 +1076,34 @@ void rtw_phy_setup_phy_cond(struct rtw_dev *rtwdev, u32 pkg)
 		break;
 	}
 
-	hal->phy_cond = cond;
+	if (rtwdev->chip->id == RTW_CHIP_TYPE_8812A ||
+	    rtwdev->chip->id == RTW_CHIP_TYPE_8821A) {
+		cond.rfe = 0;
+		cond.rfe |= efuse->ext_lna_2g;
+		cond.rfe |= efuse->ext_pa_2g  << 1;
+		cond.rfe |= efuse->ext_lna_5g << 2;
+		cond.rfe |= efuse->ext_pa_5g  << 3;
+		cond.rfe |= efuse->btcoex     << 4;
 
-	rtw_dbg(rtwdev, RTW_DBG_PHY, "phy cond=0x%08x\n", *((u32 *)&hal->phy_cond));
+		cond2.type_alna = efuse->alna_type;
+		cond2.type_glna = efuse->glna_type;
+		cond2.type_apa = efuse->apa_type;
+		cond2.type_gpa = efuse->gpa_type;
+	}
+
+	hal->phy_cond = cond;
+	hal->phy_cond2 = cond2;
+
+	rtw_dbg(rtwdev, RTW_DBG_PHY, "phy cond=0x%08x cond2=0x%08x\n",
+		*((u32 *)&hal->phy_cond), *((u32 *)&hal->phy_cond2));
 }
 
-static bool check_positive(struct rtw_dev *rtwdev, struct rtw_phy_cond cond)
+static bool check_positive(struct rtw_dev *rtwdev, struct rtw_phy_cond cond,
+			   struct rtw_phy_cond2 cond2)
 {
 	struct rtw_hal *hal = &rtwdev->hal;
 	struct rtw_phy_cond drv_cond = hal->phy_cond;
+	struct rtw_phy_cond2 drv_cond2 = hal->phy_cond2;
 
 	if (cond.cut && cond.cut != drv_cond.cut)
 		return false;
@@ -1080,8 +1114,28 @@ static bool check_positive(struct rtw_dev *rtwdev, struct rtw_phy_cond cond)
 	if (cond.intf && cond.intf != drv_cond.intf)
 		return false;
 
-	if (cond.rfe != drv_cond.rfe)
-		return false;
+	if (rtwdev->chip->id == RTW_CHIP_TYPE_8812A ||
+	    rtwdev->chip->id == RTW_CHIP_TYPE_8821A) {
+		if (cond.rfe & 0x0f) {
+			if ((cond.rfe & drv_cond.rfe) != cond.rfe)
+				return false;
+
+			if ((cond.rfe & BIT(0)) && cond2.type_glna != drv_cond2.type_glna)
+				return false;
+
+			if ((cond.rfe & BIT(1)) && cond2.type_gpa != drv_cond2.type_gpa)
+				return false;
+
+			if ((cond.rfe & BIT(2)) && cond2.type_alna != drv_cond2.type_alna)
+				return false;
+
+			if ((cond.rfe & BIT(3)) && cond2.type_apa != drv_cond2.type_apa)
+				return false;
+		}
+	} else {
+		if (cond.rfe != drv_cond.rfe)
+			return false;
+	}
 
 	return true;
 }
@@ -1090,7 +1144,8 @@ void rtw_parse_tbl_phy_cond(struct rtw_dev *rtwdev, const struct rtw_table *tbl)
 {
 	const union phy_table_tile *p = tbl->data;
 	const union phy_table_tile *end = p + tbl->size / 2;
-	struct rtw_phy_cond pos_cond = {0};
+	struct rtw_phy_cond pos_cond = {};
+	struct rtw_phy_cond2 pos_cond2 = {};
 	bool is_matched = true, is_skipped = false;
 
 	BUILD_BUG_ON(sizeof(union phy_table_tile) != sizeof(struct phy_cfg_pair));
@@ -1109,11 +1164,12 @@ void rtw_parse_tbl_phy_cond(struct rtw_dev *rtwdev, const struct rtw_table *tbl)
 			case BRANCH_ELIF:
 			default:
 				pos_cond = p->cond;
+				pos_cond2 = p->cond2;
 				break;
 			}
 		} else if (p->cond.neg) {
 			if (!is_skipped) {
-				if (check_positive(rtwdev, pos_cond)) {
+				if (check_positive(rtwdev, pos_cond, pos_cond2)) {
 					is_matched = true;
 					is_skipped = true;
 				} else {
@@ -1763,6 +1819,7 @@ void rtw_phy_load_tables(struct rtw_dev *rtwdev)
 {
 	const struct rtw_rfe_def *rfe_def = rtw_get_rfe_def(rtwdev);
 	const struct rtw_chip_info *chip = rtwdev->chip;
+	const struct rtw_efuse *efuse = &rtwdev->efuse;
 	u8 rf_path;
 
 	rtw_load_table(rtwdev, chip->mac_tbl);
@@ -1771,6 +1828,14 @@ void rtw_phy_load_tables(struct rtw_dev *rtwdev)
 	if (rfe_def->agc_btg_tbl)
 		rtw_load_table(rtwdev, rfe_def->agc_btg_tbl);
 	rtw_load_rfk_table(rtwdev);
+	if (chip->id == RTW_CHIP_TYPE_8821C) {
+		if (efuse->rfe_option_full <= 0x2f && efuse->rfe_option_full >= 0x28)
+			rtw_write32(rtwdev, REG_RFE_CTRL8, 0x00000073);
+		else if (efuse->rfe_option_full == 4)
+			rtw_write32(rtwdev, REG_RFE_CTRL8, 0x20000077);
+		else
+			rtw_write32(rtwdev, REG_RFE_CTRL8, 0x10000077);
+	}
 
 	for (rf_path = 0; rf_path < rtwdev->hal.rf_path_num; rf_path++) {
 		const struct rtw_table *tbl;
@@ -2071,6 +2136,7 @@ err:
 	return (s8)rtwdev->chip->max_power_index;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 static s8 rtw_phy_get_tx_power_sar(struct rtw_dev *rtwdev, u8 sar_band,
 				   u8 rf_path, u8 rate)
 {
@@ -2091,6 +2157,7 @@ err:
 	     sar_band, rf_path, rate);
 	return (s8)rtwdev->chip->max_power_index;
 }
+#endif
 
 void rtw_get_tx_power_params(struct rtw_dev *rtwdev, u8 path, u8 rate, u8 bw,
 			     u8 ch, u8 regd, struct rtw_power_params *pwr_param)
@@ -2103,7 +2170,9 @@ void rtw_get_tx_power_params(struct rtw_dev *rtwdev, u8 path, u8 rate, u8 bw,
 	s8 *offset = &pwr_param->pwr_offset;
 	s8 *limit = &pwr_param->pwr_limit;
 	s8 *remnant = &pwr_param->pwr_remnant;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 	s8 *sar = &pwr_param->pwr_sar;
+#endif
 
 	pwr_idx = &rtwdev->efuse.txpwr_idx_table[path];
 	group = rtw_get_channel_group(ch, rate);
@@ -2125,9 +2194,11 @@ void rtw_get_tx_power_params(struct rtw_dev *rtwdev, u8 path, u8 rate, u8 bw,
 
 	*limit = rtw_phy_get_tx_power_limit(rtwdev, band, bw, path,
 					    rate, ch, regd);
-	*remnant = (rate <= DESC_RATE11M ? dm_info->txagc_remnant_cck :
-		    dm_info->txagc_remnant_ofdm);
+	*remnant = rate <= DESC_RATE11M ? dm_info->txagc_remnant_cck :
+					  dm_info->txagc_remnant_ofdm[path];
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 	*sar = rtw_phy_get_tx_power_sar(rtwdev, hal->sar_band, path, rate);
+#endif
 }
 
 u8
@@ -2340,7 +2411,8 @@ void rtw_phy_init_tx_power(struct rtw_dev *rtwdev)
 void rtw_phy_config_swing_table(struct rtw_dev *rtwdev,
 				struct rtw_swing_table *swing_table)
 {
-	const struct rtw_pwr_track_tbl *tbl = rtwdev->chip->pwr_track_tbl;
+	const struct rtw_rfe_def *rfe_def = rtw_get_rfe_def(rtwdev);
+	const struct rtw_pwr_track_tbl *tbl = rfe_def->pwr_track_tbl;
 	u8 channel = rtwdev->hal.current_channel;
 
 	if (IS_CH_2G_BAND(channel)) {

@@ -9,6 +9,26 @@
 
 #define RCR_VHT_ACK		BIT(26)
 
+struct rtw8821cu_efuse {
+	u8 res4[4];			/* 0xd0 */
+	u8 usb_optional_function;
+	u8 res5[0x1e];
+	u8 res6[2];
+	u8 serial[0x0b];		/* 0xf5 */
+	u8 vid;				/* 0x100 */
+	u8 res7;
+	u8 pid;
+	u8 res8[4];
+	u8 mac_addr[ETH_ALEN];		/* 0x107 */
+	u8 res9[2];
+	u8 vendor_name[0x07];
+	u8 res10[2];
+	u8 device_name[0x14];
+	u8 res11[0xcf];
+	u8 package_type;		/* 0x1fb */
+	u8 res12[0x4];
+};
+
 struct rtw8821ce_efuse {
 	u8 mac_addr[ETH_ALEN];		/* 0xd0 */
 	u8 vender_id[2];
@@ -45,6 +65,11 @@ struct rtw8821ce_efuse {
 	u8 res7;
 };
 
+struct rtw8821cs_efuse {
+	u8 res4[0x4a];			/* 0xd0 */
+	u8 mac_addr[ETH_ALEN];		/* 0x11a */
+} __packed;
+
 struct rtw8821c_efuse {
 	__le16 rtl_id;
 	u8 res0[0x0e];
@@ -73,6 +98,8 @@ struct rtw8821c_efuse {
 	u8 res[3];
 	union {
 		struct rtw8821ce_efuse e;
+		struct rtw8821cu_efuse u;
+		struct rtw8821cs_efuse s;
 	};
 };
 
@@ -187,19 +214,10 @@ extern const struct rtw_chip_info rtw8821c_hw_spec;
 #define BIT_FEN_EN	BIT(26)
 #define REG_INIRTS_RATE_SEL 0x0480
 #define REG_HTSTFWT	0x800
-#define REG_RXPSEL	0x808
-#define BIT_RX_PSEL_RST		(BIT(28) | BIT(29))
-#define REG_TXPSEL	0x80c
 #define REG_RXCCAMSK	0x814
-#define REG_CCASEL	0x82c
-#define REG_PDMFTH	0x830
-#define REG_CCA2ND	0x838
 #define REG_L1WT	0x83c
 #define REG_L1PKWT	0x840
 #define REG_MRC		0x850
-#define REG_CLKTRK	0x860
-#define REG_ADCCLK	0x8ac
-#define REG_ADC160	0x8c4
 #define REG_ADC40	0x8c8
 #define REG_CHFIR	0x8f0
 #define REG_CDDTXP	0x93c
@@ -207,13 +225,11 @@ extern const struct rtw_chip_info rtw8821c_hw_spec;
 #define REG_ACBB0	0x948
 #define REG_ACBBRXFIR	0x94c
 #define REG_ACGG2TBL	0x958
-#define REG_FAS		0x9a4
-#define REG_RXSB	0xa00
 #define REG_ADCINI	0xa04
 #define REG_PWRTH	0xa08
+#define REG_CCA_FLTR	0xa20
 #define REG_TXSF2	0xa24
 #define REG_TXSF6	0xa28
-#define REG_FA_CCK	0xa5c
 #define REG_RXDESC	0xa2c
 #define REG_ENTXCCK	0xa80
 #define BTG_LNA		0xfc84
@@ -224,12 +240,8 @@ extern const struct rtw_chip_info rtw8821c_hw_spec;
 #define REG_PWRTH2	0xaa8
 #define REG_CSRATIO	0xaaa
 #define REG_TXFILTER	0xaac
-#define REG_CNTRST	0xb58
 #define REG_AGCTR_A	0xc08
-#define REG_TXSCALE_A	0xc1c
 #define REG_TXDFIR	0xc20
-#define REG_RXIGI_A	0xc50
-#define REG_TXAGCIDX	0xc94
 #define REG_TRSW	0xca0
 #define REG_RFESEL0	0xcb0
 #define REG_RFESEL8	0xcb4
@@ -241,14 +253,6 @@ extern const struct rtw_chip_info rtw8821c_hw_spec;
 #define B_WLA_SWITCH	BIT(23)
 #define REG_RFEINV	0xcbc
 #define REG_AGCTR_B	0xe08
-#define REG_RXIGI_B	0xe50
-#define REG_CRC_CCK	0xf04
-#define REG_CRC_OFDM	0xf14
-#define REG_CRC_HT	0xf10
-#define REG_CRC_VHT	0xf0c
-#define REG_CCA_OFDM	0xf08
-#define REG_FA_OFDM	0xf48
-#define REG_CCA_CCK	0xfcc
 #define REG_DMEM_CTRL	0x1080
 #define BIT_WL_RST	BIT(16)
 #define REG_ANTWT	0x1904
