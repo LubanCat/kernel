@@ -143,7 +143,7 @@
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
-		power-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio4 RK_PB1 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <0>;
@@ -298,7 +298,7 @@
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
-		power-gpios = <&gpio6 8 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio6 8 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio6 9 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <1>;
@@ -451,7 +451,7 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		power-gpios = <&gpio6 10 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio6 10 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio6 11 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <2>;
@@ -606,7 +606,7 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		power-gpios = <&gpio6 12 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio6 12 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio6 13 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <3>;
@@ -761,7 +761,7 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		power-gpios = <&gpio6 14 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio6 14 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio6 15 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <4>;
@@ -916,7 +916,7 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		power-gpios = <&gpio7 8 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio7 8 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio7 9 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <5>;
