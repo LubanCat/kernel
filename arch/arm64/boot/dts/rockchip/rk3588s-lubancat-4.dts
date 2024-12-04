@@ -1314,7 +1314,7 @@
 	};
 };
 
-/* SATA30/PCIe20x1_2 Combo PHY */
+/* SATA30_HOST0/PCIe20x1_2 Combo PHY */
 &combphy0_ps {
 	status = "okay";
 };
@@ -1387,7 +1387,7 @@
 	status = "okay";
 };
 
-/* USB3.1/SATA/PCIe20x1_1 Combo PHY */
+/* USB30_HOST2/SATA30_HOST2/PCIe20x1_1 Combo PHY */
 &combphy2_psu {
 	status = "okay";
 };
