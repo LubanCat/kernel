@@ -32,7 +32,6 @@
 		};
 	};
 
-
 	fragment@3 {
 		target = <&dsi0>;
 
@@ -65,14 +64,14 @@
 
 				panel-init-sequence = [
 					15 00 02 80 AC
-            		15 00 02 81 B8
-            		15 00 02 82 09
-            		15 00 02 83 78
-            		15 00 02 84 7F
-            		15 00 02 85 BB
-            		15 00 02 86 70
-            		05 C8 01 11
-            		05 C8 01 29
+					15 00 02 81 B8
+					15 00 02 82 09
+					15 00 02 83 78
+					15 00 02 84 7F
+					15 00 02 85 BB
+					15 00 02 86 70
+					05 C8 01 11
+					05 C8 01 29
 				];
 
 				panel-exit-sequence = [
@@ -83,19 +82,19 @@
 				disp1_timings0: display-timings {
 					native-mode = <&dsi1_timing0>;
 					dsi1_timing0: timing0 {
-                		clock-frequency = <51668640>;
-                		hactive = <1024>;
-                		vactive = <600>;
-                		hsync-len = <10>;
-                		hback-porch = <160>;
-               			hfront-porch = <160>;
-                		vsync-len = <1>;
-                		vback-porch = <23>;
-                		vfront-porch = <12>;
-                		hsync-active = <0>;
-                		vsync-active = <0>;
-                		de-active = <0>;
-                		pixelclk-active = <0>;
+						clock-frequency = <51668640>;
+						hactive = <1024>;
+						vactive = <600>;
+						hsync-len = <10>;
+						hback-porch = <160>;
+						hfront-porch = <160>;
+						vsync-len = <1>;
+						vback-porch = <23>;
+						vfront-porch = <12>;
+						hsync-active = <0>;
+						vsync-active = <0>;
+						de-active = <0>;
+						pixelclk-active = <0>;
 					};
 				};
 

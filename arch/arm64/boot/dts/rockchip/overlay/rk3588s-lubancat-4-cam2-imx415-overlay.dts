@@ -21,6 +21,7 @@
 
 	fragment@1 {
 		target = <&dphy0_imx415>;
+
 		__overlay__ {
 			status = "okay";
 		};
@@ -97,6 +98,5 @@
 			status = "okay";
 		};
 	};
-
 };
 

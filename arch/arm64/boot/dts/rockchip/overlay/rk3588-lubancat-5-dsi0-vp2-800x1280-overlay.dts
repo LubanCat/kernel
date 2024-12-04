@@ -32,7 +32,6 @@
 		};
 	};
 
-
 	fragment@3 {
 		target = <&dsi0>;
 

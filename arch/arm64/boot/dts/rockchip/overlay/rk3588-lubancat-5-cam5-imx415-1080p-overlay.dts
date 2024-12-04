@@ -26,7 +26,7 @@
 			rockchip,imx415-capture-mode=<1>;
 		};
 	};
-	
+
 	fragment@3 {
 		target = <&csi2_dphy5>;
 

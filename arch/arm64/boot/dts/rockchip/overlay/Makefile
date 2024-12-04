@@ -123,8 +123,6 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3568-lubancat-2h-1080p-overlay.dtbo
 
 dtbo-$(CONFIG_CPU_RK3588) += \
-	rk3588-lubancat-4-xl9535-overlay.dtbo \
-	rk3588-lubancat-4-v1-xl9535-overlay.dtbo \
 	rk3588-lubancat-i2c2-m0-overlay.dtbo \
 	rk3588-lubancat-i2c2-m4-overlay.dtbo \
 	rk3588-lubancat-i2c3-m0-overlay.dtbo \
@@ -234,12 +232,14 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588s-lubancat-4-cam1-imx415-1080p-overlay.dtbo \
 	rk3588s-lubancat-4-cam2-imx415-1080p-overlay.dtbo \
 	rk3588s-lubancat-4-sata0-overlay.dtbo \
+	rk3588s-lubancat-4-xl9535-overlay.dtbo \
 	rk3588s-lubancat-4-v1-dsi0-800x1280-overlay.dtbo \
 	rk3588s-lubancat-4-v1-dsi0-1024x600-overlay.dtbo \
 	rk3588s-lubancat-4-v1-dsi0-1080p-overlay.dtbo \
 	rk3588s-lubancat-4-v1-dsi1-800x1280-overlay.dtbo \
 	rk3588s-lubancat-4-v1-dsi1-1024x600-overlay.dtbo \
 	rk3588s-lubancat-4-v1-dsi1-1080p-overlay.dtbo \
+	rk3588s-lubancat-4-v1-xl9535-overlay.dtbo
 
 endif
 
