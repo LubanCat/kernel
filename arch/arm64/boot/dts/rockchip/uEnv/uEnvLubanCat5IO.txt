@@ -46,6 +46,7 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dp0-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-1080p-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-1024x600-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-800x1280-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo
 
 # 三屏异显(8K+4K+2K), 注：每个vp只能绑定到一个接口, 需开启8k显示设备树插件
 ## vp0
@@ -64,6 +65,7 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dp0-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-1080p-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-1024x600-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-800x1280-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo
 
 # hdmi rx
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi-rx-overlay.dtbo

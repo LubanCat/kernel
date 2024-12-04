@@ -49,6 +49,7 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-v2-dsi1-vp3-1080p-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-v2-dsi1-vp3-1024x600-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-v2-dsi1-vp3-800x1280-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo
 
 
 # cam0
