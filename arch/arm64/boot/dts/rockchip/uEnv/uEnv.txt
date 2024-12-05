@@ -2,7 +2,7 @@ uname_r=5.10.160
 size=0x1000000
 cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
 
-enable_uboot_overlays=1
+enable_uboot_overlays=0
 #overlay_start
 
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-xxx-overlay.dtbo
