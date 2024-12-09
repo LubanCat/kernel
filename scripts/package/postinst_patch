@@ -67,6 +67,11 @@ board_info() {
                 BOARD_DTB='rk3568-lubancat-2-v2.dtb'
                 BOARD_uEnv='uEnvLubanCat2-V2.txt'
                 ;;
+            0404)
+                BOARD_NAME='LubanCat-2 v3'
+                BOARD_DTB='rk3568-lubancat-2-v3.dtb'
+                BOARD_uEnv='uEnvLubanCat2-V3.txt'
+                ;;
             0500 |\
             0600)
                 BOARD_NAME='LubanCat-2N'
