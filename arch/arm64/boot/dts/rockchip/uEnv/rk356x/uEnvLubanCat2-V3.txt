@@ -1,4 +1,4 @@
-uname_r=5.10.198-rk356x
+uname_r=
 size=0x1000000
 cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
 
@@ -44,14 +44,22 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk356x-lubancat-pcie2x1-disabled-overlay.dtbo
 #display
 #dtoverlay=/dtb/overlay/rk3568-lubancat-hdmi-disabled-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3568-lubancat-dsi0-1080p-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3568-lubancat-dsi0-7.0-1024x600-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3568-lubancat-dsi0-10.1-800x1280-overlay.dtbo
+#dsi0-vp1
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-rpi-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-7.0-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-10.1-800x1280-overlay.dtbo
+#dsi1-vp0
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-rpi-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-7.0-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-10.1-800x1280-overlay.dtbo
 #cam0(mipi-csi0)
-#dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-sc132gs-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov5647-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov5648-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-imx415-overlay.dtbo
+#cam1(mipi-csi1)
+#dtoverlay=/dtb/overlay/rk356x-lubancat-csi1-ov5647-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk356x-lubancat-csi1-ov8858-overlay.dtbo
 
 #overlay_end
-
