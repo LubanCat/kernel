@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
- * (C) COPYRIGHT 2011-2023 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2011-2024 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -58,6 +58,7 @@ void kbase_context_debugfs_term(struct kbase_context *const kctx);
  *               a single integer by the KBASE_API_VERSION macro.
  * @filp:        Pointer to the struct file corresponding to device file
  *               /dev/malixx instance, passed to the file's open method.
+ *               Shall be passed as NULL for internally created contexts.
  *
  * Up to one context can be created for each client that opens the device file
  * /dev/malixx. Context creation is deferred until a special ioctl() system call
@@ -65,11 +66,9 @@ void kbase_context_debugfs_term(struct kbase_context *const kctx);
  *
  * Return: new kbase context or NULL on failure
  */
-struct kbase_context *
-kbase_create_context(struct kbase_device *kbdev, bool is_compat,
-	base_context_create_flags const flags,
-	unsigned long api_version,
-	struct file *filp);
+struct kbase_context *kbase_create_context(struct kbase_device *kbdev, bool is_compat,
+					   base_context_create_flags const flags,
+					   unsigned long api_version, struct file *filp);
 
 /**
  * kbase_destroy_context - Destroy a kernel base context.
@@ -86,10 +85,9 @@ void kbase_destroy_context(struct kbase_context *kctx);
  *
  * Return: true if @flag is set on @kctx, false if not.
  */
-static inline bool kbase_ctx_flag(struct kbase_context *kctx,
-				      enum kbase_context_flags flag)
+static inline bool kbase_ctx_flag(struct kbase_context *kctx, enum kbase_context_flags flag)
 {
-	return atomic_read(&kctx->flags) & flag;
+	return atomic_read(&kctx->flags) & (int)flag;
 }
 
 /**
@@ -99,11 +97,7 @@ static inline bool kbase_ctx_flag(struct kbase_context *kctx,
  *
  * Return: True if needs to maintain compatibility, False otherwise.
  */
-static inline bool kbase_ctx_compat_mode(struct kbase_context *kctx)
-{
-	return !IS_ENABLED(CONFIG_64BIT) ||
-	       (IS_ENABLED(CONFIG_64BIT) && kbase_ctx_flag(kctx, KCTX_COMPAT));
-}
+bool kbase_ctx_compat_mode(struct kbase_context *kctx);
 
 /**
  * kbase_ctx_flag_clear - Clear @flag on @kctx
@@ -116,8 +110,7 @@ static inline bool kbase_ctx_compat_mode(struct kbase_context *kctx)
  * Some flags have locking requirements, check the documentation for the
  * respective flags.
  */
-static inline void kbase_ctx_flag_clear(struct kbase_context *kctx,
-					enum kbase_context_flags flag)
+static inline void kbase_ctx_flag_clear(struct kbase_context *kctx, enum kbase_context_flags flag)
 {
 	atomic_andnot(flag, &kctx->flags);
 }
@@ -133,8 +126,7 @@ static inline void kbase_ctx_flag_clear(struct kbase_context *kctx,
  * Some flags have locking requirements, check the documentation for the
  * respective flags.
  */
-static inline void kbase_ctx_flag_set(struct kbase_context *kctx,
-				      enum kbase_context_flags flag)
+static inline void kbase_ctx_flag_set(struct kbase_context *kctx, enum kbase_context_flags flag)
 {
 	atomic_or(flag, &kctx->flags);
 }

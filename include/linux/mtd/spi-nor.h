@@ -390,6 +390,9 @@ struct spi_nor {
 
 	struct miscdevice *misc_dev;
 	void *priv;
+#ifdef CONFIG_MTD_SPI_NOR_AUTO_MERGE
+	u32			auto_merge_single_chip_size;
+#endif
 };
 
 static inline void spi_nor_set_flash_node(struct spi_nor *nor,

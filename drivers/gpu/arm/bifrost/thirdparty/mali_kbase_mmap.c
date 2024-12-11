@@ -12,6 +12,7 @@
 #include "linux/mman.h"
 #include <linux/version_compat_defs.h>
 #include <mali_kbase.h>
+#include <mali_kbase_reg_track.h>
 
 /* mali_kbase_mmap.c
  *
@@ -19,42 +20,117 @@
  * kbase_context_get_unmapped_area() interface.
  */
 
+#if (KERNEL_VERSION(6, 1, 0) <= LINUX_VERSION_CODE)
+/**
+ * move_mt_gap() -  Search the maple tree for an existing gap of a particular size
+ *                  immediately before another pre-identified gap.
+ * @gap_start:      Pre-identified gap starting address.
+ * @gap_end:        Pre-identified gap ending address.
+ * @size:           Size of the new gap needed before gap_start.
+ *
+ * This function will search the calling process' maple tree
+ * for another gap, one that is immediately preceding the pre-identified
+ * gap, for a specific size, and upon success it will decrement gap_end
+ * by the specified size, and replace gap_start with the new gap_start of
+ * the newly identified gap.
+ *
+ * Return: true if large enough preceding gap is found, false otherwise.
+ */
+static bool move_mt_gap(unsigned long *gap_start, unsigned long *gap_end, unsigned long size)
+{
+	unsigned long new_gap_start, new_gap_end;
+
+	MA_STATE(mas, &current->mm->mm_mt, 0, 0);
+
+	if (*gap_end < size)
+		return false;
+
+	/* Calculate the gap end for the new, resultant gap */
+	new_gap_end = *gap_end - size;
+
+	/* If the new gap_end (i.e. new VA start address) is larger than gap_start, than the
+	 * pre-identified gap already has space to shrink to accommodate the decrease in
+	 * gap_end.
+	 */
+	if (new_gap_end >= *gap_start) {
+		/* Pre-identified gap already has space - just patch gap_end to new
+		 * lower value and exit.
+		 */
+		*gap_end = new_gap_end;
+		return true;
+	}
+
+	/* Since the new VA start address (new_gap_end) is below the start of the pre-identified
+	 * gap in the maple tree, see if there is a free gap directly before the existing gap, of
+	 * the same size as the alignment shift, such that the effective gap found is "extended".
+	 * This may be larger than needed but leaves the same distance between gap_end and gap_start
+	 * that currently exists.
+	 */
+	new_gap_start = *gap_start - size;
+	if (mas_empty_area_rev(&mas, new_gap_start, *gap_start - 1, size)) {
+		/* There's no gap between the new start address needed and the
+		 * current start address - so return false to find a new
+		 * gap from the maple tree.
+		 */
+		return false;
+	}
+	/* Suitable gap found - replace gap_start and gap_end with new values. gap_start takes the
+	 * value of the start of new gap found, which now correctly precedes gap_end, and gap_end
+	 * takes on the new aligned value that has now been decremented by the requested size.
+	 */
+	*gap_start = mas.index;
+	*gap_end = new_gap_end;
+	return true;
+}
 
 /**
  * align_and_check() - Align the specified pointer to the provided alignment and
- *                     check that it is still in range.
- * @gap_end:        Highest possible start address for allocation (end of gap in
- *                  address space)
- * @gap_start:      Start address of current memory area / gap in address space
- * @info:           vm_unmapped_area_info structure passed to caller, containing
- *                  alignment, length and limits for the allocation
- * @is_shader_code: True if the allocation is for shader code (which has
- *                  additional alignment requirements)
- * @is_same_4gb_page: True if the allocation needs to reside completely within
- *                    a 4GB chunk
+ *                     check that it is still in range. On kernel 6.1 onwards
+ *                     this function does not require that the initial requested
+ *                     gap is extended with the maximum size needed to guarantee
+ *                     an alignment.
+ * @gap_end:           Highest possible start address for allocation (end of gap in
+ *                     address space)
+ * @gap_start:         Start address of current memory area / gap in address space
+ * @info:              vm_unmapped_area_info structure passed to caller, containing
+ *                     alignment, length and limits for the allocation
+ * @is_shader_code:    True if the allocation is for shader code (which has
+ *                     additional alignment requirements)
+ * @is_same_4gb_page:  True if the allocation needs to reside completely within
+ *                     a 4GB chunk
  *
  * Return: true if gap_end is now aligned correctly and is still in range,
  *         false otherwise
  */
 static bool align_and_check(unsigned long *gap_end, unsigned long gap_start,
-		struct vm_unmapped_area_info *info, bool is_shader_code,
-		bool is_same_4gb_page)
+			    struct vm_unmapped_area_info *info, bool is_shader_code,
+			    bool is_same_4gb_page)
 {
+	unsigned long alignment_shift;
+
 	/* Compute highest gap address at the desired alignment */
-	(*gap_end) -= info->length;
-	(*gap_end) -= (*gap_end - info->align_offset) & info->align_mask;
+	*gap_end -= info->length;
+	alignment_shift = (*gap_end - info->align_offset) & info->align_mask;
+
+	/* Align desired start VA (gap_end) by calculated alignment shift amount */
+	if (!move_mt_gap(&gap_start, gap_end, alignment_shift))
+		return false;
+	/* Alignment is done so far - check for further alignment requirements */
 
 	if (is_shader_code) {
-		/* Check for 4GB boundary */
-		if (0 == (*gap_end & BASE_MEM_MASK_4GB))
-			(*gap_end) -= (info->align_offset ? info->align_offset :
-					info->length);
-		if (0 == ((*gap_end + info->length) & BASE_MEM_MASK_4GB))
-			(*gap_end) -= (info->align_offset ? info->align_offset :
-					info->length);
+		/* Shader code allocations must not start or end on a 4GB boundary */
+		alignment_shift = info->align_offset ? info->align_offset : info->length;
+		if (0 == (*gap_end & BASE_MEM_MASK_4GB)) {
+			if (!move_mt_gap(&gap_start, gap_end, alignment_shift))
+				return false;
+		}
+		if (0 == ((*gap_end + info->length) & BASE_MEM_MASK_4GB)) {
+			if (!move_mt_gap(&gap_start, gap_end, alignment_shift))
+				return false;
+		}
 
-		if (!(*gap_end & BASE_MEM_MASK_4GB) || !((*gap_end +
-				info->length) & BASE_MEM_MASK_4GB))
+		if (!(*gap_end & BASE_MEM_MASK_4GB) ||
+		    !((*gap_end + info->length) & BASE_MEM_MASK_4GB))
 			return false;
 	} else if (is_same_4gb_page) {
 		unsigned long start = *gap_end;
@@ -70,12 +146,85 @@ static bool align_and_check(unsigned long *gap_end, unsigned long gap_start,
 			 * allocation size is > 2MB and there is enough CPU &
 			 * GPU virtual space.
 			 */
-			unsigned long rounded_offset =
-					ALIGN(offset, info->align_mask + 1);
+			unsigned long rounded_offset = ALIGN(offset, info->align_mask + 1);
+
+			if (!move_mt_gap(&gap_start, gap_end, rounded_offset))
+				return false;
+			/* Re-calculate start and end values */
+			start = *gap_end;
+			end = *gap_end + info->length;
+
+			/* The preceding 4GB boundary shall not get straddled,
+			 * even after accounting for the alignment, as the
+			 * size of allocation is limited to 4GB and the initial
+			 * start location was already aligned.
+			 */
+			WARN_ON((start & mask) != ((end - 1) & mask));
+		}
+	}
+
+	if ((*gap_end < info->low_limit) || (*gap_end < gap_start))
+		return false;
+
+	return true;
+}
+#else
+/**
+ * align_and_check() - Align the specified pointer to the provided alignment and
+ *                     check that it is still in range. For Kernel versions below
+ *                     6.1, it requires that the length of the alignment is already
+ *                     extended by a worst-case alignment mask.
+ * @gap_end:           Highest possible start address for allocation (end of gap in
+ *                     address space)
+ * @gap_start:         Start address of current memory area / gap in address space
+ * @info:              vm_unmapped_area_info structure passed to caller, containing
+ *                     alignment, length and limits for the allocation
+ * @is_shader_code:    True if the allocation is for shader code (which has
+ *                     additional alignment requirements)
+ * @is_same_4gb_page:  True if the allocation needs to reside completely within
+ *                     a 4GB chunk
+ *
+ * Return: true if gap_end is now aligned correctly and is still in range,
+ *         false otherwise
+ */
+static bool align_and_check(unsigned long *gap_end, unsigned long gap_start,
+			    struct vm_unmapped_area_info *info, bool is_shader_code,
+			    bool is_same_4gb_page)
+{
+	/* Compute highest gap address at the desired alignment */
+	*gap_end -= info->length;
+	*gap_end -= (*gap_end - info->align_offset) & info->align_mask;
+
+	if (is_shader_code) {
+		/* Check for 4GB boundary */
+		if (0 == (*gap_end & BASE_MEM_MASK_4GB))
+			(*gap_end) -= (info->align_offset ? info->align_offset : info->length);
+		if (0 == ((*gap_end + info->length) & BASE_MEM_MASK_4GB))
+			(*gap_end) -= (info->align_offset ? info->align_offset : info->length);
+
+		if (!(*gap_end & BASE_MEM_MASK_4GB) ||
+		    !((*gap_end + info->length) & BASE_MEM_MASK_4GB))
+			return false;
+	} else if (is_same_4gb_page) {
+		unsigned long start = *gap_end;
+		unsigned long end = *gap_end + info->length;
+		unsigned long mask = ~((unsigned long)U32_MAX);
+
+		/* Check if 4GB boundary is straddled */
+		if ((start & mask) != ((end - 1) & mask)) {
+			unsigned long offset = end - (end & mask);
+			/* This is to ensure that alignment doesn't get
+			 * disturbed in an attempt to prevent straddling at
+			 * 4GB boundary. The GPU VA is aligned to 2MB when the
+			 * allocation size is > 2MB and there is enough CPU &
+			 * GPU virtual space.
+			 */
+			unsigned long rounded_offset = ALIGN(offset, info->align_mask + 1);
 
 			start -= rounded_offset;
 			end -= rounded_offset;
 
+			/* Patch gap_end to use new starting address for VA region */
 			*gap_end = start;
 
 			/* The preceding 4GB boundary shall not get straddled,
@@ -87,12 +236,12 @@ static bool align_and_check(unsigned long *gap_end, unsigned long gap_start,
 		}
 	}
 
-
 	if ((*gap_end < info->low_limit) || (*gap_end < gap_start))
 		return false;
 
 	return true;
 }
+#endif
 
 /**
  * kbase_unmapped_area_topdown() - allocates new areas top-down from
@@ -129,8 +278,8 @@ static bool align_and_check(unsigned long *gap_end, unsigned long gap_start,
  *         -ENOMEM if search is unsuccessful
  */
 
-static unsigned long kbase_unmapped_area_topdown(struct vm_unmapped_area_info
-		*info, bool is_shader_code, bool is_same_4gb_page)
+static unsigned long kbase_unmapped_area_topdown(struct vm_unmapped_area_info *info,
+						 bool is_shader_code, bool is_same_4gb_page)
 {
 #if (KERNEL_VERSION(6, 1, 0) > LINUX_VERSION_CODE)
 	struct mm_struct *mm = current->mm;
@@ -158,8 +307,7 @@ static unsigned long kbase_unmapped_area_topdown(struct vm_unmapped_area_info
 	/* Check highest gap, which does not precede any rbtree node */
 	gap_start = mm->highest_vm_end;
 	if (gap_start <= high_limit) {
-		if (align_and_check(&gap_end, gap_start, info,
-				is_shader_code, is_same_4gb_page))
+		if (align_and_check(&gap_end, gap_start, info, is_shader_code, is_same_4gb_page))
 			return gap_end;
 	}
 
@@ -175,8 +323,7 @@ static unsigned long kbase_unmapped_area_topdown(struct vm_unmapped_area_info
 		gap_start = vma->vm_prev ? vma->vm_prev->vm_end : 0;
 		if (gap_start <= high_limit && vma->vm_rb.rb_right) {
 			struct vm_area_struct *right =
-				rb_entry(vma->vm_rb.rb_right,
-					 struct vm_area_struct, vm_rb);
+				rb_entry(vma->vm_rb.rb_right, struct vm_area_struct, vm_rb);
 			if (right->rb_subtree_gap >= length) {
 				vma = right;
 				continue;
@@ -195,16 +342,15 @@ check_current:
 			if (gap_end > info->high_limit)
 				gap_end = info->high_limit;
 
-			if (align_and_check(&gap_end, gap_start, info,
-					is_shader_code, is_same_4gb_page))
+			if (align_and_check(&gap_end, gap_start, info, is_shader_code,
+					    is_same_4gb_page))
 				return gap_end;
 		}
 
 		/* Visit left subtree if it looks promising */
 		if (vma->vm_rb.rb_left) {
 			struct vm_area_struct *left =
-				rb_entry(vma->vm_rb.rb_left,
-					 struct vm_area_struct, vm_rb);
+				rb_entry(vma->vm_rb.rb_left, struct vm_area_struct, vm_rb);
 			if (left->rb_subtree_gap >= length) {
 				vma = left;
 				continue;
@@ -217,41 +363,35 @@ check_current:
 
 			if (!rb_parent(prev))
 				return -ENOMEM;
-			vma = rb_entry(rb_parent(prev),
-				       struct vm_area_struct, vm_rb);
+			vma = rb_entry(rb_parent(prev), struct vm_area_struct, vm_rb);
 			if (prev == vma->vm_rb.rb_right) {
-				gap_start = vma->vm_prev ?
-					vma->vm_prev->vm_end : 0;
+				gap_start = vma->vm_prev ? vma->vm_prev->vm_end : 0;
 				goto check_current;
 			}
 		}
 	}
 #else
-	unsigned long length, high_limit, gap_start, gap_end;
+	unsigned long high_limit, gap_start, gap_end;
 
 	MA_STATE(mas, &current->mm->mm_mt, 0, 0);
-	/* Adjust search length to account for worst case alignment overhead */
-	length = info->length + info->align_mask;
-	if (length < info->length)
-		return -ENOMEM;
 
 	/*
 	 * Adjust search limits by the desired length.
 	 * See implementation comment at top of unmapped_area().
 	 */
 	gap_end = info->high_limit;
-	if (gap_end < length)
+	if (gap_end < info->length)
 		return -ENOMEM;
-	high_limit = gap_end - length;
+	high_limit = gap_end - info->length;
 
 	if (info->low_limit > high_limit)
 		return -ENOMEM;
 
 	while (true) {
-		if (mas_empty_area_rev(&mas, info->low_limit, info->high_limit - 1, length))
+		if (mas_empty_area_rev(&mas, info->low_limit, info->high_limit - 1, info->length))
 			return -ENOMEM;
 		gap_end = mas.last + 1;
-		gap_start = mas.min;
+		gap_start = mas.index;
 
 		if (align_and_check(&gap_end, gap_start, info, is_shader_code, is_same_4gb_page))
 			return gap_end;
@@ -260,14 +400,13 @@ check_current:
 	return -ENOMEM;
 }
 
-
 /* This function is based on Linux kernel's arch_get_unmapped_area, but
  * simplified slightly. Modifications come from the fact that some values
  * about the memory area are known in advance.
  */
 unsigned long kbase_context_get_unmapped_area(struct kbase_context *const kctx,
-		const unsigned long addr, const unsigned long len,
-		const unsigned long pgoff, const unsigned long flags)
+					      const unsigned long addr, const unsigned long len,
+					      const unsigned long pgoff, const unsigned long flags)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_unmapped_area_info info;
@@ -280,9 +419,8 @@ unsigned long kbase_context_get_unmapped_area(struct kbase_context *const kctx,
 	unsigned long high_limit = mm->mmap_base;
 	unsigned long low_limit = PAGE_SIZE;
 #endif
-	int cpu_va_bits = BITS_PER_LONG;
-	int gpu_pc_bits =
-	      kctx->kbdev->gpu_props.props.core_props.log2_program_counter_size;
+	unsigned int cpu_va_bits = BITS_PER_LONG;
+	unsigned int gpu_pc_bits = kctx->kbdev->gpu_props.log2_program_counter_size;
 	bool is_shader_code = false;
 	bool is_same_4gb_page = false;
 	unsigned long ret;
@@ -303,8 +441,7 @@ unsigned long kbase_context_get_unmapped_area(struct kbase_context *const kctx,
 	 * is no free region at the address found originally by too large a
 	 * same_va_end_addr here, and will fail the allocation gracefully.
 	 */
-	struct kbase_reg_zone *zone =
-		kbase_ctx_reg_zone_get_nolock(kctx, KBASE_REG_ZONE_SAME_VA);
+	struct kbase_reg_zone *zone = kbase_ctx_reg_zone_get_nolock(kctx, SAME_VA_ZONE);
 	u64 same_va_end_addr = kbase_reg_zone_end_pfn(zone) << PAGE_SHIFT;
 #if (KERNEL_VERSION(6, 1, 0) <= LINUX_VERSION_CODE)
 	const unsigned long mmap_end = arch_get_mmap_end(addr, len, flags);
@@ -324,8 +461,7 @@ unsigned long kbase_context_get_unmapped_area(struct kbase_context *const kctx,
 		return -ENOMEM;
 
 	if (!kbase_ctx_flag(kctx, KCTX_COMPAT)) {
-		high_limit =
-			min_t(unsigned long, high_limit, same_va_end_addr);
+		high_limit = min_t(unsigned long, high_limit, same_va_end_addr);
 
 		/* If there's enough (> 33 bits) of GPU VA space, align
 		 * to 2MB boundaries.
@@ -343,7 +479,7 @@ unsigned long kbase_context_get_unmapped_area(struct kbase_context *const kctx,
 	}
 #endif /* CONFIG_64BIT */
 	if ((PFN_DOWN(BASE_MEM_COOKIE_BASE) <= pgoff) &&
-		(PFN_DOWN(BASE_MEM_FIRST_FREE_ADDRESS) > pgoff)) {
+	    (PFN_DOWN(BASE_MEM_FIRST_FREE_ADDRESS) > pgoff)) {
 		int cookie = pgoff - PFN_DOWN(BASE_MEM_COOKIE_BASE);
 		struct kbase_va_region *reg;
 
@@ -363,21 +499,17 @@ unsigned long kbase_context_get_unmapped_area(struct kbase_context *const kctx,
 #if !MALI_USE_CSF
 		} else if (reg->flags & KBASE_REG_TILER_ALIGN_TOP) {
 			unsigned long extension_bytes =
-				(unsigned long)(reg->extension
-						<< PAGE_SHIFT);
+				(unsigned long)(reg->extension << PAGE_SHIFT);
 			/* kbase_check_alloc_sizes() already satisfies
 			 * these checks, but they're here to avoid
 			 * maintenance hazards due to the assumptions
 			 * involved
 			 */
-			WARN_ON(reg->extension >
-				(ULONG_MAX >> PAGE_SHIFT));
+			WARN_ON(reg->extension > (ULONG_MAX >> PAGE_SHIFT));
 			WARN_ON(reg->initial_commit > (ULONG_MAX >> PAGE_SHIFT));
 			WARN_ON(!is_power_of_2(extension_bytes));
 			align_mask = extension_bytes - 1;
-			align_offset =
-				extension_bytes -
-				(reg->initial_commit << PAGE_SHIFT);
+			align_offset = extension_bytes - (reg->initial_commit << PAGE_SHIFT);
 #endif /* !MALI_USE_CSF */
 		} else if (reg->flags & KBASE_REG_GPU_VA_SAME_4GB_PAGE) {
 			is_same_4gb_page = true;
@@ -385,8 +517,7 @@ unsigned long kbase_context_get_unmapped_area(struct kbase_context *const kctx,
 		kbase_gpu_vm_unlock(kctx);
 #ifndef CONFIG_64BIT
 	} else {
-		return current->mm->get_unmapped_area(
-			kctx->filp, addr, len, pgoff, flags);
+		return current->mm->get_unmapped_area(kctx->filp, addr, len, pgoff, flags);
 #endif
 	}
 
@@ -397,11 +528,9 @@ unsigned long kbase_context_get_unmapped_area(struct kbase_context *const kctx,
 	info.align_offset = align_offset;
 	info.align_mask = align_mask;
 
-	ret = kbase_unmapped_area_topdown(&info, is_shader_code,
-			is_same_4gb_page);
+	ret = kbase_unmapped_area_topdown(&info, is_shader_code, is_same_4gb_page);
 
-	if (IS_ERR_VALUE(ret) && high_limit == mm->mmap_base &&
-	    high_limit < same_va_end_addr) {
+	if (IS_ERR_VALUE(ret) && high_limit == mm->mmap_base && high_limit < same_va_end_addr) {
 #if (KERNEL_VERSION(6, 1, 0) <= LINUX_VERSION_CODE)
 		/* Retry above TASK_UNMAPPED_BASE */
 		info.low_limit = TASK_UNMAPPED_BASE;
@@ -412,8 +541,7 @@ unsigned long kbase_context_get_unmapped_area(struct kbase_context *const kctx,
 		info.high_limit = min_t(u64, TASK_SIZE, same_va_end_addr);
 #endif
 
-		ret = kbase_unmapped_area_topdown(&info, is_shader_code,
-				is_same_4gb_page);
+		ret = kbase_unmapped_area_topdown(&info, is_shader_code, is_same_4gb_page);
 	}
 
 	return ret;

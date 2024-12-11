@@ -3980,4 +3980,3 @@ int himax_debug_remove(void)
 	return 0;
 }
 EXPORT_SYMBOL(himax_debug_remove);
-

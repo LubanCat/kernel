@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
- * (C) COPYRIGHT 2017-2023 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2017-2024 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -35,9 +35,6 @@ bob_defaults {
             "CONFIG_GPU_HWVER={{.hwver}}",
         ],
     },
-    mali_platform_dt_pin_rst: {
-        kbuild_options: ["CONFIG_MALI_PLATFORM_DT_PIN_RST=y"],
-    },
     gpu_has_csf: {
         kbuild_options: ["CONFIG_MALI_CSF_SUPPORT=y"],
     },
@@ -62,32 +59,17 @@ bob_defaults {
     mali_dma_buf_legacy_compat: {
         kbuild_options: ["CONFIG_MALI_DMA_BUF_LEGACY_COMPAT=y"],
     },
-    large_page_alloc_override: {
-        kbuild_options: ["CONFIG_LARGE_PAGE_ALLOC_OVERRIDE=y"],
+    page_migration_support: {
+        kbuild_options: ["CONFIG_PAGE_MIGRATION_SUPPORT=y"],
     },
-    large_page_alloc: {
-        kbuild_options: ["CONFIG_LARGE_PAGE_ALLOC=y"],
-    },
-    mali_memory_fully_backed: {
-        kbuild_options: ["CONFIG_MALI_MEMORY_FULLY_BACKED=y"],
+    large_page_support: {
+        kbuild_options: ["CONFIG_LARGE_PAGE_SUPPORT=y"],
     },
     mali_corestack: {
         kbuild_options: ["CONFIG_MALI_CORESTACK=y"],
     },
     mali_real_hw: {
         kbuild_options: ["CONFIG_MALI_REAL_HW=y"],
-    },
-    mali_error_inject_none: {
-        kbuild_options: ["CONFIG_MALI_ERROR_INJECT_NONE=y"],
-    },
-    mali_error_inject_track_list: {
-        kbuild_options: ["CONFIG_MALI_ERROR_INJECT_TRACK_LIST=y"],
-    },
-    mali_error_inject_random: {
-        kbuild_options: ["CONFIG_MALI_ERROR_INJECT_RANDOM=y"],
-    },
-    mali_error_inject: {
-        kbuild_options: ["CONFIG_MALI_BIFROST_ERROR_INJECT=y"],
     },
     mali_debug: {
         kbuild_options: [
@@ -100,9 +82,6 @@ bob_defaults {
     },
     mali_system_trace: {
         kbuild_options: ["CONFIG_MALI_BIFROST_SYSTEM_TRACE=y"],
-    },
-    buslog: {
-        kbuild_options: ["CONFIG_MALI_BUSLOG=y"],
     },
     cinstr_vector_dump: {
         kbuild_options: ["CONFIG_MALI_VECTOR_DUMP=y"],
@@ -134,11 +113,20 @@ bob_defaults {
     mali_hw_errata_1485982_use_clock_alternative: {
         kbuild_options: ["CONFIG_MALI_HW_ERRATA_1485982_USE_CLOCK_ALTERNATIVE=y"],
     },
-    platform_is_fpga: {
+    mali_is_fpga: {
         kbuild_options: ["CONFIG_MALI_IS_FPGA=y"],
     },
     mali_coresight: {
         kbuild_options: ["CONFIG_MALI_CORESIGHT=y"],
+    },
+    mali_fw_trace_mode_manual: {
+        kbuild_options: ["CONFIG_MALI_FW_TRACE_MODE_MANUAL=y"],
+    },
+    mali_fw_trace_mode_auto_print: {
+        kbuild_options: ["CONFIG_MALI_FW_TRACE_MODE_AUTO_PRINT=y"],
+    },
+    mali_fw_trace_mode_auto_discard: {
+        kbuild_options: ["CONFIG_MALI_FW_TRACE_MODE_AUTO_DISCARD=y"],
     },
     kbuild_options: [
         "CONFIG_MALI_PLATFORM_NAME={{.mali_platform_name}}",
@@ -160,7 +148,6 @@ bob_defaults {
         // is an umbrella feature that would be open for inappropriate use
         // (catch-all for experimental CS code without separating it into
         // different features).
-        "MALI_INCREMENTAL_RENDERING_JM={{.incremental_rendering_jm}}",
         "MALI_BASE_CSF_PERFORMANCE_TESTS={{.base_csf_performance_tests}}",
     ],
 }
@@ -174,6 +161,9 @@ bob_kernel_module {
         "*.c",
         "*.h",
         "Kbuild",
+        "arbiter/*.c",
+        "arbiter/*.h",
+        "arbiter/Kbuild",
         "backend/gpu/*.c",
         "backend/gpu/*.h",
         "backend/gpu/Kbuild",
@@ -201,6 +191,7 @@ bob_kernel_module {
         "platform/*/*/*/*.h",
         "platform/*/*/*/Kbuild",
         "thirdparty/*.c",
+        "thirdparty/*.h",
         "thirdparty/Kbuild",
         "debug/*.c",
         "debug/*.h",
@@ -211,6 +202,11 @@ bob_kernel_module {
         "gpu/*.c",
         "gpu/*.h",
         "gpu/Kbuild",
+        "hw_access/*.c",
+        "hw_access/*.h",
+        "hw_access/*/*.c",
+        "hw_access/*/*.h",
+        "hw_access/Kbuild",
         "tl/*.c",
         "tl/*.h",
         "tl/Kbuild",
@@ -233,6 +229,7 @@ bob_kernel_module {
             "jm/*.h",
             "tl/backend/*_jm.c",
             "mmu/backend/*_jm.c",
+            "mmu/backend/*_jm.h",
             "ipa/backend/*_jm.c",
             "ipa/backend/*_jm.h",
         ],
@@ -257,24 +254,13 @@ bob_kernel_module {
             "hwcnt/backend/*_csf_*.h",
             "tl/backend/*_csf.c",
             "mmu/backend/*_csf.c",
+            "mmu/backend/*_csf.h",
             "ipa/backend/*_csf.c",
             "ipa/backend/*_csf.h",
-        ],
-    },
-    mali_arbiter_support: {
-        srcs: [
-            "arbiter/*.c",
-            "arbiter/*.h",
-            "arbiter/Kbuild",
         ],
     },
     kbuild_options: [
         "CONFIG_MALI_BIFROST=m",
         "CONFIG_MALI_KUTF=n",
     ],
-    buslog: {
-        extra_symbols: [
-            "bus_logger",
-        ],
-    },
 }

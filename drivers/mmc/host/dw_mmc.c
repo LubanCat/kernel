@@ -56,6 +56,8 @@
 #define DW_MCI_FREQ_MAX	200000000	/* unit: HZ */
 #define DW_MCI_FREQ_MIN	100000		/* unit: HZ */
 
+#define DW_MCI_POWER_OFF_DELAY	200	/* unit: ms */
+
 #define IDMAC_INT_CLR		(SDMMC_IDMAC_INT_AI | SDMMC_IDMAC_INT_NI | \
 				 SDMMC_IDMAC_INT_CES | SDMMC_IDMAC_INT_DU | \
 				 SDMMC_IDMAC_INT_FBE | SDMMC_IDMAC_INT_RI | \
@@ -1502,12 +1504,16 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	switch (ios->power_mode) {
 	case MMC_POWER_UP:
 		if (dw_mci_get_cd(mmc) && !IS_ERR_OR_NULL(slot->host->pinctrl)) {
-			if (!pinctrl_select_state(slot->host->pinctrl, slot->host->idle_state)) {
-				if (device_property_read_u32(slot->host->dev, "power-off-delay-ms",
-				    &power_off_delay))
-					power_off_delay = 200;
-				msleep(power_off_delay);
-			}
+			if (!IS_ERR(slot->host->idle_state))
+				pinctrl_select_state(slot->host->pinctrl, slot->host->idle_state);
+
+			if (!IS_ERR(mmc->supply.vmmc))
+				mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
+
+			if (device_property_read_u32(slot->host->dev, "power-off-delay-ms",
+			    &power_off_delay))
+				power_off_delay = DW_MCI_POWER_OFF_DELAY;
+			msleep(power_off_delay);
 		}
 
 		if (!IS_ERR(mmc->supply.vmmc)) {
@@ -1520,15 +1526,17 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 				return;
 			}
 		}
+
+		if (!IS_ERR_OR_NULL(slot->host->pinctrl) &&
+		    !IS_ERR(slot->host->normal_state))
+			pinctrl_select_state(slot->host->pinctrl, slot->host->normal_state);
+
 		set_bit(DW_MMC_CARD_NEED_INIT, &slot->flags);
 		regs = mci_readl(slot->host, PWREN);
 		regs |= (1 << slot->id);
 		mci_writel(slot->host, PWREN, regs);
 		break;
 	case MMC_POWER_ON:
-		if (!IS_ERR_OR_NULL(slot->host->pinctrl))
-			pinctrl_select_state(slot->host->pinctrl, slot->host->normal_state);
-
 		if (!slot->host->vqmmc_enabled) {
 			if (!IS_ERR(mmc->supply.vqmmc)) {
 				ret = regulator_enable(mmc->supply.vqmmc);
@@ -1555,11 +1563,12 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 		break;
 	case MMC_POWER_OFF:
-		if (!IS_ERR_OR_NULL(slot->host->pinctrl))
-			pinctrl_select_state(slot->host->pinctrl, slot->host->idle_state);
-
 		/* Turn clock off before power goes down */
 		dw_mci_setup_bus(slot, false);
+
+		if (!IS_ERR_OR_NULL(slot->host->pinctrl) &&
+		    !IS_ERR(slot->host->idle_state))
+			pinctrl_select_state(slot->host->pinctrl, slot->host->idle_state);
 
 		if (!IS_ERR(mmc->supply.vmmc))
 			mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
@@ -2021,7 +2030,7 @@ static void dw_mci_set_xfer_timeout(struct dw_mci *host)
 	if (host->dir_status == DW_MCI_RECV_STATUS)
 		xfer_ms += 100;
 	else
-		xfer_ms += 2500;
+		xfer_ms += 8000;
 	spin_lock_irqsave(&host->irq_lock, irqflags);
 	if (!test_bit(EVENT_XFER_COMPLETE, &host->pending_events))
 		mod_timer(&host->xfer_timer,
@@ -2818,8 +2827,15 @@ rv1106_sd:
 
 		if (pending & SDMMC_INT_RXDR) {
 			mci_writel(host, RINTSTS, SDMMC_INT_RXDR);
-			if (host->dir_status == DW_MCI_RECV_STATUS && host->sg)
+			if (host->dir_status == DW_MCI_RECV_STATUS && host->sg) {
 				dw_mci_read_data_pio(host, false);
+			} else {
+				host->data_status = SDMMC_INT_DRTO;
+				mci_writel(host, CTRL, mci_readl(host, CTRL) |
+					   SDMMC_CTRL_FIFO_RESET);
+				set_bit(EVENT_DATA_ERROR, &host->pending_events);
+				tasklet_schedule(&host->tasklet);
+			}
 		}
 
 		if (pending & SDMMC_INT_TXDR) {

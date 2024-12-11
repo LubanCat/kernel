@@ -561,7 +561,8 @@
 #define CSI2RX_RAWFBC_EN_SHD			(CSI2RX_BASE + 0x000c8)
 #define CSI2RX_FPN_CTRL				(CSI2RX_BASE + 0x000d0)
 #define CSI2RX_FPN_TABLE_CTRL			(CSI2RX_BASE + 0x000d4)
-#define CSI2RX_FPN_TABLE_DATA			(CSI2RX_BASE + 0x000d8)
+#define CSI2RX_FPN_TABLE_DATA0			(CSI2RX_BASE + 0x000d8)
+#define CSI2RX_FPN_TABLE_DATA1			(CSI2RX_BASE + 0x000dc)
 #define CSI2RX_Y_STAT_CTRL			(CSI2RX_BASE + 0x000f0)
 #define CSI2RX_Y_STAT_RO			(CSI2RX_BASE + 0x000f4)
 #define CSI2RX_VERSION				(CSI2RX_BASE + 0x000fc)
@@ -2432,6 +2433,12 @@
 #define SW_CSI_ESP_IDCD_OBPIX(a)	((a) & 0x7F)
 #define SW_CSI_ESP_IDCD_EFPIX(a)	(((a) & 0x7F) << 16)
 
+#define SW_FPN_EN			BIT(0)
+#define SW_FPN_ROW_EN			BIT(1)
+#define SW_FPN_BITS(a)			(((a) & 0x3) << 2)
+
+#define SW_FPN_CFG			BIT(0)
+
 #define SW_Y_STAT_INT_MODE_MASK		GENMASK(3, 2)
 #define SW_Y_STAT_RD_FRM_ID_MASK	GENMASK(5, 4)
 #define SW_Y_STAT_RD_TILE_ID_MASK	GENMASK(7, 6)
@@ -2578,32 +2585,12 @@
 /* ISP21 DHAZ/DRC/BAY3D */
 #define ISP21_SELF_FORCE_UPD		BIT(31)
 
-static inline bool dmatx0_is_stream_stopped(struct rkisp_stream *stream)
+static inline bool dmatx_is_stream_stopped(struct rkisp_stream *stream)
 {
-	u32 ret = rkisp_read(stream->ispdev, CSI2RX_RAW0_WR_CTRL, true);
+	u32 reg = stream->config->dma.ctrl;
+	u32 val = rkisp_read(stream->ispdev, reg, true);
 
-	return !(ret & SW_CSI_RAW_WR_EN_SHD);
-}
-
-static inline bool dmatx1_is_stream_stopped(struct rkisp_stream *stream)
-{
-	u32 ret = rkisp_read(stream->ispdev, CSI2RX_RAW1_WR_CTRL, true);
-
-	return !(ret & SW_CSI_RAW_WR_EN_SHD);
-}
-
-static inline bool dmatx2_is_stream_stopped(struct rkisp_stream *stream)
-{
-	u32 ret = rkisp_read(stream->ispdev, CSI2RX_RAW2_WR_CTRL, true);
-
-	return !(ret & SW_CSI_RAW_WR_EN_SHD);
-}
-
-static inline bool dmatx3_is_stream_stopped(struct rkisp_stream *stream)
-{
-	u32 ret = rkisp_read(stream->ispdev, CSI2RX_RAW3_WR_CTRL, true);
-
-	return !(ret & SW_CSI_RAW_WR_EN_SHD);
+	return !(val & SW_CSI_RAW_WR_EN_SHD);
 }
 
 static inline bool is_mpfbc_stopped(void __iomem *base)
@@ -2691,20 +2678,23 @@ static inline void raw_rd_ctrl(void __iomem *base, u32 val)
 static inline void mi_raw_length(struct rkisp_stream *stream)
 {
 	bool is_direct = true;
+	u32 bytesperline = stream->out_fmt.plane_fmt[0].bytesperline;
 
 	if (stream->config->mi.length == MI_RAW0_RD_LENGTH ||
 	    stream->config->mi.length == MI_RAW1_RD_LENGTH ||
-	    stream->config->mi.length == MI_RAW2_RD_LENGTH)
+	    stream->config->mi.length == MI_RAW2_RD_LENGTH) {
 		is_direct = false;
-	rkisp_write(stream->ispdev, stream->config->mi.length,
-		    stream->out_fmt.plane_fmt[0].bytesperline, is_direct);
-	if (stream->ispdev->isp_ver == ISP_V21 || stream->ispdev->isp_ver == ISP_V30)
-		rkisp_set_bits(stream->ispdev, MI_RD_CTRL2, 0, BIT(30), false);
-	if (stream->ispdev->hw_dev->unite) {
-		rkisp_next_write(stream->ispdev, stream->config->mi.length,
-				 stream->out_fmt.plane_fmt[0].bytesperline, is_direct);
-		rkisp_next_set_bits(stream->ispdev, MI_RD_CTRL2, 0, BIT(30), false);
+		if (stream->ispdev->isp_ver == ISP_V33 &&
+		    !IS_HDR_RDBK(stream->ispdev->rd_mode) &&
+		    stream->config->mi.length == MI_RAW2_RD_LENGTH &&
+		    stream->ispdev->unite_div == ISP_UNITE_DIV2) {
+			bytesperline = stream->out_fmt.width / 2 + RKMOUDLE_UNITE_EXTEND_PIXEL;
+			bytesperline = ALIGN(bytesperline * stream->out_isp_fmt.bpp[0] / 8, 256);
+		}
 	}
+	rkisp_unite_write(stream->ispdev, stream->config->mi.length, bytesperline, is_direct);
+	if (stream->ispdev->isp_ver == ISP_V21 || stream->ispdev->isp_ver == ISP_V30)
+		rkisp_unite_set_bits(stream->ispdev, MI_RD_CTRL2, 0, BIT(30), false);
 }
 
 static inline void rx_force_upd(void __iomem *base)

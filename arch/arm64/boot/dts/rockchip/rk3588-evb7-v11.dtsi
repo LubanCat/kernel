@@ -16,11 +16,11 @@
 		#size-cells = <2>;
 		ranges;
 
-		/* Reserve 128MB memory for hdmirx-controller@fdee0000 */
+		/* Reserve 256MB memory for hdmirx-controller@fdee0000 */
 		cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			reg = <0x0 (256 * 0x100000) 0x0 (128 * 0x100000)>;
+			reg = <0x0 (256 * 0x100000) 0x0 (256 * 0x100000)>;
 			linux,cma-default;
 		};
 	};
@@ -36,6 +36,8 @@
 		poll-interval = <100>;
 		spk-con-gpio = <&gpio4 RK_PA2 GPIO_ACTIVE_HIGH>;
 		hp-con-gpio = <&gpio4 RK_PA7 GPIO_ACTIVE_HIGH>;
+		rockchip,pre-power-on-delay-ms = <30>;
+		rockchip,post-power-down-delay-ms = <40>;
 		rockchip,format = "i2s";
 		rockchip,mclk-fs = <256>;
 		rockchip,cpu = <&i2s0_8ch>;

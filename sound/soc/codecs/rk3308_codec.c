@@ -1358,10 +1358,14 @@ static int rk3308_mute_stream(struct snd_soc_dai *dai, int mute, int stream)
 #endif
 		} else {
 #if !DEBUG_POP_ALWAYS
-			if (rk3308->dac_output == DAC_LINEOUT)
+			if (rk3308->dac_output == DAC_LINEOUT) {
 				rk3308_speaker_ctl(rk3308, 1);
-			else if (rk3308->dac_output == DAC_HPOUT)
+			} else if (rk3308->dac_output == DAC_HPOUT) {
 				rk3308_headphone_ctl(rk3308, 1);
+			} else if (rk3308->dac_output == DAC_LINEOUT_HPOUT) {
+				rk3308_speaker_ctl(rk3308, 1);
+				rk3308_headphone_ctl(rk3308, 1);
+			}
 
 			if (rk3308->delay_start_play_ms)
 				msleep(rk3308->delay_start_play_ms);
@@ -3696,7 +3700,7 @@ static int rk3308_codec_dapm_controls_prepare(struct rk3308_codec_priv *rk3308)
 	int grp;
 
 	for (grp = 0; grp < ADC_LR_GROUP_MAX; grp++)
-		rk3308->hpf_cutoff[grp] = 0;
+		rk3308->hpf_cutoff[grp] = 1;
 
 	rk3308_codec_dapm_mic_gains(rk3308);
 
@@ -4513,6 +4517,7 @@ static int rk3308_platform_probe(struct platform_device *pdev)
 	struct resource *res;
 	void __iomem *base;
 	int ret;
+	const char *str;
 
 	rk3308 = devm_kzalloc(&pdev->dev, sizeof(*rk3308), GFP_KERNEL);
 	if (!rk3308)
@@ -4758,7 +4763,15 @@ static int rk3308_platform_probe(struct platform_device *pdev)
 				  rk3308_codec_loopback_work);
 
 	rk3308->adc_grp0_using_linein = ADC_GRP0_MICIN;
+
 	rk3308->dac_output = DAC_LINEOUT;
+	if (!of_property_read_string(np, "rockchip,boot-dac-out", &str)) {
+		if (strcmp(str, "line-hp") == 0)
+			rk3308->dac_output = DAC_LINEOUT_HPOUT;
+		else if (strcmp(str, "hp") == 0)
+			rk3308->dac_output = DAC_HPOUT;
+	}
+
 	rk3308->adc_zerocross = 0;
 	rk3308->pm_state = PM_NORMAL;
 

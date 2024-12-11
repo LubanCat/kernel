@@ -258,6 +258,15 @@ struct mpp_mem_region {
 	bool is_dup;
 };
 
+struct mpp_load_info {
+	s64 busy_time;
+	s64 hw_busy_time;
+	ktime_t load_time;
+	u32 load;
+	u32 load_frac;
+	u32 utilization;
+	u32 utilization_frac;
+};
 
 struct mpp_dev {
 	struct device *dev;
@@ -312,10 +321,11 @@ struct mpp_dev {
 	/* multi-core data */
 	struct list_head queue_link;
 	s32 core_id;
-
 	/* common per-device procfs */
 	u32 disable;
 	u32 timing_check;
+	u32 load_en;
+	struct mpp_load_info load_info;
 };
 
 struct mpp_session {
@@ -389,8 +399,7 @@ enum mpp_task_state {
 	TASK_TIMING_RUN_END	= 21,
 	TASK_TIMING_IRQ		= 22,
 	TASK_TIMING_TO_CANCEL	= 23,
-	TASK_TIMING_ISR		= 24,
-	TASK_TIMING_FINISH	= 25,
+	TASK_TIMING_FINISH	= 24,
 };
 
 /* The context for the a task */
@@ -429,7 +438,6 @@ struct mpp_task {
 	ktime_t on_run_end;
 	ktime_t on_irq;
 	ktime_t on_cancel_timeout;
-	ktime_t on_isr;
 	ktime_t on_finish;
 
 	/* hardware info for current task */
@@ -437,6 +445,7 @@ struct mpp_task {
 	u32 task_index;
 	u32 task_id;
 	u32 *reg;
+	u32 irq_status;
 	/* event for session wait thread */
 	wait_queue_head_t wait;
 
@@ -445,6 +454,7 @@ struct mpp_task {
 	s32 core_id;
 	/* hw cycles */
 	u32 hw_cycles;
+	u32 hw_time;
 };
 
 struct mpp_taskqueue {
@@ -529,6 +539,7 @@ struct mpp_service {
 
 	/* global timing record flag */
 	u32 timing_en;
+	u32 load_interval;
 };
 
 /*
@@ -651,7 +662,6 @@ int mpp_power_off(struct mpp_dev *mpp);
 int mpp_dev_reset(struct mpp_dev *mpp);
 
 irqreturn_t mpp_dev_irq(int irq, void *param);
-irqreturn_t mpp_dev_isr_sched(int irq, void *param);
 
 struct reset_control *mpp_reset_control_get(struct mpp_dev *mpp,
 					    enum MPP_RESET_TYPE type,
@@ -681,6 +691,8 @@ unsigned long mpp_get_clk_info_rate_hz(struct mpp_clk_info *clk_info,
 				       enum MPP_CLOCK_MODE mode);
 int mpp_clk_set_rate(struct mpp_clk_info *clk_info,
 		     enum MPP_CLOCK_MODE mode);
+void mpp_dev_load(struct mpp_dev *mpp, struct mpp_task *mpp_task);
+void mpp_dev_load_clear(struct mpp_dev *mpp);
 
 static inline int mpp_write(struct mpp_dev *mpp, u32 reg, u32 val)
 {
@@ -849,5 +861,7 @@ extern int av1dec_driver_register(struct platform_driver *drv);
 extern void av1dec_driver_unregister(struct platform_driver *drv);
 extern struct bus_type av1dec_bus;
 extern struct platform_driver rockchip_vdpp_driver;
+
+extern const struct dev_pm_ops mpp_common_pm_ops;
 
 #endif

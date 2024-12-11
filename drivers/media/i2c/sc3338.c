@@ -328,6 +328,10 @@ static const struct sc3338_mode supported_modes[] = {
 	}
 };
 
+static const u32 bus_code[] = {
+	MEDIA_BUS_FMT_SBGGR10_1X10,
+};
+
 static const s64 link_freq_menu_items[] = {
 	SC3338_LINK_FREQ_253
 };
@@ -510,6 +514,10 @@ sc3338_find_best_fit(struct v4l2_subdev_format *fmt)
 		if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
 			cur_best_fit_dist = dist;
 			cur_best_fit = i;
+		} else if (dist == cur_best_fit_dist &&
+			   framefmt->code == supported_modes[i].bus_fmt) {
+			cur_best_fit = i;
+			break;
 		}
 	}
 
@@ -590,11 +598,9 @@ static int sc3338_enum_mbus_code(struct v4l2_subdev *sd,
 				  struct v4l2_subdev_pad_config *cfg,
 				  struct v4l2_subdev_mbus_code_enum *code)
 {
-	struct sc3338 *sc3338 = to_sc3338(sd);
-
-	if (code->index != 0)
+	if (code->index >= ARRAY_SIZE(bus_code))
 		return -EINVAL;
-	code->code = sc3338->cur_mode->bus_fmt;
+	code->code = bus_code[code->index];
 
 	return 0;
 }
@@ -648,6 +654,69 @@ static int sc3338_g_frame_interval(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static const struct sc3338_mode *sc3338_find_mode(struct sc3338 *sc3338, int fps)
+{
+	const struct sc3338_mode *mode = NULL;
+	const struct sc3338_mode *match = NULL;
+	int cur_fps = 0;
+	int i = 0;
+
+	for (i = 0; i < ARRAY_SIZE(supported_modes); i++) {
+		mode = &supported_modes[i];
+		if (mode->width == sc3338->cur_mode->width &&
+		    mode->height == sc3338->cur_mode->height &&
+		    mode->hdr_mode == sc3338->cur_mode->hdr_mode &&
+		    mode->bus_fmt == sc3338->cur_mode->bus_fmt) {
+			cur_fps = DIV_ROUND_CLOSEST(mode->max_fps.denominator, mode->max_fps.numerator);
+			if (cur_fps == fps) {
+				match = mode;
+				break;
+			}
+		}
+	}
+	return match;
+}
+
+static int sc3338_s_frame_interval(struct v4l2_subdev *sd,
+				   struct v4l2_subdev_frame_interval *fi)
+{
+	struct sc3338 *sc3338 = to_sc3338(sd);
+	const struct sc3338_mode *mode = NULL;
+	struct v4l2_fract *fract = &fi->interval;
+	s64 h_blank, vblank_def;
+	int fps;
+
+	if (sc3338->streaming)
+		return -EBUSY;
+
+	if (fi->pad != 0)
+		return -EINVAL;
+
+	if (fract->numerator == 0) {
+		v4l2_err(sd, "error param, check interval param\n");
+		return -EINVAL;
+	}
+	fps = DIV_ROUND_CLOSEST(fract->denominator, fract->numerator);
+	mode = sc3338_find_mode(sc3338, fps);
+	if (mode == NULL) {
+		v4l2_err(sd, "couldn't match fi\n");
+		return -EINVAL;
+	}
+
+	sc3338->cur_mode = mode;
+
+	h_blank = mode->hts_def - mode->width;
+	__v4l2_ctrl_modify_range(sc3338->hblank, h_blank,
+				 h_blank, 1, h_blank);
+	vblank_def = mode->vts_def - mode->height;
+	__v4l2_ctrl_modify_range(sc3338->vblank, vblank_def,
+				 SC3338_VTS_MAX - mode->height,
+				 1, vblank_def);
+	sc3338->cur_fps = mode->max_fps;
+
+	return 0;
+}
+
 static int sc3338_g_mbus_config(struct v4l2_subdev *sd,
 				unsigned int pad_id,
 				struct v4l2_mbus_config *config)
@@ -687,6 +756,9 @@ static long sc3338_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	u32 i, h, w;
 	long ret = 0;
 	u32 stream = 0;
+	int cur_best_fit = -1;
+	int cur_best_fit_dist = -1;
+	int cur_dist, cur_fps, dst_fps;
 
 	switch (cmd) {
 	case RKMODULE_GET_MODULE_INFO:
@@ -699,22 +771,36 @@ static long sc3338_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		break;
 	case RKMODULE_SET_HDR_CFG:
 		hdr = (struct rkmodule_hdr_cfg *)arg;
+		if (hdr->hdr_mode == sc3338->cur_mode->hdr_mode)
+			return 0;
 		w = sc3338->cur_mode->width;
 		h = sc3338->cur_mode->height;
+		dst_fps = DIV_ROUND_CLOSEST(sc3338->cur_mode->max_fps.denominator,
+			sc3338->cur_mode->max_fps.numerator);
 		for (i = 0; i < ARRAY_SIZE(supported_modes); i++) {
 			if (w == supported_modes[i].width &&
 			    h == supported_modes[i].height &&
-			    supported_modes[i].hdr_mode == hdr->hdr_mode) {
-				sc3338->cur_mode = &supported_modes[i];
-				break;
+			    supported_modes[i].hdr_mode == hdr->hdr_mode &&
+			    supported_modes[i].bus_fmt == sc3338->cur_mode->bus_fmt) {
+				cur_fps = DIV_ROUND_CLOSEST(supported_modes[i].max_fps.denominator,
+					supported_modes[i].max_fps.numerator);
+				cur_dist = abs(cur_fps - dst_fps);
+				if (cur_best_fit_dist == -1 || cur_dist < cur_best_fit_dist) {
+					cur_best_fit_dist = cur_dist;
+					cur_best_fit = i;
+				} else if (cur_dist == cur_best_fit_dist) {
+					cur_best_fit = i;
+					break;
+				}
 			}
 		}
-		if (i == ARRAY_SIZE(supported_modes)) {
+		if (cur_best_fit == -1) {
 			dev_err(&sc3338->client->dev,
 				"not find hdr mode:%d %dx%d config\n",
 				hdr->hdr_mode, w, h);
 			ret = -EINVAL;
 		} else {
+			sc3338->cur_mode = &supported_modes[cur_best_fit];
 			w = sc3338->cur_mode->hts_def - sc3338->cur_mode->width;
 			h = sc3338->cur_mode->vts_def - sc3338->cur_mode->height;
 			__v4l2_ctrl_modify_range(sc3338->hblank, w, w, 1, w);
@@ -1165,6 +1251,7 @@ static const struct v4l2_subdev_core_ops sc3338_core_ops = {
 static const struct v4l2_subdev_video_ops sc3338_video_ops = {
 	.s_stream = sc3338_s_stream,
 	.g_frame_interval = sc3338_g_frame_interval,
+	.s_frame_interval = sc3338_s_frame_interval,
 };
 
 static const struct v4l2_subdev_pad_ops sc3338_pad_ops = {

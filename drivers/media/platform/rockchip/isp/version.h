@@ -483,6 +483,94 @@
  * 20.more time to wait isp end
  * 21.add mode for rv1106 suspend without rtt
  * 22.fix is_on false cause pm isp die
+ *
+ * v2.5.0 (AIQ v5.5.0)
+ * 1.wrap mode first done don't send event
+ * 2.fix 4k and dual_sensor pm oneframe error
+ * 3.isp32 using ktime_get_boottime_ns
+ * 4.fix wait timeout with thunderboot
+ * 5.add buf cnt info to procfs
+ * 6.sync irq_ends
+ * 7.fix resume mi no enable
+ * 8.fix isp32 lost buf
+ * 9.frame start to check and config next buf
+ * 10.fix isp stop to enable isp ctrl
+ * 11.fix isp32 buf no update to hw
+ * 12.add rkisp_buf_dbg
+ * 13.fix isp stop to read stats buf
+ * 14.support multiple wrap
+ * 15.dvbm buf support from rockit
+ * 16.add RKISP_CMD_SET_TB_HEAD_V32 API
+ * 17.add ioctl to get bay3d buf
+ * 18.fix isp32 lite frame buffer data read
+ * 19.support 8k for isp32 lite
+ *
+ * v2.5.1
+ * 1.rockit buf add offset
+ * 2.support multi wrap channel
+ * 3.fix waiting for isp end
+ * 4.fix isp32 bp no output if suspend
+ * 5.fix params buffersize for tb case
+ * 6.skip s_stream of sensor while connect to vicap sditf
+ * 7.open to wait thunderboot ready
+ * 8.default readback mode for multi sensor
+ * 9.rdbk_auto mode stop to clean buf list
+ * 10.fix dmarx deadlock
+ * 11.fix dmatx config
+ * 12.fix cac repeat enable
+ * 13.skip mbus if link to vicap
+ * 14.fix rockit switch resolution
+ * 15.fix cmsk mp can't disable
+ * 16.fix cac for multi sensor
+ *
+ * v2.7.0 (AIQ v6.7.1)
+ * 1.add stats log for isp21 and isp30
+ * 2.dvbm: modify api to adapt rv1103b
+ * 3.add isp33
+ * 4.add rv1103b config
+ * 5.support mirror for wrap mode
+ * 6.add isp2enc frame count to rockit
+ * 7.more mode for vicap to isp
+ * 8.support two sensor online for isp33
+ * 9.support unite online for isp33
+ * 10.dvbm deinit/init if switch resolution
+ * 11.support online hdr wrap for isp33
+ * 12.fix isp2enc wrap for isp33 fast
+ * 13.fix fast stop no to clean flag
+ * 14.fix rd_mode for vicap to send buf
+ * 15.resume early for isp33
+ * 16.fix buf update for multi online mode
+ * 17.fix hist for isp33 unite mode
+ * 18.frame start irq to send dvbm event
+ * 19.fix 4k unite effect
+ * 20.fix resume for multi online mode
+ * 21.add api for raw buf cnt and hdr wrap
+ * 22.enable bay3d FST_FRAME if change bypass
+ * 23.fix awb resume error
+ * 24.fix hold at register irq if mcu still running
+ * 25.limit bp crop and scl for isp33
+ * 26.add sync for multi online mode
+ * 27.fix memory leak
+ * 28.config bls1 and bls2 black level
+ * 29.clear isp force update bit
+ * 30.fix isp33 params sram config
+ * 31.w3a overflow check for isp33
+ * 32.fix isp33 multi sensor resume
+ * 33.fix isp33 unite switch online for fast
+ * 34.isp33 add api to get params
+ * 35.disable isp33 dma write gather
+ * 36.drop 2 frame if rockit switch resolution
+ * 37.fix isp33 unite error for fastboot
+ * 38.fix isp33 multi online resume
+ * 39.support bytesperline set by user for rawrd video
+ * 40.isp33 change input to 4 align
+ * 41.vicap support rtt stream on
+ *
+ * v2.8.0 (AIQ v6.8.0)
+ * 1.fix multi switch to online no work for fast
+ * 2.rawrd format sync with isp input format change
+ * 3.fix rawrd bytesperline
+ * 4.wait aiq params for isp33 fast
  */
 
 #define RKISP_DRIVER_VERSION RKISP_API_VERSION

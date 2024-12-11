@@ -189,6 +189,8 @@ struct os04a10 {
 	u8			flip;
 	u32			dcg_ratio;
 	struct v4l2_fwnode_endpoint bus_cfg;
+	u32			cur_vts;
+	struct v4l2_fract	cur_fps;
 };
 
 #define to_os04a10(sd) container_of(sd, struct os04a10, subdev)
@@ -222,9 +224,9 @@ static const struct regval os04a10_global_regs[] = {
 	{0x340c, 0x0c},
 	{0x340d, 0xb0},
 	{0x3425, 0x51},
-	{0x3426, 0x50},
-	{0x3427, 0x15},
-	{0x3428, 0x50},
+	{0x3426, 0x10},
+	{0x3427, 0x14},
+	{0x3428, 0x10},
 	{0x3429, 0x10},
 	{0x342a, 0x10},
 	{0x342b, 0x04},
@@ -1311,6 +1313,11 @@ static const struct os04a10_mode supported_modes_2lane[] = {
 	},
 };
 
+static const u32 bus_code[] = {
+	MEDIA_BUS_FMT_SBGGR10_1X10,
+	MEDIA_BUS_FMT_SBGGR12_1X12,
+};
+
 static const s64 link_freq_menu_items[] = {
 	MIPI_FREQ_360M,
 	MIPI_FREQ_648M,
@@ -1424,10 +1431,13 @@ os04a10_find_best_fit(struct os04a10 *os04a10, struct v4l2_subdev_format *fmt)
 
 	for (i = 0; i < os04a10->cfg_num; i++) {
 		dist = os04a10_get_reso_dist(&os04a10->supported_modes[i], framefmt);
-		if ((cur_best_fit_dist == -1 || dist < cur_best_fit_dist) &&
-			(os04a10->supported_modes[i].bus_fmt == framefmt->code)) {
+		if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
 			cur_best_fit_dist = dist;
 			cur_best_fit = i;
+		} else if (dist == cur_best_fit_dist &&
+			   framefmt->code == supported_modes[i].bus_fmt) {
+			cur_best_fit = i;
+			break;
 		}
 	}
 
@@ -1475,6 +1485,7 @@ static int os04a10_set_fmt(struct v4l2_subdev *sd,
 					 dst_pixel_rate);
 		__v4l2_ctrl_s_ctrl(os04a10->link_freq,
 				   dst_link_freq);
+		os04a10->cur_fps = mode->max_fps;
 	}
 
 	mutex_unlock(&os04a10->mutex);
@@ -1516,11 +1527,9 @@ static int os04a10_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
-	struct os04a10 *os04a10 = to_os04a10(sd);
-
-	if (code->index != 0)
+	if (code->index >= ARRAY_SIZE(bus_code))
 		return -EINVAL;
-	code->code = os04a10->cur_mode->bus_fmt;
+	code->code = bus_code[code->index];
 
 	return 0;
 }
@@ -1567,7 +1576,81 @@ static int os04a10_g_frame_interval(struct v4l2_subdev *sd,
 	struct os04a10 *os04a10 = to_os04a10(sd);
 	const struct os04a10_mode *mode = os04a10->cur_mode;
 
-	fi->interval = mode->max_fps;
+	if (os04a10->streaming)
+		fi->interval = os04a10->cur_fps;
+	else
+		fi->interval = mode->max_fps;
+
+	return 0;
+}
+
+static const struct os04a10_mode *os04a10_find_mode(struct os04a10 *os04a10, int fps)
+{
+	const struct os04a10_mode *mode = NULL;
+	const struct os04a10_mode *match = NULL;
+	int cur_fps = 0;
+	int i = 0;
+
+	for (i = 0; i < os04a10->cfg_num; i++) {
+		mode = &os04a10->supported_modes[i];
+		if (mode->width == os04a10->cur_mode->width &&
+		    mode->height == os04a10->cur_mode->height &&
+		    mode->hdr_mode == os04a10->cur_mode->hdr_mode &&
+		    mode->bus_fmt == os04a10->cur_mode->bus_fmt) {
+			cur_fps = DIV_ROUND_CLOSEST(mode->max_fps.denominator, mode->max_fps.numerator);
+			if (cur_fps == fps) {
+				match = mode;
+				break;
+			}
+		}
+	}
+	return match;
+}
+
+static int os04a10_s_frame_interval(struct v4l2_subdev *sd,
+				   struct v4l2_subdev_frame_interval *fi)
+{
+	struct os04a10 *os04a10 = to_os04a10(sd);
+	const struct os04a10_mode *mode = NULL;
+	struct v4l2_fract *fract = &fi->interval;
+	s64 h_blank, vblank_def;
+	u64 pixel_rate = 0;
+	u32 lane_num = os04a10->bus_cfg.bus.mipi_csi2.num_data_lanes;
+	int fps;
+
+	if (os04a10->streaming)
+		return -EBUSY;
+
+	if (fi->pad != 0)
+		return -EINVAL;
+
+	if (fract->numerator == 0) {
+		v4l2_err(sd, "error param, check interval param\n");
+		return -EINVAL;
+	}
+	fps = DIV_ROUND_CLOSEST(fract->denominator, fract->numerator);
+	mode = os04a10_find_mode(os04a10, fps);
+	if (mode == NULL) {
+		v4l2_err(sd, "couldn't match fi\n");
+		return -EINVAL;
+	}
+
+	os04a10->cur_mode = mode;
+
+	h_blank = mode->hts_def - mode->width;
+	__v4l2_ctrl_modify_range(os04a10->hblank, h_blank,
+				 h_blank, 1, h_blank);
+	vblank_def = mode->vts_def - mode->height;
+	__v4l2_ctrl_modify_range(os04a10->vblank, vblank_def,
+				 OS04A10_VTS_MAX - mode->height,
+				 1, vblank_def);
+	pixel_rate = (u32)link_freq_menu_items[mode->link_freq_idx] / mode->bpp * 2 * lane_num;
+
+	__v4l2_ctrl_s_ctrl_int64(os04a10->pixel_rate,
+				 pixel_rate);
+	__v4l2_ctrl_s_ctrl(os04a10->link_freq,
+			   mode->link_freq_idx);
+	os04a10->cur_fps = mode->max_fps;
 
 	return 0;
 }
@@ -1846,11 +1929,23 @@ undo:
 }
 #endif
 
+static int os04a10_get_channel_info(struct os04a10 *os04a10, struct rkmodule_channel_info *ch_info)
+{
+	if (ch_info->index < PAD0 || ch_info->index >= PAD_MAX)
+		return -EINVAL;
+	ch_info->vc = os04a10->cur_mode->vc[ch_info->index];
+	ch_info->width = os04a10->cur_mode->width;
+	ch_info->height = os04a10->cur_mode->height;
+	ch_info->bus_fmt = os04a10->cur_mode->bus_fmt;
+	return 0;
+}
+
 static long os04a10_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 {
 	struct os04a10 *os04a10 = to_os04a10(sd);
 	struct rkmodule_hdr_cfg *hdr_cfg;
 	struct rkmodule_dcg_ratio *dcg;
+	struct rkmodule_channel_info *ch_info;
 	long ret = 0;
 	u32 i, h, w;
 	u32 stream = 0;
@@ -1858,28 +1953,45 @@ static long os04a10_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	u64 dst_pixel_rate = 0;
 	u8 lanes = os04a10->bus_cfg.bus.mipi_csi2.num_data_lanes;
 	const struct os04a10_mode *mode;
+	int cur_best_fit = -1;
+	int cur_best_fit_dist = -1;
+	int cur_dist, cur_fps, dst_fps;
 
 	switch (cmd) {
 	case PREISP_CMD_SET_HDRAE_EXP:
 		return os04a10_set_hdrae(os04a10, arg);
 	case RKMODULE_SET_HDR_CFG:
 		hdr_cfg = (struct rkmodule_hdr_cfg *)arg;
+		if (hdr_cfg->hdr_mode == os04a10->cur_mode->hdr_mode)
+			return 0;
 		w = os04a10->cur_mode->width;
 		h = os04a10->cur_mode->height;
+		dst_fps = DIV_ROUND_CLOSEST(os04a10->cur_mode->max_fps.denominator,
+			os04a10->cur_mode->max_fps.numerator);
 		for (i = 0; i < os04a10->cfg_num; i++) {
 			if (w == os04a10->supported_modes[i].width &&
 			h == os04a10->supported_modes[i].height &&
-			os04a10->supported_modes[i].hdr_mode == hdr_cfg->hdr_mode) {
-				os04a10->cur_mode = &os04a10->supported_modes[i];
-				break;
+			os04a10->supported_modes[i].hdr_mode == hdr_cfg->hdr_mode &&
+			os04a10->supported_modes[i].bus_fmt == os04a10->cur_mode->bus_fmt) {
+				cur_fps = DIV_ROUND_CLOSEST(os04a10->supported_modes[i].max_fps.denominator,
+					os04a10->supported_modes[i].max_fps.numerator);
+				cur_dist = abs(cur_fps - dst_fps);
+				if (cur_best_fit_dist == -1 || cur_dist < cur_best_fit_dist) {
+					cur_best_fit_dist = cur_dist;
+					cur_best_fit = i;
+				} else if (cur_dist == cur_best_fit_dist) {
+					cur_best_fit = i;
+					break;
+				}
 			}
 		}
-		if (i == os04a10->cfg_num) {
+		if (cur_best_fit == -1) {
 			dev_err(&os04a10->client->dev,
 				"not find hdr mode:%d %dx%d config\n",
 				hdr_cfg->hdr_mode, w, h);
 			ret = -EINVAL;
 		} else {
+			os04a10->cur_mode = &os04a10->supported_modes[cur_best_fit];
 			mode = os04a10->cur_mode;
 			w = mode->hts_def - mode->width;
 			h = mode->vts_def - mode->height;
@@ -1894,6 +2006,7 @@ static long os04a10_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 						 dst_pixel_rate);
 			__v4l2_ctrl_s_ctrl(os04a10->link_freq,
 					   dst_link_freq);
+			os04a10->cur_fps = mode->max_fps;
 			dev_info(&os04a10->client->dev,
 				"sensor mode: %d\n",
 				os04a10->cur_mode->hdr_mode);
@@ -1932,6 +2045,10 @@ static long os04a10_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 			 "get dcg ratio integer %d, decimal %d div_coeff %d\n",
 			 dcg->integer, dcg->decimal, dcg->div_coeff);
 		break;
+	case RKMODULE_GET_CHANNEL_INFO:
+		ch_info = (struct rkmodule_channel_info *)arg;
+		ret = os04a10_get_channel_info(os04a10, ch_info);
+		break;
 	default:
 		ret = -ENOIOCTLCMD;
 		break;
@@ -1949,6 +2066,7 @@ static long os04a10_compat_ioctl32(struct v4l2_subdev *sd,
 	struct rkmodule_hdr_cfg *hdr;
 	struct preisp_hdrae_exp_s *hdrae;
 	struct rkmodule_dcg_ratio *dcg;
+	struct rkmodule_channel_info *ch_info;
 	long ret;
 	u32 cg = 0;
 	u32 stream = 0;
@@ -2036,6 +2154,21 @@ static long os04a10_compat_ioctl32(struct v4l2_subdev *sd,
 				return -EFAULT;
 		}
 		kfree(dcg);
+		break;
+	case RKMODULE_GET_CHANNEL_INFO:
+		ch_info = kzalloc(sizeof(*ch_info), GFP_KERNEL);
+		if (!ch_info) {
+			ret = -ENOMEM;
+			return ret;
+		}
+
+		ret = os04a10_ioctl(sd, cmd, ch_info);
+		if (!ret) {
+			ret = copy_to_user(up, ch_info, sizeof(*ch_info));
+			if (ret)
+				return -EFAULT;
+		}
+		kfree(ch_info);
 		break;
 	default:
 		ret = -ENOIOCTLCMD;
@@ -2379,6 +2512,7 @@ static const struct v4l2_subdev_core_ops os04a10_core_ops = {
 static const struct v4l2_subdev_video_ops os04a10_video_ops = {
 	.s_stream = os04a10_s_stream,
 	.g_frame_interval = os04a10_g_frame_interval,
+	.s_frame_interval = os04a10_s_frame_interval,
 };
 
 static const struct v4l2_subdev_pad_ops os04a10_pad_ops = {
@@ -2395,6 +2529,14 @@ static const struct v4l2_subdev_ops os04a10_subdev_ops = {
 	.video	= &os04a10_video_ops,
 	.pad	= &os04a10_pad_ops,
 };
+
+static void os04a10_modify_fps_info(struct os04a10 *os04a10)
+{
+	const struct os04a10_mode *mode = os04a10->cur_mode;
+
+	os04a10->cur_fps.denominator = mode->max_fps.denominator * mode->vts_def /
+				      os04a10->cur_vts;
+}
 
 static int os04a10_set_ctrl(struct v4l2_ctrl *ctrl)
 {
@@ -2453,6 +2595,8 @@ static int os04a10_set_ctrl(struct v4l2_ctrl *ctrl)
 		ret = os04a10_write_reg(os04a10->client, OS04A10_REG_VTS,
 					OS04A10_REG_VALUE_16BIT,
 					ctrl->val + os04a10->cur_mode->height);
+		os04a10->cur_vts = ctrl->val + os04a10->cur_mode->height;
+		os04a10_modify_fps_info(os04a10);
 		dev_dbg(&client->dev, "set vblank 0x%x\n",
 			ctrl->val);
 		break;

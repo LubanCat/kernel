@@ -3,6 +3,7 @@
 snd-soc-rockchip-objs := rockchip_utils.o
 snd-soc-rockchip-dlp-objs := rockchip_dlp.o
 snd-soc-rockchip-dlp-pcm-objs := rockchip_dlp_pcm.o
+snd-soc-rockchip-dummy-dai-objs := rockchip_dummy_dai.o
 snd-soc-rockchip-i2s-objs := rockchip_i2s.o
 snd-soc-rockchip-i2s-tdm-objs := rockchip_i2s_tdm.o
 snd-soc-rockchip-multi-dais-objs := rockchip_multi_dais.o rockchip_multi_dais_pcm.o
@@ -10,6 +11,7 @@ snd-soc-rockchip-pdm-objs := rockchip_pdm.o
 snd-soc-rockchip-sai-objs := rockchip_sai.o
 snd-soc-rockchip-spdif-objs := rockchip_spdif.o
 snd-soc-rockchip-spdifrx-objs := rockchip_spdifrx.o
+snd-soc-rockchip-trcm-objs := rockchip_trcm.o
 snd-soc-rockchip-vad-objs := rockchip_vad.o
 ifdef CONFIG_THUMB2_KERNEL
 snd-soc-rockchip-vad-$(CONFIG_THUMB2_KERNEL) += vad_preprocess_thumb.o
@@ -21,6 +23,7 @@ endif
 obj-$(CONFIG_SND_SOC_ROCKCHIP) += snd-soc-rockchip.o
 obj-$(CONFIG_SND_SOC_ROCKCHIP_DLP) += snd-soc-rockchip-dlp.o
 obj-$(CONFIG_SND_SOC_ROCKCHIP_DLP_PCM) += snd-soc-rockchip-dlp-pcm.o
+obj-$(CONFIG_SND_SOC_ROCKCHIP_DUMMY_DAI) += snd-soc-rockchip-dummy-dai.o
 obj-$(CONFIG_SND_SOC_ROCKCHIP_I2S) += snd-soc-rockchip-i2s.o
 obj-$(CONFIG_SND_SOC_ROCKCHIP_I2S_TDM) += snd-soc-rockchip-i2s-tdm.o
 obj-$(CONFIG_SND_SOC_ROCKCHIP_MULTI_DAIS) += snd-soc-rockchip-multi-dais.o
@@ -28,6 +31,7 @@ obj-$(CONFIG_SND_SOC_ROCKCHIP_PDM) += snd-soc-rockchip-pdm.o
 obj-$(CONFIG_SND_SOC_ROCKCHIP_SAI) += snd-soc-rockchip-sai.o
 obj-$(CONFIG_SND_SOC_ROCKCHIP_SPDIF) += snd-soc-rockchip-spdif.o
 obj-$(CONFIG_SND_SOC_ROCKCHIP_SPDIFRX) += snd-soc-rockchip-spdifrx.o
+obj-$(CONFIG_SND_SOC_ROCKCHIP_TRCM) += snd-soc-rockchip-trcm.o
 obj-$(CONFIG_SND_SOC_ROCKCHIP_VAD) += snd-soc-rockchip-vad.o
 
 snd-soc-rockchip-hdmi-objs := rockchip_hdmi.o

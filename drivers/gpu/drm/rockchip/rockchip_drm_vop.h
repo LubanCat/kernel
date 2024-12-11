@@ -1099,6 +1099,7 @@ struct vop2_video_port_data {
 	char id;
 	uint8_t splice_vp_id;
 	uint16_t lut_dma_rid;
+	uint32_t dclk_switch_id;
 	uint32_t feature;
 	uint64_t soc_id[VOP2_SOC_VARIANT];
 	uint16_t gamma_lut_len;
@@ -1296,6 +1297,7 @@ struct vop_dump_regs {
 	const char *name;
 	struct vop_reg state;
 	bool enable_state;
+	uint32_t size;
 };
 
 struct vop2_vp_plane_mask {
@@ -1345,6 +1347,7 @@ struct vop2_data {
 	const struct vop_grf_ctrl *vo0_grf;
 	const struct vop_grf_ctrl *vo1_grf;
 	const struct vop_dump_regs *dump_regs;
+	const struct vop_mcu_bypass_cfg *mcu_bypass_cfg;
 	uint32_t dump_regs_size;
 	struct vop_rect max_input;
 	struct vop_rect max_output;

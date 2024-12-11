@@ -301,6 +301,7 @@ static long vendor_storage_ioctl(struct file *file, unsigned int cmd,
 	v_req = (struct RK_VENDOR_REQ *)page_buf;
 
 	switch (cmd) {
+	case VENDOR_READ_IO_COMPAT:
 	case VENDOR_READ_IO:
 	{
 		if (copy_from_user(page_buf, (void __user *)arg, 8)) {

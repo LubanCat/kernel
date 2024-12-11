@@ -35,7 +35,7 @@
 
 #define MIS4001_LANES			2
 #define MIS4001_BITS_PER_SAMPLE		10
-#define MIS4001_LINK_FREQ		337500000
+#define MIS4001_LINK_FREQ		378000000
 #define PIXEL_RATE_WITH_337M_10BIT	(MIS4001_LINK_FREQ * 2 * \
                             MIS4001_LANES / MIS4001_BITS_PER_SAMPLE)
 #define MIS4001_XVCLK_FREQ		    27000000
@@ -44,7 +44,8 @@
 #define MIS4001_REG_CHIP_ID		0x3000
 
 #define MIS4001_REG_CTRL_MODE		0x3006
-#define MIS4001_MODE_SW_STANDBY		0x3
+#define MIS4001_MODE_SW_RESET	0x1
+#define MIS4001_MODE_SW_STANDBY		0x2
 #define MIS4001_MODE_STREAMING		0x0
 
 #define MIS4001_REG_EXPOSURE_H		0x3100
@@ -57,7 +58,7 @@
 #define MIS4001_REG_DIG_FINE_GAIN	0x3A01
 #define MIS4001_REG_ANA_GAIN		0x3102
 #define MIS4001_GAIN_MIN		0x0080
-#define MIS4001_GAIN_MAX		32768
+#define MIS4001_GAIN_MAX		(32768)//8 * 32 * 128
 #define MIS4001_GAIN_STEP		1
 #define MIS4001_GAIN_DEFAULT		0x80
 
@@ -81,6 +82,7 @@
 #define MIS4001_FETCH_MIRROR(VAL, ENABLE)	(ENABLE ? VAL | 0x01 : VAL & 0xFE)
 #define MIS4001_FETCH_FLIP(VAL, ENABLE)		(ENABLE ? VAL | 0x02 : VAL & 0xFD)
 
+#define REG_DELAY			0xFFFE
 #define REG_NULL			0xFFFF
 
 #define MIS4001_REG_VALUE_08BIT		1
@@ -173,15 +175,15 @@ static const struct regval mis4001_linear_10_2560x1440_regs[] = {
 	{0x4223, 0xeb},
 	{0x3011, 0x2b},
 	{0x3302, 0x02},
-	{0x3307, 0x64},
+	{0x3307, 0x70},
 	{0x3306, 0x01},
 	{0x3309, 0x01},
-	{0x3308, 0x03},
+	{0x3308, 0x05}, //ACKL分频增大
 	{0x330a, 0x04},
 	{0x330b, 0x09},
-	{0x310f, 0x68},
-	{0x310e, 0x0d},
-	{0x310d, 0x25},
+	{0x310f, 0xB8},
+	{0x310e, 0x0B},
+	{0x310d, 0x90},
 	{0x310c, 0x06},
 	{0x3115, 0x10},
 	{0x3114, 0x00},
@@ -191,7 +193,7 @@ static const struct regval mis4001_linear_10_2560x1440_regs[] = {
 	{0x3110, 0x00},
 	{0x3113, 0x9d},
 	{0x3112, 0x06},
-	{0x3128, 0x0f},//FW<4096 FFF
+	{0x3128, 0x0f}, //FW<4096 FFF
 	{0x3129, 0xff},
 	{0x3012, 0x03},
 	{0x3f00, 0x01},
@@ -313,7 +315,7 @@ static const struct regval mis4001_linear_10_2560x1440_regs[] = {
 	{0x3E00, 0x00},
 	{0x3E01, 0x10},
 	{0x400D, 0x30},
-	{0x3500, 0x1b},  //1b/13
+	{0x3500, 0x1b}, //1b/13
 	{0x3501, 0x03},
 	{0x3508, 0x0a},
 	{0x3508, 0x04},
@@ -324,17 +326,17 @@ static const struct regval mis4001_linear_10_2560x1440_regs[] = {
 	{0x3704, 0x80},
 	{0x3706, 0x80},
 	{0x3708, 0x80},
-	{0x400D, 0x30},  //优化奇偶行及行噪
-	{0x4004, 0x20},  //RCS CM电流最小优化横带
+	{0x400D, 0x30}, //优化奇偶行及行噪
+	{0x4004, 0x20}, //rcs尾电流改小
 	{0x4005, 0x0c},
+	{0x4007, 0x78},
 	{0x4009, 0x09},
 	{0x400a, 0x48},
 	{0x4006, 0x86},
 	{0x4019, 0x08},
-	{0x4003, 0x0a},
 	{0x3f42, 0x58},
 	{0x3f49, 0x60},
-	{0x3f38, 0x4d},
+	{0x3f38, 0x38},
 	{REG_NULL, 0x00},
 };
 
@@ -344,16 +346,20 @@ static const struct mis4001_mode supported_modes[] = {
 		.height = 1440,
 		.max_fps = {
 			.numerator = 10000,
-			.denominator = 250000,
+			.denominator = 300000,
 		},
 		.exp_def = 0x0040,
-		.hts_def = 3432,
-		.vts_def = 1573,
+		.hts_def = 3000,
+		.vts_def = 1680,
 		.bus_fmt = MEDIA_BUS_FMT_SGRBG10_1X10,
 		.reg_list = mis4001_linear_10_2560x1440_regs,
 		.hdr_mode = NO_HDR,
 		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
 	}
+};
+
+static const u32 bus_code[] = {
+	MEDIA_BUS_FMT_SGRBG10_1X10,
 };
 
 static const s64 link_freq_menu_items[] = {
@@ -401,9 +407,13 @@ static int mis4001_write_array(struct i2c_client *client,
 	u32 i;
 	int ret = 0;
 
-	for (i = 0; ret == 0 && regs[i].addr != REG_NULL; i++)
-		ret = mis4001_write_reg(client, regs[i].addr,
-					MIS4001_REG_VALUE_08BIT, regs[i].val);
+	for (i = 0; ret == 0 && regs[i].addr != REG_NULL; i++) {
+		if (regs[i].addr != REG_DELAY)
+			ret = mis4001_write_reg(client, regs[i].addr,
+						MIS4001_REG_VALUE_08BIT, regs[i].val);
+		else
+			usleep_range(regs[i].val * 1000, regs[i].val * 1000 + 1000);
+	}
 
 	return ret;
 }
@@ -446,33 +456,45 @@ static int mis4001_read_reg(struct i2c_client *client, u16 reg, unsigned int len
 static void mis4001_set_orientation_reg(struct mis4001 *mis4001, u32 en_flip_mir)
 {
 	switch (en_flip_mir) {
-	case  0:
+	case 0:
+		mis4001_write_reg(mis4001->client, 0x3006, MIS4001_REG_VALUE_08BIT, 0x02);
+		usleep_range(100000, 110000);
 		mis4001_write_reg(mis4001->client, 0x3007, MIS4001_REG_VALUE_08BIT, 0x00);
 		mis4001_write_reg(mis4001->client, 0x3111, MIS4001_REG_VALUE_08BIT, 0xFC);
 		mis4001_write_reg(mis4001->client, 0x3113, MIS4001_REG_VALUE_08BIT, 0x9D);
 		mis4001_write_reg(mis4001->client, 0x3115, MIS4001_REG_VALUE_08BIT, 0x10);
 		mis4001_write_reg(mis4001->client, 0x3117, MIS4001_REG_VALUE_08BIT, 0x0F);
+		mis4001_write_reg(mis4001->client, 0x3006, MIS4001_REG_VALUE_08BIT, 0x00);
 		break;
-	case  1:
+	case 1:
+		mis4001_write_reg(mis4001->client, 0x3006, MIS4001_REG_VALUE_08BIT, 0x02);
+		usleep_range(100000, 110000);
 		mis4001_write_reg(mis4001->client, 0x3007, MIS4001_REG_VALUE_08BIT, 0x01);
 		mis4001_write_reg(mis4001->client, 0x3111, MIS4001_REG_VALUE_08BIT, 0xFC);
 		mis4001_write_reg(mis4001->client, 0x3113, MIS4001_REG_VALUE_08BIT, 0x9D);
 		mis4001_write_reg(mis4001->client, 0x3115, MIS4001_REG_VALUE_08BIT, 0x11);
 		mis4001_write_reg(mis4001->client, 0x3117, MIS4001_REG_VALUE_08BIT, 0x10);
+		mis4001_write_reg(mis4001->client, 0x3006, MIS4001_REG_VALUE_08BIT, 0x00);
 		break;
-	case  2:
+	case 2:
+		mis4001_write_reg(mis4001->client, 0x3006, MIS4001_REG_VALUE_08BIT, 0x02);
+		usleep_range(100000, 110000);
 		mis4001_write_reg(mis4001->client, 0x3007, MIS4001_REG_VALUE_08BIT, 0x01);
 		mis4001_write_reg(mis4001->client, 0x3111, MIS4001_REG_VALUE_08BIT, 0xFD);
 		mis4001_write_reg(mis4001->client, 0x3113, MIS4001_REG_VALUE_08BIT, 0x9E);
 		mis4001_write_reg(mis4001->client, 0x3115, MIS4001_REG_VALUE_08BIT, 0x10);
 		mis4001_write_reg(mis4001->client, 0x3117, MIS4001_REG_VALUE_08BIT, 0x0F);
+		mis4001_write_reg(mis4001->client, 0x3006, MIS4001_REG_VALUE_08BIT, 0x00);
 		break;
-	case  3:
+	case 3:
+		mis4001_write_reg(mis4001->client, 0x3006, MIS4001_REG_VALUE_08BIT, 0x02);
+		usleep_range(100000, 110000);
 		mis4001_write_reg(mis4001->client, 0x3007, MIS4001_REG_VALUE_08BIT, 0x03);
 		mis4001_write_reg(mis4001->client, 0x3113, MIS4001_REG_VALUE_08BIT, 0XFD);
 		mis4001_write_reg(mis4001->client, 0x3207, MIS4001_REG_VALUE_08BIT, 0x9E);
 		mis4001_write_reg(mis4001->client, 0x3115, MIS4001_REG_VALUE_08BIT, 0x11);
 		mis4001_write_reg(mis4001->client, 0x3117, MIS4001_REG_VALUE_08BIT, 0x0F);
+		mis4001_write_reg(mis4001->client, 0x3006, MIS4001_REG_VALUE_08BIT, 0x00);
 		break;
 	default:
 		break;
@@ -616,6 +638,10 @@ mis4001_find_best_fit(struct v4l2_subdev_format *fmt)
 		if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
 			cur_best_fit_dist = dist;
 			cur_best_fit = i;
+		} else if (dist == cur_best_fit_dist &&
+			   framefmt->code == supported_modes[i].bus_fmt) {
+			cur_best_fit = i;
+			break;
 		}
 	}
 
@@ -696,11 +722,9 @@ static int mis4001_enum_mbus_code(struct v4l2_subdev *sd,
 				  struct v4l2_subdev_pad_config *cfg,
 				  struct v4l2_subdev_mbus_code_enum *code)
 {
-	struct mis4001 *mis4001 = to_mis4001(sd);
-
-	if (code->index != 0)
+	if (code->index >= ARRAY_SIZE(bus_code))
 		return -EINVAL;
-	code->code = mis4001->cur_mode->bus_fmt;
+	code->code = bus_code[code->index];
 
 	return 0;
 }
@@ -754,6 +778,69 @@ static int mis4001_g_frame_interval(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static const struct mis4001_mode *mis4001_find_mode(struct mis4001 *mis4001, int fps)
+{
+	const struct mis4001_mode *mode = NULL;
+	const struct mis4001_mode *match = NULL;
+	int cur_fps = 0;
+	int i = 0;
+
+	for (i = 0; i < ARRAY_SIZE(supported_modes); i++) {
+		mode = &supported_modes[i];
+		if (mode->width == mis4001->cur_mode->width &&
+		    mode->height == mis4001->cur_mode->height &&
+		    mode->hdr_mode == mis4001->cur_mode->hdr_mode &&
+		    mode->bus_fmt == mis4001->cur_mode->bus_fmt) {
+			cur_fps = DIV_ROUND_CLOSEST(mode->max_fps.denominator, mode->max_fps.numerator);
+			if (cur_fps == fps) {
+				match = mode;
+				break;
+			}
+		}
+	}
+	return match;
+}
+
+static int mis4001_s_frame_interval(struct v4l2_subdev *sd,
+				   struct v4l2_subdev_frame_interval *fi)
+{
+	struct mis4001 *mis4001 = to_mis4001(sd);
+	const struct mis4001_mode *mode = NULL;
+	struct v4l2_fract *fract = &fi->interval;
+	s64 h_blank, vblank_def;
+	int fps;
+
+	if (mis4001->streaming)
+		return -EBUSY;
+
+	if (fi->pad != 0)
+		return -EINVAL;
+
+	if (fract->numerator == 0) {
+		v4l2_err(sd, "error param, check interval param\n");
+		return -EINVAL;
+	}
+	fps = DIV_ROUND_CLOSEST(fract->denominator, fract->numerator);
+	mode = mis4001_find_mode(mis4001, fps);
+	if (mode == NULL) {
+		v4l2_err(sd, "couldn't match fi\n");
+		return -EINVAL;
+	}
+
+	mis4001->cur_mode = mode;
+
+	h_blank = mode->hts_def - mode->width;
+	__v4l2_ctrl_modify_range(mis4001->hblank, h_blank,
+				 h_blank, 1, h_blank);
+	vblank_def = mode->vts_def - mode->height;
+	__v4l2_ctrl_modify_range(mis4001->vblank, vblank_def,
+				 MIS4001_VTS_MAX - mode->height,
+				 1, vblank_def);
+	mis4001->cur_fps = mode->max_fps;
+
+	return 0;
+}
+
 static int mis4001_g_mbus_config(struct v4l2_subdev *sd,
 				unsigned int pad_id,
 				struct v4l2_mbus_config *config)
@@ -792,6 +879,10 @@ static long mis4001_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	u32 i, h, w;
 	long ret = 0;
 	u32 stream = 0;
+	u64 sleep_time = 0;
+	int cur_best_fit = -1;
+	int cur_best_fit_dist = -1;
+	int cur_dist, cur_fps, dst_fps;
 
 	switch (cmd) {
 	case RKMODULE_GET_MODULE_INFO:
@@ -804,22 +895,36 @@ static long mis4001_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		break;
 	case RKMODULE_SET_HDR_CFG:
 		hdr = (struct rkmodule_hdr_cfg *)arg;
+		if (hdr->hdr_mode == mis4001->cur_mode->hdr_mode)
+			return 0;
 		w = mis4001->cur_mode->width;
 		h = mis4001->cur_mode->height;
+		dst_fps = DIV_ROUND_CLOSEST(mis4001->cur_mode->max_fps.denominator,
+			mis4001->cur_mode->max_fps.numerator);
 		for (i = 0; i < ARRAY_SIZE(supported_modes); i++) {
 			if (w == supported_modes[i].width &&
 			    h == supported_modes[i].height &&
-			    supported_modes[i].hdr_mode == hdr->hdr_mode) {
-				mis4001->cur_mode = &supported_modes[i];
-				break;
+			    supported_modes[i].hdr_mode == hdr->hdr_mode &&
+			    supported_modes[i].bus_fmt == mis4001->cur_mode->bus_fmt) {
+				cur_fps = DIV_ROUND_CLOSEST(supported_modes[i].max_fps.denominator,
+					supported_modes[i].max_fps.numerator);
+				cur_dist = abs(cur_fps - dst_fps);
+				if (cur_best_fit_dist == -1 || cur_dist < cur_best_fit_dist) {
+					cur_best_fit_dist = cur_dist;
+					cur_best_fit = i;
+				} else if (cur_dist == cur_best_fit_dist) {
+					cur_best_fit = i;
+					break;
+				}
 			}
 		}
-		if (i == ARRAY_SIZE(supported_modes)) {
+		if (cur_best_fit == -1) {
 			dev_err(&mis4001->client->dev,
 				"not find hdr mode:%d %dx%d config\n",
 				hdr->hdr_mode, w, h);
 			ret = -EINVAL;
 		} else {
+			mis4001->cur_mode = &supported_modes[cur_best_fit];
 			w = mis4001->cur_mode->hts_def - mis4001->cur_mode->width;
 			h = mis4001->cur_mode->vts_def - mis4001->cur_mode->height;
 			__v4l2_ctrl_modify_range(mis4001->hblank, w, w, 1, w);
@@ -831,12 +936,17 @@ static long mis4001_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 
 		stream = *((u32 *)arg);
 
-		if (stream)
+		if (stream) {
 			ret = mis4001_write_reg(mis4001->client, MIS4001_REG_CTRL_MODE,
 				 MIS4001_REG_VALUE_08BIT, MIS4001_MODE_STREAMING);
-		else
+		} else {
 			ret = mis4001_write_reg(mis4001->client, MIS4001_REG_CTRL_MODE,
-				 MIS4001_REG_VALUE_08BIT, MIS4001_MODE_SW_STANDBY);
+				 MIS4001_REG_VALUE_08BIT, MIS4001_MODE_SW_STANDBY);//only stop mipi
+			sleep_time = mis4001->cur_mode->max_fps.denominator / mis4001->cur_mode->max_fps.numerator *
+				     mis4001->cur_mode->vts_def / mis4001->cur_vts;
+			sleep_time = div_u64(1000000, sleep_time);
+			usleep_range(sleep_time, sleep_time + 1000);
+		}
 		break;
 	default:
 		ret = -ENOIOCTLCMD;
@@ -949,8 +1059,12 @@ static int __mis4001_start_stream(struct mis4001 *mis4001)
 
 static int __mis4001_stop_stream(struct mis4001 *mis4001)
 {
-	return mis4001_write_reg(mis4001->client, MIS4001_REG_CTRL_MODE,
-				 MIS4001_REG_VALUE_08BIT, MIS4001_MODE_SW_STANDBY);
+	int ret = 0;
+
+	ret = mis4001_write_reg(mis4001->client, MIS4001_REG_CTRL_MODE,
+				 MIS4001_REG_VALUE_08BIT, MIS4001_MODE_SW_RESET);
+	usleep_range(1000, 1100);
+	return ret;
 }
 
 static int mis4001_s_stream(struct v4l2_subdev *sd, int on)
@@ -1187,6 +1301,7 @@ static const struct v4l2_subdev_core_ops mis4001_core_ops = {
 static const struct v4l2_subdev_video_ops mis4001_video_ops = {
 	.s_stream = mis4001_s_stream,
 	.g_frame_interval = mis4001_g_frame_interval,
+	.s_frame_interval = mis4001_s_frame_interval,
 };
 
 static const struct v4l2_subdev_pad_ops mis4001_pad_ops = {
@@ -1303,6 +1418,7 @@ static int mis4001_set_ctrl(struct v4l2_ctrl *ctrl)
 					 MIS4001_REG_CTRL_MODE,
 					 MIS4001_REG_VALUE_08BIT,
 					 0x00);
+		usleep_range(sleep_time, sleep_time + 1000);
 		if (mis4001->cur_vts != mis4001->cur_mode->vts_def)
 			mis4001_modify_fps_info(mis4001);
 		break;

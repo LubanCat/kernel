@@ -314,18 +314,21 @@
 	rkisp_vir1: rkisp-vir1 {
 		compatible = "rockchip,rkisp-vir";
 		rockchip,hw = <&rkisp>;
+		dvbm = <&rkdvbm>;
 		status = "disabled";
 	};
 
 	rkisp_vir2: rkisp-vir2 {
 		compatible = "rockchip,rkisp-vir";
 		rockchip,hw = <&rkisp>;
+		dvbm = <&rkdvbm>;
 		status = "disabled";
 	};
 
 	rkisp_vir3: rkisp-vir3 {
 		compatible = "rockchip,rkisp-vir";
 		rockchip,hw = <&rkisp>;
+		dvbm = <&rkdvbm>;
 		status = "disabled";
 	};
 
@@ -750,9 +753,8 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 		clocks = <&cru CLK_USER_OTPC_NS>, <&cru CLK_SBPI_OTPC_NS>,
-			 <&cru PCLK_OTPC_NS>, <&cru PCLK_OTP_MASK>,
-			 <&cru CLK_OTPC_ARB>, <&cru CLK_PMC_OTP>;
-		clock-names = "usr", "sbpi", "apb", "phy", "arb", "pmc";
+			 <&cru PCLK_OTPC_NS>, <&cru PCLK_OTP_MASK>;
+		clock-names = "usr", "sbpi", "apb", "phy";
 		resets = <&cru SRST_USER_OTPC_NS>, <&cru SRST_SBPI_OTPC_NS>,
 			 <&cru SRST_P_OTPC_NS>, <&cru SRST_P_OTP_MASK>,
 			 <&cru SRST_OTPC_ARB>, <&cru SRST_PMC_OTP>;
@@ -1141,10 +1143,10 @@
 		#size-cells = <1>;
 		ranges = <0 0xff6c0000 0x40000>;
 		rkisp_sram: rkisp-sram@0 {
-			reg = <0x0 0x3f000>;
+			reg = <0x0 0x3e000>;
 		};
-		hpmcu_sram: hpmcu-sram@3f000 {
-			reg = <0x3f000 0x1000>;
+		hpmcu_sram: hpmcu-sram@3e000 {
+			reg = <0x3e000 0x2000>;
 		};
 	};
 
@@ -1359,6 +1361,7 @@
 				nvmem-cells = <&macphy_txlevel>;
 				nvmem-cell-names = "txlevel";
 				bgs,increment = <2>;
+				rockchip,thermal-zone = "soc-thermal";
 			};
 		};
 
@@ -1414,8 +1417,6 @@
 		interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>;
 		clocks = <&cru SCLK_SFC>, <&cru HCLK_SFC>;
 		clock-names = "clk_sfc", "hclk_sfc";
-		assigned-clocks = <&cru SCLK_SFC>;
-		assigned-clock-rates = <75000000>;
 		#address-cells = <1>;
 		#size-cells = <0>;
 		status = "disabled";

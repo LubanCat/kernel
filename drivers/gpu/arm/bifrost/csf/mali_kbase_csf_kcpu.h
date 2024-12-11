@@ -25,11 +25,7 @@
 #include <mali_kbase_fence.h>
 #include <mali_kbase_sync.h>
 
-#if (KERNEL_VERSION(4, 10, 0) > LINUX_VERSION_CODE)
-#include <linux/fence.h>
-#else
-#include <linux/dma-fence.h>
-#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) */
+#include <linux/version_compat_defs.h>
 
 /* The maximum number of KCPU commands in flight, enqueueing more commands
  * than this value shall block.
@@ -53,16 +49,13 @@ struct kbase_kcpu_command_import_info {
  * @fence_cb:      Fence callback
  * @fence:         Fence
  * @kcpu_queue:    kcpu command queue
+ * @fence_has_force_signaled:	fence has forced signaled after fence timeouted
  */
 struct kbase_kcpu_command_fence_info {
-#if (KERNEL_VERSION(4, 10, 0) > LINUX_VERSION_CODE)
-	struct fence_cb fence_cb;
-	struct fence *fence;
-#else
 	struct dma_fence_cb fence_cb;
 	struct dma_fence *fence;
-#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) */
 	struct kbase_kcpu_command_queue *kcpu_queue;
+	bool fence_has_force_signaled;
 };
 
 /**
@@ -181,7 +174,7 @@ struct kbase_kcpu_command_jit_free_info {
 struct kbase_suspend_copy_buffer {
 	size_t size;
 	struct page **pages;
-	int nr_pages;
+	unsigned int nr_pages;
 	size_t offset;
 	struct kbase_mem_phy_alloc *cpu_alloc;
 };
@@ -247,11 +240,25 @@ struct kbase_kcpu_command {
  * @kctx:			The context to which this command queue belongs.
  * @commands:			Array of commands which have been successfully
  *				enqueued to this command queue.
- * @wq:				Dedicated workqueue for processing commands.
  * @work:			struct work_struct which contains a pointer to
  *				the function which handles processing of kcpu
  *				commands enqueued into a kcpu command queue;
- *				part of kernel API for processing workqueues
+ *				part of kernel API for processing workqueues.
+ *				This would be used if the context is not
+ *				prioritised, otherwise it would be handled by
+ *				kbase_csf_scheduler_kthread().
+ * @high_prio_work:		A counterpart to @work, this queue would be
+ *				added to a list to be processed by
+ *				kbase_csf_scheduler_kthread() if it is
+ *				prioritised.
+ * @pending_kick:		Indicates that kbase_csf_scheduler_kthread()
+ *				should re-evaluate pending commands for this
+ *				queue. This would be set to false when the work
+ *				is done. This is used mainly for
+ *				synchronisation with queue termination.
+ * @timeout_work:		struct work_struct which contains a pointer to the
+ *				function which handles post-timeout actions
+ *				queue when a fence signal timeout occurs.
  * @start_offset:		Index of the command to be executed next
  * @id:				KCPU command queue ID.
  * @num_pending_cmds:		The number of commands enqueued but not yet
@@ -283,13 +290,18 @@ struct kbase_kcpu_command {
  * @fence_timeout:		Timer used to detect the fence wait timeout.
  * @metadata:                   Metadata structure containing basic information about
  *                              this queue for any fence objects associated with this queue.
+ * @fence_signal_timeout:	Timer used for detect a fence signal command has
+ *				been blocked for too long.
+ * @fence_signal_pending_cnt:	Enqueued fence signal commands in the queue.
  */
 struct kbase_kcpu_command_queue {
 	struct mutex lock;
 	struct kbase_context *kctx;
 	struct kbase_kcpu_command commands[KBASEP_KCPU_QUEUE_SIZE];
-	struct workqueue_struct *wq;
 	struct work_struct work;
+	struct list_head high_prio_work;
+	atomic_t pending_kick;
+	struct work_struct timeout_work;
 	u8 start_offset;
 	u8 id;
 	u16 num_pending_cmds;
@@ -301,12 +313,12 @@ struct kbase_kcpu_command_queue {
 	bool command_started;
 	struct list_head jit_blocked;
 	bool has_error;
-#ifdef CONFIG_MALI_BIFROST_FENCE_DEBUG
 	struct timer_list fence_timeout;
-#endif /* CONFIG_MALI_BIFROST_FENCE_DEBUG */
 #if IS_ENABLED(CONFIG_SYNC_FILE)
 	struct kbase_kcpu_dma_fence_meta *metadata;
 #endif /* CONFIG_SYNC_FILE */
+	struct timer_list fence_signal_timeout;
+	atomic_t fence_signal_pending_cnt;
 };
 
 /**
@@ -319,8 +331,7 @@ struct kbase_kcpu_command_queue {
  *
  * Return: 0 if successful or a negative error code on failure.
  */
-int kbase_csf_kcpu_queue_new(struct kbase_context *kctx,
-			 struct kbase_ioctl_kcpu_queue_new *newq);
+int kbase_csf_kcpu_queue_new(struct kbase_context *kctx, struct kbase_ioctl_kcpu_queue_new *newq);
 
 /**
  * kbase_csf_kcpu_queue_delete - Delete KCPU command queue.
@@ -333,7 +344,19 @@ int kbase_csf_kcpu_queue_new(struct kbase_context *kctx,
  * Return: 0 if successful or a negative error code on failure.
  */
 int kbase_csf_kcpu_queue_delete(struct kbase_context *kctx,
-			    struct kbase_ioctl_kcpu_queue_delete *del);
+				struct kbase_ioctl_kcpu_queue_delete *del);
+
+/**
+ * kbase_csf_kcpu_queue_process - Proces pending KCPU queue commands
+ *
+ * @queue:		The queue to process pending commands for
+ * @drain_queue:	Whether to skip all blocking commands in the queue.
+ *			This is expected to be set to true on queue
+ *			termination.
+ *
+ * Return: 0 if successful or a negative error code on failure.
+ */
+void kbase_csf_kcpu_queue_process(struct kbase_kcpu_command_queue *queue, bool drain_queue);
 
 /**
  * kbase_csf_kcpu_queue_enqueue - Enqueue a KCPU command into a KCPU command
@@ -355,6 +378,8 @@ int kbase_csf_kcpu_queue_enqueue(struct kbase_context *kctx,
  *                                     for a GPU address space
  *
  * @kctx: Pointer to the kbase context being initialized.
+ *
+ * This function must be called only when a kbase context is instantiated.
  *
  * Return: 0 if successful or a negative error code on failure.
  */
@@ -381,4 +406,32 @@ int kbase_kcpu_fence_signal_init(struct kbase_kcpu_command_queue *kcpu_queue,
 				 struct base_fence *fence, struct sync_file **sync_file, int *fd);
 #endif /* CONFIG_SYNC_FILE */
 
+/*
+ * kbase_csf_kcpu_queue_halt_timers - Halt the KCPU fence timers associated with
+ *                                    the kbase device.
+ *
+ * @kbdev: Kbase device
+ *
+ * Note that this function assumes that the caller has ensured that the
+ * kbase_device::kctx_list does not get updated during this function's runtime.
+ * At the moment, the function is only safe to call during system suspend, when
+ * the device PM active count has reached zero.
+ *
+ * Return: 0 on success, negative value otherwise.
+ */
+int kbase_csf_kcpu_queue_halt_timers(struct kbase_device *kbdev);
+
+/*
+ * kbase_csf_kcpu_queue_resume_timers - Resume the KCPU fence timers associated
+ *                                      with the kbase device.
+ *
+ * @kbdev: Kbase device
+ *
+ * Note that this function assumes that the caller has ensured that the
+ * kbase_device::kctx_list does not get updated during this function's runtime.
+ * At the moment, the function is only safe to call during system resume.
+ */
+void kbase_csf_kcpu_queue_resume_timers(struct kbase_device *kbdev);
+
+bool kbase_kcpu_command_fence_has_force_signaled(struct kbase_kcpu_command_fence_info *fence_info);
 #endif /* _KBASE_CSF_KCPU_H_ */

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
- * (C) COPYRIGHT 2018, 2020-2022 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2018-2024 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -79,6 +79,18 @@ typedef int kbase_hwcnt_backend_init_fn(const struct kbase_hwcnt_backend_info *i
 typedef void kbase_hwcnt_backend_term_fn(struct kbase_hwcnt_backend *backend);
 
 /**
+ * typedef kbase_hwcnt_backend_acquire_fn - Enable counter collection.
+ * @backend: Non-NULL pointer to backend interface.
+ */
+typedef void kbase_hwcnt_backend_acquire_fn(const struct kbase_hwcnt_backend *backend);
+
+/**
+ * typedef kbase_hwcnt_backend_release_fn - Disable counter collection.
+ * @backend: Non-NULL pointer to backend interface.
+ */
+typedef void kbase_hwcnt_backend_release_fn(const struct kbase_hwcnt_backend *backend);
+
+/**
  * typedef kbase_hwcnt_backend_timestamp_ns_fn - Get the current backend
  *                                               timestamp.
  * @backend: Non-NULL pointer to backend.
@@ -123,11 +135,21 @@ kbase_hwcnt_backend_dump_enable_nolock_fn(struct kbase_hwcnt_backend *backend,
  * typedef kbase_hwcnt_backend_dump_disable_fn - Disable counter dumping with
  *                                               the backend.
  * @backend: Non-NULL pointer to backend.
+ * @dump_buffer: Pointer to an accumulated dump buffer to update or NULL.
+ * @enable_map: Pointer to enable map specifying enabled counters. Must be NULL if no @dump_buffer
  *
  * If the backend is already disabled, does nothing.
- * Any undumped counter values since the last dump get will be lost.
+ *
+ * Any undumped counter values since the last dump get will be lost. However, Undumped block state
+ * can be retained by the backend.
+ *
+ * @dump_buffer and @enable_map gives the backend an opportunity to update an existing accumulated
+ * buffer with state information, and for the caller take ownership of it. In particular, the
+ * caller can use this when they require such information whilst the counter dumps are disabled.
  */
-typedef void kbase_hwcnt_backend_dump_disable_fn(struct kbase_hwcnt_backend *backend);
+typedef void kbase_hwcnt_backend_dump_disable_fn(struct kbase_hwcnt_backend *backend,
+						 struct kbase_hwcnt_dump_buffer *dump_buffer,
+						 const struct kbase_hwcnt_enable_map *enable_map);
 
 /**
  * typedef kbase_hwcnt_backend_dump_clear_fn - Reset all the current undumped
@@ -196,6 +218,10 @@ typedef int kbase_hwcnt_backend_dump_get_fn(struct kbase_hwcnt_backend *backend,
  *                      metadata.
  * @init:               Function ptr to initialise an instance of the backend.
  * @term:               Function ptr to terminate an instance of the backend.
+ * @acquire:            Callback to indicate that counter collection has
+ *                      been enabled.
+ * @release:            Callback to indicate that counter collection has
+ *                      been disabled.
  * @timestamp_ns:       Function ptr to get the current backend timestamp.
  * @dump_enable:        Function ptr to enable dumping.
  * @dump_enable_nolock: Function ptr to enable dumping while the
@@ -212,6 +238,8 @@ struct kbase_hwcnt_backend_interface {
 	kbase_hwcnt_backend_metadata_fn *metadata;
 	kbase_hwcnt_backend_init_fn *init;
 	kbase_hwcnt_backend_term_fn *term;
+	kbase_hwcnt_backend_acquire_fn *acquire;
+	kbase_hwcnt_backend_release_fn *release;
 	kbase_hwcnt_backend_timestamp_ns_fn *timestamp_ns;
 	kbase_hwcnt_backend_dump_enable_fn *dump_enable;
 	kbase_hwcnt_backend_dump_enable_nolock_fn *dump_enable_nolock;

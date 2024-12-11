@@ -5,9 +5,14 @@
  * Copyright (C) 2023 Rockchip Electronics Co., Ltd.
  *
  * V0.0X01.0X01 first version
+ * V0.0X01.0X02 support sleep/wake_up aov mode
+ * V0.0X01.0X03 support hw standby mode in aov
+ * V0.0X01.0X04 modify hw standby resume way
+ * V0.0X01.0X05 fixed pm_runtime issue in aov
+ * V0.0X01.0X06 add support for light control
  */
 
-//#define DEBUG
+#define DEBUG
 #include <linux/clk.h>
 #include <linux/device.h>
 #include <linux/delay.h>
@@ -27,8 +32,11 @@
 #include <media/v4l2-subdev.h>
 #include <linux/pinctrl/consumer.h>
 #include "../platform/rockchip/isp/rkisp_tb_helper.h"
+#include "cam-tb-setup.h"
+#include "cam-sleep-wakeup.h"
+#include "light_ctl.h"
 
-#define DRIVER_VERSION			KERNEL_VERSION(0, 0x01, 0x01)
+#define DRIVER_VERSION			KERNEL_VERSION(0, 0x01, 0x06)
 
 #ifndef V4L2_CID_DIGITAL_GAIN
 #define V4L2_CID_DIGITAL_GAIN		V4L2_CID_GAIN
@@ -49,6 +57,14 @@
 #define SC4336P_MODE_SW_STANDBY		0x0
 #define SC4336P_MODE_STREAMING		BIT(0)
 
+#define SC4336P_REG_MIPI_CLK_CTRL	0x3018
+#define SC4336P_MIPI_CLK_ON		0x3a
+#define SC4336P_MIPI_CLK_OFF		0x3f
+
+#define SC4336P_REG_MIPI_GATE_CTRL	0x3019
+#define SC4336P_MIPI_GATE_ON		0x00
+#define SC4336P_MIPI_GATE_OFF		0xff
+
 #define SC4336P_REG_EXPOSURE_H		0x3e00
 #define SC4336P_REG_EXPOSURE_M		0x3e01
 #define SC4336P_REG_EXPOSURE_L		0x3e02
@@ -59,17 +75,17 @@
 #define SC4336P_REG_DIG_GAIN		0x3e06
 #define SC4336P_REG_DIG_FINE_GAIN	0x3e07
 #define SC4336P_REG_ANA_GAIN		0x3e09
-#define SC4336P_GAIN_MIN			0x0020
-#define SC4336P_GAIN_MAX			(16128)    //32 * 15.75 * 32
+#define SC4336P_GAIN_MIN		0x0020
+#define SC4336P_GAIN_MAX		(16128)    //32 * 15.75 * 32
 #define SC4336P_GAIN_STEP		1
 #define SC4336P_GAIN_DEFAULT		0x20
 
 
 #define SC4336P_REG_GROUP_HOLD		0x3812
-#define SC4336P_GROUP_HOLD_START		0x00
+#define SC4336P_GROUP_HOLD_START	0x00
 #define SC4336P_GROUP_HOLD_END		0x30
 
-#define SC4336P_REG_TEST_PATTERN		0x4501
+#define SC4336P_REG_TEST_PATTERN	0x4501
 #define SC4336P_TEST_PATTERN_BIT_MASK	BIT(3)
 
 #define SC4336P_REG_VTS_H		0x320e
@@ -77,9 +93,9 @@
 
 #define SC4336P_FLIP_MIRROR_REG		0x3221
 
-#define SC4336P_FETCH_EXP_H(VAL)		(((VAL) >> 12) & 0xF)
-#define SC4336P_FETCH_EXP_M(VAL)		(((VAL) >> 4) & 0xFF)
-#define SC4336P_FETCH_EXP_L(VAL)		(((VAL) & 0xF) << 4)
+#define SC4336P_FETCH_EXP_H(VAL)	(((VAL) >> 12) & 0xF)
+#define SC4336P_FETCH_EXP_M(VAL)	(((VAL) >> 4) & 0xFF)
+#define SC4336P_FETCH_EXP_L(VAL)	(((VAL) & 0xF) << 4)
 
 #define SC4336P_FETCH_AGAIN_H(VAL)	(((VAL) >> 8) & 0x03)
 #define SC4336P_FETCH_AGAIN_L(VAL)	((VAL) & 0xFF)
@@ -153,9 +169,14 @@ struct sc4336p {
 	const char		*module_facing;
 	const char		*module_name;
 	const char		*len_name;
+	u32			standby_hw;
 	u32			cur_vts;
 	bool			is_thunderboot;
 	bool			is_first_streamoff;
+	bool			is_standby;
+	bool			enable_light_ctl;
+	struct cam_sw_info	*cam_sw_info;
+	struct rk_light_param	light_param;
 };
 
 #define to_sc4336p(sd) container_of(sd, struct sc4336p, subdev)
@@ -362,6 +383,10 @@ static const struct sc4336p_mode supported_modes[] = {
 	}
 };
 
+static const u32 bus_code[] = {
+	MEDIA_BUS_FMT_SBGGR10_1X10,
+};
+
 static const s64 link_freq_menu_items[] = {
 	SC4336P_LINK_FREQ_315
 };
@@ -542,6 +567,10 @@ sc4336p_find_best_fit(struct v4l2_subdev_format *fmt)
 		if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
 			cur_best_fit_dist = dist;
 			cur_best_fit = i;
+		} else if (dist == cur_best_fit_dist &&
+			   framefmt->code == supported_modes[i].bus_fmt) {
+			cur_best_fit = i;
+			break;
 		}
 	}
 
@@ -622,11 +651,9 @@ static int sc4336p_enum_mbus_code(struct v4l2_subdev *sd,
 				  struct v4l2_subdev_pad_config *cfg,
 				  struct v4l2_subdev_mbus_code_enum *code)
 {
-	struct sc4336p *sc4336p = to_sc4336p(sd);
-
-	if (code->index != 0)
+	if (code->index >= ARRAY_SIZE(bus_code))
 		return -EINVAL;
-	code->code = sc4336p->cur_mode->bus_fmt;
+	code->code = bus_code[code->index];
 
 	return 0;
 }
@@ -680,6 +707,69 @@ static int sc4336p_g_frame_interval(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static const struct sc4336p_mode *sc4336p_find_mode(struct sc4336p *sc4336p, int fps)
+{
+	const struct sc4336p_mode *mode = NULL;
+	const struct sc4336p_mode *match = NULL;
+	int cur_fps = 0;
+	int i = 0;
+
+	for (i = 0; i < ARRAY_SIZE(supported_modes); i++) {
+		mode = &supported_modes[i];
+		if (mode->width == sc4336p->cur_mode->width &&
+		    mode->height == sc4336p->cur_mode->height &&
+		    mode->hdr_mode == sc4336p->cur_mode->hdr_mode &&
+		    mode->bus_fmt == sc4336p->cur_mode->bus_fmt) {
+			cur_fps = DIV_ROUND_CLOSEST(mode->max_fps.denominator, mode->max_fps.numerator);
+			if (cur_fps == fps) {
+				match = mode;
+				break;
+			}
+		}
+	}
+	return match;
+}
+
+static int sc4336p_s_frame_interval(struct v4l2_subdev *sd,
+				   struct v4l2_subdev_frame_interval *fi)
+{
+	struct sc4336p *sc4336p = to_sc4336p(sd);
+	const struct sc4336p_mode *mode = NULL;
+	struct v4l2_fract *fract = &fi->interval;
+	s64 h_blank, vblank_def;
+	int fps;
+
+	if (sc4336p->streaming)
+		return -EBUSY;
+
+	if (fi->pad != 0)
+		return -EINVAL;
+
+	if (fract->numerator == 0) {
+		v4l2_err(sd, "error param, check interval param\n");
+		return -EINVAL;
+	}
+	fps = DIV_ROUND_CLOSEST(fract->denominator, fract->numerator);
+	mode = sc4336p_find_mode(sc4336p, fps);
+	if (mode == NULL) {
+		v4l2_err(sd, "couldn't match fi\n");
+		return -EINVAL;
+	}
+
+	sc4336p->cur_mode = mode;
+
+	h_blank = mode->hts_def - mode->width;
+	__v4l2_ctrl_modify_range(sc4336p->hblank, h_blank,
+				 h_blank, 1, h_blank);
+	vblank_def = mode->vts_def - mode->height;
+	__v4l2_ctrl_modify_range(sc4336p->vblank, vblank_def,
+				 SC4336P_VTS_MAX - mode->height,
+				 1, vblank_def);
+	sc4336p->cur_fps = mode->max_fps;
+
+	return 0;
+}
+
 static int sc4336p_g_mbus_config(struct v4l2_subdev *sd,
 				unsigned int pad_id,
 				struct v4l2_mbus_config *config)
@@ -718,6 +808,10 @@ static long sc4336p_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	u32 i, h, w;
 	long ret = 0;
 	u32 stream = 0;
+	int cur_best_fit = -1;
+	int cur_best_fit_dist = -1;
+	int cur_dist, cur_fps, dst_fps;
+	struct rk_light_param *light_param;
 
 	switch (cmd) {
 	case RKMODULE_GET_MODULE_INFO:
@@ -730,22 +824,35 @@ static long sc4336p_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		break;
 	case RKMODULE_SET_HDR_CFG:
 		hdr = (struct rkmodule_hdr_cfg *)arg;
+		if (hdr->hdr_mode == sc4336p->cur_mode->hdr_mode)
+			return 0;
 		w = sc4336p->cur_mode->width;
 		h = sc4336p->cur_mode->height;
+		dst_fps = DIV_ROUND_CLOSEST(sc4336p->cur_mode->max_fps.denominator,
+			sc4336p->cur_mode->max_fps.numerator);
 		for (i = 0; i < ARRAY_SIZE(supported_modes); i++) {
 			if (w == supported_modes[i].width &&
 			    h == supported_modes[i].height &&
 			    supported_modes[i].hdr_mode == hdr->hdr_mode) {
-				sc4336p->cur_mode = &supported_modes[i];
-				break;
+				cur_fps = DIV_ROUND_CLOSEST(supported_modes[i].max_fps.denominator,
+					supported_modes[i].max_fps.numerator);
+				cur_dist = abs(cur_fps - dst_fps);
+				if (cur_best_fit_dist == -1 || cur_dist < cur_best_fit_dist) {
+					cur_best_fit_dist = cur_dist;
+					cur_best_fit = i;
+				} else if (cur_dist == cur_best_fit_dist) {
+					cur_best_fit = i;
+					break;
+				}
 			}
 		}
-		if (i == ARRAY_SIZE(supported_modes)) {
+		if (cur_best_fit == -1) {
 			dev_err(&sc4336p->client->dev,
 				"not find hdr mode:%d %dx%d config\n",
 				hdr->hdr_mode, w, h);
 			ret = -EINVAL;
 		} else {
+			sc4336p->cur_mode = &supported_modes[cur_best_fit];
 			w = sc4336p->cur_mode->hts_def - sc4336p->cur_mode->width;
 			h = sc4336p->cur_mode->vts_def - sc4336p->cur_mode->height;
 			__v4l2_ctrl_modify_range(sc4336p->hblank, w, w, 1, w);
@@ -754,17 +861,85 @@ static long sc4336p_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		}
 		break;
 	case PREISP_CMD_SET_HDRAE_EXP:
+		if (sc4336p->cam_sw_info)
+			memcpy(&sc4336p->cam_sw_info->hdr_ae, (struct preisp_hdrae_exp_s *)(arg),
+			       sizeof(struct preisp_hdrae_exp_s));
 		break;
 	case RKMODULE_SET_QUICK_STREAM:
 
 		stream = *((u32 *)arg);
+		if (sc4336p->enable_light_ctl) {
+			sc4336p->light_param.light_enable = stream;
+			light_ctl_write(sc4336p->module_index, &sc4336p->light_param);
+		}
+		if (sc4336p->standby_hw) {	/* hardware standby */
+			if (stream) {
+				if (!IS_ERR(sc4336p->pwdn_gpio))
+					gpiod_set_value_cansleep(sc4336p->pwdn_gpio, 1);
 
-		if (stream)
-			ret = sc4336p_write_reg(sc4336p->client, SC4336P_REG_CTRL_MODE,
-				 SC4336P_REG_VALUE_08BIT, SC4336P_MODE_STREAMING);
-		else
-			ret = sc4336p_write_reg(sc4336p->client, SC4336P_REG_CTRL_MODE,
-				 SC4336P_REG_VALUE_08BIT, SC4336P_MODE_SW_STANDBY);
+				ret = sc4336p_write_reg(sc4336p->client, SC4336P_REG_MIPI_CLK_CTRL,
+					SC4336P_REG_VALUE_08BIT, SC4336P_MIPI_CLK_ON);
+				ret |= sc4336p_write_reg(sc4336p->client, SC4336P_REG_MIPI_GATE_CTRL,
+					SC4336P_REG_VALUE_08BIT, SC4336P_MIPI_GATE_ON);
+
+				#if IS_REACHABLE(CONFIG_VIDEO_CAM_SLEEP_WAKEUP)
+				if (__v4l2_ctrl_handler_setup(&sc4336p->ctrl_handler))
+					dev_err(&sc4336p->client->dev, "__v4l2_ctrl_handler_setup fail!");
+				if (sc4336p->cur_mode->hdr_mode != NO_HDR) {	// hdr mode
+					if (sc4336p->cam_sw_info) {
+						ret = sc4336p_ioctl(&sc4336p->subdev,
+								    PREISP_CMD_SET_HDRAE_EXP,
+								    &sc4336p->cam_sw_info->hdr_ae);
+						if (ret) {
+							dev_err(&sc4336p->client->dev,
+								"init exp fail in hdr mode\n");
+							return ret;
+						}
+					}
+				}
+				#endif
+
+				ret |= sc4336p_write_reg(sc4336p->client, SC4336P_REG_CTRL_MODE,
+					SC4336P_REG_VALUE_08BIT, SC4336P_MODE_STREAMING);
+				dev_info(&sc4336p->client->dev, "quickstream, streaming on: exit hw standby mode\n");
+				sc4336p->is_standby = false;
+
+			} else {
+				ret = sc4336p_write_reg(sc4336p->client, SC4336P_REG_CTRL_MODE,
+					SC4336P_REG_VALUE_08BIT, SC4336P_MODE_SW_STANDBY);
+
+				ret |= sc4336p_write_reg(sc4336p->client, SC4336P_REG_MIPI_CLK_CTRL,
+					SC4336P_REG_VALUE_08BIT, SC4336P_MIPI_CLK_OFF);
+				ret |= sc4336p_write_reg(sc4336p->client, SC4336P_REG_MIPI_GATE_CTRL,
+					SC4336P_REG_VALUE_08BIT, SC4336P_MIPI_GATE_OFF);
+
+				if (!IS_ERR(sc4336p->pwdn_gpio))
+					gpiod_set_value_cansleep(sc4336p->pwdn_gpio, 0);
+				dev_info(&sc4336p->client->dev, "quickstream, streaming off: enter hw standby mode\n");
+					sc4336p->is_standby = true;
+			}
+		} else {	/* software standby */
+			if (stream) {
+				ret = sc4336p_write_reg(sc4336p->client, SC4336P_REG_CTRL_MODE,
+					SC4336P_REG_VALUE_08BIT, SC4336P_MODE_STREAMING);
+				dev_info(&sc4336p->client->dev, "quickstream, streaming on: exit soft standby mode\n");
+			} else {
+				ret = sc4336p_write_reg(sc4336p->client, SC4336P_REG_CTRL_MODE,
+					SC4336P_REG_VALUE_08BIT, SC4336P_MODE_SW_STANDBY);
+				dev_info(&sc4336p->client->dev, "quickstream, streaming off: enter soft standby mode\n");
+			}
+		}
+		break;
+	case RKCIS_CMD_FLASH_LIGHT_CTRL:
+		dev_info(&sc4336p->client->dev, "set flash light param\n");
+		light_param = (struct rk_light_param *)arg;
+		if (light_param->light_enable) {
+			memcpy(&sc4336p->light_param, light_param, sizeof(struct rk_light_param));
+			sc4336p->enable_light_ctl = true;
+		} else {
+			sc4336p->enable_light_ctl = false;
+		}
+		ret = light_ctl_write(sc4336p->module_index, light_param);
 		break;
 	default:
 		ret = -ENOIOCTLCMD;
@@ -782,6 +957,8 @@ static long sc4336p_compat_ioctl32(struct v4l2_subdev *sd,
 	struct rkmodule_inf *inf;
 	struct rkmodule_hdr_cfg *hdr;
 	struct preisp_hdrae_exp_s *hdrae;
+	struct rk_light_param *light_param;
+
 	long ret;
 	u32 stream = 0;
 
@@ -849,6 +1026,19 @@ static long sc4336p_compat_ioctl32(struct v4l2_subdev *sd,
 		else
 			ret = -EFAULT;
 		break;
+	case RKCIS_CMD_FLASH_LIGHT_CTRL:
+		light_param = kzalloc(sizeof(*light_param), GFP_KERNEL);
+		if (!light_param) {
+			ret = -ENOMEM;
+			return ret;
+		}
+		ret = copy_from_user(light_param, up, sizeof(*light_param));
+		if (!ret)
+			ret = sc4336p_ioctl(sd, cmd, light_param);
+		else
+			ret = -EFAULT;
+		kfree(light_param);
+		break;
 	default:
 		ret = -ENOIOCTLCMD;
 		break;
@@ -883,6 +1073,7 @@ static int __sc4336p_stop_stream(struct sc4336p *sc4336p)
 		sc4336p->is_first_streamoff = true;
 		pm_runtime_put(&sc4336p->client->dev);
 	}
+	sc4336p->enable_light_ctl = false;
 	return sc4336p_write_reg(sc4336p->client, SC4336P_REG_CTRL_MODE,
 				 SC4336P_REG_VALUE_08BIT, SC4336P_MODE_SW_STANDBY);
 }
@@ -998,6 +1189,10 @@ static int __sc4336p_power_on(struct sc4336p *sc4336p)
 		dev_err(dev, "Failed to enable xvclk\n");
 		return ret;
 	}
+
+	cam_sw_regulator_bulk_init(sc4336p->cam_sw_info,
+				   SC4336P_NUM_SUPPLIES, sc4336p->supplies);
+
 	if (sc4336p->is_thunderboot)
 		return 0;
 
@@ -1062,6 +1257,53 @@ static void __sc4336p_power_off(struct sc4336p *sc4336p)
 	regulator_bulk_disable(SC4336P_NUM_SUPPLIES, sc4336p->supplies);
 }
 
+
+#if IS_REACHABLE(CONFIG_VIDEO_CAM_SLEEP_WAKEUP)
+static int sc4336p_resume(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+	struct sc4336p *sc4336p = to_sc4336p(sd);
+
+	if (sc4336p->standby_hw) {
+		dev_info(dev, "resume standby!");
+		return 0;
+	} else {
+		cam_sw_prepare_wakeup(sc4336p->cam_sw_info, dev);
+
+		usleep_range(4000, 5000);
+		cam_sw_write_array(sc4336p->cam_sw_info);
+
+		if (__v4l2_ctrl_handler_setup(&sc4336p->ctrl_handler))
+			dev_err(dev, "__v4l2_ctrl_handler_setup fail!");
+	}
+
+	return 0;
+}
+
+static int sc4336p_suspend(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+	struct sc4336p *sc4336p = to_sc4336p(sd);
+
+	if (sc4336p->standby_hw) {
+		dev_info(dev, "suspend standby!");
+		return 0;
+	}
+
+	cam_sw_write_array_cb_init(sc4336p->cam_sw_info, client,
+				   (void *)sc4336p->cur_mode->reg_list,
+				   (sensor_write_array)sc4336p_write_array);
+	cam_sw_prepare_sleep(sc4336p->cam_sw_info);
+
+	return 0;
+}
+#else
+#define sc4336p_resume NULL
+#define sc4336p_suspend NULL
+#endif
+
 static int __maybe_unused sc4336p_runtime_resume(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
@@ -1122,6 +1364,7 @@ static int sc4336p_enum_frame_interval(struct v4l2_subdev *sd,
 static const struct dev_pm_ops sc4336p_pm_ops = {
 	SET_RUNTIME_PM_OPS(sc4336p_runtime_suspend,
 			   sc4336p_runtime_resume, NULL)
+	SET_LATE_SYSTEM_SLEEP_PM_OPS(sc4336p_suspend, sc4336p_resume)
 };
 
 #ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
@@ -1141,6 +1384,7 @@ static const struct v4l2_subdev_core_ops sc4336p_core_ops = {
 static const struct v4l2_subdev_video_ops sc4336p_video_ops = {
 	.s_stream = sc4336p_s_stream,
 	.g_frame_interval = sc4336p_g_frame_interval,
+	.s_frame_interval = sc4336p_s_frame_interval,
 };
 
 static const struct v4l2_subdev_pad_ops sc4336p_pad_ops = {
@@ -1185,6 +1429,11 @@ static int sc4336p_set_ctrl(struct v4l2_ctrl *ctrl)
 					 sc4336p->exposure->step,
 					 sc4336p->exposure->default_value);
 		break;
+	}
+
+	if (sc4336p->standby_hw && sc4336p->is_standby) {
+		dev_dbg(&client->dev, "%s: is_standby = true, will return\n", __func__);
+		return 0;
 	}
 
 	if (!pm_runtime_get_if_in_use(&client->dev))
@@ -1323,6 +1572,7 @@ static int sc4336p_initialize_controls(struct sc4336p *sc4336p)
 	}
 
 	sc4336p->subdev.ctrl_handler = handler;
+	sc4336p->is_standby = false;
 
 	return 0;
 
@@ -1404,6 +1654,11 @@ static int sc4336p_probe(struct i2c_client *client,
 		return -EINVAL;
 	}
 
+	/* Compatible with non-standby mode if this attribute is not configured in dts*/
+	of_property_read_u32(node, RKMODULE_CAMERA_STANDBY_HW,
+			     &sc4336p->standby_hw);
+	dev_info(dev, "sc4336p->standby_hw = %d\n", sc4336p->standby_hw);
+
 	sc4336p->is_thunderboot = IS_ENABLED(CONFIG_VIDEO_ROCKCHIP_THUNDER_BOOT_ISP);
 	sc4336p->client = client;
 	sc4336p->cur_mode = &supported_modes[0];
@@ -1483,6 +1738,13 @@ static int sc4336p_probe(struct i2c_client *client,
 		goto err_power_off;
 #endif
 
+	if (!sc4336p->cam_sw_info) {
+		sc4336p->cam_sw_info = cam_sw_init();
+		cam_sw_clk_init(sc4336p->cam_sw_info, sc4336p->xvclk, SC4336P_XVCLK_FREQ);
+		cam_sw_reset_pin_init(sc4336p->cam_sw_info, sc4336p->reset_gpio, 0);
+		cam_sw_pwdn_pin_init(sc4336p->cam_sw_info, sc4336p->pwdn_gpio, 1);
+	}
+
 	memset(facing, 0, sizeof(facing));
 	if (strcmp(sc4336p->module_facing, "back") == 0)
 		facing[0] = 'b';
@@ -1532,6 +1794,8 @@ static int sc4336p_remove(struct i2c_client *client)
 #endif
 	v4l2_ctrl_handler_free(&sc4336p->ctrl_handler);
 	mutex_destroy(&sc4336p->mutex);
+
+	cam_sw_deinit(sc4336p->cam_sw_info);
 
 	pm_runtime_disable(&client->dev);
 	if (!pm_runtime_status_suspended(&client->dev))

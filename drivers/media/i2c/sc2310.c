@@ -608,6 +608,10 @@ static const struct sc2310_mode supported_modes[] = {
 	},
 };
 
+static const u32 bus_code[] = {
+	MEDIA_BUS_FMT_SBGGR10_1X10,
+};
+
 static const s64 link_freq_items[] = {
 	MIPI_FREQ_186M,
 	MIPI_FREQ_380M,
@@ -715,10 +719,13 @@ sc2310_find_best_fit(struct sc2310 *sc2310, struct v4l2_subdev_format *fmt)
 
 	for (i = 0; i < sc2310->cfg_num; i++) {
 		dist = sc2310_get_reso_dist(&supported_modes[i], framefmt);
-		if ((cur_best_fit_dist == -1 || dist <= cur_best_fit_dist) &&
-			(supported_modes[i].bus_fmt == framefmt->code)) {
+		if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
 			cur_best_fit_dist = dist;
 			cur_best_fit = i;
+		} else if (dist == cur_best_fit_dist &&
+			   framefmt->code == supported_modes[i].bus_fmt) {
+			cur_best_fit = i;
+			break;
 		}
 	}
 
@@ -812,11 +819,9 @@ static int sc2310_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
-	struct sc2310 *sc2310 = to_sc2310(sd);
-
-	if (code->index != 0)
+	if (code->index >= ARRAY_SIZE(bus_code))
 		return -EINVAL;
-	code->code = sc2310->cur_mode->bus_fmt;
+	code->code = bus_code[code->index];
 
 	return 0;
 }
@@ -868,6 +873,73 @@ static int sc2310_g_frame_interval(struct v4l2_subdev *sd,
 	else
 		fi->interval = mode->max_fps;
 
+	return 0;
+}
+
+static const struct sc2310_mode *sc2310_find_mode(struct sc2310 *sc2310, int fps)
+{
+	const struct sc2310_mode *mode = NULL;
+	const struct sc2310_mode *match = NULL;
+	int cur_fps = 0;
+	int i = 0;
+
+	for (i = 0; i < sc2310->cfg_num; i++) {
+		mode = &supported_modes[i];
+		if (mode->width == sc2310->cur_mode->width &&
+		    mode->height == sc2310->cur_mode->height &&
+		    mode->hdr_mode == sc2310->cur_mode->hdr_mode &&
+		    mode->bus_fmt == sc2310->cur_mode->bus_fmt) {
+			cur_fps = DIV_ROUND_CLOSEST(mode->max_fps.denominator, mode->max_fps.numerator);
+			if (cur_fps == fps) {
+				match = mode;
+				break;
+			}
+		}
+	}
+	return match;
+}
+
+static int sc2310_s_frame_interval(struct v4l2_subdev *sd,
+				   struct v4l2_subdev_frame_interval *fi)
+{
+	struct sc2310 *sc2310 = to_sc2310(sd);
+	const struct sc2310_mode *mode = NULL;
+	struct v4l2_fract *fract = &fi->interval;
+	s64 h_blank, vblank_def;
+	u64 pixel_rate = 0;
+	int fps;
+
+	if (sc2310->streaming)
+		return -EBUSY;
+
+	if (fi->pad != 0)
+		return -EINVAL;
+
+	if (fract->numerator == 0) {
+		v4l2_err(sd, "error param, check interval param\n");
+		return -EINVAL;
+	}
+	fps = DIV_ROUND_CLOSEST(fract->denominator, fract->numerator);
+	mode = sc2310_find_mode(sc2310, fps);
+	if (mode == NULL) {
+		v4l2_err(sd, "couldn't match fi\n");
+		return -EINVAL;
+	}
+
+	sc2310->cur_mode = mode;
+
+	h_blank = mode->hts_def - mode->width;
+	__v4l2_ctrl_modify_range(sc2310->hblank, h_blank,
+				 h_blank, 1, h_blank);
+	vblank_def = mode->vts_def - mode->height;
+	__v4l2_ctrl_modify_range(sc2310->vblank, vblank_def,
+				 SC2310_VTS_MAX - mode->height,
+				 1, vblank_def);
+	__v4l2_ctrl_s_ctrl(sc2310->link_freq, mode->mipi_freq_idx);
+	pixel_rate = (u32)link_freq_items[mode->mipi_freq_idx] /
+		mode->bpp * 2 * SC2310_LANES;
+	__v4l2_ctrl_s_ctrl_int64(sc2310->pixel_rate, pixel_rate);
+	sc2310->cur_fps = mode->max_fps;
 	return 0;
 }
 
@@ -1094,6 +1166,9 @@ static long sc2310_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	long ret = 0;
 	u64 pixel_rate = 0;
 	u32 i, h, w, stream;
+	int cur_best_fit = -1;
+	int cur_best_fit_dist = -1;
+	int cur_dist, cur_fps, dst_fps;
 
 	switch (cmd) {
 	case PREISP_CMD_SET_HDRAE_EXP:
@@ -1106,23 +1181,37 @@ static long sc2310_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 			if (ret)
 				return ret;
 		}
+		if (hdr_cfg->hdr_mode == sc2310->cur_mode->hdr_mode)
+			return 0;
 		w = sc2310->cur_mode->width;
 		h = sc2310->cur_mode->height;
+		dst_fps = DIV_ROUND_CLOSEST(sc2310->cur_mode->max_fps.denominator,
+			sc2310->cur_mode->max_fps.numerator);
 		for (i = 0; i < sc2310->cfg_num; i++) {
 			if (w == supported_modes[i].width &&
-			h == supported_modes[i].height &&
-			supported_modes[i].hdr_mode == hdr_cfg->hdr_mode) {
-				sc2310_change_mode(sc2310, &supported_modes[i]);
-				break;
+			    h == supported_modes[i].height &&
+			    supported_modes[i].hdr_mode == hdr_cfg->hdr_mode &&
+			    supported_modes[i].bus_fmt == sc2310->cur_mode->bus_fmt) {
+				cur_fps = DIV_ROUND_CLOSEST(supported_modes[i].max_fps.denominator,
+					supported_modes[i].max_fps.numerator);
+				cur_dist = abs(cur_fps - dst_fps);
+				if (cur_best_fit_dist == -1 || cur_dist < cur_best_fit_dist) {
+					cur_best_fit_dist = cur_dist;
+					cur_best_fit = i;
+				} else if (cur_dist == cur_best_fit_dist) {
+					cur_best_fit = i;
+					break;
+				}
 			}
 		}
 
-		if (i == sc2310->cfg_num) {
+		if (cur_best_fit == -1) {
 			dev_err(&sc2310->client->dev,
 				"not find hdr mode:%d %dx%d config\n",
 				hdr_cfg->hdr_mode, w, h);
 			ret = -EINVAL;
 		} else {
+			sc2310_change_mode(sc2310, &supported_modes[cur_best_fit]);
 			mode = sc2310->cur_mode;
 			w = mode->hts_def - mode->width;
 			h = mode->vts_def - mode->height;
@@ -1553,6 +1642,7 @@ static const struct v4l2_subdev_core_ops sc2310_core_ops = {
 static const struct v4l2_subdev_video_ops sc2310_video_ops = {
 	.s_stream = sc2310_s_stream,
 	.g_frame_interval = sc2310_g_frame_interval,
+	.s_frame_interval = sc2310_s_frame_interval,
 };
 
 static const struct v4l2_subdev_pad_ops sc2310_pad_ops = {

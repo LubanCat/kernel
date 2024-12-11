@@ -172,6 +172,7 @@ config ROCKCHIP_RAMDISK
 
 config ROCKCHIP_SUSPEND_MODE
 	tristate "Rockchip suspend mode config"
+	depends on SUSPEND
 	help
 	  Say Y here if you want to set the suspend mode to the ATF.
 
@@ -228,7 +229,7 @@ config ROCKCHIP_DEBUG
 config ROCKCHIP_MINI_KERNEL
 	bool "Rockchip Mini Kernel support"
 	select NO_GKI
-	default y if CPU_RV1106 || CPU_RV1126
+	default y if CPU_RV1103B || CPU_RV1106 || CPU_RV1126
 	help
 	  Say y here to enable Rockchip mini kernel support.
 	  This option make the kernel size smaller.

@@ -786,10 +786,10 @@ static int rockchip_init_pvtpll_info(struct rockchip_opp_info *info)
 		return -ENOMEM;
 
 	opp_table = dev_pm_opp_get_opp_table(info->dev);
-	if (!opp_table) {
+	if (IS_ERR(opp_table)) {
 		kfree(info->opp_table);
 		info->opp_table = NULL;
-		return -ENOMEM;
+		return PTR_ERR(opp_table);
 	}
 
 	mutex_lock(&opp_table->lock);
@@ -864,7 +864,7 @@ void rockchip_pvtpll_calibrate_opp(struct rockchip_opp_info *info)
 		return;
 
 	opp_table = dev_pm_opp_get_opp_table(info->dev);
-	if (!opp_table)
+	if (IS_ERR(opp_table))
 		return;
 
 	if ((!opp_table->regulators) || IS_ERR(opp_table->clk))
@@ -1012,7 +1012,7 @@ void rockchip_pvtpll_add_length(struct rockchip_opp_info *info)
 		goto out;
 
 	opp_table = dev_pm_opp_get_opp_table(info->dev);
-	if (!opp_table)
+	if (IS_ERR(opp_table))
 		goto out;
 	old_rate = clk_get_rate(opp_table->clk);
 	opp_flag = OPP_ADD_LENGTH | ((margin & OPP_LENGTH_MASK) << OPP_LENGTH_SHIFT);
@@ -1504,7 +1504,7 @@ struct opp_table *rockchip_set_opp_supported_hw(struct device *dev,
 		return NULL;
 
 	opp_table = dev_pm_opp_get_opp_table(dev);
-	if (!opp_table)
+	if (IS_ERR(opp_table))
 		return NULL;
 	if (opp_table->supported_hw) {
 		dev_pm_opp_put_opp_table(opp_table);
@@ -1547,8 +1547,8 @@ static int rockchip_adjust_opp_by_irdrop(struct device *dev,
 	rockchip_get_sel_table(np, "rockchip,board-irdrop", &irdrop_table);
 
 	opp_table = dev_pm_opp_get_opp_table(dev);
-	if (!opp_table) {
-		ret =  -ENOMEM;
+	if (IS_ERR(opp_table)) {
+		ret = PTR_ERR(opp_table);
 		goto out;
 	}
 
@@ -1619,7 +1619,7 @@ static void rockchip_adjust_opp_by_mbist_vmin(struct device *dev,
 		return;
 
 	opp_table = dev_pm_opp_get_opp_table(dev);
-	if (!opp_table)
+	if (IS_ERR(opp_table))
 		return;
 
 	mutex_lock(&opp_table->lock);
@@ -1651,7 +1651,7 @@ static void rockchip_adjust_opp_by_otp(struct device *dev,
 		 opp_info.min_freq, opp_info.max_freq, opp_info.volt);
 
 	opp_table = dev_pm_opp_get_opp_table(dev);
-	if (!opp_table)
+	if (IS_ERR(opp_table))
 		return;
 
 	mutex_lock(&opp_table->lock);

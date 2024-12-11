@@ -627,7 +627,9 @@ struct rk817_battery_device {
 	bool				change; /* Battery status change, report information */
 };
 
+#ifdef CONFIG_PM_SLEEP
 static void rk817_bat_resume_work(struct work_struct *work);
+#endif
 
 static u64 get_boot_sec(void)
 {
@@ -3055,7 +3057,9 @@ static int rk817_battery_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&battery->bat_delay_work, rk817_battery_work);
 	queue_delayed_work(battery->bat_monitor_wq, &battery->bat_delay_work,
 			   msecs_to_jiffies(TIMER_MS_COUNTS * 5));
+#ifdef CONFIG_PM_SLEEP
 	INIT_WORK(&battery->resume_work, rk817_bat_resume_work);
+#endif
 
 	ret = rk817_bat_init_power_supply(battery);
 	if (ret) {
@@ -3087,6 +3091,7 @@ static void rk817_battery_shutdown(struct platform_device *dev)
 {
 }
 
+#ifdef CONFIG_PM_SLEEP
 static time64_t rk817_get_rtc_sec(void)
 {
 	int err;
@@ -3108,7 +3113,6 @@ static time64_t rk817_get_rtc_sec(void)
 	return rtc_tm_to_time64(&tm);
 }
 
-#ifdef CONFIG_PM_SLEEP
 static int  rk817_bat_pm_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);

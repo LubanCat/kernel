@@ -423,6 +423,7 @@ static int rkvdec2_isr(struct mpp_dev *mpp)
 		return IRQ_HANDLED;
 	}
 	mpp_task->hw_cycles = mpp_read(mpp, RKVDEC_PERF_WORKING_CNT);
+	mpp_task->hw_time = mpp_task->hw_cycles / (dec->cycle_clk->real_rate_hz / 1000000);
 	mpp_time_diff_with_hw_time(mpp_task, dec->cycle_clk->real_rate_hz);
 	mpp->cur_task = NULL;
 	task = to_rkvdec2_task(mpp_task);
@@ -713,8 +714,8 @@ static int rkvdec2_devfreq_target(struct device *dev,
 	struct dev_pm_opp *opp;
 	unsigned long target_volt, target_freq;
 	int ret = 0;
-
-	struct rkvdec2_dev *dec = dev_get_drvdata(dev);
+	struct mpp_dev *mpp = dev_get_drvdata(dev);
+	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
 	struct devfreq *devfreq = dec->devfreq;
 	struct devfreq_dev_status *stat = &devfreq->last_status;
 	unsigned long old_clk_rate = stat->current_frequency;
@@ -776,7 +777,8 @@ static int rkvdec2_devfreq_get_dev_status(struct device *dev,
 static int rkvdec2_devfreq_get_cur_freq(struct device *dev,
 					unsigned long *freq)
 {
-	struct rkvdec2_dev *dec = dev_get_drvdata(dev);
+	struct mpp_dev *mpp = dev_get_drvdata(dev);
+	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
 
 	*freq = dec->core_last_rate_hz;
 
@@ -816,13 +818,14 @@ static struct devfreq_governor devfreq_vdec2_ondemand = {
 static unsigned long rkvdec2_get_static_power(struct devfreq *devfreq,
 					      unsigned long voltage)
 {
-	struct rkvdec2_dev *dec = devfreq->data;
+	struct device *dev = devfreq->dev.parent;
+	struct mpp_dev *mpp = dev_get_drvdata(dev);
+	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
 
-	if (!dec->model_data)
+	if (!dec || !dec->model_data)
 		return 0;
-	else
-		return rockchip_ipa_get_static_power(dec->model_data,
-						     voltage);
+
+	return rockchip_ipa_get_static_power(dec->model_data, voltage);
 }
 
 static struct devfreq_cooling_power vdec2_cooling_power_data = {
@@ -1145,19 +1148,21 @@ static int rkvdec2_set_freq(struct mpp_dev *mpp,
 	return 0;
 }
 
-static int rkvdec2_soft_reset(struct mpp_dev *mpp)
+static int rkvdec2_vdpu382_reset(struct mpp_dev *mpp)
 {
 	int ret = 0;
 
 	/*
-	 * for rk3528 and rk3562
-	 * use mmu reset instead of rkvdec soft reset
+	 * only for rk3528 and rk3562
+	 * use mmu reset as soft reset
 	 * rkvdec will reset together when rkvdec_mmu force reset
 	 */
 	ret = rockchip_iommu_force_reset(mpp->dev);
-	if (ret)
-		mpp_err("soft mmu reset fail, ret %d\n", ret);
 	mpp_write(mpp, RKVDEC_REG_INT_EN, 0);
+	if (ret) {
+		mpp_err("soft mmu reset fail, ret %d\n", ret);
+		return rkvdec2_reset(mpp);
+	}
 
 	return ret;
 
@@ -1184,16 +1189,12 @@ static int rkvdec2_sip_reset(struct mpp_dev *mpp)
 int rkvdec2_reset(struct mpp_dev *mpp)
 {
 	struct rkvdec2_dev *dec = to_rkvdec2_dev(mpp);
-	int ret = 0;
 
 	mpp_debug_enter();
 
-	/* safe reset first*/
-	ret = rkvdec2_soft_reset(mpp);
-
 	/* cru reset */
-	if (ret && dec->rst_a && dec->rst_h) {
-		mpp_err("soft reset timeout, use cru reset\n");
+	if (dec->rst_a && dec->rst_h) {
+		mpp_err("cru reset\n");
 		mpp_pmu_idle_request(mpp, true);
 		mpp_safe_reset(dec->rst_niu_a);
 		mpp_safe_reset(dec->rst_niu_h);
@@ -1245,6 +1246,15 @@ static struct mpp_hw_ops rkvdec_rk3588_hw_ops = {
 	.reset = rkvdec2_sip_reset,
 };
 
+static struct mpp_hw_ops rkvdec_vdpu382_hw_ops = {
+	.init = rkvdec2_init,
+	.clk_on = rkvdec2_clk_on,
+	.clk_off = rkvdec2_clk_off,
+	.get_freq = rkvdec2_get_freq,
+	.set_freq = rkvdec2_set_freq,
+	.reset = rkvdec2_vdpu382_reset,
+};
+
 static struct mpp_dev_ops rkvdec_v2_dev_ops = {
 	.alloc_task = rkvdec2_alloc_task,
 	.run = rkvdec2_run,
@@ -1292,7 +1302,7 @@ static const struct mpp_dev_var rkvdec_vdpu382_data = {
 	.device_type = MPP_DEVICE_RKVDEC,
 	.hw_info = &rkvdec_vdpu382_hw_info,
 	.trans_info = rkvdec_v2_trans,
-	.hw_ops = &rkvdec_v2_hw_ops,
+	.hw_ops = &rkvdec_vdpu382_hw_ops,
 	.dev_ops = &rkvdec_v2_dev_ops,
 };
 
@@ -1611,6 +1621,7 @@ static int rkvdec2_probe_default(struct platform_device *pdev)
 	struct rkvdec2_dev *dec = NULL;
 	struct mpp_dev *mpp = NULL;
 	const struct of_device_id *match = NULL;
+	irq_handler_t irq_proc = NULL;
 	int ret = 0;
 
 	dec = devm_kzalloc(dev, sizeof(*dec), GFP_KERNEL);
@@ -1635,20 +1646,18 @@ static int rkvdec2_probe_default(struct platform_device *pdev)
 	rkvdec2_alloc_rcbbuf(pdev, dec);
 	rkvdec2_link_init(pdev, dec);
 
+	irq_proc = mpp_dev_irq;
 	if (dec->link_dec) {
-		ret = devm_request_threaded_irq(dev, mpp->irq,
-						rkvdec2_link_irq_proc, NULL,
-						IRQF_SHARED, dev_name(dev), mpp);
+		irq_proc = rkvdec2_link_irq_proc;
 		mpp->dev_ops->process_task = rkvdec2_link_process_task;
 		mpp->dev_ops->wait_result = rkvdec2_link_wait_result;
 		mpp->dev_ops->task_worker = rkvdec2_link_worker;
 		mpp->dev_ops->deinit = rkvdec2_link_session_deinit;
 		kthread_init_work(&mpp->work, rkvdec2_link_worker);
-	} else {
-		ret = devm_request_threaded_irq(dev, mpp->irq,
-						mpp_dev_irq, mpp_dev_isr_sched,
-						IRQF_SHARED, dev_name(dev), mpp);
 	}
+
+	ret = devm_request_threaded_irq(dev, mpp->irq, irq_proc, NULL,
+					IRQF_SHARED, dev_name(dev), mpp);
 	if (ret) {
 		dev_err(dev, "register interrupter runtime failed\n");
 		return -EINVAL;
@@ -1753,6 +1762,8 @@ static int __maybe_unused rkvdec2_runtime_suspend(struct device *dev)
 
 		if (mpp->hw_ops->clk_off)
 			mpp->hw_ops->clk_off(mpp);
+
+		mpp_dev_load_clear(mpp);
 	}
 
 	return 0;
@@ -1776,7 +1787,6 @@ static int __maybe_unused rkvdec2_runtime_resume(struct device *dev)
 			if (mpp->iommu_info && mpp->iommu_info->got_irq)
 				enable_irq(mpp->iommu_info->irq);
 		}
-
 	}
 
 	return 0;

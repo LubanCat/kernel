@@ -156,6 +156,7 @@ struct gc4653 {
 	const char		*module_name;
 	const char		*len_name;
 	bool			has_init_exp;
+	struct v4l2_fract	cur_fps;
 };
 
 #define to_gc4653(sd) container_of(sd, struct gc4653, subdev)
@@ -387,6 +388,10 @@ static const struct gc4653_mode supported_modes[] = {
 	},
 };
 
+static const u32 bus_code[] = {
+	MEDIA_BUS_FMT_SGRBG10_1X10,
+};
+
 static const s64 link_freq_menu_items[] = {
 	GC4653_LINK_FREQ_LINEAR,
 };
@@ -497,6 +502,10 @@ gc4653_find_best_fit(struct gc4653 *gc4653, struct v4l2_subdev_format *fmt)
 		if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
 			cur_best_fit_dist = dist;
 			cur_best_fit = i;
+		} else if (dist == cur_best_fit_dist &&
+			   framefmt->code == supported_modes[i].bus_fmt) {
+			cur_best_fit = i;
+			break;
 		}
 	}
 
@@ -543,6 +552,7 @@ static int gc4653_set_fmt(struct v4l2_subdev *sd,
 		__v4l2_ctrl_s_ctrl(gc4653->link_freq,
 				   gc4653->cur_link_freq);
 		gc4653->cur_vts = mode->vts_def;
+		gc4653->cur_fps = mode->max_fps;
 	}
 	mutex_unlock(&gc4653->mutex);
 
@@ -579,11 +589,9 @@ static int gc4653_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
-	struct gc4653 *gc4653 = to_gc4653(sd);
-
-	if (code->index != 0)
+	if (code->index >= ARRAY_SIZE(bus_code))
 		return -EINVAL;
-	code->code = gc4653->cur_mode->bus_fmt;
+	code->code = bus_code[code->index];
 
 	return 0;
 }
@@ -668,7 +676,73 @@ static int gc4653_g_frame_interval(struct v4l2_subdev *sd,
 	struct gc4653 *gc4653 = to_gc4653(sd);
 	const struct gc4653_mode *mode = gc4653->cur_mode;
 
-	fi->interval = mode->max_fps;
+	if (gc4653->streaming)
+		fi->interval = gc4653->cur_fps;
+	else
+		fi->interval = mode->max_fps;
+
+	return 0;
+}
+
+static const struct gc4653_mode *gc4653_find_mode(struct gc4653 *gc4653, int fps)
+{
+	const struct gc4653_mode *mode = NULL;
+	const struct gc4653_mode *match = NULL;
+	int cur_fps = 0;
+	int i = 0;
+
+	for (i = 0; i < gc4653->cfg_num; i++) {
+		mode = &supported_modes[i];
+		if (mode->width == gc4653->cur_mode->width &&
+		    mode->height == gc4653->cur_mode->height &&
+		    mode->hdr_mode == gc4653->cur_mode->hdr_mode &&
+		    mode->bus_fmt == gc4653->cur_mode->bus_fmt) {
+			cur_fps = DIV_ROUND_CLOSEST(mode->max_fps.denominator, mode->max_fps.numerator);
+			if (cur_fps == fps) {
+				match = mode;
+				break;
+			}
+		}
+	}
+	return match;
+}
+
+static int gc4653_s_frame_interval(struct v4l2_subdev *sd,
+				   struct v4l2_subdev_frame_interval *fi)
+{
+	struct gc4653 *gc4653 = to_gc4653(sd);
+	const struct gc4653_mode *mode = NULL;
+	struct v4l2_fract *fract = &fi->interval;
+	s64 h_blank, vblank_def;
+	int fps;
+
+	if (gc4653->streaming)
+		return -EBUSY;
+
+	if (fi->pad != 0)
+		return -EINVAL;
+
+	if (fract->numerator == 0) {
+		v4l2_err(sd, "error param, check interval param\n");
+		return -EINVAL;
+	}
+	fps = DIV_ROUND_CLOSEST(fract->denominator, fract->numerator);
+	mode = gc4653_find_mode(gc4653, fps);
+	if (mode == NULL) {
+		v4l2_err(sd, "couldn't match fi\n");
+		return -EINVAL;
+	}
+
+	gc4653->cur_mode = mode;
+
+	h_blank = mode->hts_def - mode->width;
+	__v4l2_ctrl_modify_range(gc4653->hblank, h_blank,
+				 h_blank, 1, h_blank);
+	vblank_def = mode->vts_def - mode->height;
+	__v4l2_ctrl_modify_range(gc4653->vblank, vblank_def,
+				 GC4653_VTS_MAX - mode->height,
+				 1, vblank_def);
+	gc4653->cur_fps = mode->max_fps;
 
 	return 0;
 }
@@ -720,6 +794,9 @@ static long gc4653_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	long ret = 0;
 	u32 stream = 0;
 	struct rkmodule_channel_info *ch_info;
+	int cur_best_fit = -1;
+	int cur_best_fit_dist = -1;
+	int cur_dist, cur_fps, dst_fps;
 
 	switch (cmd) {
 	case RKMODULE_GET_MODULE_INFO:
@@ -732,22 +809,36 @@ static long gc4653_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		break;
 	case RKMODULE_SET_HDR_CFG:
 		hdr = (struct rkmodule_hdr_cfg *)arg;
+		if (hdr->hdr_mode == gc4653->cur_mode->hdr_mode)
+			return 0;
 		w = gc4653->cur_mode->width;
 		h = gc4653->cur_mode->height;
+		dst_fps = DIV_ROUND_CLOSEST(gc4653->cur_mode->max_fps.denominator,
+			gc4653->cur_mode->max_fps.numerator);
 		for (i = 0; i < gc4653->cfg_num; i++) {
 			if (w == supported_modes[i].width &&
 			    h == supported_modes[i].height &&
-			    supported_modes[i].hdr_mode == hdr->hdr_mode) {
-				gc4653->cur_mode = &supported_modes[i];
-				break;
+			    supported_modes[i].hdr_mode == hdr->hdr_mode &&
+			    supported_modes[i].bus_fmt == gc4653->cur_mode->bus_fmt) {
+				cur_fps = DIV_ROUND_CLOSEST(supported_modes[i].max_fps.denominator,
+					supported_modes[i].max_fps.numerator);
+				cur_dist = abs(cur_fps - dst_fps);
+				if (cur_best_fit_dist == -1 || cur_dist < cur_best_fit_dist) {
+					cur_best_fit_dist = cur_dist;
+					cur_best_fit = i;
+				} else if (cur_dist == cur_best_fit_dist) {
+					cur_best_fit = i;
+					break;
+				}
 			}
 		}
-		if (i == gc4653->cfg_num) {
+		if (cur_best_fit == -1) {
 			dev_err(&gc4653->client->dev,
 				"not find hdr mode:%d %dx%d config\n",
 				hdr->hdr_mode, w, h);
 			ret = -EINVAL;
 		} else {
+			gc4653->cur_mode = &supported_modes[cur_best_fit];
 			w = gc4653->cur_mode->hts_def -
 			    gc4653->cur_mode->width;
 			h = gc4653->cur_mode->vts_def -
@@ -1184,6 +1275,7 @@ static const struct v4l2_subdev_core_ops gc4653_core_ops = {
 static const struct v4l2_subdev_video_ops gc4653_video_ops = {
 	.s_stream = gc4653_s_stream,
 	.g_frame_interval = gc4653_g_frame_interval,
+	.s_frame_interval = gc4653_s_frame_interval,
 };
 
 static const struct v4l2_subdev_pad_ops gc4653_pad_ops = {

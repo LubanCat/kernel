@@ -5,9 +5,13 @@
  * Copyright (C) 2023 Rockchip Electronics Co., Ltd.
  *
  * V0.0X01.0X01 first version
+ * V0.0X01.0X02 change power_gpio to pwdn_gpio
+ * V0.0X01.0X03 support thunder boot
+ * V0.0X01.0X04 support sleep/wake up
+ *
  */
 
-//#define DEBUG
+// #define DEBUG
 #include <linux/clk.h>
 #include <linux/device.h>
 #include <linux/delay.h>
@@ -27,8 +31,9 @@
 #include <linux/pinctrl/consumer.h>
 #include <linux/rk-preisp.h>
 #include "../platform/rockchip/isp/rkisp_tb_helper.h"
+#include "cam-sleep-wakeup.h"
 
-#define DRIVER_VERSION			KERNEL_VERSION(0, 0x01, 0x01)
+#define DRIVER_VERSION			KERNEL_VERSION(0, 0x01, 0x04)
 
 #ifndef V4L2_CID_DIGITAL_GAIN
 #define V4L2_CID_DIGITAL_GAIN		V4L2_CID_GAIN
@@ -64,16 +69,16 @@
 #define SC850SL_REG_EXP_SF_M		0x3e04    //[7:0]
 #define SC850SL_REG_EXP_SF_L		0x3e05    //[7:4]
 
-#define SC850SL_FETCH_EXP_H(VAL)		(((VAL) >> 12) & 0xF)
-#define SC850SL_FETCH_EXP_M(VAL)		(((VAL) >> 4) & 0xFF)
-#define SC850SL_FETCH_EXP_L(VAL)		(((VAL) & 0xF) << 4)
+#define SC850SL_FETCH_EXP_H(VAL)	(((VAL) >> 12) & 0xF)
+#define SC850SL_FETCH_EXP_M(VAL)	(((VAL) >> 4) & 0xFF)
+#define SC850SL_FETCH_EXP_L(VAL)	(((VAL) & 0xF) << 4)
 
 /*gain*/
 //long frame and normal gain reg
 #define SC850SL_REG_DGAIN		0x3e06
 #define SC850SL_REG_AGAIN		0x3e08
 #define SC850SL_REG_AGAIN_FINE		0x3e09
-//#define SC850SL_REG_DGAIN_FINE		0x3e07
+#define SC850SL_REG_DGAIN_FINE		0x3e07
 
 //short fram gain reg
 #define SC850SL_SF_REG_AGAIN		0x3e12
@@ -110,15 +115,15 @@
 
 #define OF_CAMERA_PINCTRL_STATE_DEFAULT	"rockchip,camera_default"
 #define OF_CAMERA_PINCTRL_STATE_SLEEP	"rockchip,camera_sleep"
-
+#define OF_CAMERA_HDR_MODE		"rockchip,camera-hdr-mode"
 #define SC850SL_NAME			"sc850sl"
-
 
 static const char * const sc850sl_supply_names[] = {
 	"dvdd",		// Digital core power
 	"dovdd",	// Digital I/O power
 	"avdd",		// Analog power
 };
+
 #define SC850SL_NUM_SUPPLIES ARRAY_SIZE(sc850sl_supply_names)
 
 struct regval {
@@ -145,7 +150,7 @@ struct sc850sl {
 	struct i2c_client	*client;
 	struct clk		*xvclk;
 	struct gpio_desc	*reset_gpio;
-	struct gpio_desc	*power_gpio;
+	struct gpio_desc	*pwdn_gpio;
 	struct regulator_bulk_data supplies[SC850SL_NUM_SUPPLIES];
 
 	struct pinctrl		*pinctrl;
@@ -167,7 +172,6 @@ struct sc850sl {
 	struct v4l2_fract	cur_fps;
 	bool			streaming;
 	bool			power_on;
-	bool			is_first_streamoff;
 	const struct sc850sl_mode *cur_mode;
 	u32			module_index;
 	u32			cfg_num;
@@ -176,9 +180,11 @@ struct sc850sl {
 	const char		*len_name;
 	u32			cur_vts;
 	bool			has_init_exp;
+	bool			is_thunderboot;
+	bool			is_first_streamoff;
 	struct preisp_hdrae_exp_s init_hdrae_exp;
+	struct cam_sw_info	*cam_sw_info;
 };
-
 
 #define to_sc850sl(sd) container_of(sd, struct sc850sl, subdev)
 
@@ -370,7 +376,6 @@ static __maybe_unused const struct regval sc850sl_linear10bit_3840x2160_regs[] =
 	{0x59fd, 0x3f},
 	{0x59fe, 0x38},
 	{0x59ff, 0x30},
-	{0x0100, 0x01},
 	/*
 	 * [gain < 2x] {0x363c, 0x05},
 	 * [gain >=2x] {0x363c, 0x07},
@@ -412,7 +417,9 @@ static const struct sc850sl_mode supported_modes[] = {
 	},
 };
 
-
+static const u32 bus_code[] = {
+	MEDIA_BUS_FMT_SBGGR10_1X10,
+};
 
 static const char * const sc850sl_test_pattern_menu[] = {
 	"Disabled",
@@ -521,10 +528,13 @@ sc850sl_find_best_fit(struct sc850sl *sc850sl, struct v4l2_subdev_format *fmt)
 
 	for (i = 0; i < ARRAY_SIZE(supported_modes); i++) {
 		dist = sc850sl_get_reso_dist(&supported_modes[i], framefmt);
-		if ((cur_best_fit_dist == -1 || dist < cur_best_fit_dist) &&
-			supported_modes[i].bus_fmt == framefmt->code) {
+		if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
 			cur_best_fit_dist = dist;
 			cur_best_fit = i;
+		} else if (dist == cur_best_fit_dist &&
+			   framefmt->code == supported_modes[i].bus_fmt) {
+			cur_best_fit = i;
+			break;
 		}
 	}
 	dev_info(&sc850sl->client->dev, "%s: cur_best_fit(%d)",
@@ -620,11 +630,9 @@ static int sc850sl_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
-	struct sc850sl *sc850sl = to_sc850sl(sd);
-
-	if (code->index != 0)
+	if (code->index >= ARRAY_SIZE(bus_code))
 		return -EINVAL;
-	code->code = sc850sl->cur_mode->bus_fmt;
+	code->code = bus_code[code->index];
 
 	return 0;
 }
@@ -679,6 +687,75 @@ static int sc850sl_g_frame_interval(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static const struct sc850sl_mode *sc850sl_find_mode(struct sc850sl *sc850sl, int fps)
+{
+	const struct sc850sl_mode *mode = NULL;
+	const struct sc850sl_mode *match = NULL;
+	int cur_fps = 0;
+	int i = 0;
+
+	for (i = 0; i < sc850sl->cfg_num; i++) {
+		mode = &supported_modes[i];
+		if (mode->width == sc850sl->cur_mode->width &&
+		    mode->height == sc850sl->cur_mode->height &&
+		    mode->hdr_mode == sc850sl->cur_mode->hdr_mode &&
+		    mode->bus_fmt == sc850sl->cur_mode->bus_fmt) {
+			cur_fps = DIV_ROUND_CLOSEST(mode->max_fps.denominator, mode->max_fps.numerator);
+			if (cur_fps == fps) {
+				match = mode;
+				break;
+			}
+		}
+	}
+	return match;
+}
+
+static int sc850sl_s_frame_interval(struct v4l2_subdev *sd,
+				   struct v4l2_subdev_frame_interval *fi)
+{
+	struct sc850sl *sc850sl = to_sc850sl(sd);
+	const struct sc850sl_mode *mode = NULL;
+	struct v4l2_fract *fract = &fi->interval;
+	s64 h_blank, vblank_def;
+	u64 pixel_rate = 0;
+	int fps;
+
+	if (sc850sl->streaming)
+		return -EBUSY;
+
+	if (fi->pad != 0)
+		return -EINVAL;
+
+	if (fract->numerator == 0) {
+		v4l2_err(sd, "error param, check interval param\n");
+		return -EINVAL;
+	}
+	fps = DIV_ROUND_CLOSEST(fract->denominator, fract->numerator);
+	mode = sc850sl_find_mode(sc850sl, fps);
+	if (mode == NULL) {
+		v4l2_err(sd, "couldn't match fi\n");
+		return -EINVAL;
+	}
+
+	sc850sl->cur_mode = mode;
+
+	h_blank = mode->hts_def - mode->width;
+	__v4l2_ctrl_modify_range(sc850sl->hblank, h_blank,
+				 h_blank, 1, h_blank);
+	vblank_def = mode->vts_def - mode->height;
+	__v4l2_ctrl_modify_range(sc850sl->vblank, vblank_def,
+				 SC850SL_VTS_MAX - mode->height,
+				 1, vblank_def);
+	__v4l2_ctrl_s_ctrl(sc850sl->link_freq, mode->mipi_freq_idx);
+	pixel_rate = (u32)link_freq_items[mode->mipi_freq_idx] /
+		     mode->bpp * 2 * SC850SL_4LANES;
+	__v4l2_ctrl_s_ctrl_int64(sc850sl->pixel_rate, pixel_rate);
+	sc850sl->cur_fps = mode->max_fps;
+	sc850sl->cur_vts = mode->vts_def;
+
+	return 0;
+}
+
 static int sc850sl_g_mbus_config(struct v4l2_subdev *sd, unsigned int pad_id,
 				struct v4l2_mbus_config *config)
 {
@@ -713,7 +790,7 @@ static void sc850sl_get_module_inf(struct sc850sl *sc850sl,
 }
 
 static void sc850sl_get_gain_reg(u32 val, u32 *again_reg, u32 *again_fine_reg,
-				 u32 *dgain_reg)
+				 u32 *dgain_reg, u32 *dgain_fine_reg)
 {
 	u8 u8Reg0x3e09 = 0x40, u8Reg0x3e08 = 0x03;
 	u32 aCoarseGain = 0;
@@ -757,16 +834,19 @@ static void sc850sl_get_gain_reg(u32 val, u32 *again_reg, u32 *again_fine_reg,
 	u8Reg0x3e09 = aFineGain;
 	//dcg = 2.72  -->  2.72*1024=2785.28
 	u8Reg0x3e08 = (again > 200) ? (u8Reg0x3e08 | 0x20) : (u8Reg0x3e08 & 0x1f);
-
+	*dgain_fine_reg = val * 128 / again / dgain;
 	//dgain
-	if (dgain <= 1) { /*1x ~ 2x*/
+	if (dgain < 2) {	/*1x ~ 2x*/
 		*dgain_reg = 0x00;
-	} else if (dgain <= 2) { /*2x ~ 4x*/
+	} else if (dgain < 4) { /*2x ~ 4x*/
 		*dgain_reg = 0x01;
-	} else if (dgain <= 4) { /*4x ~ 8x*/
+		*dgain_fine_reg += (dgain - 2) * 64;
+	} else if (dgain < 8) { /*4x ~ 8x*/
 		*dgain_reg = 0x03;
+		*dgain_fine_reg += (dgain - 4) * 32;
 	} else {
 		*dgain_reg = 0x07;
+		*dgain_fine_reg = 0x80;
 	}
 
 	*again_reg = u8Reg0x3e08;
@@ -793,37 +873,52 @@ static long sc850sl_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	long ret = 0;
 	u64 pixel_rate = 0;
 	u32 i, h, w, stream;
+	int cur_best_fit = -1;
+	int cur_best_fit_dist = -1;
+	int cur_dist, cur_fps, dst_fps;
 
 	switch (cmd) {
 	case PREISP_CMD_SET_HDRAE_EXP:
 		/*
 		 * ret = sc850sl_set_hdrae(sc850sl, arg);
 		 */
+		if (sc850sl->cam_sw_info)
+			memcpy(&sc850sl->cam_sw_info->hdr_ae, (struct preisp_hdrae_exp_s *)(arg),
+			  sizeof(struct preisp_hdrae_exp_s));
 		break;
 
 	case RKMODULE_SET_HDR_CFG:
 		hdr_cfg = (struct rkmodule_hdr_cfg *)arg;
-		if (sc850sl->streaming) {
-			ret = sc850sl_write_array(sc850sl->client, sc850sl->cur_mode->reg_list);
-			if (ret)
-				return ret;
-		}
+		if (hdr_cfg->hdr_mode == sc850sl->cur_mode->hdr_mode)
+			return 0;
 		w = sc850sl->cur_mode->width;
 		h = sc850sl->cur_mode->height;
+		dst_fps = DIV_ROUND_CLOSEST(sc850sl->cur_mode->max_fps.denominator,
+			sc850sl->cur_mode->max_fps.numerator);
 		for (i = 0; i < sc850sl->cfg_num; i++) {
 			if (w == supported_modes[i].width &&
-			h == supported_modes[i].height &&
-			supported_modes[i].hdr_mode == hdr_cfg->hdr_mode) {
-				sc850sl_change_mode(sc850sl, &supported_modes[i]);
-				break;
+			    h == supported_modes[i].height &&
+			    supported_modes[i].hdr_mode == hdr_cfg->hdr_mode &&
+			    supported_modes[i].bus_fmt == sc850sl->cur_mode->bus_fmt) {
+				cur_fps = DIV_ROUND_CLOSEST(supported_modes[i].max_fps.denominator,
+					supported_modes[i].max_fps.numerator);
+				cur_dist = abs(cur_fps - dst_fps);
+				if (cur_best_fit_dist == -1 || cur_dist < cur_best_fit_dist) {
+					cur_best_fit_dist = cur_dist;
+					cur_best_fit = i;
+				} else if (cur_dist == cur_best_fit_dist) {
+					cur_best_fit = i;
+					break;
+				}
 			}
 		}
-		if (i == sc850sl->cfg_num) {
+		if (cur_best_fit == -1) {
 			dev_err(&sc850sl->client->dev,
 				"not find hdr mode:%d %dx%d config\n",
 				hdr_cfg->hdr_mode, w, h);
 			ret = -EINVAL;
 		} else {
+			sc850sl_change_mode(sc850sl, &supported_modes[cur_best_fit]);
 			mode = sc850sl->cur_mode;
 			w = mode->hts_def - mode->width;
 			h = mode->vts_def - mode->height;
@@ -855,12 +950,27 @@ static long sc850sl_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	case RKMODULE_SET_QUICK_STREAM:
 		stream = *((u32 *)arg);
 
-		if (stream)
+		if (stream) {
+			ret = sc850sl_write_reg(sc850sl->client, 0x3019,
+						SC850SL_REG_VALUE_08BIT,
+						0xf0);
+			ret = sc850sl_write_reg(sc850sl->client, 0x3018,
+						SC850SL_REG_VALUE_08BIT,
+						0x7a);
 			ret = sc850sl_write_reg(sc850sl->client, SC850SL_REG_CTRL_MODE,
-				SC850SL_REG_VALUE_08BIT, SC850SL_MODE_STREAMING);
-		else
+						SC850SL_REG_VALUE_08BIT,
+						SC850SL_MODE_STREAMING);
+		} else {
+			ret = sc850sl_write_reg(sc850sl->client, 0x3018,
+						SC850SL_REG_VALUE_08BIT,
+						0x7f);
+			ret = sc850sl_write_reg(sc850sl->client, 0x3019,
+						SC850SL_REG_VALUE_08BIT,
+						0xff);
 			ret = sc850sl_write_reg(sc850sl->client, SC850SL_REG_CTRL_MODE,
-				SC850SL_REG_VALUE_08BIT, SC850SL_MODE_SW_STANDBY);
+						SC850SL_REG_VALUE_08BIT,
+						SC850SL_MODE_SW_STANDBY);
+		}
 		break;
 
 	case RKMODULE_GET_CHANNEL_INFO:
@@ -1023,21 +1133,31 @@ static int __sc850sl_start_stream(struct sc850sl *sc850sl)
 {
 	int ret;
 
-	ret = sc850sl_write_array(sc850sl->client, sc850sl->cur_mode->reg_list);
-	if (ret)
-		return ret;
+	dev_info(&sc850sl->client->dev,
+		 "%dx%d@%d, mode %d, vts 0x%x\n",
+		 sc850sl->cur_mode->width,
+		 sc850sl->cur_mode->height,
+		 sc850sl->cur_fps.denominator / sc850sl->cur_fps.numerator,
+		 sc850sl->cur_mode->hdr_mode,
+		 sc850sl->cur_vts);
 
-	ret = __v4l2_ctrl_handler_setup(&sc850sl->ctrl_handler);
-	if (ret)
-		return ret;
-	/* In case these controls are set before streaming */
-	if (sc850sl->has_init_exp && sc850sl->cur_mode->hdr_mode != NO_HDR) {
-		ret = sc850sl_ioctl(&sc850sl->subdev, PREISP_CMD_SET_HDRAE_EXP,
-			&sc850sl->init_hdrae_exp);
-		if (ret) {
-			dev_err(&sc850sl->client->dev,
-				"init exp fail in hdr mode\n");
+	if (!sc850sl->is_thunderboot) {
+		ret = sc850sl_write_array(sc850sl->client, sc850sl->cur_mode->reg_list);
+		if (ret)
 			return ret;
+
+		ret = __v4l2_ctrl_handler_setup(&sc850sl->ctrl_handler);
+		if (ret)
+			return ret;
+		/* In case these controls are set before streaming */
+		if (sc850sl->has_init_exp && sc850sl->cur_mode->hdr_mode != NO_HDR) {
+			ret = sc850sl_ioctl(&sc850sl->subdev, PREISP_CMD_SET_HDRAE_EXP,
+				&sc850sl->init_hdrae_exp);
+			if (ret) {
+				dev_err(&sc850sl->client->dev,
+					"init exp fail in hdr mode\n");
+				return ret;
+			}
 		}
 	}
 	return sc850sl_write_reg(sc850sl->client, SC850SL_REG_CTRL_MODE,
@@ -1047,10 +1167,15 @@ static int __sc850sl_start_stream(struct sc850sl *sc850sl)
 static int __sc850sl_stop_stream(struct sc850sl *sc850sl)
 {
 	sc850sl->has_init_exp = false;
+	if (sc850sl->is_thunderboot) {
+		sc850sl->is_first_streamoff = true;
+		pm_runtime_put(&sc850sl->client->dev);
+	}
 	return sc850sl_write_reg(sc850sl->client, SC850SL_REG_CTRL_MODE,
-		SC850SL_REG_VALUE_08BIT, SC850SL_MODE_SW_STANDBY);
+				 SC850SL_REG_VALUE_08BIT, SC850SL_MODE_SW_STANDBY);
 }
 
+static int __sc850sl_power_on(struct sc850sl *sc850sl);
 static int sc850sl_s_stream(struct v4l2_subdev *sd, int on)
 {
 	struct sc850sl *sc850sl = to_sc850sl(sd);
@@ -1067,6 +1192,10 @@ static int sc850sl_s_stream(struct v4l2_subdev *sd, int on)
 		goto unlock_and_return;
 
 	if (on) {
+		if (sc850sl->is_thunderboot && rkisp_tb_get_state() == RKISP_TB_NG) {
+			sc850sl->is_thunderboot = false;
+			__sc850sl_power_on(sc850sl);
+		}
 		ret = pm_runtime_get_sync(&client->dev);
 		if (ret < 0) {
 			pm_runtime_put_noidle(&client->dev);
@@ -1108,18 +1237,19 @@ static int sc850sl_s_power(struct v4l2_subdev *sd, int on)
 			pm_runtime_put_noidle(&client->dev);
 			goto unlock_and_return;
 		}
+		if (!sc850sl->is_thunderboot) {
+			ret |= sc850sl_write_reg(sc850sl->client,
+						SC850SL_SOFTWARE_RESET_REG,
+						SC850SL_REG_VALUE_08BIT,
+						0x01);
+			if (ret) {
+				v4l2_err(sd, "could not set init registers\n");
+				pm_runtime_put_noidle(&client->dev);
+				goto unlock_and_return;
+			}
+			udelay(100);
+		}
 
-		ret |= sc850sl_write_reg(sc850sl->client,
-			SC850SL_SOFTWARE_RESET_REG,
-			SC850SL_REG_VALUE_08BIT,
-			0x01);
-		/*
-		 * usleep_range(100, 200);
-		 * ret |= sc850sl_write_reg(sc2310->client,
-		 *	0x303f,
-		 *	SC850SL_REG_VALUE_08BIT,
-		 *	0x01);
-		 */
 		sc850sl->power_on = true;
 	} else {
 		pm_runtime_put(&client->dev);
@@ -1142,15 +1272,6 @@ static int __sc850sl_power_on(struct sc850sl *sc850sl)
 		if (ret < 0)
 			dev_err(dev, "could not set pins\n");
 	}
-
-	if (!IS_ERR(sc850sl->power_gpio))
-		gpiod_direction_output(sc850sl->power_gpio, 1);
-
-	usleep_range(4000, 6000);
-	if (!IS_ERR(sc850sl->reset_gpio))
-		gpiod_direction_output(sc850sl->reset_gpio, 0);
-
-	usleep_range(4000, 6000);
 	ret = clk_set_rate(sc850sl->xvclk, SC850SL_XVCLK_FREQ_24M);
 	if (ret < 0)
 		dev_warn(dev, "Failed to set xvclk rate 24MHz\n");
@@ -1162,17 +1283,38 @@ static int __sc850sl_power_on(struct sc850sl *sc850sl)
 		goto err_clk;
 	}
 
+	cam_sw_regulator_bulk_init(sc850sl->cam_sw_info,
+				   SC850SL_NUM_SUPPLIES, sc850sl->supplies);
+
+	if (sc850sl->is_thunderboot)
+		return 0;
+
+	if (!IS_ERR(sc850sl->pwdn_gpio))
+		gpiod_set_value_cansleep(sc850sl->pwdn_gpio, 1);
+
+	usleep_range(4000, 6000);
+	if (!IS_ERR(sc850sl->reset_gpio))
+		gpiod_set_value_cansleep(sc850sl->reset_gpio, 0);
+
+	usleep_range(4000, 6000);
+
 	ret = regulator_bulk_enable(SC850SL_NUM_SUPPLIES, sc850sl->supplies);
 	if (ret < 0) {
 		dev_err(dev, "Failed to enable regulators\n");
 		goto disable_clk;
 	}
 
+	if (!IS_ERR(sc850sl->reset_gpio))
+		gpiod_set_value_cansleep(sc850sl->reset_gpio, 1);
+
 	usleep_range(4000, 6000);
+
+	if (!IS_ERR(sc850sl->pwdn_gpio))
+		gpiod_set_value_cansleep(sc850sl->pwdn_gpio, 1);
 	return 0;
 err_clk:
 	if (!IS_ERR(sc850sl->reset_gpio))
-		gpiod_direction_output(sc850sl->reset_gpio, 1);
+		gpiod_direction_output(sc850sl->reset_gpio, 0);
 disable_clk:
 	clk_disable_unprepare(sc850sl->xvclk);
 
@@ -1184,19 +1326,73 @@ static void __sc850sl_power_off(struct sc850sl *sc850sl)
 	int ret;
 	struct device *dev = &sc850sl->client->dev;
 
-	if (!IS_ERR(sc850sl->reset_gpio))
-		gpiod_direction_output(sc850sl->reset_gpio, 1);
 	clk_disable_unprepare(sc850sl->xvclk);
+	if (sc850sl->is_thunderboot) {
+		if (sc850sl->is_first_streamoff) {
+			sc850sl->is_thunderboot = false;
+			sc850sl->is_first_streamoff = false;
+		} else {
+			return;
+		}
+	}
+	if (!IS_ERR(sc850sl->reset_gpio))
+		gpiod_direction_output(sc850sl->reset_gpio, 0);
+
 	if (!IS_ERR_OR_NULL(sc850sl->pins_sleep)) {
 		ret = pinctrl_select_state(sc850sl->pinctrl,
 					   sc850sl->pins_sleep);
 		if (ret < 0)
 			dev_dbg(dev, "could not set pins\n");
 	}
-	if (!IS_ERR(sc850sl->power_gpio))
-		gpiod_direction_output(sc850sl->power_gpio, 0);
+	if (!IS_ERR(sc850sl->pwdn_gpio))
+		gpiod_direction_output(sc850sl->pwdn_gpio, 0);
 	regulator_bulk_disable(SC850SL_NUM_SUPPLIES, sc850sl->supplies);
 }
+
+#if IS_REACHABLE(CONFIG_VIDEO_CAM_SLEEP_WAKEUP)
+static int sc850sl_resume(struct device *dev)
+{
+	int ret;
+	struct i2c_client *client = to_i2c_client(dev);
+	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+	struct sc850sl *sc850sl = to_sc850sl(sd);
+
+	cam_sw_prepare_wakeup(sc850sl->cam_sw_info, dev);
+
+	usleep_range(4000, 5000);
+	cam_sw_write_array(sc850sl->cam_sw_info);
+
+	if (__v4l2_ctrl_handler_setup(&sc850sl->ctrl_handler))
+		dev_err(dev, "__v4l2_ctrl_handler_setup fail!");
+
+	if (sc850sl->has_init_exp && sc850sl->cur_mode != NO_HDR) {	// hdr mode
+		ret = sc850sl_ioctl(&sc850sl->subdev, PREISP_CMD_SET_HDRAE_EXP,
+				     &sc850sl->cam_sw_info->hdr_ae);
+		if (ret) {
+			dev_err(&sc850sl->client->dev, "set exp fail in hdr mode\n");
+			return ret;
+		}
+	}
+	return 0;
+}
+
+static int sc850sl_suspend(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+	struct sc850sl *sc850sl = to_sc850sl(sd);
+
+	cam_sw_write_array_cb_init(sc850sl->cam_sw_info, client,
+				   (void *)sc850sl->cur_mode->reg_list,
+				   (sensor_write_array)sc850sl_write_array);
+	cam_sw_prepare_sleep(sc850sl->cam_sw_info);
+
+	return 0;
+}
+#else
+#define sc850sl_resume NULL
+#define sc850sl_suspend NULL
+#endif
 
 static int sc850sl_runtime_resume(struct device *dev)
 {
@@ -1296,6 +1492,7 @@ static int sc850sl_get_selection(struct v4l2_subdev *sd,
 static const struct dev_pm_ops sc850sl_pm_ops = {
 	SET_RUNTIME_PM_OPS(sc850sl_runtime_suspend,
 			   sc850sl_runtime_resume, NULL)
+	SET_LATE_SYSTEM_SLEEP_PM_OPS(sc850sl_suspend, sc850sl_resume)
 };
 
 #ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
@@ -1315,6 +1512,7 @@ static const struct v4l2_subdev_core_ops sc850sl_core_ops = {
 static const struct v4l2_subdev_video_ops sc850sl_video_ops = {
 	.s_stream = sc850sl_s_stream,
 	.g_frame_interval = sc850sl_g_frame_interval,
+	.s_frame_interval = sc850sl_s_frame_interval,
 };
 
 static const struct v4l2_subdev_pad_ops sc850sl_pad_ops = {
@@ -1347,7 +1545,7 @@ static int sc850sl_set_ctrl(struct v4l2_ctrl *ctrl)
 					     struct sc850sl, ctrl_handler);
 	struct i2c_client *client = sc850sl->client;
 	s64 max;
-	u32 again, again_fine, dgain;
+	u32 again, again_fine, dgain, dgain_fine;
 	int ret = 0;
 	u32 val;
 
@@ -1355,7 +1553,7 @@ static int sc850sl_set_ctrl(struct v4l2_ctrl *ctrl)
 	switch (ctrl->id) {
 	case V4L2_CID_VBLANK:
 		/* Update max exposure while meeting expected vblanking */
-		max = sc850sl->cur_mode->height + ctrl->val - 8;
+		max = sc850sl->cur_mode->height + ctrl->val - 4;
 		__v4l2_ctrl_modify_range(sc850sl->exposure,
 					 sc850sl->exposure->minimum, max,
 					 sc850sl->exposure->step,
@@ -1389,9 +1587,10 @@ static int sc850sl_set_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_ANALOGUE_GAIN:
 		if (sc850sl->cur_mode->hdr_mode != NO_HDR)
 			goto out_ctrl;
-		sc850sl_get_gain_reg(ctrl->val, &again, &again_fine, &dgain);
-		dev_dbg(&client->dev, "recv_gain:%d set again 0x%x, again_fine 0x%x, set dgain 0x%x\n",
-			ctrl->val, again, again_fine, dgain);
+		sc850sl_get_gain_reg(ctrl->val, &again, &again_fine, &dgain, &dgain_fine);
+		dev_dbg(&client->dev,
+			"recv_gain:%d set again 0x%x, again_fine 0x%x, set dgain 0x%x, dgain_fine 0x%x\n",
+			ctrl->val, again, again_fine, dgain, dgain_fine);
 
 		ret |= sc850sl_write_reg(sc850sl->client,
 					SC850SL_REG_AGAIN,
@@ -1405,6 +1604,10 @@ static int sc850sl_set_ctrl(struct v4l2_ctrl *ctrl)
 					SC850SL_REG_DGAIN,
 					SC850SL_REG_VALUE_08BIT,
 					dgain);
+		ret |= sc850sl_write_reg(sc850sl->client,
+					SC850SL_REG_DGAIN_FINE,
+					SC850SL_REG_VALUE_08BIT,
+					dgain_fine);
 		break;
 	case V4L2_CID_VBLANK:
 		ret = sc850sl_write_reg(sc850sl->client, SC850SL_REG_VTS,
@@ -1543,14 +1746,18 @@ static int sc850sl_check_sensor_id(struct sc850sl *sc850sl,
 	u32 id = 0;
 	int ret;
 
+	if (sc850sl->is_thunderboot) {
+		dev_info(dev, "Enable thunderboot mode, skip sensor id check\n");
+		return 0;
+	}
 	ret = sc850sl_read_reg(client, SC850SL_REG_CHIP_ID,
-		SC850SL_REG_VALUE_16BIT, &id);
+				SC850SL_REG_VALUE_16BIT, &id);
 	if (id != CHIP_ID) {
 		dev_err(dev, "Unexpected sensor id(%06x), ret(%d)\n", id, ret);
 		return -ENODEV;
 	}
 
-	dev_info(dev, "Detected sc850sl id %06x\n", CHIP_ID);
+	dev_info(dev, "Detected sc850sl id(%06x)\n", CHIP_ID);
 
 	return 0;
 }
@@ -1606,6 +1813,7 @@ static int sc850sl_probe(struct i2c_client *client,
 		dev_warn(dev, " Get hdr mode failed! no hdr default\n");
 	}
 
+	sc850sl->is_thunderboot = IS_ENABLED(CONFIG_VIDEO_ROCKCHIP_THUNDER_BOOT_ISP);
 	sc850sl->client = client;
 	sc850sl->cfg_num = ARRAY_SIZE(supported_modes);
 	for (i = 0; i < sc850sl->cfg_num; i++) {
@@ -1621,12 +1829,15 @@ static int sc850sl_probe(struct i2c_client *client,
 		return -EINVAL;
 	}
 
-	sc850sl->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_ASIS);
+	sc850sl->reset_gpio = devm_gpiod_get(dev, "reset",
+		sc850sl->is_thunderboot ? GPIOD_ASIS : GPIOD_OUT_LOW);
 	if (IS_ERR(sc850sl->reset_gpio))
 		dev_warn(dev, "Failed to get reset-gpios\n");
-	sc850sl->power_gpio = devm_gpiod_get(dev, "power", GPIOD_ASIS);
-	if (IS_ERR(sc850sl->power_gpio))
-		dev_warn(dev, "Failed to get power_gpios\n");
+
+	sc850sl->pwdn_gpio = devm_gpiod_get(dev, "pwdn",
+		sc850sl->is_thunderboot ? GPIOD_ASIS : GPIOD_OUT_LOW);
+	if (IS_ERR(sc850sl->pwdn_gpio))
+		dev_warn(dev, "Failed to get pwdn_gpio\n");
 
 	sc850sl->pinctrl = devm_pinctrl_get(dev);
 	if (!IS_ERR(sc850sl->pinctrl)) {
@@ -1678,6 +1889,12 @@ static int sc850sl_probe(struct i2c_client *client,
 	if (ret < 0)
 		goto err_power_off;
 #endif
+	if (!sc850sl->cam_sw_info) {
+		sc850sl->cam_sw_info = cam_sw_init();
+		cam_sw_clk_init(sc850sl->cam_sw_info, sc850sl->xvclk, SC850SL_XVCLK_FREQ_24M);
+		cam_sw_reset_pin_init(sc850sl->cam_sw_info, sc850sl->reset_gpio, 0);
+		cam_sw_pwdn_pin_init(sc850sl->cam_sw_info, sc850sl->pwdn_gpio, 1);
+	}
 
 	memset(facing, 0, sizeof(facing));
 	if (strcmp(sc850sl->module_facing, "back") == 0)
@@ -1696,7 +1913,10 @@ static int sc850sl_probe(struct i2c_client *client,
 
 	pm_runtime_set_active(dev);
 	pm_runtime_enable(dev);
-	pm_runtime_idle(dev);
+	if (sc850sl->is_thunderboot)
+		pm_runtime_get_sync(dev);
+	else
+		pm_runtime_idle(dev);
 
 	return 0;
 
@@ -1725,6 +1945,8 @@ static int sc850sl_remove(struct i2c_client *client)
 #endif
 	v4l2_ctrl_handler_free(&sc850sl->ctrl_handler);
 	mutex_destroy(&sc850sl->mutex);
+
+	cam_sw_deinit(sc850sl->cam_sw_info);
 
 	pm_runtime_disable(&client->dev);
 	if (!pm_runtime_status_suspended(&client->dev))

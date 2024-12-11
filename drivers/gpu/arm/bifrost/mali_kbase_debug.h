@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
- * (C) COPYRIGHT 2012-2015, 2017, 2020-2022 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2012-2023 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -22,7 +22,10 @@
 #ifndef _KBASE_DEBUG_H
 #define _KBASE_DEBUG_H
 
+#include <mali_malisw.h>
+
 #include <linux/bug.h>
+#include <linux/module.h>
 
 /** @brief If equals to 0, a trace containing the file, line, and function will be displayed before each message. */
 #define KBASE_DEBUG_SKIP_TRACE 0
@@ -37,7 +40,7 @@
 #else
 #define KBASE_DEBUG_DISABLE_ASSERTS 1
 #endif
-#endif				/* KBASE_DEBUG_DISABLE_ASSERTS */
+#endif /* KBASE_DEBUG_DISABLE_ASSERTS */
 
 /** Function type that is called on an KBASE_DEBUG_ASSERT() or KBASE_DEBUG_ASSERT_MSG() */
 typedef void kbase_debug_assert_hook(void *);
@@ -53,8 +56,7 @@ struct kbasep_debug_assert_cb {
  * KBASE_DEBUG_SKIP_FUNCTION_NAME
  */
 #if !KBASE_DEBUG_SKIP_TRACE
-#define KBASEP_DEBUG_PRINT_TRACE \
-		"In file: " __FILE__ " line: " CSTD_STR2(__LINE__)
+#define KBASEP_DEBUG_PRINT_TRACE "In file: " __FILE__ " line: " CSTD_STR2(__LINE__)
 #if !KBASE_DEBUG_SKIP_FUNCTION_NAME
 #define KBASEP_DEBUG_PRINT_FUNCTION __func__
 #else
@@ -75,11 +77,11 @@ struct kbasep_debug_assert_cb {
  */
 /* Select the correct system output function*/
 #ifdef CONFIG_MALI_BIFROST_DEBUG
-#define KBASEP_DEBUG_ASSERT_OUT(trace, function, ...)                          \
-	do {                                                                   \
-		pr_err("Mali<ASSERT>: %s function:%s ", trace, function);      \
-		pr_err(__VA_ARGS__);                                           \
-		pr_err("\n");                                                  \
+#define KBASEP_DEBUG_ASSERT_OUT(trace, function, ...)                     \
+	do {                                                              \
+		pr_err("Mali<ASSERT>: %s function:%s ", trace, function); \
+		pr_err(__VA_ARGS__);                                      \
+		pr_err("\n");                                             \
 	} while (false)
 #else
 #define KBASEP_DEBUG_ASSERT_OUT(trace, function, ...) CSTD_NOP()
@@ -99,8 +101,7 @@ struct kbasep_debug_assert_cb {
  * @note This macro does nothing if the flag @ref KBASE_DEBUG_DISABLE_ASSERTS is set to 1
  *
  */
-#define KBASE_DEBUG_ASSERT(expr) \
-	KBASE_DEBUG_ASSERT_MSG(expr, #expr)
+#define KBASE_DEBUG_ASSERT(expr) KBASE_DEBUG_ASSERT_MSG(expr, #expr)
 
 #if KBASE_DEBUG_DISABLE_ASSERTS
 #define KBASE_DEBUG_ASSERT_MSG(expr, ...) CSTD_NOP()
@@ -114,15 +115,16 @@ struct kbasep_debug_assert_cb {
  *
  * This macro does nothing if the flag KBASE_DEBUG_DISABLE_ASSERTS is set to 1
  */
-#define KBASE_DEBUG_ASSERT_MSG(expr, ...) \
-		do { \
-			if (!(expr)) { \
-				KBASEP_DEBUG_ASSERT_OUT(KBASEP_DEBUG_PRINT_TRACE, KBASEP_DEBUG_PRINT_FUNCTION, __VA_ARGS__);\
-				KBASE_CALL_ASSERT_HOOK();\
-				BUG();\
-			} \
-		} while (false)
-#endif				/* KBASE_DEBUG_DISABLE_ASSERTS */
+#define KBASE_DEBUG_ASSERT_MSG(expr, ...)                                                  \
+	do {                                                                               \
+		if (!(expr)) {                                                             \
+			KBASEP_DEBUG_ASSERT_OUT(KBASEP_DEBUG_PRINT_TRACE,                  \
+						KBASEP_DEBUG_PRINT_FUNCTION, __VA_ARGS__); \
+			KBASE_CALL_ASSERT_HOOK();                                          \
+			BUG();                                                             \
+		}                                                                          \
+	} while (false)
+#endif /* KBASE_DEBUG_DISABLE_ASSERTS */
 
 /**
  * KBASE_DEBUG_CODE() - Executes the code inside the macro only in debug mode
@@ -132,7 +134,7 @@ struct kbasep_debug_assert_cb {
 #define KBASE_DEBUG_CODE(X) X
 #else
 #define KBASE_DEBUG_CODE(X) CSTD_NOP()
-#endif				/* CONFIG_MALI_BIFROST_DEBUG */
+#endif /* CONFIG_MALI_BIFROST_DEBUG */
 
 /** @} */
 
@@ -163,4 +165,4 @@ void kbase_debug_assert_register_hook(kbase_debug_assert_hook *func, void *param
  */
 void kbasep_debug_assert_call_hook(void);
 
-#endif				/* _KBASE_DEBUG_H */
+#endif /* _KBASE_DEBUG_H */

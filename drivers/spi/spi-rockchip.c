@@ -173,6 +173,9 @@
 
 #define ROCKCHIP_SPI_REGISTER_SIZE		0x1000
 
+#define ROCKCHIP_SPI_XFER_TIMEOUT_MS		4000
+#define ROCKCHIP_AUTOSUSPEND_TIMEOUT		500
+
 enum rockchip_spi_xfer_mode {
 	ROCKCHIP_SPI_DMA,
 	ROCKCHIP_SPI_IRQ,
@@ -214,6 +217,8 @@ struct rockchip_spi {
 	u8 rsd;
 	u8 csm;
 	bool poll; /* only support transfer data by cpu polling */
+	bool retry_poll; /* SPI adjustment when the system irq abnormally */
+	bool retry_poll_active;
 
 	bool cs_asserted[ROCKCHIP_SPI_MAX_CS_NUM];
 
@@ -239,23 +244,23 @@ static inline void spi_enable_chip(struct rockchip_spi *rs, bool enable)
 static inline void wait_for_tx_idle(struct rockchip_spi *rs, bool slave_mode)
 {
 	unsigned long timeout = jiffies + msecs_to_jiffies(5);
-	u32 bit_filed = SR_BUSY;
+	u32 bit_field = SR_BUSY;
 	u32 idle_val = 0;
 	uint32_t speed, us;
 
 	if (slave_mode && rs->version == ROCKCHIP_SPI_VER2_TYPE2) {
-		bit_filed = SR_SLAVE_TX_BUSY;
+		bit_field = SR_SLAVE_TX_BUSY;
 		idle_val = 0;
 	} else if (slave_mode) {
-		bit_filed = SR_TF_EMPTY;
-		idle_val = 1;
+		bit_field = SR_TF_EMPTY;
+		idle_val = SR_TF_EMPTY;
 	}
 
 	do {
-		if ((readl_relaxed(rs->regs + ROCKCHIP_SPI_SR) & bit_filed) == idle_val) {
-			if (bit_filed == SR_TF_EMPTY) {
+		if ((readl_relaxed(rs->regs + ROCKCHIP_SPI_SR) & bit_field) == idle_val) {
+			if (bit_field == SR_TF_EMPTY) {
 				speed = rs->speed_hz;
-				us = (8 * 1000000 / speed) * 2;
+				us = (8 * 1000000 / speed) * 2 + 1;
 				udelay(us);
 			}
 			return;
@@ -312,6 +317,8 @@ static void rockchip_spi_handle_err(struct spi_controller *ctlr,
 {
 	struct rockchip_spi *rs = spi_controller_get_devdata(ctlr);
 
+	if (rs->retry_poll)
+		dev_err(rs->dev, "poll=%d-%d\n", rs->poll, rs->retry_poll_active);
 	dev_err(rs->dev, "state=%x\n", atomic_read(&rs->state));
 	dev_err(rs->dev, "tx_left=%x\n", rs->tx_left);
 	dev_err(rs->dev, "rx_left=%x\n", rs->rx_left);
@@ -332,6 +339,8 @@ static void rockchip_spi_handle_err(struct spi_controller *ctlr,
 	if (atomic_read(&rs->state) & RXDMA)
 		dmaengine_terminate_async(ctlr->dma_rx);
 	atomic_set(&rs->state, 0);
+	if (rs->retry_poll)
+		rs->retry_poll_active = true;
 }
 
 static void rockchip_spi_pio_writer(struct rockchip_spi *rs)
@@ -576,7 +585,7 @@ static int rockchip_spi_pio_transfer(struct rockchip_spi *rs,
 
 	ms = 8LL * 1000LL * xfer->len;
 	do_div(ms, speed_hz);
-	ms += ms + 200; /* some tolerance */
+	ms += ROCKCHIP_SPI_XFER_TIMEOUT_MS; /* some tolerance */
 
 	if (ms > UINT_MAX || ctlr->slave)
 		ms = UINT_MAX;
@@ -633,7 +642,7 @@ static int rockchip_spi_config(struct rockchip_spi *rs,
 	cr0 |= (spi->mode & 0x3U) << CR0_SCPH_OFFSET;
 	if (spi->mode & SPI_LSB_FIRST)
 		cr0 |= CR0_FBM_LSB << CR0_FBM_OFFSET;
-	if (spi->mode & SPI_CS_HIGH)
+	if (spi->mode & SPI_CS_HIGH && !spi->cs_gpiod)
 		cr0 |= BIT(spi->chip_select) << CR0_SOI_OFFSET;
 
 	if (xfer->rx_buf && xfer->tx_buf) {
@@ -782,7 +791,7 @@ static int rockchip_spi_transfer_wait(struct spi_controller *ctlr,
 
 		ms = 8LL * 1000LL * xfer->len;
 		do_div(ms, speed_hz);
-		ms += ms + 200; /* some tolerance */
+		ms += ROCKCHIP_SPI_XFER_TIMEOUT_MS; /* some tolerance */
 
 		if (ms > UINT_MAX)
 			ms = UINT_MAX;
@@ -830,7 +839,7 @@ static int rockchip_spi_transfer_one(
 
 	rs->n_bytes = xfer->bits_per_word <= 8 ? 1 : 2;
 	rs->xfer = xfer;
-	if (rs->poll) {
+	if (rs->poll || rs->retry_poll_active) {
 		xfer_mode = ROCKCHIP_SPI_POLL;
 	} else {
 		use_dma = ctlr->can_dma ? ctlr->can_dma(ctlr, spi, xfer) : false;
@@ -894,17 +903,12 @@ static int rockchip_spi_setup(struct spi_device *spi)
 	struct rockchip_spi *rs = spi_controller_get_devdata(spi->controller);
 	u32 cr0;
 
-	if (!spi->cs_gpiod && (spi->mode & SPI_CS_HIGH) && !rs->cs_high_supported) {
-		dev_warn(&spi->dev, "setup: non GPIO CS can't be active-high\n");
-		return -EINVAL;
-	}
-
 	pm_runtime_get_sync(rs->dev);
 
 	cr0 = readl_relaxed(rs->regs + ROCKCHIP_SPI_CTRLR0);
 
 	cr0 |= ((spi->mode & 0x3) << CR0_SCPH_OFFSET);
-	if (spi->mode & SPI_CS_HIGH)
+	if (spi->mode & SPI_CS_HIGH && !spi->cs_gpiod)
 		cr0 |= BIT(spi->chip_select) << CR0_SOI_OFFSET;
 	if (spi_controller_is_slave(spi->controller))
 		cr0 |= CR0_OPM_SLAVE << CR0_OPM_OFFSET;
@@ -1109,13 +1113,11 @@ static int rockchip_spi_probe(struct platform_device *pdev)
 	if (quirks_cfg)
 		rs->max_baud_div_in_cpha = quirks_cfg->max_baud_div_in_cpha;
 
-	if (!device_property_read_u32(&pdev->dev, "rockchip,autosuspend-delay-ms", &val)) {
-		if (val > 0) {
-			pm_runtime_set_autosuspend_delay(&pdev->dev, val);
-			pm_runtime_use_autosuspend(&pdev->dev);
-		}
-	}
-
+	device_property_read_u32(&pdev->dev, "rockchip,autosuspend-delay-ms", &val);
+	if (val <= 0)
+		val = ROCKCHIP_AUTOSUSPEND_TIMEOUT;
+	pm_runtime_set_autosuspend_delay(&pdev->dev, val);
+	pm_runtime_use_autosuspend(&pdev->dev);
 	pm_runtime_set_active(&pdev->dev);
 	pm_runtime_enable(&pdev->dev);
 
@@ -1176,8 +1178,9 @@ static int rockchip_spi_probe(struct platform_device *pdev)
 	}
 
 	rs->poll = device_property_read_bool(&pdev->dev, "rockchip,poll-only");
+	rs->retry_poll = device_property_read_bool(&pdev->dev, "rockchip,failed-retry-poll");
 	init_completion(&rs->xfer_done);
-	if (rs->poll && slave_mode) {
+	if ((rs->poll || rs->retry_poll) && slave_mode) {
 		dev_err(rs->dev, "only support rockchip,poll-only property in master mode\n");
 		ret = -EINVAL;
 		goto err_free_dma_rx;
@@ -1315,6 +1318,9 @@ static int rockchip_spi_runtime_resume(struct device *dev)
 	ret = clk_prepare_enable(rs->spiclk);
 	if (ret < 0)
 		clk_disable_unprepare(rs->apb_pclk);
+
+	if (rs->retry_poll)
+		rs->retry_poll_active = false;
 
 	return 0;
 }

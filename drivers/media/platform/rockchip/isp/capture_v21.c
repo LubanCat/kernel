@@ -827,7 +827,8 @@ static int dmatx3_config_mi(struct rkisp_stream *stream)
 	mi_frame_end_int_enable(stream);
 	mi_wr_ctrl2(base, SW_RAW3_WR_AUTOUPD);
 	mi_raw_length(stream);
-	vc = csi->sink[CSI_SRC_CH4 - 1].index;
+	/* sensor PAD2 index */
+	vc = csi->sink[CSI_SRC_CH2 - 1].index;
 	raw_wr_ctrl(stream,
 		SW_CSI_RAW_WR_CH_EN(vc) |
 		stream->memory |
@@ -1095,7 +1096,7 @@ static struct streams_ops rkisp2_dmatx0_streams_ops = {
 	.config_mi = dmatx0_config_mi,
 	.enable_mi = dmatx_enable_mi,
 	.stop_mi = dmatx_stop_mi,
-	.is_stream_stopped = dmatx0_is_stream_stopped,
+	.is_stream_stopped = dmatx_is_stream_stopped,
 	.update_mi = update_dmatx_v2,
 	.frame_end = mi_frame_end,
 };
@@ -1104,7 +1105,7 @@ static struct streams_ops rkisp2_dmatx2_streams_ops = {
 	.config_mi = dmatx2_config_mi,
 	.enable_mi = dmatx_enable_mi,
 	.stop_mi = dmatx_stop_mi,
-	.is_stream_stopped = dmatx2_is_stream_stopped,
+	.is_stream_stopped = dmatx_is_stream_stopped,
 	.update_mi = update_dmatx_v2,
 	.frame_end = mi_frame_end,
 };
@@ -1113,7 +1114,7 @@ static struct streams_ops rkisp2_dmatx3_streams_ops = {
 	.config_mi = dmatx3_config_mi,
 	.enable_mi = dmatx_enable_mi,
 	.stop_mi = dmatx_stop_mi,
-	.is_stream_stopped = dmatx3_is_stream_stopped,
+	.is_stream_stopped = dmatx_is_stream_stopped,
 	.update_mi = update_dmatx_v2,
 	.frame_end = mi_frame_end,
 };
@@ -1403,98 +1404,6 @@ static void rkisp_stream_stop(struct rkisp_stream *stream)
 	stream->interlaced = false;
 }
 
-static void vir_cpy_image(struct work_struct *work)
-{
-	struct rkisp_vir_cpy *cpy =
-	container_of(work, struct rkisp_vir_cpy, work);
-	struct rkisp_stream *vir = cpy->stream;
-	struct rkisp_buffer *src_buf = NULL;
-	unsigned long lock_flags = 0;
-	u32 i;
-
-	v4l2_dbg(1, rkisp_debug, &vir->ispdev->v4l2_dev,
-		 "%s enter\n", __func__);
-
-	vir->streaming = true;
-	spin_lock_irqsave(&vir->vbq_lock, lock_flags);
-	if (!list_empty(&cpy->queue)) {
-		src_buf = list_first_entry(&cpy->queue,
-				struct rkisp_buffer, queue);
-		list_del(&src_buf->queue);
-	}
-	spin_unlock_irqrestore(&vir->vbq_lock, lock_flags);
-
-	while (src_buf || vir->streaming) {
-		if (vir->stopping || !vir->streaming)
-			goto end;
-
-		if (!src_buf)
-			wait_for_completion(&cpy->cmpl);
-
-		vir->frame_end = false;
-		spin_lock_irqsave(&vir->vbq_lock, lock_flags);
-
-		if (!src_buf && !list_empty(&cpy->queue)) {
-			src_buf = list_first_entry(&cpy->queue,
-					struct rkisp_buffer, queue);
-			list_del(&src_buf->queue);
-		}
-
-		if (src_buf && !vir->curr_buf && !list_empty(&vir->buf_queue)) {
-			vir->curr_buf = list_first_entry(&vir->buf_queue,
-					struct rkisp_buffer, queue);
-			list_del(&vir->curr_buf->queue);
-		}
-		spin_unlock_irqrestore(&vir->vbq_lock, lock_flags);
-
-		if (!vir->curr_buf || !src_buf)
-			goto end;
-
-		for (i = 0; i < vir->out_isp_fmt.mplanes; i++) {
-			u32 payload_size = vir->out_fmt.plane_fmt[i].sizeimage;
-			void *src = vb2_plane_vaddr(&src_buf->vb.vb2_buf, i);
-			void *dst = vb2_plane_vaddr(&vir->curr_buf->vb.vb2_buf, i);
-
-			if (!src || !dst)
-				break;
-			vb2_set_plane_payload(&vir->curr_buf->vb.vb2_buf, i, payload_size);
-			memcpy(dst, src, payload_size);
-		}
-
-		vir->curr_buf->vb.sequence = src_buf->vb.sequence;
-		vir->curr_buf->vb.vb2_buf.timestamp = src_buf->vb.vb2_buf.timestamp;
-		vb2_buffer_done(&vir->curr_buf->vb.vb2_buf, VB2_BUF_STATE_DONE);
-		vir->curr_buf = NULL;
-end:
-		if (src_buf)
-			vb2_buffer_done(&src_buf->vb.vb2_buf, VB2_BUF_STATE_DONE);
-		src_buf = NULL;
-		spin_lock_irqsave(&vir->vbq_lock, lock_flags);
-
-		if (!list_empty(&cpy->queue)) {
-			src_buf = list_first_entry(&cpy->queue,
-					struct rkisp_buffer, queue);
-			list_del(&src_buf->queue);
-		} else if (vir->stopping) {
-			vir->streaming = false;
-		}
-
-		spin_unlock_irqrestore(&vir->vbq_lock, lock_flags);
-	}
-
-	vir->frame_end = true;
-
-	if (vir->stopping) {
-		vir->stopping = false;
-		vir->streaming = false;
-		wake_up(&vir->done);
-	}
-
-	v4l2_dbg(1, rkisp_debug, &vir->ispdev->v4l2_dev,
-		 "%s exit\n", __func__);
-}
-
-
 /*
  * Most of registers inside rockchip isp1 have shadow register since
  * they must be not changed during processing a frame.
@@ -1574,7 +1483,12 @@ static void rkisp_buf_queue(struct vb2_buffer *vb)
 
 	memset(ispbuf->buff_addr, 0, sizeof(ispbuf->buff_addr));
 	for (i = 0; i < isp_fmt->mplanes; i++) {
-		vb2_plane_vaddr(vb, i);
+		ispbuf->vaddr[i] = vb2_plane_vaddr(vb, i);
+		if (rkisp_buf_dbg && ispbuf->vaddr[i]) {
+			u64 *data = ispbuf->vaddr[i];
+
+			*data = RKISP_DATA_CHECK;
+		}
 		if (stream->ispdev->hw_dev->is_dma_sg_ops) {
 			sgt = vb2_dma_sg_plane_desc(vb, i);
 			ispbuf->buff_addr[i] = sg_dma_address(sgt->sgl);
@@ -1787,7 +1701,7 @@ rkisp_start_streaming(struct vb2_queue *queue, unsigned int count)
 		struct rkisp_stream *t = &dev->cap_dev.stream[stream->conn_id];
 
 		if (t->streaming) {
-			INIT_WORK(&dev->cap_dev.vir_cpy.work, vir_cpy_image);
+			INIT_WORK(&dev->cap_dev.vir_cpy.work, rkisp_stream_vir_cpy_image);
 			init_completion(&dev->cap_dev.vir_cpy.cmpl);
 			INIT_LIST_HEAD(&dev->cap_dev.vir_cpy.queue);
 			dev->cap_dev.vir_cpy.stream = stream;

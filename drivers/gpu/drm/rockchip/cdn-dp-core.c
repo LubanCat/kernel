@@ -6,11 +6,14 @@
 
 #include <linux/clk.h>
 #include <linux/component.h>
+#include <linux/gpio/consumer.h>
 #include <linux/firmware.h>
+#include <linux/irq.h>
 #include <linux/mfd/syscon.h>
 #include <linux/phy/phy.h>
 #include <linux/regmap.h>
 #include <linux/reset.h>
+#include <uapi/linux/videodev2.h>
 
 #include <sound/hdmi-codec.h>
 
@@ -142,6 +145,9 @@ static void cdn_dp_clk_disable(struct cdn_dp_device *dp)
 
 static int cdn_dp_get_port_lanes(struct cdn_dp_port *port)
 {
+	if (port->hpd_gpio && !gpiod_get_value_cansleep(port->hpd_gpio))
+		return 0;
+
 	return phy_get_bus_width(port->phy);
 }
 
@@ -351,8 +357,7 @@ static int cdn_dp_get_sink_capability(struct cdn_dp_device *dp)
 	if (!cdn_dp_check_sink_connection(dp))
 		return -ENODEV;
 
-	ret = drm_dp_dpcd_read(&dp->aux, DP_DPCD_REV, dp->dpcd,
-			       sizeof(dp->dpcd));
+	ret = drm_dp_read_dpcd_caps(&dp->aux, dp->dpcd);
 	if (ret < 0) {
 		DRM_DEV_ERROR(dp->dev, "Failed to get caps %d\n", ret);
 		return ret;
@@ -434,12 +439,77 @@ static int cdn_dp_disable_phy(struct cdn_dp_device *dp,
 	return 0;
 }
 
+static int cdn_dp_link_power_up(struct cdn_dp_device *dp)
+{
+	u8 value;
+	int err;
+
+	/* DP_SET_POWER register is only available on DPCD v1.1 and later */
+	if (dp->dpcd[DP_DPCD_REV] < 0x11)
+		return 0;
+
+	err = drm_dp_dpcd_readb(&dp->aux, DP_SET_POWER, &value);
+	if (err < 0)
+		return err;
+
+	value &= ~DP_SET_POWER_MASK;
+	value |= DP_SET_POWER_D0;
+
+	err = drm_dp_dpcd_writeb(&dp->aux, DP_SET_POWER, value);
+	if (err < 0)
+		return err;
+
+	/*
+	 * According to the DP 1.1 specification, a "Sink Device must exit the
+	 * power saving state within 1 ms" (Section 2.5.3.1, Table 5-52, "Sink
+	 * Control Field" (register 0x600).
+	 */
+	usleep_range(1000, 2000);
+
+	value &= ~DP_SET_POWER_MASK;
+	value |= DP_SET_POWER_D0;
+
+	err = drm_dp_dpcd_writeb(&dp->aux, DP_SET_POWER, value);
+	if (err < 0)
+		return err;
+
+	usleep_range(1000, 2000);
+
+	return 0;
+}
+
+static int cdn_dp_link_power_down(struct cdn_dp_device *dp)
+{
+	u8 value;
+	int err;
+
+	/* DP_SET_POWER register is only available on DPCD v1.1 and later */
+	if (dp->dpcd[DP_DPCD_REV] < 0x11)
+		return 0;
+
+	err = drm_dp_dpcd_readb(&dp->aux, DP_SET_POWER, &value);
+	if (err < 0)
+		return err;
+
+	value &= ~DP_SET_POWER_MASK;
+	value |= DP_SET_POWER_D3;
+
+	err = drm_dp_dpcd_writeb(&dp->aux, DP_SET_POWER, value);
+	if (err < 0)
+		return err;
+
+	return 0;
+}
+
 static int cdn_dp_disable(struct cdn_dp_device *dp)
 {
 	int ret, i;
 
 	if (!dp->active)
 		return 0;
+
+	if (dp->connected)
+		cdn_dp_link_power_down(dp);
 
 	for (i = 0; i < dp->ports; i++)
 		cdn_dp_disable_phy(dp, dp->port[i]);
@@ -498,7 +568,7 @@ static int cdn_dp_enable(struct cdn_dp_device *dp)
 			ret = cdn_dp_enable_phy(dp, port);
 			if (ret)
 				continue;
-
+			cdn_dp_link_power_up(dp);
 			ret = cdn_dp_get_sink_capability(dp);
 			if (ret) {
 				cdn_dp_disable_phy(dp, port);
@@ -658,11 +728,25 @@ static int cdn_dp_encoder_atomic_check(struct drm_encoder *encoder,
 				       struct drm_crtc_state *crtc_state,
 				       struct drm_connector_state *conn_state)
 {
+	struct cdn_dp_device *dp = encoder_to_dp(encoder);
+	struct drm_display_info *di = &dp->connector.display_info;
 	struct rockchip_crtc_state *s = to_rockchip_crtc_state(crtc_state);
+
+	switch (di->bpc) {
+	case 6:
+		s->bus_format = MEDIA_BUS_FMT_RGB666_1X24_CPADHI;
+		break;
+	case 8:
+	default:
+		s->bus_format = MEDIA_BUS_FMT_RGB888_1X24;
+		break;
+	}
 
 	s->output_mode = ROCKCHIP_OUT_MODE_AAAA;
 	s->output_type = DRM_MODE_CONNECTOR_DisplayPort;
 	s->tv_state = &conn_state->tv;
+	s->eotf = HDMI_EOTF_TRADITIONAL_GAMMA_SDR;
+	s->color_space = V4L2_COLORSPACE_DEFAULT;
 
 	return 0;
 }
@@ -870,7 +954,8 @@ static int cdn_dp_request_firmware(struct cdn_dp_device *dp)
 	mutex_unlock(&dp->lock);
 
 	while (time_before(jiffies, timeout)) {
-		ret = request_firmware(&dp->fw, CDN_DP_FIRMWARE, dp->dev);
+		ret = request_firmware_direct(&dp->fw, CDN_DP_FIRMWARE,
+					      dp->dev);
 		if (ret == -ENOENT) {
 			msleep(sleep);
 			sleep *= 2;
@@ -891,6 +976,16 @@ static int cdn_dp_request_firmware(struct cdn_dp_device *dp)
 out:
 	mutex_lock(&dp->lock);
 	return ret;
+}
+
+static irqreturn_t cdn_dp_hpd_irq_handler(int irq, void *arg)
+{
+	struct cdn_dp_port *port = arg;
+	struct cdn_dp_device *dp = port->dp;
+
+	schedule_delayed_work(&dp->event_work, 0);
+
+	return IRQ_HANDLED;
 }
 
 static void cdn_dp_pd_event_work(struct work_struct *work)
@@ -1008,7 +1103,7 @@ static int cdn_dp_bind(struct device *dev, struct device *master, void *data)
 	struct drm_encoder *encoder;
 	struct drm_connector *connector;
 	struct drm_device *drm_dev = data;
-	int ret;
+	int ret, i;
 
 	ret = cdn_dp_parse_dt(dp);
 	if (ret < 0)
@@ -1071,6 +1166,14 @@ static int cdn_dp_bind(struct device *dev, struct device *master, void *data)
 
 	pm_runtime_enable(dev);
 
+	for (i = 0; i < dp->ports; i++) {
+		if (!dp->port[i])
+			continue;
+
+		if (dp->port[i]->hpd_gpio)
+			enable_irq(dp->port[i]->hpd_irq);
+	}
+
 	schedule_delayed_work(&dp->event_work, 0);
 
 	return 0;
@@ -1087,6 +1190,15 @@ static void cdn_dp_unbind(struct device *dev, struct device *master, void *data)
 	struct cdn_dp_device *dp = dev_get_drvdata(dev);
 	struct drm_encoder *encoder = &dp->encoder;
 	struct drm_connector *connector = &dp->connector;
+	int i;
+
+	for (i = 0; i < dp->ports; i++) {
+		if (!dp->port[i])
+			continue;
+
+		if (dp->port[i]->hpd_gpio)
+			disable_irq(dp->port[i]->hpd_irq);
+	}
 
 	cancel_delayed_work_sync(&dp->event_work);
 	cdn_dp_encoder_disable(encoder);
@@ -1140,6 +1252,7 @@ static int cdn_dp_probe(struct platform_device *pdev)
 	struct cdn_dp_port *port;
 	struct cdn_dp_device *dp;
 	struct phy *phy;
+	int ret;
 	int i;
 
 	dp = devm_kzalloc(dev, sizeof(*dp), GFP_KERNEL);
@@ -1174,12 +1287,54 @@ static int cdn_dp_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
+	for (i = 0; i < dp->ports; i++) {
+		if (!dp->port[i])
+			continue;
+
+		port = dp->port[i];
+		port->hpd_gpio = devm_gpiod_get_index_optional(dev, "hpd", i, GPIOD_IN);
+		if (IS_ERR(port->hpd_gpio)) {
+			DRM_DEV_ERROR(dev, "failed to get port%d hpd gpio\n", i);
+			return PTR_ERR(port->hpd_gpio);
+		}
+
+		if (port->hpd_gpio) {
+			port->hpd_irq = gpiod_to_irq(port->hpd_gpio);
+
+			if (port->hpd_irq < 0) {
+				DRM_DEV_ERROR(dev, "failed to get port%d hpd irq\n", i);
+				return port->hpd_irq;
+			}
+
+			irq_set_status_flags(port->hpd_irq, IRQ_NOAUTOEN);
+			ret = devm_request_threaded_irq(dev, port->hpd_irq,
+							cdn_dp_hpd_irq_handler, NULL,
+							IRQF_TRIGGER_RISING |
+							IRQF_TRIGGER_FALLING |
+							IRQF_ONESHOT, "cdn-dp-hpd", port);
+			if (ret) {
+				DRM_DEV_ERROR(dev, "failed to request HPD interrupt\n");
+				return ret;
+			}
+		}
+	}
+
 	mutex_init(&dp->lock);
 	dev_set_drvdata(dev, dp);
 
-	cdn_dp_audio_codec_init(dp, dev);
+	ret = cdn_dp_audio_codec_init(dp, dev);
+	if (ret)
+		return ret;
 
-	return component_add(dev, &cdn_dp_component_ops);
+	ret = component_add(dev, &cdn_dp_component_ops);
+	if (ret)
+		goto err_audio_deinit;
+
+	return 0;
+
+err_audio_deinit:
+	platform_device_unregister(dp->audio_pdev);
+	return ret;
 }
 
 static int cdn_dp_remove(struct platform_device *pdev)

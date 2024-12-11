@@ -1572,7 +1572,7 @@ int rockchip_pll_clk_compensation(struct clk *clk, int ppm)
 	static u32 frac, fbdiv, s, p;
 	bool negative;
 	u32 pllcon, pllcon0, pllcon2, fbdiv_mask, frac_mask, frac_shift;
-	u64 fracdiv, m, n;
+	u64 fracdiv, m, n, frac_c;
 
 	if ((ppm > 1000) || (ppm < -1000))
 		return -EINVAL;
@@ -1666,23 +1666,23 @@ int rockchip_pll_clk_compensation(struct clk *clk, int ppm)
 				return -EINVAL;
 			fracdiv = negative ? ~n + 1 : n;
 		} else if (frac & BIT(15)) {
-			frac = (~(frac - 1)) & RK3588_PLLCON2_K_MASK;
-			m = div64_u64((uint64_t)frac * ppm, 100000);
+			frac_c = (~(frac - 1)) & RK3588_PLLCON2_K_MASK;
+			m = div64_u64(frac_c * ppm, 100000);
 			n = div64_u64((uint64_t)ppm * 65536 * fbdiv, 100000);
 			if (negative) {
-				fracdiv = frac + (div64_u64(m + n, 10));
+				fracdiv = frac_c + (div64_u64(m + n, 10));
 				if (fracdiv > 32767)
 					return -EINVAL;
 				fracdiv = ~fracdiv + 1;
 			} else {
 				s = div64_u64(m + n, 10);
-				if (frac >= s) {
-					fracdiv = frac - s;
+				if (frac_c >= s) {
+					fracdiv = frac_c - s;
 					if (fracdiv > 32767)
 						return -EINVAL;
 					fracdiv = ~fracdiv + 1;
 				} else {
-					fracdiv = s - frac;
+					fracdiv = s - frac_c;
 					if (fracdiv > 32767)
 						return -EINVAL;
 				}

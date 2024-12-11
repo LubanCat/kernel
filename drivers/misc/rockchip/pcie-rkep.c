@@ -511,6 +511,14 @@ static int pcie_rkep_mmap(struct file *file, struct vm_area_struct *vma)
 		}
 		addr = pci_resource_start(dev, 0);
 		break;
+	case PCIE_EP_MMAP_RESOURCE_BAR1:
+		bar_size = pci_resource_len(dev, 1);
+		if (size > bar_size) {
+			dev_warn(&pcie_rkep->pdev->dev, "bar1 mmap size is out of limitation\n");
+			return -EINVAL;
+		}
+		addr = pci_resource_start(dev, 1);
+		break;
 	case PCIE_EP_MMAP_RESOURCE_BAR2:
 		bar_size = pci_resource_len(dev, 2);
 		if (size > bar_size) {
@@ -526,6 +534,14 @@ static int pcie_rkep_mmap(struct file *file, struct vm_area_struct *vma)
 			return -EINVAL;
 		}
 		addr = pci_resource_start(dev, 4);
+		break;
+	case PCIE_EP_MMAP_RESOURCE_BAR5:
+		bar_size = pci_resource_len(dev, 5);
+		if (size > bar_size) {
+			dev_warn(&pcie_rkep->pdev->dev, "bar5 mmap size is out of limitation\n");
+			return -EINVAL;
+		}
+		addr = pci_resource_start(dev, 5);
 		break;
 	case PCIE_EP_MMAP_RESOURCE_USER_MEM:
 		if (size > RKEP_USER_MEM_SIZE) {

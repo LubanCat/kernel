@@ -334,6 +334,11 @@ void rve_job_done(struct rve_scheduler_t *scheduler, int ret)
 	if (DEBUGGER_EN(MSG))
 		pr_info("irq thread work_status[%.8x]\n", error_flag);
 
+	if (DEBUGGER_EN(REG)) {
+		pr_err("job done:");
+		rve_dump_read_back_reg(scheduler);
+	}
+
 	/* disable llp enable, TODO: support pause mode */
 	rve_write(0, RVE_SWLTB3_ENABLE, scheduler);
 
@@ -527,25 +532,22 @@ int rve_job_config_by_user_ctx(struct rve_user_ctx_t *user_ctx)
 
 	spin_unlock_irqrestore(&ctx->lock, flags);
 
-	/* TODO: user cmd_num */
-	user_ctx->cmd_num = 1;
-
-	if (ctx->regcmd_data == NULL) {
-		ctx->regcmd_data = kmalloc_array(user_ctx->cmd_num,
-			sizeof(struct rve_cmd_reg_array_t), GFP_KERNEL);
+	if (user_ctx->cmd_num > 0) {
 		if (ctx->regcmd_data == NULL) {
-			pr_err("regcmd_data alloc error!\n");
-			return -ENOMEM;
+			ctx->regcmd_data = kmalloc_array(user_ctx->cmd_num,
+				sizeof(struct rve_cmd_reg_array_t), GFP_KERNEL);
+			if (ctx->regcmd_data == NULL)
+				return -ENOMEM;
 		}
-	}
 
-	if (unlikely(copy_from_user(ctx->regcmd_data,
-					u64_to_user_ptr(user_ctx->regcmd_data),
-				    sizeof(struct rve_cmd_reg_array_t) * user_ctx->cmd_num))) {
-		pr_err("regcmd_data copy_from_user failed\n");
-		ret = -EFAULT;
+		if (unlikely(copy_from_user(ctx->regcmd_data,
+				u64_to_user_ptr(user_ctx->regcmd_data),
+				sizeof(struct rve_cmd_reg_array_t) * user_ctx->cmd_num))) {
+			pr_err("regcmd_data copy_from_user failed\n");
+			ret = -EFAULT;
 
-		goto err_free_regcmd_data;
+			goto err_free_regcmd_data;
+		}
 	}
 
 	ctx->sync_mode = user_ctx->sync_mode;
@@ -569,6 +571,7 @@ int rve_job_commit_by_user_ctx(struct rve_user_ctx_t *user_ctx)
 	int ret = 0;
 	unsigned long flags;
 	int i;
+	int job_num;
 
 	ctx_manager = rve_drvdata->pend_ctx_manager;
 
@@ -587,18 +590,19 @@ int rve_job_commit_by_user_ctx(struct rve_user_ctx_t *user_ctx)
 	}
 
 	/* Reset */
-	ctx->finished_job_count = 0;
 	ctx->running_job_count = 0;
-	ctx->is_running = true;
 	ctx->disable_auto_cancel = user_ctx->disable_auto_cancel;
 
 	ctx->sync_mode = user_ctx->sync_mode;
 	if (ctx->sync_mode == 0)
 		ctx->sync_mode = RVE_SYNC;
 
+	job_num = ctx->cmd_num - ctx->finished_job_count;
+	ctx->is_running = job_num > 0 ? true : false;
+
 	spin_unlock_irqrestore(&ctx->lock, flags);
 
-	for (i = 0; i < ctx->cmd_num; i++) {
+	for (i = 0; i < job_num; i++) {
 		ret = rve_job_commit(ctx);
 		if (ret < 0) {
 			pr_err("rve_job_commit failed, i = %d\n", i);
@@ -610,15 +614,17 @@ int rve_job_commit_by_user_ctx(struct rve_user_ctx_t *user_ctx)
 
 	user_ctx->out_fence_fd = ctx->out_fence_fd;
 
-	if (unlikely(copy_to_user(u64_to_user_ptr(user_ctx->regcmd_data),
-				  ctx->regcmd_data,
-				  sizeof(struct rve_cmd_reg_array_t) * ctx->cmd_num))) {
-		pr_err("ctx->regcmd_data copy_to_user failed\n");
-		return -EFAULT;
-	}
+	if (ctx->sync_mode == RVE_SYNC) {
+		if (unlikely(copy_to_user(u64_to_user_ptr(user_ctx->regcmd_data),
+					ctx->regcmd_data,
+					sizeof(struct rve_cmd_reg_array_t) * ctx->cmd_num))) {
+			pr_err("ctx->regcmd_data copy_to_user failed\n");
+			return -EFAULT;
+		}
 
-	if (!ctx->disable_auto_cancel && ctx->sync_mode == RVE_SYNC)
-		kref_put(&ctx->refcount, rve_internal_ctx_kref_release);
+		if (!ctx->disable_auto_cancel)
+			kref_put(&ctx->refcount, rve_internal_ctx_kref_release);
+	}
 
 	return ret;
 }

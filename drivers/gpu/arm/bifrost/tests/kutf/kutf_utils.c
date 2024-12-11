@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
- * (C) COPYRIGHT 2014, 2017, 2020-2022 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2014-2023 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -33,12 +33,11 @@ static char tmp_buffer[KUTF_MAX_DSPRINTF_LEN];
 
 static DEFINE_MUTEX(buffer_lock);
 
-const char *kutf_dsprintf(struct kutf_mempool *pool,
-		const char *fmt, ...)
+const char *kutf_dsprintf(struct kutf_mempool *pool, const char *fmt, ...)
 {
 	va_list args;
 	int len;
-	int size;
+	size_t size;
 	void *buffer;
 
 	mutex_lock(&buffer_lock);
@@ -51,11 +50,11 @@ const char *kutf_dsprintf(struct kutf_mempool *pool,
 		goto fail_format;
 	}
 
-	if (len >= sizeof(tmp_buffer)) {
+	if (len >= (int)sizeof(tmp_buffer)) {
 		pr_warn("%s: Truncated dsprintf message %s\n", __func__, fmt);
 		size = sizeof(tmp_buffer);
 	} else {
-		size = len + 1;
+		size = (size_t)(len + 1);
 	}
 
 	buffer = kutf_mempool_alloc(pool, size);

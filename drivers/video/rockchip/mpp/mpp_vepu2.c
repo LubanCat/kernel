@@ -1135,7 +1135,7 @@ static int vepu_core_probe(struct platform_device *pdev)
 
 	ret = devm_request_threaded_irq(dev, mpp->irq,
 					mpp_dev_irq,
-					mpp_dev_isr_sched,
+					NULL,
 					IRQF_SHARED,
 					dev_name(dev), mpp);
 	if (ret) {
@@ -1185,7 +1185,7 @@ static int vepu_probe_default(struct platform_device *pdev)
 
 	ret = devm_request_threaded_irq(dev, mpp->irq,
 					mpp_dev_irq,
-					mpp_dev_isr_sched,
+					NULL,
 					IRQF_SHARED,
 					dev_name(dev), mpp);
 	if (ret) {
@@ -1273,6 +1273,7 @@ struct platform_driver rockchip_vepu2_driver = {
 	.driver = {
 		.name = VEPU2_DRIVER_NAME,
 		.of_match_table = of_match_ptr(mpp_vepu2_dt_match),
+		.pm = &mpp_common_pm_ops,
 	},
 };
 EXPORT_SYMBOL(rockchip_vepu2_driver);

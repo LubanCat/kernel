@@ -970,12 +970,11 @@ static int spi_nor_write_16bit_cr_and_check(struct spi_nor *nor, u8 cr)
 		return ret;
 
 	sr_cr[1] = cr;
+	sr_written = sr_cr[0];
 
 	ret = spi_nor_write_sr(nor, sr_cr, 2);
 	if (ret)
 		return ret;
-
-	sr_written = sr_cr[0];
 
 	ret = spi_nor_read_sr(nor, sr_cr);
 	if (ret)
@@ -1560,7 +1559,7 @@ destroy_erase_cmd_list:
 static int spi_nor_erase(struct mtd_info *mtd, struct erase_info *instr)
 {
 	struct spi_nor *nor = mtd_to_spi_nor(mtd);
-	u32 addr, len;
+	u32 addr, len, target;
 	uint32_t rem;
 	int ret;
 
@@ -1613,11 +1612,21 @@ static int spi_nor_erase(struct mtd_info *mtd, struct erase_info *instr)
 	/* "sector"-at-a-time erase */
 	} else if (spi_nor_has_uniform_erase(nor)) {
 		while (len) {
+#ifdef CONFIG_MTD_SPI_NOR_AUTO_MERGE
+			if (addr < nor->auto_merge_single_chip_size)
+				nor->spimem->spi->cs_gpio = 0;
+			else
+				nor->spimem->spi->cs_gpio = 1;
+			target = addr - nor->spimem->spi->cs_gpio *
+				nor->auto_merge_single_chip_size;
+#else
+			target = addr;
+#endif
 			ret = spi_nor_write_enable(nor);
 			if (ret)
 				goto erase_err;
 
-			ret = spi_nor_erase_sector(nor, addr);
+			ret = spi_nor_erase_sector(nor, target);
 			if (ret)
 				goto erase_err;
 
@@ -2251,7 +2260,29 @@ static int spi_nor_read(struct mtd_info *mtd, loff_t from, size_t len,
 
 	while (len) {
 		loff_t addr = from;
+#ifdef CONFIG_MTD_SPI_NOR_AUTO_MERGE
+		size_t read_len = len;
 
+		if (addr < nor->auto_merge_single_chip_size &&
+		    (addr + len) > nor->auto_merge_single_chip_size)
+			read_len = nor->auto_merge_single_chip_size - addr;
+		if (addr < nor->auto_merge_single_chip_size)
+			nor->spimem->spi->cs_gpio = 0;
+		else
+			nor->spimem->spi->cs_gpio = 1;
+		addr -= nor->spimem->spi->cs_gpio * nor->auto_merge_single_chip_size;
+		addr = spi_nor_convert_addr(nor, addr);
+		ret = spi_nor_read_data(nor, addr, read_len, buf);
+		if (ret == 0) {
+			/* We shouldn't see 0-length reads */
+			ret = -EIO;
+			goto read_err;
+		}
+		if (ret < 0)
+			goto read_err;
+
+		WARN_ON(ret > read_len);
+#else
 		addr = spi_nor_convert_addr(nor, addr);
 
 		ret = spi_nor_read_data(nor, addr, len, buf);
@@ -2264,6 +2295,7 @@ static int spi_nor_read(struct mtd_info *mtd, loff_t from, size_t len,
 			goto read_err;
 
 		WARN_ON(ret > len);
+#endif
 		*retlen += ret;
 		buf += ret;
 		from += ret;
@@ -2298,6 +2330,13 @@ static int spi_nor_write(struct mtd_info *mtd, loff_t to, size_t len,
 		ssize_t written;
 		loff_t addr = to + i;
 
+#ifdef CONFIG_MTD_SPI_NOR_AUTO_MERGE
+		if (addr < nor->auto_merge_single_chip_size)
+			nor->spimem->spi->cs_gpio = 0;
+		else
+			nor->spimem->spi->cs_gpio = 1;
+		addr -= nor->spimem->spi->cs_gpio * nor->auto_merge_single_chip_size;
+#endif
 		/*
 		 * If page_size is a power of two, the offset can be quickly
 		 * calculated with an AND operation. On the other cases we
@@ -3140,6 +3179,13 @@ static void spi_nor_resume(struct mtd_info *mtd)
 	int ret;
 
 	/* re-initialize the nor chip */
+#ifdef CONFIG_MTD_SPI_NOR_AUTO_MERGE
+	nor->spimem->spi->cs_gpio = 0;
+	ret = spi_nor_init(nor);
+	if (ret)
+		dev_err(dev, "resume() failed\n");
+	nor->spimem->spi->cs_gpio = 1;
+#endif
 	ret = spi_nor_init(nor);
 	if (ret)
 		dev_err(dev, "resume() failed\n");
@@ -3291,6 +3337,9 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
 	int ret;
 	int i;
 
+#ifdef CONFIG_MTD_SPI_NOR_AUTO_MERGE
+	nor->spimem->spi->cs_gpio = 0;
+#endif
 	ret = spi_nor_check(nor);
 	if (ret)
 		return ret;
@@ -3435,6 +3484,22 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
 				mtd->eraseregions[i].erasesize,
 				mtd->eraseregions[i].erasesize / 1024,
 				mtd->eraseregions[i].numblocks);
+
+#ifdef CONFIG_MTD_SPI_NOR_AUTO_MERGE
+	nor->auto_merge_single_chip_size = nor->params->size;
+	nor->spimem->spi->cs_gpio = 1;
+	if (IS_ERR(spi_nor_read_id(nor))) {
+		dev_info(dev, "spinor enable auto_merge, but only cs0 valid\n");
+		return 0;
+	}
+	ret = spi_nor_init(nor);
+	if (!ret) {
+		mtd->size = mtd->size * 2;
+		nor->params->size = nor->params->size * 2;
+		dev_info(dev, "spinor enable auto_merge\n");
+	}
+#endif
+
 	return 0;
 }
 EXPORT_SYMBOL_GPL(spi_nor_scan);

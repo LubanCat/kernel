@@ -164,8 +164,10 @@ static int csi2_enable_clks(struct csi2_hw *csi2_hw)
 {
 	int ret = 0;
 
-	if (!csi2_hw->clks_bulk)
-		return -EINVAL;
+	if (!csi2_hw->clks_bulk) {
+		dev_info(csi2_hw->dev, "clks is NULL, please check it if needs\n");
+		return 0;
+	}
 
 	ret = clk_bulk_prepare_enable(csi2_hw->clks_num, csi2_hw->clks_bulk);
 	if (ret)
@@ -199,6 +201,10 @@ static void csi2_enable(struct csi2_hw *csi2_hw,
 	int lanes = csi2->bus.num_data_lanes;
 	struct v4l2_mbus_config mbus;
 	u32 val = 0;
+	u32 mask1 = 0;
+	struct v4l2_subdev *terminal_sensor_sd = NULL;
+	struct rkmodule_hdr_cfg hdr_cfg = {0};
+	int ret = 0;
 
 	csi2_g_mbus_config(&csi2->sd, 0, &mbus);
 	if (mbus.type == V4L2_MBUS_CSI2_DPHY)
@@ -208,6 +214,27 @@ static void csi2_enable(struct csi2_hw *csi2_hw,
 
 	write_csihost_reg(base, CSIHOST_N_LANES, lanes - 1);
 
+	if (csi2->sw_dbg)
+		val |= BIT(6);
+
+	get_remote_terminal_sensor(&csi2->sd, &terminal_sensor_sd);
+	if (terminal_sensor_sd) {
+		ret = v4l2_subdev_call(terminal_sensor_sd,
+				       core, ioctl,
+				       RKMODULE_GET_HDR_CFG,
+				       &hdr_cfg);
+		if (ret != 0)
+			hdr_cfg.hdr_mode = NO_HDR;
+		if (strstr(terminal_sensor_sd->name, "sc") &&
+		    (hdr_cfg.hdr_mode == HDR_X2 || hdr_cfg.hdr_mode == HDR_X3)) {
+			mask1 = CSIHOST_ERR1_ERR_BNDRY_MATCH;
+			csi2->is_detect_fs_fe = false;
+		} else {
+			csi2->is_detect_fs_fe = true;
+		}
+	} else {
+		csi2->is_detect_fs_fe = true;
+	}
 	if (host_type == RK_DSI_RXHOST) {
 		val |= SW_DSI_EN(1) | SW_DATATYPE_FS(0x01) |
 		       SW_DATATYPE_FE(0x11) | SW_DATATYPE_LS(0x21) |
@@ -221,7 +248,7 @@ static void csi2_enable(struct csi2_hw *csi2_hw,
 		       SW_DATATYPE_FE(0x01) | SW_DATATYPE_LS(0x02) |
 		       SW_DATATYPE_LE(0x03);
 		write_csihost_reg(base, CSIHOST_CONTROL, val);
-		write_csihost_reg(base, CSIHOST_MSK1, 0x0);
+		write_csihost_reg(base, CSIHOST_MSK1, mask1);
 		write_csihost_reg(base, CSIHOST_MSK2, 0xf000);
 		csi2->is_check_sot_sync = true;
 	}
@@ -249,7 +276,8 @@ static int csi2_start(struct csi2_dev *csi2)
 		csi2_hw_do_reset(csi2->csi2_hw[csi_idx]);
 		ret = csi2_enable_clks(csi2->csi2_hw[csi_idx]);
 		if (ret) {
-			v4l2_err(&csi2->sd, "%s: enable clks failed\n", __func__);
+			v4l2_err(&csi2->sd, "%s: enable clks failed, index %d\n",
+				 __func__, csi_idx);
 			return ret;
 		}
 		enable_irq(csi2->csi2_hw[csi_idx]->irq1);
@@ -590,6 +618,28 @@ static int rkcif_csi2_s_power(struct v4l2_subdev *sd, int on)
 	return 0;
 }
 
+static void csi2_quick_stream_on(struct csi2_dev *csi2)
+{
+	int csi_idx = 0;
+	int i = 0;
+
+	for (i = 0; i < csi2->csi_info.csi_num; i++) {
+		csi_idx = csi2->csi_info.csi_idx[i];
+		write_csihost_reg(csi2->csi2_hw[csi_idx]->base, CSIHOST_RESETN, 1);
+	}
+}
+
+static void csi2_quick_stream_off(struct csi2_dev *csi2)
+{
+	int csi_idx = 0;
+	int i = 0;
+
+	for (i = 0; i < csi2->csi_info.csi_num; i++) {
+		csi_idx = csi2->csi_info.csi_idx[i];
+		write_csihost_reg(csi2->csi2_hw[csi_idx]->base, CSIHOST_RESETN, 0);
+	}
+}
+
 static long rkcif_csi2_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 {
 	struct csi2_dev *csi2 = sd_to_dev(sd);
@@ -605,7 +655,16 @@ static long rkcif_csi2_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg
 		if (csi2->match_data->chip_id > CHIP_RV1126_CSI2)
 			ret = v4l2_subdev_call(sensor, core, ioctl,
 					       RKCIF_CMD_SET_CSI_IDX,
-					       arg);
+						   arg);
+		break;
+	case RKCIF_CMD_SET_PPI_DATA_DEBUG:
+		csi2->sw_dbg = *((u32 *)arg);
+		break;
+	case RKMODULE_SET_QUICK_STREAM:
+		if (*(int *)arg)
+			csi2_quick_stream_on(csi2);
+		else
+			csi2_quick_stream_off(csi2);
 		break;
 	default:
 		ret = -ENOIOCTLCMD;
@@ -621,6 +680,7 @@ static long rkcif_csi2_compat_ioctl32(struct v4l2_subdev *sd,
 {
 	void __user *up = compat_ptr(arg);
 	struct rkcif_csi_info csi_info;
+	int sw_dbg = 0;
 	long ret;
 
 	switch (cmd) {
@@ -629,6 +689,12 @@ static long rkcif_csi2_compat_ioctl32(struct v4l2_subdev *sd,
 			return -EFAULT;
 
 		ret = rkcif_csi2_ioctl(sd, cmd, &csi_info);
+		break;
+	case RKCIF_CMD_SET_PPI_DATA_DEBUG:
+		if (copy_from_user(&sw_dbg, up, sizeof(int)))
+			return -EFAULT;
+
+		ret = rkcif_csi2_ioctl(sd, cmd, &sw_dbg);
 		break;
 	default:
 		ret = -ENOIOCTLCMD;
@@ -822,7 +888,7 @@ static irqreturn_t rk_csirx_irq1_handler(int irq, void *ctx)
 			}
 		}
 
-		if (val & CSIHOST_ERR1_ERR_BNDRY_MATCH) {
+		if (val & CSIHOST_ERR1_ERR_BNDRY_MATCH && csi2->is_detect_fs_fe) {
 			err_list = &csi2->err_list[RK_CSI2_ERR_FS_FE_MIS];
 			err_list->cnt++;
 			csi2_find_err_vc((val >> 4) & 0xf, vc_info);
@@ -872,7 +938,7 @@ static irqreturn_t rk_csirx_irq1_handler(int irq, void *ctx)
 			csi2_err_strncat(err_str, cur_str);
 		}
 
-		pr_err("%s ERR1:0x%x %s\n", csi2_hw->dev_name, val, err_str);
+		pr_err("(0x%x)MIPI_CSI2 ERR1:0x%x %s\n", (u32)csi2_hw->res->start, val, err_str);
 
 		if (is_add_cnt) {
 			csi2->err_list[RK_CSI2_ERR_ALL].cnt++;
@@ -930,7 +996,7 @@ static irqreturn_t rk_csirx_irq2_handler(int irq, void *ctx)
 			csi2_err_strncat(err_str, cur_str);
 		}
 
-		pr_err("%s ERR2:0x%x %s\n", csi2_hw->dev_name, val, err_str);
+		pr_err("(0x%x)MIPI_CSI2 ERR2:0x%x %s\n", (u32)csi2_hw->res->start, val, err_str);
 	}
 
 	return IRQ_HANDLED;
@@ -1008,6 +1074,18 @@ static const struct csi2_match_data rk3562_csi2_match_data = {
 	.num_hw = 4,
 };
 
+static const struct csi2_match_data rk3576_csi2_match_data = {
+	.chip_id = CHIP_RK3576_CSI2,
+	.num_pads = CSI2_NUM_PADS_MAX,
+	.num_hw = 5,
+};
+
+static const struct csi2_match_data rv1103b_csi2_match_data = {
+	.chip_id = CHIP_RV1103B_CSI2,
+	.num_pads = CSI2_NUM_PADS_MAX,
+	.num_hw = 2,
+};
+
 static const struct of_device_id csi2_dt_ids[] = {
 	{
 		.compatible = "rockchip,rk1808-mipi-csi2",
@@ -1036,6 +1114,14 @@ static const struct of_device_id csi2_dt_ids[] = {
 	{
 		.compatible = "rockchip,rk3562-mipi-csi2",
 		.data = &rk3562_csi2_match_data,
+	},
+	{
+		.compatible = "rockchip,rk3576-mipi-csi2",
+		.data = &rk3576_csi2_match_data,
+	},
+	{
+		.compatible = "rockchip,rv1103b-mipi-csi2",
+		.data = &rv1103b_csi2_match_data,
 	},
 	{ /* sentinel */ }
 };
@@ -1190,6 +1276,14 @@ static const struct csi2_hw_match_data rk3562_csi2_hw_match_data = {
 	.chip_id = CHIP_RK3562_CSI2,
 };
 
+static const struct csi2_hw_match_data rk3576_csi2_hw_match_data = {
+	.chip_id = CHIP_RK3576_CSI2,
+};
+
+static const struct csi2_hw_match_data rv1103b_csi2_hw_match_data = {
+	.chip_id = CHIP_RV1103B_CSI2,
+};
+
 static const struct of_device_id csi2_hw_ids[] = {
 	{
 		.compatible = "rockchip,rk1808-mipi-csi2-hw",
@@ -1217,7 +1311,15 @@ static const struct of_device_id csi2_hw_ids[] = {
 	},
 	{
 		.compatible = "rockchip,rk3562-mipi-csi2-hw",
-		.data = &rk3588_csi2_hw_match_data,
+		.data = &rk3562_csi2_hw_match_data,
+	},
+	{
+		.compatible = "rockchip,rk3576-mipi-csi2-hw",
+		.data = &rk3576_csi2_hw_match_data,
+	},
+	{
+		.compatible = "rockchip,rv1103b-mipi-csi2-hw",
+		.data = &rv1103b_csi2_hw_match_data,
 	},
 	{ /* sentinel */ }
 };
@@ -1263,6 +1365,7 @@ static int csi2_hw_probe(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	csi2_hw->base = devm_ioremap_resource(&pdev->dev, res);
+	csi2_hw->res = res;
 	if (IS_ERR(csi2_hw->base)) {
 		resource_size_t offset = res->start;
 		resource_size_t size = resource_size(res);

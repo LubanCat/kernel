@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
- * (C) COPYRIGHT 2018-2022 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2018-2024 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -80,30 +80,40 @@ struct kbase_hwcnt_jm_physical_layout {
 
 /**
  * struct kbase_hwcnt_backend_jm - Instance of a JM hardware counter backend.
- * @info:             Info used to create the backend.
- * @kctx:             KBase context used for GPU memory allocation and
- *                    counter dumping.
- * @gpu_dump_va:      GPU hardware counter dump buffer virtual address.
- * @cpu_dump_va:      CPU mapping of gpu_dump_va.
- * @vmap:             Dump buffer vmap.
- * @to_user_buf:      HWC sample buffer for client user, size
- *                    metadata.dump_buf_bytes.
- * @enabled:          True if dumping has been enabled, else false.
- * @pm_core_mask:     PM state sync-ed shaders core mask for the enabled
- *                    dumping.
- * @curr_config:      Current allocated hardware resources to correctly map the
- *                    source raw dump buffer to the destination dump buffer.
- * @clk_enable_map:   The enable map specifying enabled clock domains.
- * @cycle_count_elapsed:
- *                    Cycle count elapsed for a given sample period.
- *                    The top clock cycle, index 0, is read directly from
- *                    hardware, but the other clock domains need to be
- *                    calculated with software estimation.
- * @prev_cycle_count: Previous cycle count to calculate the cycle count for
- *                    sample period.
- * @rate_listener:    Clock rate listener callback state.
- * @ccswe_shader_cores: Shader cores cycle count software estimator.
- * @phys_layout:      Physical memory layout information of HWC sample buffer.
+ * @info:                Info used to create the backend.
+ * @kctx:                KBase context used for GPU memory allocation and
+ *                       counter dumping.
+ * @gpu_dump_va:         GPU hardware counter dump buffer virtual address.
+ * @cpu_dump_va:         CPU mapping of gpu_dump_va.
+ * @vmap:                Dump buffer vmap.
+ * @to_user_buf:         HWC sample buffer for client user, size
+ *                       metadata.dump_buf_bytes.
+ * @enabled:             True if dumping has been enabled, else false.
+ * @accum_all_blk_stt:   Block State to accumulate on next sample, for all types
+ *                       of block.
+ * @sampled_all_blk_stt: Block State to accumulate into the current sample, for
+ *                       all types of block.
+ * @debug_core_mask:     User-set mask of shader cores that can be used.
+ * @pm_core_mask:        PM state sync-ed shaders core mask for the enabled
+ *                       dumping.
+ * @curr_config:         Current allocated hardware resources to correctly map the
+ *                       source raw dump buffer to the destination dump buffer.
+ * @max_core_mask:       Core mask of all cores allocated to the GPU (non
+ *                       virtualized platforms) or resource group (virtualized
+ *                       platforms).
+ * @max_l2_slices:       Maximum number of L2 slices allocated to the GPU (non
+ *                       virtualized platforms) or resource group (virtualized
+ *                       platforms).
+ * @clk_enable_map:      The enable map specifying enabled clock domains.
+ * @cycle_count_elapsed: Cycle count elapsed for a given sample period.
+ *                       The top clock cycle, index 0, is read directly from
+ *                       hardware, but the other clock domains need to be
+ *                       calculated with software estimation.
+ * @prev_cycle_count:    Previous cycle count to calculate the cycle count for
+ *                       sample period.
+ * @rate_listener:       Clock rate listener callback state.
+ * @ccswe_shader_cores:  Shader cores cycle count software estimator.
+ * @phys_layout:         Physical memory layout information of HWC sample buffer.
  */
 struct kbase_hwcnt_backend_jm {
 	const struct kbase_hwcnt_backend_jm_info *info;
@@ -113,8 +123,13 @@ struct kbase_hwcnt_backend_jm {
 	struct kbase_vmap_struct *vmap;
 	u64 *to_user_buf;
 	bool enabled;
+	blk_stt_t accum_all_blk_stt;
+	blk_stt_t sampled_all_blk_stt;
+	u64 debug_core_mask;
 	u64 pm_core_mask;
 	struct kbase_hwcnt_curr_config curr_config;
+	u64 max_core_mask;
+	size_t max_l2_slices;
 	u64 clk_enable_map;
 	u64 cycle_count_elapsed[BASE_MAX_NR_CLOCKS_REGULATORS];
 	u64 prev_cycle_count[BASE_MAX_NR_CLOCKS_REGULATORS];
@@ -136,26 +151,22 @@ struct kbase_hwcnt_backend_jm {
 static int kbasep_hwcnt_backend_jm_gpu_info_init(struct kbase_device *kbdev,
 						 struct kbase_hwcnt_gpu_info *info)
 {
-	size_t clk;
+	size_t clk, l2_count, core_mask;
 
 	if (!kbdev || !info)
 		return -EINVAL;
 
 #if IS_ENABLED(CONFIG_MALI_BIFROST_NO_MALI)
-	info->l2_count = KBASE_DUMMY_MODEL_MAX_MEMSYS_BLOCKS;
-	info->core_mask = (1ull << KBASE_DUMMY_MODEL_MAX_SHADER_CORES) - 1;
-	info->prfcnt_values_per_block = KBASE_HWCNT_V5_DEFAULT_VALUES_PER_BLOCK;
-#else /* CONFIG_MALI_BIFROST_NO_MALI */
-	{
-		const struct base_gpu_props *props = &kbdev->gpu_props.props;
-		const size_t l2_count = props->l2_props.num_l2_slices;
-		const size_t core_mask = props->coherency_info.group[0].core_mask;
+	l2_count = KBASE_DUMMY_MODEL_MAX_MEMSYS_BLOCKS;
+	core_mask = (1ull << KBASE_DUMMY_MODEL_MAX_SHADER_CORES) - 1;
+#else
+	l2_count = kbdev->gpu_props.num_l2_slices;
+	core_mask = kbdev->gpu_props.coherency_info.group.core_mask;
+#endif
 
-		info->l2_count = l2_count;
-		info->core_mask = core_mask;
-		info->prfcnt_values_per_block = KBASE_HWCNT_V5_DEFAULT_VALUES_PER_BLOCK;
-	}
-#endif /* CONFIG_MALI_BIFROST_NO_MALI */
+	info->l2_count = l2_count;
+	info->sc_core_mask = core_mask;
+	info->prfcnt_values_per_block = KBASE_HWCNT_V5_DEFAULT_VALUES_PER_BLOCK;
 
 	/* Determine the number of available clock domains. */
 	for (clk = 0; clk < BASE_MAX_NR_CLOCKS_REGULATORS; clk++) {
@@ -175,7 +186,7 @@ static void kbasep_hwcnt_backend_jm_init_layout(const struct kbase_hwcnt_gpu_inf
 	WARN_ON(!gpu_info);
 	WARN_ON(!phys_layout);
 
-	shader_core_cnt = fls64(gpu_info->core_mask);
+	shader_core_cnt = fls64(gpu_info->sc_core_mask);
 
 	*phys_layout = (struct kbase_hwcnt_jm_physical_layout){
 		.fe_cnt = KBASE_HWCNT_V5_FE_BLOCK_COUNT,
@@ -184,7 +195,7 @@ static void kbasep_hwcnt_backend_jm_init_layout(const struct kbase_hwcnt_gpu_inf
 		.shader_cnt = shader_core_cnt,
 		.block_cnt = KBASE_HWCNT_V5_FE_BLOCK_COUNT + KBASE_HWCNT_V5_TILER_BLOCK_COUNT +
 			     gpu_info->l2_count + shader_core_cnt,
-		.shader_avail_mask = gpu_info->core_mask,
+		.shader_avail_mask = gpu_info->sc_core_mask,
 		.headers_per_block = KBASE_HWCNT_V5_HEADERS_PER_BLOCK,
 		.values_per_block = gpu_info->prfcnt_values_per_block,
 		.counters_per_block =
@@ -353,9 +364,9 @@ kbasep_hwcnt_backend_jm_dump_enable_nolock(struct kbase_hwcnt_backend *backend,
 	struct kbase_hwcnt_backend_jm *backend_jm = (struct kbase_hwcnt_backend_jm *)backend;
 	struct kbase_context *kctx;
 	struct kbase_device *kbdev;
-	struct kbase_hwcnt_physical_enable_map phys_enable_map;
+	struct kbase_hwcnt_physical_enable_map phys_enable_map = { 0 };
 	enum kbase_hwcnt_physical_set phys_counter_set;
-	struct kbase_instr_hwcnt_enable enable;
+	struct kbase_instr_hwcnt_enable enable = { 0 };
 	u64 timestamp_ns;
 
 	if (!backend_jm || !enable_map || backend_jm->enabled ||
@@ -371,18 +382,19 @@ kbasep_hwcnt_backend_jm_dump_enable_nolock(struct kbase_hwcnt_backend *backend,
 
 	kbase_hwcnt_gpu_set_to_physical(&phys_counter_set, backend_jm->info->counter_set);
 
-	enable.fe_bm = phys_enable_map.fe_bm;
-	enable.shader_bm = phys_enable_map.shader_bm;
-	enable.tiler_bm = phys_enable_map.tiler_bm;
-	enable.mmu_l2_bm = phys_enable_map.mmu_l2_bm;
-	enable.counter_set = phys_counter_set;
+	enable = (struct kbase_instr_hwcnt_enable)
+	{
+		.fe_bm = phys_enable_map.fe_bm, .shader_bm = phys_enable_map.shader_bm,
+		.tiler_bm = phys_enable_map.tiler_bm, .mmu_l2_bm = phys_enable_map.mmu_l2_bm,
+		.counter_set = phys_counter_set,
 #if IS_ENABLED(CONFIG_MALI_BIFROST_NO_MALI)
-	/* The dummy model needs the CPU mapping. */
-	enable.dump_buffer = (uintptr_t)backend_jm->cpu_dump_va;
+		/* The dummy model needs the CPU mapping. */
+			.dump_buffer = (uintptr_t)backend_jm->cpu_dump_va,
 #else
-	enable.dump_buffer = backend_jm->gpu_dump_va;
+		.dump_buffer = backend_jm->gpu_dump_va,
 #endif /* CONFIG_MALI_BIFROST_NO_MALI */
-	enable.dump_buffer_bytes = backend_jm->info->dump_bytes;
+		.dump_buffer_bytes = backend_jm->info->dump_bytes,
+	};
 
 	timestamp_ns = kbasep_hwcnt_backend_jm_timestamp_ns(backend);
 
@@ -395,9 +407,24 @@ kbasep_hwcnt_backend_jm_dump_enable_nolock(struct kbase_hwcnt_backend *backend,
 	if (errcode)
 		goto error;
 
+	backend_jm->debug_core_mask = kbase_pm_ca_get_debug_core_mask(kbdev);
+	backend_jm->max_l2_slices = backend_jm->info->hwcnt_gpu_info.l2_count;
+	backend_jm->max_core_mask = backend_jm->info->hwcnt_gpu_info.sc_core_mask;
+
 	backend_jm->pm_core_mask = kbase_pm_ca_get_instr_core_mask(kbdev);
 
 	backend_jm->enabled = true;
+	/* Enabling counters is an indication that the power may have previously been off for all
+	 * blocks.
+	 *
+	 * In any case, the counters would not have been counting recently, so an 'off' block state
+	 * is an approximation for this.
+	 *
+	 * This will be transferred to the dump only after a dump_wait(), or dump_disable() in
+	 * cases where the caller requested such information. This is to handle when a
+	 * dump_enable() happens in between dump_wait() and dump_get().
+	 */
+	kbase_hwcnt_block_state_append(&backend_jm->accum_all_blk_stt, KBASE_HWCNT_STATE_OFF);
 
 	kbasep_hwcnt_backend_jm_cc_enable(backend_jm, enable_map, timestamp_ns);
 
@@ -430,18 +457,62 @@ static int kbasep_hwcnt_backend_jm_dump_enable(struct kbase_hwcnt_backend *backe
 }
 
 /* JM backend implementation of kbase_hwcnt_backend_dump_disable_fn */
-static void kbasep_hwcnt_backend_jm_dump_disable(struct kbase_hwcnt_backend *backend)
+static void kbasep_hwcnt_backend_jm_dump_disable(struct kbase_hwcnt_backend *backend,
+						 struct kbase_hwcnt_dump_buffer *dump_buffer,
+						 const struct kbase_hwcnt_enable_map *enable_map)
 {
 	int errcode;
 	struct kbase_hwcnt_backend_jm *backend_jm = (struct kbase_hwcnt_backend_jm *)backend;
 
-	if (WARN_ON(!backend_jm) || !backend_jm->enabled)
+	if (WARN_ON(!backend_jm ||
+		    (dump_buffer && (backend_jm->info->metadata != dump_buffer->metadata)) ||
+		    (enable_map && (backend_jm->info->metadata != enable_map->metadata)) ||
+		    (dump_buffer && !enable_map)))
+		return;
+	/* No WARN needed here, but still return early if backend is already disabled */
+	if (!backend_jm->enabled)
 		return;
 
 	kbasep_hwcnt_backend_jm_cc_disable(backend_jm);
 
 	errcode = kbase_instr_hwcnt_disable_internal(backend_jm->kctx);
 	WARN_ON(errcode);
+
+	/* Disabling HWCNT is an indication that blocks have been powered off. This is important to
+	 * know for L2 and Tiler blocks, as this is currently the only way a backend can know if
+	 * they are being powered off.
+	 *
+	 * In any case, even if they weren't really powered off, we won't be counting whilst
+	 * disabled.
+	 *
+	 * Update the block state information in the block state accumulator to show this, so that
+	 * in the next dump blocks will have been seen as powered off for some of the time.
+	 */
+	kbase_hwcnt_block_state_append(&backend_jm->accum_all_blk_stt, KBASE_HWCNT_STATE_OFF);
+
+	if (dump_buffer) {
+		/* In some use-cases, the caller will need the information whilst the counters are
+		 * disabled, but will not be able to call into the backend to dump them. Instead,
+		 * they have an opportunity here to request them to be accumulated into their
+		 * buffer immediately.
+		 *
+		 * This consists of taking a sample of the accumulated block state (as though a
+		 * real dump_get() had happened), then transfer ownership of that to the caller
+		 * (i.e. erasing our copy of it).
+		 */
+		kbase_hwcnt_block_state_accumulate(&backend_jm->sampled_all_blk_stt,
+						   &backend_jm->accum_all_blk_stt);
+		kbase_hwcnt_dump_buffer_block_state_update(dump_buffer, enable_map,
+							   backend_jm->sampled_all_blk_stt);
+		/* Now the block state has been passed out into the caller's own accumulation
+		 * buffer, clear our own accumulated and sampled block state - ownership has been
+		 * transferred.
+		 */
+		kbase_hwcnt_block_state_set(&backend_jm->sampled_all_blk_stt,
+					    KBASE_HWCNT_STATE_UNKNOWN);
+		kbase_hwcnt_block_state_set(&backend_jm->accum_all_blk_stt,
+					    KBASE_HWCNT_STATE_UNKNOWN);
+	}
 
 	backend_jm->enabled = false;
 }
@@ -480,8 +551,7 @@ static int kbasep_hwcnt_backend_jm_dump_request(struct kbase_hwcnt_backend *back
 		*dump_time_ns = kbasep_hwcnt_backend_jm_timestamp_ns(backend);
 		ret = kbase_instr_hwcnt_request_dump(backend_jm->kctx);
 
-		kbase_hwcnt_metadata_for_each_clock(metadata, clk)
-		{
+		kbase_hwcnt_metadata_for_each_clock(metadata, clk) {
 			if (!kbase_hwcnt_clk_enable_map_enabled(backend_jm->clk_enable_map, clk))
 				continue;
 
@@ -514,12 +584,27 @@ static int kbasep_hwcnt_backend_jm_dump_request(struct kbase_hwcnt_backend *back
 /* JM backend implementation of kbase_hwcnt_backend_dump_wait_fn */
 static int kbasep_hwcnt_backend_jm_dump_wait(struct kbase_hwcnt_backend *backend)
 {
+	int errcode;
 	struct kbase_hwcnt_backend_jm *backend_jm = (struct kbase_hwcnt_backend_jm *)backend;
 
 	if (!backend_jm || !backend_jm->enabled)
 		return -EINVAL;
 
-	return kbase_instr_hwcnt_wait_for_dump(backend_jm->kctx);
+	errcode = kbase_instr_hwcnt_wait_for_dump(backend_jm->kctx);
+	if (errcode)
+		return errcode;
+
+	/* Now that we've completed a sample, also sample+clear the accumulated block state.
+	 *
+	 * This is to ensure that a dump_enable() that happens in between dump_wait() and
+	 * dump_get() is reported on the _next_ dump, not the _current_ dump. That is, the block
+	 * state is reported at the actual time that counters are being sampled.
+	 */
+	kbase_hwcnt_block_state_accumulate(&backend_jm->sampled_all_blk_stt,
+					   &backend_jm->accum_all_blk_stt);
+	kbase_hwcnt_block_state_set(&backend_jm->accum_all_blk_stt, KBASE_HWCNT_STATE_UNKNOWN);
+
+	return errcode;
 }
 
 /* JM backend implementation of kbase_hwcnt_backend_dump_get_fn */
@@ -533,8 +618,8 @@ static int kbasep_hwcnt_backend_jm_dump_get(struct kbase_hwcnt_backend *backend,
 #if IS_ENABLED(CONFIG_MALI_BIFROST_NO_MALI)
 	struct kbase_device *kbdev;
 	unsigned long flags;
-	int errcode;
 #endif /* CONFIG_MALI_BIFROST_NO_MALI */
+	int errcode;
 
 	if (!backend_jm || !dst || !dst_enable_map ||
 	    (backend_jm->info->metadata != dst->metadata) ||
@@ -548,8 +633,7 @@ static int kbasep_hwcnt_backend_jm_dump_get(struct kbase_hwcnt_backend *backend,
 	kbasep_hwcnt_backend_jm_dump_sample(backend_jm);
 
 	/* Extract elapsed cycle count for each clock domain if enabled. */
-	kbase_hwcnt_metadata_for_each_clock(dst_enable_map->metadata, clk)
-	{
+	kbase_hwcnt_metadata_for_each_clock(dst_enable_map->metadata, clk) {
 		if (!kbase_hwcnt_clk_enable_map_enabled(dst_enable_map->clk_enable_map, clk))
 			continue;
 
@@ -572,9 +656,18 @@ static int kbasep_hwcnt_backend_jm_dump_get(struct kbase_hwcnt_backend *backend,
 	if (errcode)
 		return errcode;
 #endif /* CONFIG_MALI_BIFROST_NO_MALI */
-	return kbase_hwcnt_jm_dump_get(dst, backend_jm->to_user_buf, dst_enable_map,
-				       backend_jm->pm_core_mask, &backend_jm->curr_config,
-				       accumulate);
+	errcode = kbase_hwcnt_jm_dump_get(dst, backend_jm->to_user_buf, dst_enable_map,
+					  backend_jm->pm_core_mask, backend_jm->debug_core_mask,
+					  backend_jm->max_l2_slices, &backend_jm->curr_config,
+					  accumulate);
+
+	if (errcode)
+		return errcode;
+
+	kbase_hwcnt_dump_buffer_block_state_update(dst, dst_enable_map,
+						   backend_jm->sampled_all_blk_stt);
+	kbase_hwcnt_block_state_set(&backend_jm->sampled_all_blk_stt, KBASE_HWCNT_STATE_UNKNOWN);
+	return errcode;
 }
 
 /**
@@ -590,7 +683,7 @@ static int kbasep_hwcnt_backend_jm_dump_alloc(const struct kbase_hwcnt_backend_j
 					      struct kbase_context *kctx, u64 *gpu_dump_va)
 {
 	struct kbase_va_region *reg;
-	u64 flags;
+	base_mem_alloc_flags flags;
 	u64 nr_pages;
 
 	/* Calls to this function are inherently asynchronous, with respect to
@@ -705,6 +798,8 @@ static int kbasep_hwcnt_backend_jm_create(const struct kbase_hwcnt_backend_jm_in
 
 	kbase_ccswe_init(&backend->ccswe_shader_cores);
 	backend->rate_listener.notify = kbasep_hwcnt_backend_jm_on_freq_change;
+	kbase_hwcnt_block_state_set(&backend->accum_all_blk_stt, KBASE_HWCNT_STATE_UNKNOWN);
+	kbase_hwcnt_block_state_set(&backend->sampled_all_blk_stt, KBASE_HWCNT_STATE_UNKNOWN);
 
 	*out_backend = backend;
 	return 0;
@@ -752,8 +847,16 @@ static void kbasep_hwcnt_backend_jm_term(struct kbase_hwcnt_backend *backend)
 	if (!backend)
 		return;
 
-	kbasep_hwcnt_backend_jm_dump_disable(backend);
+	kbasep_hwcnt_backend_jm_dump_disable(backend, NULL, NULL);
 	kbasep_hwcnt_backend_jm_destroy((struct kbase_hwcnt_backend_jm *)backend);
+}
+
+static void kbasep_hwcnt_backend_jm_acquire(const struct kbase_hwcnt_backend *backend)
+{
+}
+
+static void kbasep_hwcnt_backend_jm_release(const struct kbase_hwcnt_backend *backend)
+{
 }
 
 /**
@@ -767,7 +870,7 @@ static void kbasep_hwcnt_backend_jm_info_destroy(const struct kbase_hwcnt_backen
 	if (!info)
 		return;
 
-	kbase_hwcnt_jm_metadata_destroy(info->metadata);
+	kbase_hwcnt_metadata_destroy(info->metadata);
 	kfree(info);
 }
 
@@ -837,6 +940,8 @@ int kbase_hwcnt_backend_jm_create(struct kbase_device *kbdev,
 	iface->metadata = kbasep_hwcnt_backend_jm_metadata;
 	iface->init = kbasep_hwcnt_backend_jm_init;
 	iface->term = kbasep_hwcnt_backend_jm_term;
+	iface->acquire = kbasep_hwcnt_backend_jm_acquire;
+	iface->release = kbasep_hwcnt_backend_jm_release;
 	iface->timestamp_ns = kbasep_hwcnt_backend_jm_timestamp_ns;
 	iface->dump_enable = kbasep_hwcnt_backend_jm_dump_enable;
 	iface->dump_enable_nolock = kbasep_hwcnt_backend_jm_dump_enable_nolock;

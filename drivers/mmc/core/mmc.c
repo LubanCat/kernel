@@ -2023,6 +2023,8 @@ static int mmc_sleep(struct mmc_host *host)
 	struct mmc_command cmd = {};
 	struct mmc_card *card = host->card;
 	unsigned int timeout_ms = DIV_ROUND_UP(card->ext_csd.sa_timeout, 10000);
+	unsigned long timeout;
+	u32 status;
 	int err;
 
 	/* Re-tuning can't be done once the card is deselected */
@@ -2062,8 +2064,28 @@ static int mmc_sleep(struct mmc_host *host)
 	 * SEND_STATUS command to poll the status because that command (and most
 	 * others) is invalid while the card sleeps.
 	 */
-	if (!cmd.busy_timeout || !(host->caps & MMC_CAP_WAIT_WHILE_BUSY))
-		mmc_delay(timeout_ms);
+	if (host->ops->card_busy) {
+		timeout = jiffies + msecs_to_jiffies(timeout_ms);
+
+		do {
+			bool done = time_after(jiffies, timeout);
+
+			status = host->ops->card_busy(card->host) ?
+				 0 : R1_READY_FOR_DATA | R1_STATE_TRAN << 9;
+
+			if (!status)
+				mmc_delay(1);
+
+			if (done) {
+				err = -ETIMEDOUT;
+				break;
+			}
+		} while (!mmc_ready_for_data(status));
+
+	} else {
+		if (!cmd.busy_timeout || !(host->caps & MMC_CAP_WAIT_WHILE_BUSY))
+			mmc_delay(timeout_ms);
+	}
 
 out_release:
 	mmc_retune_release(host);

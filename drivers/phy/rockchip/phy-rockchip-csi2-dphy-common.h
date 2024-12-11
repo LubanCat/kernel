@@ -25,6 +25,7 @@ enum csi2_dphy_chip_id {
 	CHIP_ID_RK3588_DCPHY = 0x2,
 	CHIP_ID_RV1106 = 0x3,
 	CHIP_ID_RK3562 = 0x4,
+	CHIP_ID_RV1103B = 0x5,
 };
 
 enum csi2_dphy_rx_pads {
@@ -125,6 +126,7 @@ struct csi2_dphy_hw {
 	int num_sensors;
 	int dphy_dev_num;
 	enum csi2_dphy_lane_mode lane_mode;
+	struct resource *res;
 
 	int (*stream_on)(struct csi2_dphy *dphy, struct v4l2_subdev *sd);
 	int (*stream_off)(struct csi2_dphy *dphy, struct v4l2_subdev *sd);

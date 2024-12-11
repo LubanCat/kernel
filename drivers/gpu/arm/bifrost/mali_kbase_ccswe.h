@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
- * (C) COPYRIGHT 2020-2022 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2020-2023 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -22,6 +22,7 @@
 #ifndef _KBASE_CCSWE_H_
 #define _KBASE_CCSWE_H_
 
+#include <linux/types.h>
 #include <linux/spinlock.h>
 
 /**
@@ -82,8 +83,7 @@ u64 kbase_ccswe_cycle_at(struct kbase_ccswe *self, u64 timestamp_ns);
  * frequency change. The function is to be called at the frequency
  * change moment (not later).
  */
-void kbase_ccswe_freq_change(
-	struct kbase_ccswe *self, u64 timestamp_ns, u32 gpu_freq);
+void kbase_ccswe_freq_change(struct kbase_ccswe *self, u64 timestamp_ns, u32 gpu_freq);
 
 /**
  * kbase_ccswe_reset() - reset estimator state

@@ -3000,11 +3000,13 @@ dhd_napi_schedule(void *info)
 	DHD_INFO(("%s rx_napi_struct<%p> on cpu<%d>\n",
 		__FUNCTION__, &dhd->rx_napi_struct, atomic_read(&dhd->rx_napi_cpu)));
 
+	local_bh_disable();
 	/* add napi_struct to softnet data poll list and raise NET_RX_SOFTIRQ */
 	if (napi_schedule_prep(&dhd->rx_napi_struct)) {
 		__napi_schedule(&dhd->rx_napi_struct);
 		DHD_LB_STATS_PERCPU_ARR_INCR(dhd->napi_percpu_run_cnt);
 	}
+	local_bh_enable();
 
 	/*
 	 * If the rx_napi_struct was already running, then we let it complete

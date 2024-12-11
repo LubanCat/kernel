@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
- * (C) COPYRIGHT 2014-2022 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2014-2024 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -24,29 +24,30 @@
  */
 
 #include <mali_kbase.h>
-#include <gpu/mali_kbase_gpu_regmap.h>
+#include <hw_access/mali_kbase_hw_access_regmap.h>
 #include <mali_kbase_hwaccess_instr.h>
 #include <device/mali_kbase_device.h>
 #include <backend/gpu/mali_kbase_instr_internal.h>
 
+#define WAIT_FOR_DUMP_TIMEOUT_MS 5000
+
 static int wait_prfcnt_ready(struct kbase_device *kbdev)
 {
-	u32 loops;
-
-	for (loops = 0; loops < KBASE_PRFCNT_ACTIVE_MAX_LOOPS; loops++) {
-		const u32 prfcnt_active = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_STATUS)) &
-								  GPU_STATUS_PRFCNT_ACTIVE;
-		if (!prfcnt_active)
-			return 0;
+	u32 val;
+	const u32 timeout_us =
+		kbase_get_timeout_ms(kbdev, KBASE_PRFCNT_ACTIVE_TIMEOUT) * USEC_PER_MSEC;
+	const int err = kbase_reg_poll32_timeout(kbdev, GPU_CONTROL_ENUM(GPU_STATUS), val,
+						 !(val & GPU_STATUS_PRFCNT_ACTIVE), 0, timeout_us,
+						 false);
+	if (err) {
+		dev_err(kbdev->dev, "PRFCNT_ACTIVE bit stuck\n");
+		return -EBUSY;
 	}
-
-	dev_err(kbdev->dev, "PRFCNT_ACTIVE bit stuck\n");
-	return -EBUSY;
+	return 0;
 }
 
-int kbase_instr_hwcnt_enable_internal(struct kbase_device *kbdev,
-					struct kbase_context *kctx,
-					struct kbase_instr_hwcnt_enable *enable)
+int kbase_instr_hwcnt_enable_internal(struct kbase_device *kbdev, struct kbase_context *kctx,
+				      struct kbase_instr_hwcnt_enable *enable)
 {
 	unsigned long flags;
 	int err = -EINVAL;
@@ -74,9 +75,9 @@ int kbase_instr_hwcnt_enable_internal(struct kbase_device *kbdev,
 	}
 
 	/* Enable interrupt */
-	irq_mask = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_IRQ_MASK));
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_IRQ_MASK), irq_mask |
-						PRFCNT_SAMPLE_COMPLETED);
+	irq_mask = kbase_reg_read32(kbdev, GPU_CONTROL_ENUM(GPU_IRQ_MASK));
+	kbase_reg_write32(kbdev, GPU_CONTROL_ENUM(GPU_IRQ_MASK),
+			  irq_mask | PRFCNT_SAMPLE_COMPLETED);
 
 	/* In use, this context is the owner */
 	kbdev->hwcnt.kctx = kctx;
@@ -87,12 +88,12 @@ int kbase_instr_hwcnt_enable_internal(struct kbase_device *kbdev,
 	spin_unlock_irqrestore(&kbdev->hwcnt.lock, flags);
 
 	/* Configure */
-	prfcnt_config = kctx->as_nr << PRFCNT_CONFIG_AS_SHIFT;
+	prfcnt_config = (u32)kctx->as_nr << PRFCNT_CONFIG_AS_SHIFT;
 #ifdef CONFIG_MALI_PRFCNT_SET_SELECT_VIA_DEBUG_FS
-	prfcnt_config |= kbdev->hwcnt.backend.override_counter_set
+	prfcnt_config |= (u32)kbdev->hwcnt.backend.override_counter_set
 			 << PRFCNT_CONFIG_SETSELECT_SHIFT;
 #else
-	prfcnt_config |= enable->counter_set << PRFCNT_CONFIG_SETSELECT_SHIFT;
+	prfcnt_config |= (u32)enable->counter_set << PRFCNT_CONFIG_SETSELECT_SHIFT;
 #endif
 
 	/* Wait until prfcnt config register can be written */
@@ -100,32 +101,25 @@ int kbase_instr_hwcnt_enable_internal(struct kbase_device *kbdev,
 	if (err)
 		return err;
 
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(PRFCNT_CONFIG),
-			prfcnt_config | PRFCNT_CONFIG_MODE_OFF);
+	kbase_reg_write32(kbdev, GPU_CONTROL_ENUM(PRFCNT_CONFIG),
+			  prfcnt_config | PRFCNT_CONFIG_MODE_OFF);
 
 	/* Wait until prfcnt is disabled before writing configuration registers */
 	err = wait_prfcnt_ready(kbdev);
 	if (err)
 		return err;
 
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(PRFCNT_BASE_LO),
-					enable->dump_buffer & 0xFFFFFFFF);
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(PRFCNT_BASE_HI),
-					enable->dump_buffer >> 32);
+	kbase_reg_write64(kbdev, GPU_CONTROL_ENUM(PRFCNT_BASE), enable->dump_buffer);
 
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(PRFCNT_JM_EN),
-					enable->fe_bm);
+	kbase_reg_write32(kbdev, GPU_CONTROL_ENUM(PRFCNT_JM_EN), enable->fe_bm);
 
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(PRFCNT_SHADER_EN),
-					enable->shader_bm);
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(PRFCNT_MMU_L2_EN),
-					enable->mmu_l2_bm);
+	kbase_reg_write32(kbdev, GPU_CONTROL_ENUM(PRFCNT_SHADER_EN), enable->shader_bm);
+	kbase_reg_write32(kbdev, GPU_CONTROL_ENUM(PRFCNT_MMU_L2_EN), enable->mmu_l2_bm);
 
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(PRFCNT_TILER_EN),
-					enable->tiler_bm);
+	kbase_reg_write32(kbdev, GPU_CONTROL_ENUM(PRFCNT_TILER_EN), enable->tiler_bm);
 
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(PRFCNT_CONFIG),
-			prfcnt_config | PRFCNT_CONFIG_MODE_MANUAL);
+	kbase_reg_write32(kbdev, GPU_CONTROL_ENUM(PRFCNT_CONFIG),
+			  prfcnt_config | PRFCNT_CONFIG_MODE_MANUAL);
 
 	spin_lock_irqsave(&kbdev->hwcnt.lock, flags);
 
@@ -151,15 +145,16 @@ static void kbasep_instr_hwc_disable_hw_prfcnt(struct kbase_device *kbdev)
 		return;
 
 	/* Disable interrupt */
-	irq_mask = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_IRQ_MASK));
+	irq_mask = kbase_reg_read32(kbdev, GPU_CONTROL_ENUM(GPU_IRQ_MASK));
 
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_IRQ_MASK), irq_mask & ~PRFCNT_SAMPLE_COMPLETED);
+	kbase_reg_write32(kbdev, GPU_CONTROL_ENUM(GPU_IRQ_MASK),
+			  irq_mask & ~PRFCNT_SAMPLE_COMPLETED);
 
 	/* Wait until prfcnt config register can be written, then disable the counters.
 	 * Return value is ignored as we are disabling anyway.
 	 */
 	wait_prfcnt_ready(kbdev);
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(PRFCNT_CONFIG), 0);
+	kbase_reg_write32(kbdev, GPU_CONTROL_ENUM(PRFCNT_CONFIG), 0);
 
 	kbdev->hwcnt.kctx = NULL;
 	kbdev->hwcnt.addr = 0ULL;
@@ -170,6 +165,7 @@ int kbase_instr_hwcnt_disable_internal(struct kbase_context *kctx)
 {
 	unsigned long flags, pm_flags;
 	struct kbase_device *kbdev = kctx->kbdev;
+	const unsigned long timeout = msecs_to_jiffies(WAIT_FOR_DUMP_TIMEOUT_MS);
 
 	while (1) {
 		spin_lock_irqsave(&kbdev->hwaccess_lock, pm_flags);
@@ -206,8 +202,8 @@ int kbase_instr_hwcnt_disable_internal(struct kbase_context *kctx)
 		spin_unlock_irqrestore(&kbdev->hwaccess_lock, pm_flags);
 
 		/* Ongoing dump/setup - wait for its completion */
-		wait_event(kbdev->hwcnt.backend.wait,
-					kbdev->hwcnt.backend.triggered != 0);
+		wait_event_timeout(kbdev->hwcnt.backend.wait, kbdev->hwcnt.backend.triggered != 0,
+				   timeout);
 	}
 
 	kbdev->hwcnt.backend.state = KBASE_INSTR_STATE_DISABLED;
@@ -218,8 +214,7 @@ int kbase_instr_hwcnt_disable_internal(struct kbase_context *kctx)
 	spin_unlock_irqrestore(&kbdev->hwcnt.lock, flags);
 	spin_unlock_irqrestore(&kbdev->hwaccess_lock, pm_flags);
 
-	dev_dbg(kbdev->dev, "HW counters dumping disabled for context %pK",
-									kctx);
+	dev_dbg(kbdev->dev, "HW counters dumping disabled for context %pK", kctx);
 
 	return 0;
 }
@@ -261,28 +256,22 @@ int kbase_instr_hwcnt_request_dump(struct kbase_context *kctx)
 		goto unlock;
 
 	/* Reconfigure the dump address */
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(PRFCNT_BASE_LO),
-					kbdev->hwcnt.addr & 0xFFFFFFFF);
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(PRFCNT_BASE_HI),
-					kbdev->hwcnt.addr >> 32);
+	kbase_reg_write64(kbdev, GPU_CONTROL_ENUM(PRFCNT_BASE), kbdev->hwcnt.addr);
 
 	/* Start dumping */
-	KBASE_KTRACE_ADD(kbdev, CORE_GPU_PRFCNT_SAMPLE, NULL,
-			kbdev->hwcnt.addr);
+	KBASE_KTRACE_ADD(kbdev, CORE_GPU_PRFCNT_SAMPLE, NULL, kbdev->hwcnt.addr);
 
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND),
-					GPU_COMMAND_PRFCNT_SAMPLE);
+	kbase_reg_write32(kbdev, GPU_CONTROL_ENUM(GPU_COMMAND), GPU_COMMAND_PRFCNT_SAMPLE);
 
 	dev_dbg(kbdev->dev, "HW counters dumping done for context %pK", kctx);
 
- unlock:
+unlock:
 	spin_unlock_irqrestore(&kbdev->hwcnt.lock, flags);
 	return err;
 }
 KBASE_EXPORT_SYMBOL(kbase_instr_hwcnt_request_dump);
 
-bool kbase_instr_hwcnt_dump_complete(struct kbase_context *kctx,
-						bool * const success)
+bool kbase_instr_hwcnt_dump_complete(struct kbase_context *kctx, bool *const success)
 {
 	unsigned long flags;
 	bool complete = false;
@@ -334,9 +323,19 @@ int kbase_instr_hwcnt_wait_for_dump(struct kbase_context *kctx)
 	unsigned long flags;
 	int err;
 
+	unsigned long remaining;
+	const unsigned long timeout = msecs_to_jiffies(WAIT_FOR_DUMP_TIMEOUT_MS);
+
 	/* Wait for dump & cache clean to complete */
-	wait_event(kbdev->hwcnt.backend.wait,
-					kbdev->hwcnt.backend.triggered != 0);
+	remaining = wait_event_timeout(kbdev->hwcnt.backend.wait,
+				       kbdev->hwcnt.backend.triggered != 0, timeout);
+	if (remaining == 0) {
+		err = -ETIME;
+		/* Set the backend state so it's clear things have gone bad (could be a HW issue)
+		 */
+		kbdev->hwcnt.backend.state = KBASE_INSTR_STATE_UNRECOVERABLE_ERROR;
+		goto timed_out;
+	}
 
 	spin_lock_irqsave(&kbdev->hwcnt.lock, flags);
 
@@ -347,13 +346,12 @@ int kbase_instr_hwcnt_wait_for_dump(struct kbase_context *kctx)
 		err = -EIO;
 	} else {
 		/* Dump done */
-		KBASE_DEBUG_ASSERT(kbdev->hwcnt.backend.state ==
-							KBASE_INSTR_STATE_IDLE);
+		KBASE_DEBUG_ASSERT(kbdev->hwcnt.backend.state == KBASE_INSTR_STATE_IDLE);
 		err = 0;
 	}
 
 	spin_unlock_irqrestore(&kbdev->hwcnt.lock, flags);
-
+timed_out:
 	return err;
 }
 
@@ -368,8 +366,7 @@ int kbase_instr_hwcnt_clear(struct kbase_context *kctx)
 	/* Check it's the context previously set up and we're not in IDLE
 	 * state.
 	 */
-	if (kbdev->hwcnt.kctx != kctx || kbdev->hwcnt.backend.state !=
-							KBASE_INSTR_STATE_IDLE)
+	if (kbdev->hwcnt.kctx != kctx || kbdev->hwcnt.backend.state != KBASE_INSTR_STATE_IDLE)
 		goto unlock;
 
 	if (kbase_is_gpu_removed(kbdev)) {
@@ -384,8 +381,7 @@ int kbase_instr_hwcnt_clear(struct kbase_context *kctx)
 
 	/* Clear the counters */
 	KBASE_KTRACE_ADD(kbdev, CORE_GPU_PRFCNT_CLEAR, NULL, 0);
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND),
-						GPU_COMMAND_PRFCNT_CLEAR);
+	kbase_reg_write32(kbdev, GPU_CONTROL_ENUM(GPU_COMMAND), GPU_COMMAND_PRFCNT_CLEAR);
 
 unlock:
 	spin_unlock_irqrestore(&kbdev->hwcnt.lock, flags);
@@ -443,8 +439,6 @@ int kbase_instr_backend_init(struct kbase_device *kbdev)
 
 	init_waitqueue_head(&kbdev->hwcnt.backend.wait);
 
-	kbdev->hwcnt.backend.triggered = 0;
-
 #ifdef CONFIG_MALI_PRFCNT_SET_SELECT_VIA_DEBUG_FS
 /* Use the build time option for the override default. */
 #if defined(CONFIG_MALI_BIFROST_PRFCNT_SET_SECONDARY)
@@ -474,8 +468,7 @@ void kbase_instr_backend_debugfs_init(struct kbase_device *kbdev)
 	 * Valid inputs are the values accepted bythe SET_SELECT bits of the
 	 * PRFCNT_CONFIG register as defined in the architecture specification.
 	 */
-	debugfs_create_u8("hwcnt_set_select", 0644,
-			  kbdev->mali_debugfs_directory,
+	debugfs_create_u8("hwcnt_set_select", 0644, kbdev->mali_debugfs_directory,
 			  (u8 *)&kbdev->hwcnt.backend.override_counter_set);
 }
 #endif

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
- * (C) COPYRIGHT 2010-2017, 2019-2022 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2010-2024 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -26,10 +26,9 @@
 #ifndef _KBASE_CONFIG_H_
 #define _KBASE_CONFIG_H_
 
-#include <linux/mm.h>
 #include <mali_malisw.h>
-#include <backend/gpu/mali_kbase_backend_config.h>
-#include <linux/rbtree.h>
+
+#include <linux/mm.h>
 
 /* Forward declaration of struct kbase_device */
 struct kbase_device;
@@ -153,8 +152,7 @@ struct kbase_platform_funcs_conf {
 	 * Context: The caller must hold the hwaccess_lock. Function must be
 	 *          runnable in an interrupt context.
 	 */
-	void (*platform_handler_atom_complete_func)(
-		struct kbase_jd_atom *katom);
+	void (*platform_handler_atom_complete_func)(struct kbase_jd_atom *katom);
 #endif
 };
 
@@ -168,8 +166,9 @@ struct kbase_pm_callback_conf {
 	 *
 	 * The system integrator can decide whether to either do nothing, just switch off
 	 * the clocks to the GPU, or to completely power down the GPU.
-	 * The platform specific private pointer kbase_device::platform_context can be accessed and modified in here. It is the
-	 * platform \em callbacks responsibility to initialize and terminate this pointer if used (see @ref kbase_platform_funcs_conf).
+	 * The platform specific private pointer kbase_device::platform_context can be
+	 * accessed and modified in here. It is the platform \em callbacks responsibility
+	 * to initialize and terminate this pointer if used (see @ref kbase_platform_funcs_conf).
 	 *
 	 * If runtime PM is enabled and @power_runtime_gpu_idle_callback is used
 	 * then this callback should power off the GPU (or switch off the clocks
@@ -181,15 +180,18 @@ struct kbase_pm_callback_conf {
 
 	/** Callback for when the GPU is about to become active and power must be supplied.
 	 *
-	 * This function must not return until the GPU is powered and clocked sufficiently for register access to
-	 * succeed.  The return value specifies whether the GPU was powered down since the call to power_off_callback.
-	 * If the GPU state has been lost then this function must return 1, otherwise it should return 0.
-	 * The platform specific private pointer kbase_device::platform_context can be accessed and modified in here. It is the
-	 * platform \em callbacks responsibility to initialize and terminate this pointer if used (see @ref kbase_platform_funcs_conf).
+	 * This function must not return until the GPU is powered and clocked sufficiently
+	 * for register access to succeed. The return value specifies whether the GPU was
+	 * powered down since the call to power_off_callback.
+	 * If the GPU is in reset state it should return 2, if the GPU state has been lost
+	 * then this function must return 1, otherwise it should return 0.
+	 * The platform specific private pointer kbase_device::platform_context can be
+	 * accessed and modified in here. It is the platform \em callbacks responsibility
+	 * to initialize and terminate this pointer if used (see @ref kbase_platform_funcs_conf).
 	 *
 	 * The return value of the first call to this function is ignored.
 	 *
-	 * @return 1 if the GPU state may have been lost, 0 otherwise.
+	 * @return 2 if GPU in reset state, 1 if the GPU state may have been lost, 0 otherwise.
 	 */
 	int (*power_on_callback)(struct kbase_device *kbdev);
 
@@ -225,19 +227,22 @@ struct kbase_pm_callback_conf {
 
 	/** Callback for handling runtime power management initialization.
 	 *
-	 * The runtime power management callbacks @ref power_runtime_off_callback and @ref power_runtime_on_callback
-	 * will become active from calls made to the OS from within this function.
-	 * The runtime calls can be triggered by calls from @ref power_off_callback and @ref power_on_callback.
+	 * The runtime power management callbacks @ref power_runtime_off_callback
+	 * and @ref power_runtime_on_callback will become active from calls made
+	 * to the OS from within this function.
+	 * The runtime calls can be triggered by calls from @ref power_off_callback
+	 * and @ref power_on_callback.
 	 * Note: for linux the kernel must have CONFIG_PM_RUNTIME enabled to use this feature.
 	 *
 	 * @return 0 on success, else int error code.
 	 */
-	 int (*power_runtime_init_callback)(struct kbase_device *kbdev);
+	int (*power_runtime_init_callback)(struct kbase_device *kbdev);
 
 	/** Callback for handling runtime power management termination.
 	 *
-	 * The runtime power management callbacks @ref power_runtime_off_callback and @ref power_runtime_on_callback
-	 * should no longer be called by the OS on completion of this function.
+	 * The runtime power management callbacks @ref power_runtime_off_callback
+	 * and @ref power_runtime_on_callback should no longer be called by the
+	 * OS on completion of this function.
 	 * Note: for linux the kernel must have CONFIG_PM_RUNTIME enabled to use this feature.
 	 */
 	void (*power_runtime_term_callback)(struct kbase_device *kbdev);
@@ -376,8 +381,7 @@ struct kbase_clk_rate_trace_op_conf {
 	 * Kbase will use this function pointer to enumerate the existence of a
 	 * GPU clock on the given index.
 	 */
-	void *(*enumerate_gpu_clk)(struct kbase_device *kbdev,
-		unsigned int index);
+	void *(*enumerate_gpu_clk)(struct kbase_device *kbdev, unsigned int index);
 
 	/**
 	 * @get_gpu_clk_rate: Get the current rate for an enumerated clock.
@@ -386,8 +390,7 @@ struct kbase_clk_rate_trace_op_conf {
 	 *
 	 * Returns current rate of the GPU clock in unit of Hz.
 	 */
-	unsigned long (*get_gpu_clk_rate)(struct kbase_device *kbdev,
-		void *gpu_clk_handle);
+	unsigned long (*get_gpu_clk_rate)(struct kbase_device *kbdev, void *gpu_clk_handle);
 
 	/**
 	 * @gpu_clk_notifier_register: Register a clock rate change notifier.
@@ -405,8 +408,8 @@ struct kbase_clk_rate_trace_op_conf {
 	 * The callback function expects the pointer of type
 	 * 'struct kbase_gpu_clk_notifier_data' as the third argument.
 	 */
-	int (*gpu_clk_notifier_register)(struct kbase_device *kbdev,
-		void *gpu_clk_handle, struct notifier_block *nb);
+	int (*gpu_clk_notifier_register)(struct kbase_device *kbdev, void *gpu_clk_handle,
+					 struct notifier_block *nb);
 
 	/**
 	 * @gpu_clk_notifier_unregister: Unregister clock rate change notifier
@@ -419,8 +422,8 @@ struct kbase_clk_rate_trace_op_conf {
 	 * was previously registered to get notified of the change in rate
 	 * of clock corresponding to @gpu_clk_handle.
 	 */
-	void (*gpu_clk_notifier_unregister)(struct kbase_device *kbdev,
-		void *gpu_clk_handle, struct notifier_block *nb);
+	void (*gpu_clk_notifier_unregister)(struct kbase_device *kbdev, void *gpu_clk_handle,
+					    struct notifier_block *nb);
 };
 
 #if IS_ENABLED(CONFIG_OF)
@@ -440,9 +443,9 @@ struct kbase_io_memory_region {
  * @brief Specifies I/O related resources like IRQs and memory region for I/O operations.
  */
 struct kbase_io_resources {
-	u32                      job_irq_number;
-	u32                      mmu_irq_number;
-	u32                      gpu_irq_number;
+	u32 job_irq_number;
+	u32 mmu_irq_number;
+	u32 gpu_irq_number;
 	struct kbase_io_memory_region io_memory_region;
 };
 
@@ -580,4 +583,4 @@ int kbase_platform_register(void);
 void kbase_platform_unregister(void);
 #endif
 
-#endif				/* _KBASE_CONFIG_H_ */
+#endif /* _KBASE_CONFIG_H_ */

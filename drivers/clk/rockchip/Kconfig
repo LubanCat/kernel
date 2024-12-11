@@ -16,6 +16,13 @@ config CLK_PX30
 	help
 	  Build the driver for PX30 Clock Driver.
 
+config CLK_RV1103B
+	tristate "Rockchip RV1103B clock controller support"
+	depends on CPU_RV1103B || COMPILE_TEST
+	default y
+	help
+	  Build the driver for RV1103B Clock Driver.
+
 config CLK_RV1106
 	tristate "Rockchip RV1106 clock controller support"
 	depends on CPU_RV1106 || COMPILE_TEST
@@ -154,7 +161,7 @@ config ROCKCHIP_CLK_BOOST
 
 config ROCKCHIP_CLK_INV
 	bool "Rockchip Clk Inverter"
-	default y if !CPU_RV1126 && !CPU_RV1106
+	default y if !CPU_RV1126 && !CPU_RV1106 && !CPU_RV1103B
 	help
 	  Say y here to enable clk Inverter.
 
@@ -166,9 +173,15 @@ config ROCKCHIP_CLK_OUT
 
 config ROCKCHIP_CLK_PVTM
 	bool "Rockchip Clk Pvtm"
-	default y if !CPU_RV1126 && !CPU_RV1106
+	default y if !CPU_RV1126 && !CPU_RV1106 && !CPU_RV1103B
 	help
 	  Say y here to enable clk pvtm.
+
+config ROCKCHIP_CLK_PVTPLL
+	tristate "Rockchip Clk Pvtpll"
+	default y if CPU_RV1103B
+	help
+	  Say y here to enable clk pvtpll.
 
 config ROCKCHIP_DDRCLK
 	bool

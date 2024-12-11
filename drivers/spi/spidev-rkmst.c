@@ -411,7 +411,7 @@ static ssize_t spidev_rkmst_misc_write(struct file *filp, const char __user *buf
 			       len,
 			       1);
 	} else if (!strcmp(cmd, "autotest")) {
-		int addr = 0, len, loops, i;
+		int addr = 0, len, loops, i, compare;
 		unsigned long long bytes = 0;
 		unsigned long us = 0;
 		ktime_t start_time;
@@ -419,13 +419,16 @@ static ssize_t spidev_rkmst_misc_write(struct file *filp, const char __user *buf
 		ktime_t cost_time;
 		char *tempbuf;
 
-		if (argc < 2)
+		if (argc < 3)
 			return -EINVAL;
 
 		if (kstrtoint(argv[0], 0, &len))
 			return -EINVAL;
 
 		if (kstrtoint(argv[1], 0, &loops))
+			return -EINVAL;
+
+		if (kstrtoint(argv[2], 0, &compare))
 			return -EINVAL;
 
 		if (!len) {
@@ -448,7 +451,7 @@ static ssize_t spidev_rkmst_misc_write(struct file *filp, const char __user *buf
 		for (i = 0; i < loops; i++) {
 			prandom_bytes(spidev->txbuf, len);
 			spidev_rkmst_xfer(spidev, spidev->txbuf, spidev->rxbuf, addr, len);
-			if (memcmp(spidev->rxbuf, tempbuf, len)) {
+			if (memcmp(spidev->rxbuf, tempbuf, len) && compare) {
 				dev_err(&spi->dev, "dulplex autotest failed, loops=%d\n", i);
 				print_hex_dump(KERN_ERR, "m-d-t: ",
 					       DUMP_PREFIX_OFFSET,

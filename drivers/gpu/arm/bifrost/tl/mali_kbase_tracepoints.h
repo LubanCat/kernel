@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
- * (C) COPYRIGHT 2010-2023 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2010-2024 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -76,6 +76,11 @@ extern const size_t  aux_desc_header_size;
 #define TL_JS_EVENT_START     GATOR_JOB_SLOT_START
 #define TL_JS_EVENT_STOP      GATOR_JOB_SLOT_STOP
 #define TL_JS_EVENT_SOFT_STOP GATOR_JOB_SLOT_SOFT_STOPPED
+
+#define TL_PM_STATE_SHADER 0x100
+#define TL_PM_STATE_TILER 0x110
+#define TL_PM_STATE_L2 0x120
+#define TL_PM_STATE_STACK 0xE00
 
 #define TLSTREAM_ENABLED (1u << 31)
 
@@ -266,6 +271,11 @@ void __kbase_tlstream_tl_arbiter_granted(
 	const void *gpu
 );
 
+void __kbase_tlstream_tl_arbiter_lost(
+	struct kbase_tlstream *stream,
+	const void *gpu
+);
+
 void __kbase_tlstream_tl_arbiter_started(
 	struct kbase_tlstream *stream,
 	const void *gpu
@@ -393,7 +403,8 @@ void __kbase_tlstream_tl_kbase_new_device(
 	u32 kbase_device_as_count,
 	u32 kbase_device_sb_entry_count,
 	u32 kbase_device_has_cross_stream_sync,
-	u32 kbase_device_supports_gpu_sleep
+	u32 kbase_device_supports_gpu_sleep,
+	u32 kbase_device_has_vd54d34dbb40917c8cea48cca407a8789413be0db
 );
 
 void __kbase_tlstream_tl_kbase_gpucmdqueue_kick(
@@ -878,7 +889,7 @@ struct kbase_tlstream;
 	tgid	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_new_ctx(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -903,7 +914,7 @@ struct kbase_tlstream;
 	core_count	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_new_gpu(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -928,7 +939,7 @@ struct kbase_tlstream;
 	lpu_fn	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_new_lpu(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -951,7 +962,7 @@ struct kbase_tlstream;
 	atom_nr	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_new_atom(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -973,7 +984,7 @@ struct kbase_tlstream;
 	as_nr	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_new_as(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -993,7 +1004,7 @@ struct kbase_tlstream;
 	ctx	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_del_ctx(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1012,7 +1023,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_del_atom(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1033,7 +1044,7 @@ struct kbase_tlstream;
 	gpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_lifelink_lpu_gpu(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1055,7 +1066,7 @@ struct kbase_tlstream;
 	gpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_lifelink_as_gpu(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1077,7 +1088,7 @@ struct kbase_tlstream;
 	lpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_ret_ctx_lpu(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1099,7 +1110,7 @@ struct kbase_tlstream;
 	ctx	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_ret_atom_ctx(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1123,7 +1134,7 @@ struct kbase_tlstream;
 	attrib_match_list	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_ret_atom_lpu(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1146,7 +1157,7 @@ struct kbase_tlstream;
 	lpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_nret_ctx_lpu(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1168,7 +1179,7 @@ struct kbase_tlstream;
 	ctx	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_nret_atom_ctx(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1190,7 +1201,7 @@ struct kbase_tlstream;
 	lpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_nret_atom_lpu(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1212,7 +1223,7 @@ struct kbase_tlstream;
 	ctx	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_ret_as_ctx(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1234,7 +1245,7 @@ struct kbase_tlstream;
 	ctx	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_nret_as_ctx(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1256,7 +1267,7 @@ struct kbase_tlstream;
 	address_space	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_ret_atom_as(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1278,7 +1289,7 @@ struct kbase_tlstream;
 	address_space	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_nret_atom_as(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1304,7 +1315,7 @@ struct kbase_tlstream;
 	config	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_attrib_atom_config(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1328,7 +1339,7 @@ struct kbase_tlstream;
 	j_id	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_jit_usedpages(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1364,7 +1375,7 @@ struct kbase_tlstream;
 	usg_id	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_attrib_atom_jitallocinfo(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1393,7 +1404,7 @@ struct kbase_tlstream;
 	j_id	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_attrib_atom_jitfreeinfo(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1419,7 +1430,7 @@ struct kbase_tlstream;
 	transcfg	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_attrib_as_config(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1441,7 +1452,7 @@ struct kbase_tlstream;
 	lpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_event_lpu_softstop(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1460,7 +1471,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_event_atom_softstop_ex(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1479,7 +1490,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_event_atom_softstop_issue(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1498,7 +1509,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_event_atom_softjob_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1517,7 +1528,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_event_atom_softjob_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1536,9 +1547,28 @@ struct kbase_tlstream;
 	gpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_arbiter_granted(	\
+				__TL_DISPATCH_STREAM(kbdev, obj),	\
+				gpu	\
+				);	\
+	} while (0)
+
+/**
+ * KBASE_TLSTREAM_TL_ARBITER_LOST - Received a gpu lost event from the arbiter
+ *
+ * @kbdev: Kbase device
+ * @gpu: Name of the GPU object
+ */
+#define KBASE_TLSTREAM_TL_ARBITER_LOST(	\
+	kbdev,	\
+	gpu	\
+	)	\
+	do {	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
+		if (enabled & TLSTREAM_ENABLED)	\
+			__kbase_tlstream_tl_arbiter_lost(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
 				gpu	\
 				);	\
@@ -1555,7 +1585,7 @@ struct kbase_tlstream;
 	gpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_arbiter_started(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1574,7 +1604,7 @@ struct kbase_tlstream;
 	gpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_arbiter_stop_requested(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1593,7 +1623,7 @@ struct kbase_tlstream;
 	gpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_arbiter_stopped(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1612,7 +1642,7 @@ struct kbase_tlstream;
 	gpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_arbiter_requested(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1631,7 +1661,7 @@ struct kbase_tlstream;
 	gpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_jd_gpu_soft_reset(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1654,7 +1684,7 @@ struct kbase_tlstream;
 	chunk_va	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_jd_tiler_heap_chunk_alloc(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1675,7 +1705,7 @@ struct kbase_tlstream;
 	dummy	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_js_sched_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1694,7 +1724,7 @@ struct kbase_tlstream;
 	dummy	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_js_sched_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1713,7 +1743,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_jd_submit_atom_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1732,7 +1762,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_jd_submit_atom_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1751,7 +1781,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_jd_done_no_lock_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1770,7 +1800,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_jd_done_no_lock_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1789,7 +1819,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_jd_done_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1808,7 +1838,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_jd_done_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1827,7 +1857,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_jd_atom_complete(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1848,7 +1878,7 @@ struct kbase_tlstream;
 	atom_nr	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_run_atom_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1870,7 +1900,7 @@ struct kbase_tlstream;
 	atom_nr	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_tl_run_atom_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1892,7 +1922,7 @@ struct kbase_tlstream;
 	prio	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_LATENCY_TRACEPOINTS)	\
 			__kbase_tlstream_tl_attrib_atom_priority(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1914,7 +1944,7 @@ struct kbase_tlstream;
 	state	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_LATENCY_TRACEPOINTS)	\
 			__kbase_tlstream_tl_attrib_atom_state(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1934,7 +1964,7 @@ struct kbase_tlstream;
 	atom	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_LATENCY_TRACEPOINTS)	\
 			__kbase_tlstream_tl_attrib_atom_prioritized(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1969,7 +1999,7 @@ struct kbase_tlstream;
 	va_pgs	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_JOB_DUMPING_ENABLED)	\
 			__kbase_tlstream_tl_attrib_atom_jit(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -1996,6 +2026,7 @@ struct kbase_tlstream;
  * @kbase_device_sb_entry_count: The number of entries each scoreboard set in the physical hardware has available
  * @kbase_device_has_cross_stream_sync: Whether cross-stream synchronization is supported
  * @kbase_device_supports_gpu_sleep: Whether GPU sleep is supported
+ * @kbase_device_has_vd54d34dbb40917c8cea48cca407a8789413be0db: Whether v34932631451e2dea4ed0fab0025a0d2767d5e427 is supported
  */
 #if MALI_USE_CSF
 #define KBASE_TLSTREAM_TL_KBASE_NEW_DEVICE(	\
@@ -2006,10 +2037,11 @@ struct kbase_tlstream;
 	kbase_device_as_count,	\
 	kbase_device_sb_entry_count,	\
 	kbase_device_has_cross_stream_sync,	\
-	kbase_device_supports_gpu_sleep	\
+	kbase_device_supports_gpu_sleep,	\
+	kbase_device_has_vd54d34dbb40917c8cea48cca407a8789413be0db	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_new_device(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2019,7 +2051,8 @@ struct kbase_tlstream;
 				kbase_device_as_count,	\
 				kbase_device_sb_entry_count,	\
 				kbase_device_has_cross_stream_sync,	\
-				kbase_device_supports_gpu_sleep	\
+				kbase_device_supports_gpu_sleep,	\
+				kbase_device_has_vd54d34dbb40917c8cea48cca407a8789413be0db	\
 				);	\
 	} while (0)
 #else
@@ -2031,7 +2064,8 @@ struct kbase_tlstream;
 	kbase_device_as_count,	\
 	kbase_device_sb_entry_count,	\
 	kbase_device_has_cross_stream_sync,	\
-	kbase_device_supports_gpu_sleep	\
+	kbase_device_supports_gpu_sleep,	\
+	kbase_device_has_vd54d34dbb40917c8cea48cca407a8789413be0db	\
 	)	\
 	do { } while (0)
 #endif /* MALI_USE_CSF */
@@ -2050,7 +2084,7 @@ struct kbase_tlstream;
 	buffer_gpu_addr	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_gpucmdqueue_kick(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2087,7 +2121,7 @@ struct kbase_tlstream;
 	kbase_device_csg_slot_resuming	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_device_program_csg(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2124,7 +2158,7 @@ struct kbase_tlstream;
 	kbase_device_csg_slot_index	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_device_deprogram_csg(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2157,7 +2191,7 @@ struct kbase_tlstream;
 	kbase_device_csg_slot_suspending	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_device_halting_csg(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2190,7 +2224,7 @@ struct kbase_tlstream;
 	kbase_device_csg_slot_index	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_device_suspend_csg(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2221,7 +2255,7 @@ struct kbase_tlstream;
 	kbase_device_csg_slot_index	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_device_csg_idle(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2252,7 +2286,7 @@ struct kbase_tlstream;
 	kbase_device_id	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_new_ctx(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2281,7 +2315,7 @@ struct kbase_tlstream;
 	kernel_ctx_id	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_del_ctx(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2310,7 +2344,7 @@ struct kbase_tlstream;
 	kbase_device_as_index	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_ctx_assign_as(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2339,7 +2373,7 @@ struct kbase_tlstream;
 	kernel_ctx_id	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_ctx_unassign_as(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2372,7 +2406,7 @@ struct kbase_tlstream;
 	kcpuq_num_pending_cmds	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_new_kcpuqueue(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2405,7 +2439,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_del_kcpuqueue(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2434,7 +2468,7 @@ struct kbase_tlstream;
 	fence	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_enqueue_fence_signal(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2465,7 +2499,7 @@ struct kbase_tlstream;
 	fence	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_enqueue_fence_wait(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2500,7 +2534,7 @@ struct kbase_tlstream;
 	inherit_error	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_enqueue_cqs_wait(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2535,7 +2569,7 @@ struct kbase_tlstream;
 	cqs_obj_gpu_addr	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_enqueue_cqs_set(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2574,7 +2608,7 @@ struct kbase_tlstream;
 	inherit_error	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_enqueue_cqs_wait_operation(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2619,7 +2653,7 @@ struct kbase_tlstream;
 	data_type	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_enqueue_cqs_set_operation(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2656,7 +2690,7 @@ struct kbase_tlstream;
 	map_import_buf_gpu_addr	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_enqueue_map_import(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2687,7 +2721,7 @@ struct kbase_tlstream;
 	map_import_buf_gpu_addr	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_enqueue_unmap_import(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2718,7 +2752,7 @@ struct kbase_tlstream;
 	map_import_buf_gpu_addr	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_enqueue_unmap_import_force(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2747,7 +2781,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_array_begin_kcpuqueue_enqueue_jit_alloc(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2792,7 +2826,7 @@ struct kbase_tlstream;
 	jit_alloc_usage_id	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_array_item_kcpuqueue_enqueue_jit_alloc(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2837,7 +2871,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_array_end_kcpuqueue_enqueue_jit_alloc(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2864,7 +2898,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_array_begin_kcpuqueue_enqueue_jit_free(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2893,7 +2927,7 @@ struct kbase_tlstream;
 	jit_alloc_jit_id	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_array_item_kcpuqueue_enqueue_jit_free(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2922,7 +2956,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_array_end_kcpuqueue_enqueue_jit_free(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2949,7 +2983,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_enqueue_error_barrier(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -2980,7 +3014,7 @@ struct kbase_tlstream;
 	gpu_cmdq_grp_handle	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_enqueue_group_suspend(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3011,7 +3045,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_fence_signal_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3040,7 +3074,7 @@ struct kbase_tlstream;
 	execute_error	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_fence_signal_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3069,7 +3103,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_fence_wait_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3098,7 +3132,7 @@ struct kbase_tlstream;
 	execute_error	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_fence_wait_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3127,7 +3161,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_cqs_wait_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3156,7 +3190,7 @@ struct kbase_tlstream;
 	execute_error	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_cqs_wait_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3187,7 +3221,7 @@ struct kbase_tlstream;
 	execute_error	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_cqs_set(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3216,7 +3250,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_cqs_wait_operation_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3245,7 +3279,7 @@ struct kbase_tlstream;
 	execute_error	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_cqs_wait_operation_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3276,7 +3310,7 @@ struct kbase_tlstream;
 	execute_error	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_cqs_set_operation(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3305,7 +3339,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_map_import_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3334,7 +3368,7 @@ struct kbase_tlstream;
 	execute_error	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_map_import_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3363,7 +3397,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_unmap_import_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3392,7 +3426,7 @@ struct kbase_tlstream;
 	execute_error	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_unmap_import_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3421,7 +3455,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_unmap_import_force_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3450,7 +3484,7 @@ struct kbase_tlstream;
 	execute_error	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_unmap_import_force_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3479,7 +3513,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_jit_alloc_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3506,7 +3540,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_array_begin_kcpuqueue_execute_jit_alloc_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3539,7 +3573,7 @@ struct kbase_tlstream;
 	jit_alloc_mmu_flags	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_array_item_kcpuqueue_execute_jit_alloc_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3572,7 +3606,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_array_end_kcpuqueue_execute_jit_alloc_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3599,7 +3633,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_jit_free_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3626,7 +3660,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_array_begin_kcpuqueue_execute_jit_free_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3657,7 +3691,7 @@ struct kbase_tlstream;
 	jit_free_pages_used	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_array_item_kcpuqueue_execute_jit_free_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3688,7 +3722,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_array_end_kcpuqueue_execute_jit_free_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3715,7 +3749,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_error_barrier(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3742,7 +3776,7 @@ struct kbase_tlstream;
 	kcpu_queue	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_group_suspend_start(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3771,7 +3805,7 @@ struct kbase_tlstream;
 	execute_error	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSF_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_kcpuqueue_execute_group_suspend_end(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3800,7 +3834,7 @@ struct kbase_tlstream;
 	csffw_cycle	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSFFW_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_csffw_fw_reloading(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3827,7 +3861,7 @@ struct kbase_tlstream;
 	csffw_cycle	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSFFW_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_csffw_fw_enabling(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3854,7 +3888,7 @@ struct kbase_tlstream;
 	csffw_cycle	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSFFW_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_csffw_fw_request_sleep(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3881,7 +3915,7 @@ struct kbase_tlstream;
 	csffw_cycle	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSFFW_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_csffw_fw_request_wakeup(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3908,7 +3942,7 @@ struct kbase_tlstream;
 	csffw_cycle	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSFFW_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_csffw_fw_request_halt(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3935,7 +3969,7 @@ struct kbase_tlstream;
 	csffw_cycle	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSFFW_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_csffw_fw_disabling(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3962,7 +3996,7 @@ struct kbase_tlstream;
 	csffw_cycle	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSFFW_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_csffw_fw_off(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -3991,7 +4025,7 @@ struct kbase_tlstream;
 	csffw_cycle	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_CSFFW_TRACEPOINTS)	\
 			__kbase_tlstream_tl_kbase_csffw_tlstream_overflow(	\
 				__TL_DISPATCH_STREAM(kbdev, obj),	\
@@ -4021,7 +4055,7 @@ struct kbase_tlstream;
 	core_state_bitset	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_aux_pm_state(	\
 				__TL_DISPATCH_STREAM(kbdev, aux),	\
@@ -4045,7 +4079,7 @@ struct kbase_tlstream;
 	page_cnt_change	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_aux_pagefault(	\
 				__TL_DISPATCH_STREAM(kbdev, aux),	\
@@ -4068,7 +4102,7 @@ struct kbase_tlstream;
 	page_cnt	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_aux_pagesalloc(	\
 				__TL_DISPATCH_STREAM(kbdev, aux),	\
@@ -4088,7 +4122,7 @@ struct kbase_tlstream;
 	target_freq	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_aux_devfreq_target(	\
 				__TL_DISPATCH_STREAM(kbdev, aux),	\
@@ -4117,7 +4151,7 @@ struct kbase_tlstream;
 	ph_pages	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_aux_jit_stats(	\
 				__TL_DISPATCH_STREAM(kbdev, aux),	\
@@ -4157,7 +4191,7 @@ struct kbase_tlstream;
 	nr_in_flight	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_aux_tiler_heap_stats(	\
 				__TL_DISPATCH_STREAM(kbdev, aux),	\
@@ -4190,7 +4224,7 @@ struct kbase_tlstream;
 	event	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_aux_event_job_slot(	\
 				__TL_DISPATCH_STREAM(kbdev, aux),	\
@@ -4212,7 +4246,7 @@ struct kbase_tlstream;
 	gpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_aux_protected_enter_start(	\
 				__TL_DISPATCH_STREAM(kbdev, aux),	\
@@ -4231,7 +4265,7 @@ struct kbase_tlstream;
 	gpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_aux_protected_enter_end(	\
 				__TL_DISPATCH_STREAM(kbdev, aux),	\
@@ -4258,7 +4292,7 @@ struct kbase_tlstream;
 	mmu_lock_page_num	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_aux_mmu_command(	\
 				__TL_DISPATCH_STREAM(kbdev, aux),	\
@@ -4281,7 +4315,7 @@ struct kbase_tlstream;
 	gpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_LATENCY_TRACEPOINTS)	\
 			__kbase_tlstream_aux_protected_leave_start(	\
 				__TL_DISPATCH_STREAM(kbdev, aux),	\
@@ -4300,7 +4334,7 @@ struct kbase_tlstream;
 	gpu	\
 	)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		if (enabled & BASE_TLSTREAM_ENABLE_LATENCY_TRACEPOINTS)	\
 			__kbase_tlstream_aux_protected_leave_end(	\
 				__TL_DISPATCH_STREAM(kbdev, aux),	\
@@ -4322,7 +4356,7 @@ struct kbase_tlstream;
 #define KBASE_TLSTREAM_AUX_EVENT_JOB_SLOT(kbdev,	\
 	context, slot_nr, atom_nr, event)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		kbase_trace_mali_job_slots_event(kbdev->id,	\
 			GATOR_MAKE_EVENT(event, slot_nr),	\
 			context, (u8) atom_nr);	\
@@ -4335,7 +4369,7 @@ struct kbase_tlstream;
 #undef KBASE_TLSTREAM_AUX_PM_STATE
 #define KBASE_TLSTREAM_AUX_PM_STATE(kbdev, core_type, state)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		kbase_trace_mali_pm_status(kbdev->id,	\
 			core_type, state);	\
 		if (enabled & TLSTREAM_ENABLED)	\
@@ -4348,9 +4382,9 @@ struct kbase_tlstream;
 #define KBASE_TLSTREAM_AUX_PAGEFAULT(kbdev,	\
 	ctx_nr, as_nr, page_cnt_change)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		kbase_trace_mali_page_fault_insert_pages(kbdev->id,	\
-			as_nr,	\
+			(int)as_nr,	\
 			page_cnt_change);	\
 		if (enabled & TLSTREAM_ENABLED)	\
 			__kbase_tlstream_aux_pagefault(	\
@@ -4365,9 +4399,9 @@ struct kbase_tlstream;
 #undef KBASE_TLSTREAM_AUX_PAGESALLOC
 #define KBASE_TLSTREAM_AUX_PAGESALLOC(kbdev, ctx_nr, page_cnt)	\
 	do {	\
-		int enabled = atomic_read(&kbdev->timeline_flags);	\
+		u32 enabled = (u32)atomic_read(&kbdev->timeline_flags);	\
 		u32 global_pages_count =	\
-			atomic_read(&kbdev->memdev.used_pages);	\
+			(u32)atomic_read(&kbdev->memdev.used_pages);	\
 			\
 		kbase_trace_mali_total_alloc_pages_change(kbdev->id,	\
 			global_pages_count);	\

@@ -185,6 +185,7 @@
 
 enum rockchip_pinctrl_type {
 	PX30,
+	RV1103B,
 	RV1106,
 	RV1108,
 	RV1126,
@@ -261,6 +262,8 @@ enum rockchip_pin_drv_type {
 	DRV_TYPE_IO_1V8_3V0_AUTO,
 	DRV_TYPE_IO_3V3_ONLY,
 	DRV_TYPE_IO_SMIC,
+	DRV_TYPE_IO_LEVEL_2_BIT,
+	DRV_TYPE_IO_LEVEL_8_BIT,
 	DRV_TYPE_MAX
 };
 

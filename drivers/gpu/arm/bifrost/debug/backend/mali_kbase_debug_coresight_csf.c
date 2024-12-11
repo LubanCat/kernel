@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
- * (C) COPYRIGHT 2022 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2022-2024 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -219,10 +219,16 @@ static int execute_op(struct kbase_device *kbdev, struct kbase_debug_coresight_c
 static int coresight_config_enable(struct kbase_device *kbdev,
 				   struct kbase_debug_coresight_csf_config *config)
 {
+	bool glb_init_request_pending;
+	unsigned long flags;
 	int ret = 0;
 	int i;
 
-	if (!config)
+	spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
+	glb_init_request_pending = kbdev->csf.glb_init_request_pending;
+	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
+
+	if (!config || glb_init_request_pending)
 		return -EINVAL;
 
 	if (config->state == KBASE_DEBUG_CORESIGHT_CSF_ENABLED)
@@ -249,10 +255,16 @@ static int coresight_config_enable(struct kbase_device *kbdev,
 static int coresight_config_disable(struct kbase_device *kbdev,
 				    struct kbase_debug_coresight_csf_config *config)
 {
+	bool glb_init_request_pending;
+	unsigned long flags;
 	int ret = 0;
 	int i;
 
-	if (!config)
+	spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
+	glb_init_request_pending = kbdev->csf.glb_init_request_pending;
+	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
+
+	if (!config || glb_init_request_pending)
 		return -EINVAL;
 
 	if (config->state == KBASE_DEBUG_CORESIGHT_CSF_DISABLED)
@@ -431,7 +443,7 @@ kbase_debug_coresight_csf_config_create(void *client_data,
 	}
 
 	config = kzalloc(sizeof(struct kbase_debug_coresight_csf_config), GFP_KERNEL);
-	if (WARN_ON(!client))
+	if (WARN_ON(!config))
 		return NULL;
 
 	config->client = client;
@@ -766,7 +778,8 @@ KBASE_EXPORT_TEST_API(kbase_debug_coresight_csf_state_check);
 bool kbase_debug_coresight_csf_state_wait(struct kbase_device *kbdev,
 					  enum kbase_debug_coresight_csf_state state)
 {
-	const long wait_timeout = kbase_csf_timeout_in_jiffies(kbdev->csf.fw_timeout_ms);
+	const long wait_timeout =
+		kbase_csf_timeout_in_jiffies(kbase_get_timeout_ms(kbdev, CSF_FIRMWARE_TIMEOUT));
 	struct kbase_debug_coresight_csf_config *config_entry, *next_config_entry;
 	unsigned long flags;
 	bool success = true;
@@ -776,7 +789,7 @@ bool kbase_debug_coresight_csf_state_wait(struct kbase_device *kbdev,
 	spin_lock_irqsave(&kbdev->csf.coresight.lock, flags);
 
 	list_for_each_entry_safe(config_entry, next_config_entry, &kbdev->csf.coresight.configs,
-				  link) {
+				 link) {
 		const enum kbase_debug_coresight_csf_state prev_state = config_entry->state;
 		long remaining;
 
@@ -836,13 +849,13 @@ void kbase_debug_coresight_csf_term(struct kbase_device *kbdev)
 	spin_lock_irqsave(&kbdev->csf.coresight.lock, flags);
 
 	list_for_each_entry_safe(config_entry, next_config_entry, &kbdev->csf.coresight.configs,
-				  link) {
+				 link) {
 		list_del_init(&config_entry->link);
 		kfree(config_entry);
 	}
 
 	list_for_each_entry_safe(client_entry, next_client_entry, &kbdev->csf.coresight.clients,
-				  link) {
+				 link) {
 		list_del_init(&client_entry->link);
 		kfree(client_entry);
 	}

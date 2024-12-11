@@ -762,7 +762,7 @@ static int vdpu_probe(struct platform_device *pdev)
 
 	ret = devm_request_threaded_irq(dev, mpp->irq,
 					mpp_dev_irq,
-					mpp_dev_isr_sched,
+					NULL,
 					IRQF_SHARED,
 					dev_name(dev), mpp);
 	if (ret) {
@@ -803,6 +803,7 @@ struct platform_driver rockchip_vdpu2_driver = {
 	.driver = {
 		.name = VDPU2_DRIVER_NAME,
 		.of_match_table = of_match_ptr(mpp_vdpu2_dt_match),
+		.pm = &mpp_common_pm_ops,
 	},
 };
 EXPORT_SYMBOL(rockchip_vdpu2_driver);

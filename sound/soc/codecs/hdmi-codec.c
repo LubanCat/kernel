@@ -276,6 +276,7 @@ struct hdmi_codec_priv {
 	struct mutex lock;
 	bool busy;
 	bool eld_bypass;
+	bool tx_dlp;
 	struct snd_soc_jack *jack;
 	unsigned int jack_status;
 	u8 iec_status[24];
@@ -464,6 +465,9 @@ static int hdmi_codec_startup(struct snd_pcm_substream *substream,
 	bool tx = substream->stream == SNDRV_PCM_STREAM_PLAYBACK;
 	int ret = 0;
 
+	if (hcp->tx_dlp && substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
+		return 0;
+
 	mutex_lock(&hcp->lock);
 	if (hcp->busy) {
 		dev_err(dai->dev, "Only one simultaneous stream supported!\n");
@@ -503,6 +507,9 @@ static void hdmi_codec_shutdown(struct snd_pcm_substream *substream,
 				struct snd_soc_dai *dai)
 {
 	struct hdmi_codec_priv *hcp = snd_soc_dai_get_drvdata(dai);
+
+	if (hcp->tx_dlp && substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
+		return;
 
 	hcp->chmap_idx = HDMI_CODEC_CHMAP_IDX_UNKNOWN;
 	hcp->hcd.ops->audio_shutdown(dai->dev->parent, hcp->hcd.data);
@@ -565,6 +572,9 @@ static int hdmi_codec_hw_params(struct snd_pcm_substream *substream,
 	};
 	int ret;
 
+	if (hcp->tx_dlp && substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
+		return 0;
+
 	if (!hcp->hcd.ops->hw_params)
 		return 0;
 
@@ -605,6 +615,9 @@ static int hdmi_codec_prepare(struct snd_pcm_substream *substream,
 	unsigned int rate = runtime->rate;
 	struct hdmi_codec_params hp;
 	int ret;
+
+	if (hcp->tx_dlp && substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
+		return 0;
 
 	if (!hcp->hcd.ops->prepare)
 		return 0;
@@ -916,18 +929,13 @@ static int hdmi_codec_set_jack(struct snd_soc_component *component,
 			       void *data)
 {
 	struct hdmi_codec_priv *hcp = snd_soc_component_get_drvdata(component);
-	int ret = -ENOTSUPP;
 
 	if (hcp->hcd.ops->hook_plugged_cb) {
 		hcp->jack = jack;
-		ret = hcp->hcd.ops->hook_plugged_cb(component->dev->parent,
-						    hcp->hcd.data,
-						    plugged_cb,
-						    component->dev);
-		if (ret)
-			hcp->jack = NULL;
+		return 0;
 	}
-	return ret;
+
+	return -ENOTSUPP;
 }
 
 static int hdmi_dai_spdif_probe(struct snd_soc_dai *dai)
@@ -1011,6 +1019,21 @@ static int hdmi_of_xlate_dai_id(struct snd_soc_component *component,
 	return ret;
 }
 
+static int hdmi_probe(struct snd_soc_component *component)
+{
+	struct hdmi_codec_priv *hcp = snd_soc_component_get_drvdata(component);
+	int ret = 0;
+
+	if (hcp->hcd.ops->hook_plugged_cb) {
+		ret = hcp->hcd.ops->hook_plugged_cb(component->dev->parent,
+						    hcp->hcd.data,
+						    plugged_cb,
+						    component->dev);
+	}
+
+	return ret;
+}
+
 static void hdmi_remove(struct snd_soc_component *component)
 {
 	struct hdmi_codec_priv *hcp = snd_soc_component_get_drvdata(component);
@@ -1021,6 +1044,7 @@ static void hdmi_remove(struct snd_soc_component *component)
 }
 
 static const struct snd_soc_component_driver hdmi_driver = {
+	.probe			= hdmi_probe,
 	.remove			= hdmi_remove,
 	.dapm_widgets		= hdmi_widgets,
 	.num_dapm_widgets	= ARRAY_SIZE(hdmi_widgets),
@@ -1060,6 +1084,8 @@ static int hdmi_codec_probe(struct platform_device *pdev)
 
 	hcp->hcd = *hcd;
 	mutex_init(&hcp->lock);
+
+	hcp->tx_dlp = device_property_read_bool(dev->parent, "audio,digital-loopback");
 
 	ret = snd_pcm_create_iec958_consumer_default(hcp->iec_status,
 						     sizeof(hcp->iec_status));

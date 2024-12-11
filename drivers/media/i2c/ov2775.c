@@ -126,6 +126,7 @@ struct ov2775_mode {
 	u32 lane;
 	u32 vc[PAD_MAX];
 	const struct regval *reg_list;
+	u32 link_freq_idx;
 
 };
 
@@ -165,6 +166,8 @@ struct ov2775 {
 	const char		*module_facing;
 	const char		*module_name;
 	const char		*len_name;
+	struct v4l2_fract	cur_fps;
+	u32			cur_vts;
 };
 
 #define to_ov2775(sd) container_of(sd, struct ov2775, subdev)
@@ -3818,6 +3821,7 @@ static const struct ov2775_mode supported_modes[] = {
 		.lane = 4,
 		.reg_list = ov2775_linear12bit_init_tab_1920_1080,
 		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
+		.link_freq_idx = 0,
 	},
 	{
 		.bus_fmt = MEDIA_BUS_FMT_SBGGR12_1X12,
@@ -3838,7 +3842,12 @@ static const struct ov2775_mode supported_modes[] = {
 		.vc[PAD1] = V4L2_MBUS_CSI2_CHANNEL_0,
 		.vc[PAD2] = V4L2_MBUS_CSI2_CHANNEL_1,
 		.vc[PAD3] = V4L2_MBUS_CSI2_CHANNEL_1,
+		.link_freq_idx = 0,
 	},
+};
+
+static const u32 bus_code[] = {
+	MEDIA_BUS_FMT_SBGGR12_1X12,
 };
 
 static const s64 link_freq_menu_items[] = {
@@ -3977,6 +3986,10 @@ ov2775_find_best_fit(struct v4l2_subdev *sd,
 		if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
 			cur_best_fit_dist = dist;
 			cur_best_fit = i;
+		} else if (dist == cur_best_fit_dist &&
+			   framefmt->code == supported_modes[i].bus_fmt) {
+			cur_best_fit = i;
+			break;
 		}
 	}
 
@@ -4014,6 +4027,7 @@ static int ov2775_set_fmt(struct v4l2_subdev *sd,
 		__v4l2_ctrl_modify_range(ov2775->vblank, vblank_def,
 					 OV2775_VTS_MAX - mode->height,
 					 1, vblank_def);
+		ov2775->cur_fps = mode->max_fps;
 	}
 
 	mutex_unlock(&ov2775->mutex);
@@ -4055,11 +4069,9 @@ static int ov2775_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
-	struct ov2775 *ov2775 = to_ov2775(sd);
-
-	if (code->index != 0)
+	if (code->index >= ARRAY_SIZE(bus_code))
 		return -EINVAL;
-	code->code = ov2775->support_modes[0].bus_fmt;
+	code->code = bus_code[code->index];
 
 	return 0;
 }
@@ -4103,8 +4115,78 @@ static int ov2775_g_frame_interval(struct v4l2_subdev *sd,
 	struct ov2775 *ov2775 = to_ov2775(sd);
 	const struct ov2775_mode *mode = ov2775->cur_mode;
 
-	fi->interval = mode->max_fps;
+	if (ov2775->streaming)
+		fi->interval = ov2775->cur_fps;
+	else
+		fi->interval = mode->max_fps;
 
+	return 0;
+}
+
+static const struct ov2775_mode *ov2775_find_mode(struct ov2775 *ov2775, int fps)
+{
+	const struct ov2775_mode *mode = NULL;
+	const struct ov2775_mode *match = NULL;
+	int cur_fps = 0;
+	int i = 0;
+
+	for (i = 0; i < ARRAY_SIZE(supported_modes); i++) {
+		mode = &supported_modes[i];
+		if (mode->width == ov2775->cur_mode->width &&
+		    mode->height == ov2775->cur_mode->height &&
+		    mode->hdr_mode == ov2775->cur_mode->hdr_mode &&
+		    mode->bus_fmt == ov2775->cur_mode->bus_fmt) {
+			cur_fps = DIV_ROUND_CLOSEST(mode->max_fps.denominator, mode->max_fps.numerator);
+			if (cur_fps == fps) {
+				match = mode;
+				break;
+			}
+		}
+	}
+	return match;
+}
+
+static int ov2775_s_frame_interval(struct v4l2_subdev *sd,
+				   struct v4l2_subdev_frame_interval *fi)
+{
+	struct ov2775 *ov2775 = to_ov2775(sd);
+	const struct ov2775_mode *mode = NULL;
+	struct v4l2_fract *fract = &fi->interval;
+	s64 h_blank, vblank_def;
+	u64 pixel_rate = 0;
+	int fps;
+
+	if (ov2775->streaming)
+		return -EBUSY;
+
+	if (fi->pad != 0)
+		return -EINVAL;
+
+	if (fract->numerator == 0) {
+		v4l2_err(sd, "error param, check interval param\n");
+		return -EINVAL;
+	}
+	fps = DIV_ROUND_CLOSEST(fract->denominator, fract->numerator);
+	mode = ov2775_find_mode(ov2775, fps);
+	if (mode == NULL) {
+		v4l2_err(sd, "couldn't match fi\n");
+		return -EINVAL;
+	}
+
+	ov2775->cur_mode = mode;
+
+	h_blank = mode->hts_def - mode->width;
+	__v4l2_ctrl_modify_range(ov2775->hblank, h_blank,
+				 h_blank, 1, h_blank);
+	vblank_def = mode->vts_def - mode->height;
+	__v4l2_ctrl_modify_range(ov2775->vblank, vblank_def,
+				 OV2775_VTS_MAX - mode->height,
+				 1, vblank_def);
+	pixel_rate = (u32)link_freq_menu_items[mode->link_freq_idx] / mode->bpp * 2 * mode->lane;
+
+	__v4l2_ctrl_s_ctrl_int64(ov2775->pixel_rate,
+				 pixel_rate);
+	ov2775->cur_fps = mode->max_fps;
 	return 0;
 }
 
@@ -4178,7 +4260,7 @@ static void ov2775_get_hcg_reg(u32 gain, u32 *again_reg, u32 *dgain_reg)
 	}
 }
 
-static int ov2775_g_mbus_config(struct v4l2_subdev *sd,
+static int ov2775_g_mbus_config(struct v4l2_subdev *sd, unsigned int pad,
 				struct v4l2_mbus_config *config)
 {
 	struct ov2775 *ov2775 = to_ov2775(sd);
@@ -4195,7 +4277,7 @@ static int ov2775_g_mbus_config(struct v4l2_subdev *sd,
 		V4L2_MBUS_CSI2_CONTINUOUS_CLOCK |
 		V4L2_MBUS_CSI2_CHANNEL_1;
 
-	config->type = V4L2_MBUS_CSI2;
+	config->type = V4L2_MBUS_CSI2_DPHY;
 	config->flags = val;
 
 	return 0;
@@ -4211,16 +4293,31 @@ static void ov2775_get_module_inf(struct ov2775 *ov2775,
 	strlcpy(inf->base.lens, ov2775->len_name, sizeof(inf->base.lens));
 }
 
+static int ov2775_get_channel_info(struct ov2775 *ov2775, struct rkmodule_channel_info *ch_info)
+{
+	if (ch_info->index < PAD0 || ch_info->index >= PAD_MAX)
+		return -EINVAL;
+	ch_info->vc = ov2775->cur_mode->vc[ch_info->index];
+	ch_info->width = ov2775->cur_mode->width;
+	ch_info->height = ov2775->cur_mode->height;
+	ch_info->bus_fmt = ov2775->cur_mode->bus_fmt;
+	return 0;
+}
+
 static long ov2775_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 {
 	struct ov2775 *ov2775 = to_ov2775(sd);
 	struct i2c_client *client = ov2775->client;
 	struct preisp_hdrae_exp_s *hdrae_exp = arg;
 	struct rkmodule_hdr_cfg *hdr_cfg;
+	struct rkmodule_channel_info *ch_info;
 	u32 s_again, s_dgain, l_again, l_dgain;
 	u32 again, i, h, w;
 	long ret = 0;
 	u32 stream = 0;
+	int cur_best_fit = -1;
+	int cur_best_fit_dist = -1;
+	int cur_dist, cur_fps, dst_fps;
 
 	switch (cmd) {
 	case PREISP_CMD_SET_HDRAE_EXP:
@@ -4327,29 +4424,43 @@ static long ov2775_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		break;
 	case RKMODULE_SET_HDR_CFG:
 		hdr_cfg = (struct rkmodule_hdr_cfg *)arg;
+		if (hdr_cfg->hdr_mode == ov2775->cur_mode->hdr_mode)
+			return 0;
 		w = ov2775->cur_mode->width;
 		h = ov2775->cur_mode->height;
+		dst_fps = DIV_ROUND_CLOSEST(ov2775->cur_mode->max_fps.denominator,
+			ov2775->cur_mode->max_fps.numerator);
 		for (i = 0; i < ov2775->support_modes_num; i++) {
 			if (w == supported_modes[i].width &&
-			h == supported_modes[i].height &&
-			supported_modes[i].hdr_mode == hdr_cfg->hdr_mode) {
-				ov2775->cur_mode = &supported_modes[i];
-				break;
+			    h == supported_modes[i].height &&
+			    supported_modes[i].hdr_mode == hdr_cfg->hdr_mode &&
+			    supported_modes[i].bus_fmt == ov2775->cur_mode->bus_fmt) {
+				cur_fps = DIV_ROUND_CLOSEST(supported_modes[i].max_fps.denominator,
+					supported_modes[i].max_fps.numerator);
+				cur_dist = abs(cur_fps - dst_fps);
+				if (cur_best_fit_dist == -1 || cur_dist < cur_best_fit_dist) {
+					cur_best_fit_dist = cur_dist;
+					cur_best_fit = i;
+				} else if (cur_dist == cur_best_fit_dist) {
+					cur_best_fit = i;
+					break;
+				}
 			}
 		}
-		if (i == ov2775->support_modes_num) {
+		if (cur_best_fit == -1) {
 			dev_err(&client->dev,
 				"not find hdr mode:%d %dx%d config\n",
 				hdr_cfg->hdr_mode, w, h);
 			ret = -EINVAL;
 		} else {
+			ov2775->cur_mode = &supported_modes[cur_best_fit];
 			w = ov2775->cur_mode->hts_def - ov2775->cur_mode->width;
 			h = ov2775->cur_mode->vts_def - ov2775->cur_mode->height;
 			__v4l2_ctrl_modify_range(ov2775->hblank, w, w, 1, w);
 			__v4l2_ctrl_modify_range(ov2775->vblank, h,
 				OV2775_VTS_MAX - ov2775->cur_mode->height,
 				1, h);
-
+			ov2775->cur_fps = ov2775->cur_mode->max_fps;
 			dev_info(&client->dev,
 				"sensor hdr mode: %d, supported_modes[%d]\n",
 				ov2775->cur_mode->hdr_mode, i);
@@ -4365,6 +4476,10 @@ static long ov2775_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		else
 			ret = ov2775_write_reg(ov2775->client, OV2775_REG_CTRL_MODE,
 				OV2775_REG_VALUE_08BIT, OV2775_MODE_SW_STANDBY);
+		break;
+	case RKMODULE_GET_CHANNEL_INFO:
+		ch_info = (struct rkmodule_channel_info *)arg;
+		ret = ov2775_get_channel_info(ov2775, ch_info);
 		break;
 	default:
 		return -ENOIOCTLCMD;
@@ -4382,6 +4497,7 @@ static long ov2775_compat_ioctl32(struct v4l2_subdev *sd,
 	struct rkmodule_awb_cfg *cfg;
 	struct rkmodule_hdr_cfg *hdr;
 	struct preisp_hdrae_exp_s *hdrae;
+	struct rkmodule_channel_info *ch_info;
 	long ret;
 	u32 stream = 0;
 
@@ -4450,6 +4566,21 @@ static long ov2775_compat_ioctl32(struct v4l2_subdev *sd,
 		ret = copy_from_user(&stream, up, sizeof(u32));
 		if (!ret)
 			ret = ov2775_ioctl(sd, cmd, &stream);
+		break;
+	case RKMODULE_GET_CHANNEL_INFO:
+		ch_info = kzalloc(sizeof(*ch_info), GFP_KERNEL);
+		if (!ch_info) {
+			ret = -ENOMEM;
+			return ret;
+		}
+
+		ret = ov2775_ioctl(sd, cmd, ch_info);
+		if (!ret) {
+			ret = copy_to_user(up, ch_info, sizeof(*ch_info));
+			if (ret)
+				return -EFAULT;
+		}
+		kfree(ch_info);
 		break;
 	default:
 		ret = -ENOIOCTLCMD;
@@ -4770,7 +4901,7 @@ static const struct v4l2_subdev_internal_ops ov2775_internal_ops = {
 static const struct v4l2_subdev_video_ops ov2775_video_ops = {
 	.s_stream = ov2775_s_stream,
 	.g_frame_interval = ov2775_g_frame_interval,
-	.g_mbus_config = ov2775_g_mbus_config,
+	.s_frame_interval = ov2775_s_frame_interval,
 };
 
 static const struct v4l2_subdev_pad_ops ov2775_pad_ops = {
@@ -4779,6 +4910,7 @@ static const struct v4l2_subdev_pad_ops ov2775_pad_ops = {
 	.enum_frame_interval = ov2775_enum_frame_interval,
 	.get_fmt = ov2775_get_fmt,
 	.set_fmt = ov2775_set_fmt,
+	.get_mbus_config = ov2775_g_mbus_config,
 };
 
 static const struct v4l2_subdev_core_ops ov2775_core_ops = {
@@ -4832,6 +4964,14 @@ static void ov2775_get_linear_reg(u32 gain, u32 *gain_a, u32 *gain_d)
 	}
 
 	*gain_d = gain;
+}
+
+static void ov2775_modify_fps_info(struct ov2775 *ov2775)
+{
+	const struct ov2775_mode *mode = ov2775->cur_mode;
+
+	ov2775->cur_fps.denominator = mode->max_fps.denominator * mode->vts_def /
+				      ov2775->cur_vts;
 }
 
 static int ov2775_set_ctrl(struct v4l2_ctrl *ctrl)
@@ -4909,6 +5049,8 @@ static int ov2775_set_ctrl(struct v4l2_ctrl *ctrl)
 					OV2775_REG_VTS_L,
 					OV2775_REG_VALUE_08BIT,
 					val & 0xFF);
+		ov2775->cur_vts = ctrl->val + ov2775->cur_mode->height;
+		ov2775_modify_fps_info(ov2775);
 		dev_dbg(&client->dev,
 			"set vts: 0x%x, 0x%x\n", ctrl->val, val);
 		break;

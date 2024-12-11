@@ -209,6 +209,7 @@ struct imx335 {
 	u32			cur_vts;
 	bool			has_init_exp;
 	struct preisp_hdrae_exp_s init_hdrae_exp;
+	struct v4l2_fract	cur_fps;
 };
 
 #define to_imx335(sd) container_of(sd, struct imx335, subdev)
@@ -593,6 +594,10 @@ static const struct imx335_mode supported_modes[] = {
 	},
 };
 
+static const u32 bus_code[] = {
+	MEDIA_BUS_FMT_SRGGB10_1X10,
+};
+
 static const s64 link_freq_items[] = {
 	MIPI_FREQ_594M,
 };
@@ -692,10 +697,13 @@ imx335_find_best_fit(struct imx335 *imx335, struct v4l2_subdev_format *fmt)
 
 	for (i = 0; i < imx335->cfg_num; i++) {
 		dist = imx335_get_reso_dist(&supported_modes[i], framefmt);
-		if ((cur_best_fit_dist == -1 || dist <= cur_best_fit_dist) &&
-			supported_modes[i].bus_fmt == framefmt->code) {
+		if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
 			cur_best_fit_dist = dist;
 			cur_best_fit = i;
+		} else if (dist == cur_best_fit_dist &&
+			   framefmt->code == supported_modes[i].bus_fmt) {
+			cur_best_fit = i;
+			break;
 		}
 	}
 
@@ -706,6 +714,7 @@ static void imx335_change_mode(struct imx335 *imx335, const struct imx335_mode *
 {
 	imx335->cur_mode = mode;
 	imx335->cur_vts = imx335->cur_mode->vts_def;
+	imx335->cur_fps = mode->max_fps;
 	dev_dbg(&imx335->client->dev, "set fmt: cur_mode: %dx%d, hdr: %d\n",
 		mode->width, mode->height, mode->hdr_mode);
 }
@@ -773,11 +782,9 @@ static int imx335_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
-	struct imx335 *imx335 = to_imx335(sd);
-
-	if (code->index != 0)
+	if (code->index >= ARRAY_SIZE(bus_code))
 		return -EINVAL;
-	code->code = imx335->cur_mode->bus_fmt;
+	code->code = bus_code[code->index];
 
 	return 0;
 }
@@ -808,7 +815,78 @@ static int imx335_g_frame_interval(struct v4l2_subdev *sd,
 	struct imx335 *imx335 = to_imx335(sd);
 	const struct imx335_mode *mode = imx335->cur_mode;
 
-	fi->interval = mode->max_fps;
+	if (imx335->streaming)
+		fi->interval = imx335->cur_fps;
+	else
+		fi->interval = mode->max_fps;
+
+	return 0;
+}
+
+static const struct imx335_mode *imx335_find_mode(struct imx335 *imx335, int fps)
+{
+	const struct imx335_mode *mode = NULL;
+	const struct imx335_mode *match = NULL;
+	int cur_fps = 0;
+	int i = 0;
+
+	for (i = 0; i < imx335->cfg_num; i++) {
+		mode = &supported_modes[i];
+		if (mode->width == imx335->cur_mode->width &&
+		    mode->height == imx335->cur_mode->height &&
+		    mode->bus_fmt == imx335->cur_mode->bus_fmt &&
+		    mode->hdr_mode == imx335->cur_mode->hdr_mode) {
+			cur_fps = DIV_ROUND_CLOSEST(mode->max_fps.denominator, mode->max_fps.numerator);
+			if (cur_fps == fps) {
+				match = mode;
+				break;
+			}
+		}
+	}
+	return match;
+}
+
+static int imx335_s_frame_interval(struct v4l2_subdev *sd,
+				   struct v4l2_subdev_frame_interval *fi)
+{
+	struct imx335 *imx335 = to_imx335(sd);
+	const struct imx335_mode *mode = NULL;
+	struct v4l2_fract *fract = &fi->interval;
+	s64 h_blank, vblank_def;
+	u64 pixel_rate = 0;
+	u32 lane_num = IMX335_4LANES;
+	int fps;
+
+	if (imx335->streaming)
+		return -EBUSY;
+
+	if (fi->pad != 0)
+		return -EINVAL;
+
+	if (fract->numerator == 0) {
+		v4l2_err(sd, "error param, check interval param\n");
+		return -EINVAL;
+	}
+	fps = DIV_ROUND_CLOSEST(fract->denominator, fract->numerator);
+	mode = imx335_find_mode(imx335, fps);
+	if (mode == NULL) {
+		v4l2_err(sd, "couldn't match fi\n");
+		return -EINVAL;
+	}
+
+	imx335_change_mode(imx335, mode);
+
+	h_blank = mode->hts_def - mode->width;
+	__v4l2_ctrl_modify_range(imx335->hblank, h_blank,
+				 h_blank, 1, h_blank);
+	vblank_def = mode->vts_def - mode->height;
+	__v4l2_ctrl_modify_range(imx335->vblank, vblank_def,
+				 IMX335_VTS_MAX - mode->height,
+				 1, vblank_def);
+	pixel_rate = (u32)link_freq_items[0] / mode->bpp * 2 * lane_num;
+
+	__v4l2_ctrl_s_ctrl_int64(imx335->pixel_rate,
+				 pixel_rate);
 
 	return 0;
 }
@@ -1248,13 +1326,28 @@ static int imx335_set_hdrae_3frame(struct imx335 *imx335,
 	return ret;
 }
 
+static int imx335_get_channel_info(struct imx335 *imx335, struct rkmodule_channel_info *ch_info)
+{
+	if (ch_info->index < PAD0 || ch_info->index >= PAD_MAX)
+		return -EINVAL;
+	ch_info->vc = imx335->cur_mode->vc[ch_info->index];
+	ch_info->width = imx335->cur_mode->width;
+	ch_info->height = imx335->cur_mode->height;
+	ch_info->bus_fmt = imx335->cur_mode->bus_fmt;
+	return 0;
+}
+
 static long imx335_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 {
 	struct imx335 *imx335 = to_imx335(sd);
 	struct rkmodule_hdr_cfg *hdr;
+	struct rkmodule_channel_info *ch_info;
 	u32 i, h, w;
 	long ret = 0;
 	u32 stream = 0;
+	int cur_best_fit = -1;
+	int cur_best_fit_dist = -1;
+	int cur_dist, cur_fps, dst_fps;
 
 	switch (cmd) {
 	case PREISP_CMD_SET_HDRAE_EXP:
@@ -1273,22 +1366,36 @@ static long imx335_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		break;
 	case RKMODULE_SET_HDR_CFG:
 		hdr = (struct rkmodule_hdr_cfg *)arg;
+		if (hdr->hdr_mode == imx335->cur_mode->hdr_mode)
+			return 0;
 		w = imx335->cur_mode->width;
 		h = imx335->cur_mode->height;
+		dst_fps = DIV_ROUND_CLOSEST(imx335->cur_mode->max_fps.denominator,
+			imx335->cur_mode->max_fps.numerator);
 		for (i = 0; i < imx335->cfg_num; i++) {
 			if (w == supported_modes[i].width &&
 			    h == supported_modes[i].height &&
+			    supported_modes[i].bus_fmt == imx335->cur_mode->bus_fmt &&
 			    supported_modes[i].hdr_mode == hdr->hdr_mode) {
-				imx335_change_mode(imx335, &supported_modes[i]);
-				break;
+				cur_fps = DIV_ROUND_CLOSEST(supported_modes[i].max_fps.denominator,
+					supported_modes[i].max_fps.numerator);
+				cur_dist = abs(cur_fps - dst_fps);
+				if (cur_best_fit_dist == -1 || cur_dist < cur_best_fit_dist) {
+					cur_best_fit_dist = cur_dist;
+					cur_best_fit = i;
+				} else if (cur_dist == cur_best_fit_dist) {
+					cur_best_fit = i;
+					break;
+				}
 			}
 		}
-		if (i == imx335->cfg_num) {
+		if (cur_best_fit == -1) {
 			dev_err(&imx335->client->dev,
 				"not find hdr mode:%d %dx%d config\n",
 				hdr->hdr_mode, w, h);
 			ret = -EINVAL;
 		} else {
+			imx335_change_mode(imx335, &supported_modes[cur_best_fit]);
 			w = imx335->cur_mode->hts_def - imx335->cur_mode->width;
 			h = imx335->cur_mode->vts_def - imx335->cur_mode->height;
 			__v4l2_ctrl_modify_range(imx335->hblank, w, w, 1, w);
@@ -1308,6 +1415,10 @@ static long imx335_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 			imx335_write_reg(imx335->client, IMX335_REG_CTRL_MODE,
 				IMX335_REG_VALUE_08BIT, 1);
 		break;
+	case RKMODULE_GET_CHANNEL_INFO:
+		ch_info = (struct rkmodule_channel_info *)arg;
+		ret = imx335_get_channel_info(imx335, ch_info);
+		break;
 	default:
 		ret = -ENOIOCTLCMD;
 		break;
@@ -1325,6 +1436,7 @@ static long imx335_compat_ioctl32(struct v4l2_subdev *sd,
 	struct rkmodule_awb_cfg *cfg;
 	struct rkmodule_hdr_cfg *hdr;
 	struct preisp_hdrae_exp_s *hdrae;
+	struct rkmodule_channel_info *ch_info;
 	long ret;
 	u32 stream = 0;
 
@@ -1393,6 +1505,21 @@ static long imx335_compat_ioctl32(struct v4l2_subdev *sd,
 		ret = copy_from_user(&stream, up, sizeof(u32));
 		if (!ret)
 			ret = imx335_ioctl(sd, cmd, &stream);
+		break;
+	case RKMODULE_GET_CHANNEL_INFO:
+		ch_info = kzalloc(sizeof(*ch_info), GFP_KERNEL);
+		if (!ch_info) {
+			ret = -ENOMEM;
+			return ret;
+		}
+
+		ret = imx335_ioctl(sd, cmd, ch_info);
+		if (!ret) {
+			ret = copy_to_user(up, ch_info, sizeof(*ch_info));
+			if (ret)
+				return -EFAULT;
+		}
+		kfree(ch_info);
 		break;
 	default:
 		ret = -ENOIOCTLCMD;
@@ -1684,6 +1811,7 @@ static const struct v4l2_subdev_core_ops imx335_core_ops = {
 static const struct v4l2_subdev_video_ops imx335_video_ops = {
 	.s_stream = imx335_s_stream,
 	.g_frame_interval = imx335_g_frame_interval,
+	.s_frame_interval = imx335_s_frame_interval,
 };
 
 static const struct v4l2_subdev_pad_ops imx335_pad_ops = {
@@ -1701,6 +1829,14 @@ static const struct v4l2_subdev_ops imx335_subdev_ops = {
 	.video	= &imx335_video_ops,
 	.pad	= &imx335_pad_ops,
 };
+
+static void imx335_modify_fps_info(struct imx335 *imx335)
+{
+	const struct imx335_mode *mode = imx335->cur_mode;
+
+	imx335->cur_fps.denominator = mode->max_fps.denominator * mode->vts_def /
+				      imx335->cur_vts;
+}
 
 static int imx335_set_ctrl(struct v4l2_ctrl *ctrl)
 {
@@ -1783,6 +1919,7 @@ static int imx335_set_ctrl(struct v4l2_ctrl *ctrl)
 		ret |= imx335_write_reg(imx335->client, IMX335_VTS_REG_H,
 				       IMX335_REG_VALUE_08BIT,
 				       IMX335_FETCH_VTS_H(vts));
+		imx335_modify_fps_info(imx335);
 		dev_dbg(&client->dev, "set vblank 0x%x\n", ctrl->val);
 		break;
 	case V4L2_CID_HFLIP:

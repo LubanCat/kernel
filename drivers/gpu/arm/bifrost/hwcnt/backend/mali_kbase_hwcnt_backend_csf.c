@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
- * (C) COPYRIGHT 2021-2023 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2021-2024 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -21,7 +21,6 @@
 
 #include "hwcnt/backend/mali_kbase_hwcnt_backend_csf.h"
 #include "hwcnt/mali_kbase_hwcnt_gpu.h"
-#include "hwcnt/mali_kbase_hwcnt_types.h"
 
 #include <linux/log2.h>
 #include <linux/kernel.h>
@@ -31,6 +30,7 @@
 #include <linux/wait.h>
 #include <linux/workqueue.h>
 #include <linux/completion.h>
+#include <linux/version_compat_defs.h>
 
 #ifndef BASE_MAX_NR_CLOCKS_REGULATORS
 #define BASE_MAX_NR_CLOCKS_REGULATORS 4
@@ -43,6 +43,9 @@
 /* Backend watch dog timer interval in milliseconds: 1 second. */
 #define HWCNT_BACKEND_WATCHDOG_TIMER_INTERVAL_MS ((u32)1000)
 #endif /* IS_FPGA && !NO_MALI */
+
+/* Used to check for a sample in which all counters in the block are disabled */
+#define HWCNT_BLOCK_EMPTY_SAMPLE (2)
 
 /**
  * enum kbase_hwcnt_backend_csf_dump_state - HWC CSF backend dumping states.
@@ -172,15 +175,16 @@ struct kbase_hwcnt_backend_csf_info {
 
 /**
  * struct kbase_hwcnt_csf_physical_layout - HWC sample memory physical layout
- *                                          information.
- * @hw_block_cnt:       Total number of hardware counters blocks. The hw counters blocks are
- *                      sub-categorized into 4 classes: front-end, tiler, memory system, and shader.
- *                      hw_block_cnt = fe_cnt + tiler_cnt + mmu_l2_cnt + shader_cnt.
+ *                                          information, as defined by the spec.
  * @fe_cnt:             Front end block count.
  * @tiler_cnt:          Tiler block count.
  * @mmu_l2_cnt:         Memory system (MMU and L2 cache) block count.
  * @shader_cnt:         Shader Core block count.
- * @fw_block_cnt:       Total number of firmware counters blocks.
+ * @fw_block_cnt:       Total number of firmware counter blocks, with a single
+ *                      global FW block and a block per CSG.
+ * @hw_block_cnt:       Total number of hardware counter blocks. The hw counters blocks are
+ *                      sub-categorized into 4 classes: front-end, tiler, memory system, and shader.
+ *                      hw_block_cnt = fe_cnt + tiler_cnt + mmu_l2_cnt + shader_cnt.
  * @block_cnt:          Total block count (sum of all counter blocks: hw_block_cnt + fw_block_cnt).
  * @shader_avail_mask:  Bitmap of all shader cores in the system.
  * @enable_mask_offset: Offset in array elements of enable mask in each block
@@ -190,12 +194,12 @@ struct kbase_hwcnt_backend_csf_info {
  * @values_per_block:   For any block, the number of counters in total (header + payload).
  */
 struct kbase_hwcnt_csf_physical_layout {
-	u8 hw_block_cnt;
 	u8 fe_cnt;
 	u8 tiler_cnt;
 	u8 mmu_l2_cnt;
 	u8 shader_cnt;
 	u8 fw_block_cnt;
+	u8 hw_block_cnt;
 	u8 block_cnt;
 	u64 shader_avail_mask;
 	size_t enable_mask_offset;
@@ -220,6 +224,13 @@ struct kbase_hwcnt_csf_physical_layout {
  * @old_sample_buf:             HWC sample buffer to save the previous values
  *                              for delta calculation, size
  *                              prfcnt_info.dump_bytes.
+ * @block_states:               Pointer to array of block_state values for all
+ *                              blocks.
+ * @to_user_block_states:       Block state buffer for client user.
+ * @accum_all_blk_stt:          Block state to accumulate for all known blocks
+ *                              on next sample.
+ * @sampled_all_blk_stt:        Block State to accumulate for all known blocks
+ *                              into the current sample.
  * @watchdog_last_seen_insert_idx: The insert index which watchdog has last
  *                                 seen, to check any new firmware automatic
  *                                 samples generated during the watchdog
@@ -243,6 +254,9 @@ struct kbase_hwcnt_csf_physical_layout {
  * @hwc_dump_work:              Worker to accumulate samples.
  * @hwc_threshold_work:         Worker for consuming available samples when
  *                              threshold interrupt raised.
+ * @num_l2_slices:              Current number of L2 slices allocated to the GPU.
+ * @powered_shader_core_mask:   The common mask between the debug_core_mask
+ *                              and the shader_present_bitmap.
  */
 struct kbase_hwcnt_backend_csf {
 	struct kbase_hwcnt_backend_csf_info *info;
@@ -253,6 +267,10 @@ struct kbase_hwcnt_backend_csf {
 	u64 *to_user_buf;
 	u64 *accum_buf;
 	u32 *old_sample_buf;
+	blk_stt_t *block_states;
+	blk_stt_t *to_user_block_states;
+	blk_stt_t accum_all_blk_stt;
+	blk_stt_t sampled_all_blk_stt;
 	u32 watchdog_last_seen_insert_idx;
 	struct kbase_hwcnt_backend_csf_if_ring_buf *ring_buf;
 	void *ring_buf_cpu_base;
@@ -265,13 +283,46 @@ struct kbase_hwcnt_backend_csf {
 	struct workqueue_struct *hwc_dump_workq;
 	struct work_struct hwc_dump_work;
 	struct work_struct hwc_threshold_work;
+	size_t num_l2_slices;
+	u64 powered_shader_core_mask;
 };
 
 static bool kbasep_hwcnt_backend_csf_backend_exists(struct kbase_hwcnt_backend_csf_info *csf_info)
 {
-	WARN_ON(!csf_info);
+	if (WARN_ON(!csf_info))
+		return false;
+
 	csf_info->csf_if->assert_lock_held(csf_info->csf_if->ctx);
 	return (csf_info->backend != NULL);
+}
+
+void kbase_hwcnt_backend_csf_set_hw_availability(struct kbase_hwcnt_backend_interface *iface,
+						 size_t num_l2_slices, u64 shader_present,
+						 u64 power_core_mask)
+{
+	struct kbase_hwcnt_backend_csf_info *csf_info;
+	u64 norm_shader_present = power_core_mask & shader_present;
+
+	if (!iface)
+		return;
+
+	csf_info = (struct kbase_hwcnt_backend_csf_info *)iface->info;
+
+	/* Early out if the backend does not exist. */
+	if (!csf_info || !csf_info->backend)
+		return;
+
+
+	if (WARN_ON(csf_info->backend->enable_state != KBASE_HWCNT_BACKEND_CSF_DISABLED))
+		return;
+
+	if (WARN_ON(num_l2_slices > csf_info->backend->phys_layout.mmu_l2_cnt) ||
+	    WARN_ON((norm_shader_present & csf_info->backend->phys_layout.shader_avail_mask) !=
+		    norm_shader_present))
+		return;
+
+	csf_info->backend->num_l2_slices = num_l2_slices;
+	csf_info->backend->powered_shader_core_mask = norm_shader_present;
 }
 
 /**
@@ -295,8 +346,7 @@ kbasep_hwcnt_backend_csf_cc_initial_sample(struct kbase_hwcnt_backend_csf *backe
 	backend_csf->info->csf_if->get_gpu_cycle_count(backend_csf->info->csf_if->ctx, cycle_counts,
 						       clk_enable_map);
 
-	kbase_hwcnt_metadata_for_each_clock(enable_map->metadata, clk)
-	{
+	kbase_hwcnt_metadata_for_each_clock(enable_map->metadata, clk) {
 		if (kbase_hwcnt_clk_enable_map_enabled(clk_enable_map, clk))
 			backend_csf->prev_cycle_count[clk] = cycle_counts[clk];
 	}
@@ -317,8 +367,7 @@ static void kbasep_hwcnt_backend_csf_cc_update(struct kbase_hwcnt_backend_csf *b
 	backend_csf->info->csf_if->get_gpu_cycle_count(backend_csf->info->csf_if->ctx, cycle_counts,
 						       backend_csf->clk_enable_map);
 
-	kbase_hwcnt_metadata_for_each_clock(backend_csf->info->metadata, clk)
-	{
+	kbase_hwcnt_metadata_for_each_clock(backend_csf->info->metadata, clk) {
 		if (kbase_hwcnt_clk_enable_map_enabled(backend_csf->clk_enable_map, clk)) {
 			backend_csf->cycle_count_elapsed[clk] =
 				cycle_counts[clk] - backend_csf->prev_cycle_count[clk];
@@ -340,29 +389,29 @@ static u64 kbasep_hwcnt_backend_csf_timestamp_ns(struct kbase_hwcnt_backend *bac
 
 /** kbasep_hwcnt_backend_csf_process_enable_map() - Process the enable_map to
  *                                                  guarantee headers are
- *                                                  enabled if any counter is
- *                                                  required.
+ *                                                  enabled.
  *@phys_enable_map: HWC physical enable map to be processed.
  */
-static void
-kbasep_hwcnt_backend_csf_process_enable_map(struct kbase_hwcnt_physical_enable_map *phys_enable_map)
+void kbasep_hwcnt_backend_csf_process_enable_map(
+	struct kbase_hwcnt_physical_enable_map *phys_enable_map)
 {
 	WARN_ON(!phys_enable_map);
 
-	/* Enable header if any counter is required from user, the header is
-	 * controlled by bit 0 of the enable mask.
+	/* Unconditionally enable each block header and first counter,
+	 * the header is controlled by bit 0 of the enable mask.
 	 */
-	if (phys_enable_map->fe_bm)
-		phys_enable_map->fe_bm |= 1;
+	phys_enable_map->fe_bm |= 3;
 
-	if (phys_enable_map->tiler_bm)
-		phys_enable_map->tiler_bm |= 1;
+	phys_enable_map->tiler_bm |= 3;
 
-	if (phys_enable_map->mmu_l2_bm)
-		phys_enable_map->mmu_l2_bm |= 1;
+	phys_enable_map->mmu_l2_bm |= 3;
 
-	if (phys_enable_map->shader_bm)
-		phys_enable_map->shader_bm |= 1;
+	phys_enable_map->shader_bm |= 3;
+
+	phys_enable_map->fw_bm |= 3;
+
+	phys_enable_map->csg_bm |= 3;
+
 }
 
 static void kbasep_hwcnt_backend_csf_init_layout(
@@ -371,33 +420,36 @@ static void kbasep_hwcnt_backend_csf_init_layout(
 {
 	size_t shader_core_cnt;
 	size_t values_per_block;
-	size_t fw_blocks_count;
-	size_t hw_blocks_count;
+	size_t fw_block_cnt;
+	size_t hw_block_cnt;
+	size_t core_cnt;
+
 
 	WARN_ON(!prfcnt_info);
 	WARN_ON(!phys_layout);
 
-	shader_core_cnt = fls64(prfcnt_info->core_mask);
+	shader_core_cnt = (size_t)fls64(prfcnt_info->sc_core_mask);
 	values_per_block = prfcnt_info->prfcnt_block_size / KBASE_HWCNT_VALUE_HW_BYTES;
-	fw_blocks_count = div_u64(prfcnt_info->prfcnt_fw_size, prfcnt_info->prfcnt_block_size);
-	hw_blocks_count = div_u64(prfcnt_info->prfcnt_hw_size, prfcnt_info->prfcnt_block_size);
+	fw_block_cnt = div_u64(prfcnt_info->prfcnt_fw_size, prfcnt_info->prfcnt_block_size);
+	hw_block_cnt = div_u64(prfcnt_info->prfcnt_hw_size, prfcnt_info->prfcnt_block_size);
+
+	core_cnt = shader_core_cnt;
 
 	/* The number of hardware counters reported by the GPU matches the legacy guess-work we
 	 * have done in the past
 	 */
-	WARN_ON(hw_blocks_count != KBASE_HWCNT_V5_FE_BLOCK_COUNT +
-					   KBASE_HWCNT_V5_TILER_BLOCK_COUNT +
-					   prfcnt_info->l2_count + shader_core_cnt);
+	WARN_ON(hw_block_cnt != KBASE_HWCNT_V5_FE_BLOCK_COUNT + KBASE_HWCNT_V5_TILER_BLOCK_COUNT +
+					prfcnt_info->l2_count + core_cnt);
 
 	*phys_layout = (struct kbase_hwcnt_csf_physical_layout){
 		.fe_cnt = KBASE_HWCNT_V5_FE_BLOCK_COUNT,
 		.tiler_cnt = KBASE_HWCNT_V5_TILER_BLOCK_COUNT,
 		.mmu_l2_cnt = prfcnt_info->l2_count,
 		.shader_cnt = shader_core_cnt,
-		.fw_block_cnt = fw_blocks_count,
-		.hw_block_cnt = hw_blocks_count,
-		.block_cnt = fw_blocks_count + hw_blocks_count,
-		.shader_avail_mask = prfcnt_info->core_mask,
+		.fw_block_cnt = fw_block_cnt,
+		.hw_block_cnt = hw_block_cnt,
+		.block_cnt = fw_block_cnt + hw_block_cnt,
+		.shader_avail_mask = prfcnt_info->sc_core_mask,
 		.headers_per_block = KBASE_HWCNT_V5_HEADERS_PER_BLOCK,
 		.values_per_block = values_per_block,
 		.counters_per_block = values_per_block - KBASE_HWCNT_V5_HEADERS_PER_BLOCK,
@@ -406,13 +458,20 @@ static void kbasep_hwcnt_backend_csf_init_layout(
 }
 
 static void
-kbasep_hwcnt_backend_csf_reset_internal_buffers(struct kbase_hwcnt_backend_csf *backend_csf)
+kbasep_hwcnt_backend_csf_reset_internal_buffers(struct kbase_hwcnt_backend_csf *backend_csf,
+						bool user_bufs)
 {
 	size_t user_buf_bytes = backend_csf->info->metadata->dump_buf_bytes;
+	size_t block_state_bytes = backend_csf->phys_layout.block_cnt *
+				   KBASE_HWCNT_BLOCK_STATE_BYTES * KBASE_HWCNT_BLOCK_STATE_STRIDE;
 
-	memset(backend_csf->to_user_buf, 0, user_buf_bytes);
 	memset(backend_csf->accum_buf, 0, user_buf_bytes);
 	memset(backend_csf->old_sample_buf, 0, backend_csf->info->prfcnt_info.dump_bytes);
+	memset(backend_csf->block_states, 0, block_state_bytes);
+	if (user_bufs) {
+		memset(backend_csf->to_user_buf, 0, user_buf_bytes);
+		memset(backend_csf->to_user_block_states, 0, block_state_bytes);
+	}
 }
 
 static void
@@ -450,40 +509,140 @@ kbasep_hwcnt_backend_csf_zero_all_prfcnt_en_header(struct kbase_hwcnt_backend_cs
 static void kbasep_hwcnt_backend_csf_update_user_sample(struct kbase_hwcnt_backend_csf *backend_csf)
 {
 	size_t user_buf_bytes = backend_csf->info->metadata->dump_buf_bytes;
+	size_t block_state_bytes = backend_csf->phys_layout.block_cnt *
+				   KBASE_HWCNT_BLOCK_STATE_BYTES * KBASE_HWCNT_BLOCK_STATE_STRIDE;
 
 	/* Copy the data into the sample and wait for the user to get it. */
 	memcpy(backend_csf->to_user_buf, backend_csf->accum_buf, user_buf_bytes);
+	memcpy(backend_csf->to_user_block_states, backend_csf->block_states, block_state_bytes);
 
 	/* After copied data into user sample, clear the accumulator values to
 	 * prepare for the next accumulator, such as the next request or
 	 * threshold.
 	 */
 	memset(backend_csf->accum_buf, 0, user_buf_bytes);
+	memset(backend_csf->block_states, 0, block_state_bytes);
 }
 
-static void kbasep_hwcnt_backend_csf_accumulate_sample(
-	const struct kbase_hwcnt_csf_physical_layout *phys_layout, size_t dump_bytes,
-	u64 *accum_buf, const u32 *old_sample_buf, const u32 *new_sample_buf, bool clearing_samples)
+void kbasep_hwcnt_backend_csf_update_block_state(struct kbase_hwcnt_backend_csf *backend,
+						 const u32 enable_mask, bool exiting_protm,
+						 size_t block_idx, blk_stt_t *const block_state,
+						 bool fw_in_protected_mode)
 {
+	const struct kbase_hwcnt_csf_physical_layout *phys_layout = &backend->phys_layout;
+	/* Offset of shader core blocks from the start of the HW blocks in the sample */
+	size_t shader_core_block_offset =
+		(size_t)(phys_layout->block_cnt - phys_layout->shader_cnt);
+	bool is_shader_core_block;
+
+	is_shader_core_block = (block_idx >= shader_core_block_offset);
+
+	/* Set power bits for the block state for the block, for the sample */
+	switch (backend->enable_state) {
+	/* Disabled states */
+	case KBASE_HWCNT_BACKEND_CSF_DISABLED:
+	case KBASE_HWCNT_BACKEND_CSF_TRANSITIONING_TO_ENABLED:
+	case KBASE_HWCNT_BACKEND_CSF_DISABLED_WAIT_FOR_WORKER:
+		kbase_hwcnt_block_state_append(block_state, KBASE_HWCNT_STATE_OFF);
+		break;
+	/* Enabled states */
+	case KBASE_HWCNT_BACKEND_CSF_ENABLED:
+	case KBASE_HWCNT_BACKEND_CSF_TRANSITIONING_TO_DISABLED:
+		if (!is_shader_core_block)
+			kbase_hwcnt_block_state_append(block_state, KBASE_HWCNT_STATE_ON);
+		else if (!exiting_protm) {
+			/* When not exiting protected mode, a zero enable mask on a shader core
+			 * counter block indicates the block was powered off for the sample, and
+			 * a non-zero counter enable mask indicates the block was powered on for
+			 * the sample.
+			 */
+			kbase_hwcnt_block_state_append(block_state,
+						       (enable_mask ? KBASE_HWCNT_STATE_ON :
+									    KBASE_HWCNT_STATE_OFF));
+		}
+		break;
+	/* Error states */
+	case KBASE_HWCNT_BACKEND_CSF_UNRECOVERABLE_ERROR_WAIT_FOR_WORKER:
+	case KBASE_HWCNT_BACKEND_CSF_UNRECOVERABLE_ERROR:
+	default:
+		/* Do nothing */
+		break;
+	}
+
+	/* The following four cases apply to a block state in either normal mode or protected mode:
+	 * 1. GPU executing in normal mode: Only set normal mode bit.
+	 * 2. First sample request after GPU enters protected mode: Set both normal mode and
+	 *    protected mode bit. In this case, there will at least be one sample to accumulate
+	 *    in the ring buffer which was automatically triggered before GPU entered protected
+	 *    mode.
+	 * 3. Subsequent sample requests while GPU remains in protected mode: Only set protected
+	 *    mode bit. In this case, the ring buffer should be empty and dump should return 0s but
+	 *    block state should be updated accordingly. This case is not handled here.
+	 * 4. Samples requested after GPU exits protected mode: Set both protected mode and normal
+	 *    mode bits.
+	 */
+	if (exiting_protm || fw_in_protected_mode)
+		kbase_hwcnt_block_state_append(block_state, KBASE_HWCNT_STATE_PROTECTED |
+								    KBASE_HWCNT_STATE_NORMAL);
+	else
+		kbase_hwcnt_block_state_append(block_state, KBASE_HWCNT_STATE_NORMAL);
+
+	/* powered_shader_core_mask stored in the backend is a combination of
+	 * the shader present and the debug core mask, so explicit checking of the
+	 * core mask is not required here.
+	 */
+	if (is_shader_core_block) {
+		u64 current_shader_core = 1ULL << (block_idx - shader_core_block_offset);
+
+		WARN_ON_ONCE(backend->phys_layout.shader_cnt > 64);
+
+		if (current_shader_core & backend->info->backend->powered_shader_core_mask)
+			kbase_hwcnt_block_state_append(block_state, KBASE_HWCNT_STATE_AVAILABLE);
+		else if (current_shader_core & ~backend->info->backend->powered_shader_core_mask)
+			kbase_hwcnt_block_state_append(block_state, KBASE_HWCNT_STATE_UNAVAILABLE);
+		else
+			WARN_ON_ONCE(true);
+	}
+	else
+		kbase_hwcnt_block_state_append(block_state, KBASE_HWCNT_STATE_AVAILABLE);
+}
+
+static void kbasep_hwcnt_backend_csf_accumulate_sample(struct kbase_hwcnt_backend_csf *backend,
+						       const u32 *old_sample_buf,
+						       const u32 *new_sample_buf)
+{
+	const struct kbase_hwcnt_csf_physical_layout *phys_layout = &backend->phys_layout;
+	const size_t dump_bytes = backend->info->prfcnt_info.dump_bytes;
+	const size_t values_per_block = phys_layout->values_per_block;
+	blk_stt_t *const block_states = backend->block_states;
+	const bool fw_in_protected_mode = backend->info->fw_in_protected_mode;
+	const bool clearing_samples = backend->info->prfcnt_info.clearing_samples;
+	u64 *accum_buf = backend->accum_buf;
+
 	size_t block_idx;
 	const u32 *old_block = old_sample_buf;
 	const u32 *new_block = new_sample_buf;
 	u64 *acc_block = accum_buf;
-	const size_t values_per_block = phys_layout->values_per_block;
+	/* Flag to indicate whether current sample is exiting protected mode. */
+	bool exiting_protm = false;
 
-	/* Performance counter blocks for firmware are stored before blocks for hardware.
-	 * We skip over the firmware's performance counter blocks (counters dumping is not
-	 * supported for firmware blocks, only hardware ones).
+	/* The block pointers now point to the first HW block, which is always a CSHW/front-end
+	 * block. The counter enable mask for this block can be checked to determine whether this
+	 * sample is taken after leaving protected mode - this is the only scenario where the CSHW
+	 * block counter enable mask has only the first bit set, and no others. In this case,
+	 * the values in this sample would not be meaningful, so they don't need to be accumulated.
 	 */
-	old_block += values_per_block * phys_layout->fw_block_cnt;
-	new_block += values_per_block * phys_layout->fw_block_cnt;
+	exiting_protm = (new_block[phys_layout->enable_mask_offset] == 1);
 
-	for (block_idx = phys_layout->fw_block_cnt; block_idx < phys_layout->block_cnt;
-	     block_idx++) {
+	for (block_idx = 0; block_idx < phys_layout->block_cnt; block_idx++) {
 		const u32 old_enable_mask = old_block[phys_layout->enable_mask_offset];
 		const u32 new_enable_mask = new_block[phys_layout->enable_mask_offset];
+		/* Update block state with information of the current sample */
+		kbasep_hwcnt_backend_csf_update_block_state(backend, new_enable_mask, exiting_protm,
+							    block_idx, &block_states[block_idx],
+							    fw_in_protected_mode);
 
-		if (new_enable_mask == 0) {
+		if (!(new_enable_mask & HWCNT_BLOCK_EMPTY_SAMPLE)) {
 			/* Hardware block was unavailable or we didn't turn on
 			 * any counters. Do nothing.
 			 */
@@ -492,7 +651,6 @@ static void kbasep_hwcnt_backend_csf_accumulate_sample(
 			 * enabled. We need to update the accumulation buffer.
 			 */
 			size_t ctr_idx;
-
 			/* Unconditionally copy the headers. */
 			for (ctr_idx = 0; ctr_idx < phys_layout->headers_per_block; ctr_idx++) {
 				acc_block[ctr_idx] = new_block[ctr_idx];
@@ -517,8 +675,8 @@ static void kbasep_hwcnt_backend_csf_accumulate_sample(
 			 * saturating at their maximum value.
 			 */
 			if (!clearing_samples) {
-				if (old_enable_mask == 0) {
-					/* Hardware block was previously
+				if (!(old_enable_mask & HWCNT_BLOCK_EMPTY_SAMPLE)) {
+					/* Block was previously
 					 * unavailable. Accumulate the new
 					 * counters only, as we know previous
 					 * values are zeroes.
@@ -545,15 +703,14 @@ static void kbasep_hwcnt_backend_csf_accumulate_sample(
 				}
 			}
 		}
+
 		old_block += values_per_block;
 		new_block += values_per_block;
 		acc_block += values_per_block;
 	}
-
 	WARN_ON(old_block != old_sample_buf + (dump_bytes / KBASE_HWCNT_VALUE_HW_BYTES));
 	WARN_ON(new_block != new_sample_buf + (dump_bytes / KBASE_HWCNT_VALUE_HW_BYTES));
-	WARN_ON(acc_block != accum_buf + (dump_bytes / KBASE_HWCNT_VALUE_HW_BYTES) -
-				     (values_per_block * phys_layout->fw_block_cnt));
+	WARN_ON(acc_block != accum_buf + (dump_bytes / KBASE_HWCNT_VALUE_HW_BYTES));
 	(void)dump_bytes;
 }
 
@@ -566,13 +723,25 @@ static void kbasep_hwcnt_backend_csf_accumulate_samples(struct kbase_hwcnt_backe
 	u8 *cpu_dump_base = (u8 *)backend_csf->ring_buf_cpu_base;
 	const size_t ring_buf_cnt = backend_csf->info->ring_buf_cnt;
 	const size_t buf_dump_bytes = backend_csf->info->prfcnt_info.dump_bytes;
-	bool clearing_samples = backend_csf->info->prfcnt_info.clearing_samples;
 	u32 *old_sample_buf = backend_csf->old_sample_buf;
 	u32 *new_sample_buf = old_sample_buf;
+	const struct kbase_hwcnt_csf_physical_layout *phys_layout = &backend_csf->phys_layout;
 
-	if (extract_index_to_start == insert_index_to_stop)
-		/* No samples to accumulate. Early out. */
+	if (extract_index_to_start == insert_index_to_stop) {
+		/* No samples to accumulate but block states need to be updated for dump. */
+		size_t block_idx;
+
+		for (block_idx = 0; block_idx < phys_layout->block_cnt; block_idx++) {
+			/* Set protected mode bit for block state if GPU is in protected mode,
+			 * otherwise set the normal mode bit.
+			 */
+			kbase_hwcnt_block_state_append(&backend_csf->block_states[block_idx],
+						       backend_csf->info->fw_in_protected_mode ?
+								     KBASE_HWCNT_STATE_PROTECTED :
+								     KBASE_HWCNT_STATE_NORMAL);
+		}
 		return;
+	}
 
 	/* Sync all the buffers to CPU side before read the data. */
 	backend_csf->info->csf_if->ring_buf_sync(backend_csf->info->csf_if->ctx,
@@ -587,11 +756,8 @@ static void kbasep_hwcnt_backend_csf_accumulate_samples(struct kbase_hwcnt_backe
 		const u32 buf_idx = raw_idx & (ring_buf_cnt - 1);
 
 		new_sample_buf = (u32 *)&cpu_dump_base[buf_idx * buf_dump_bytes];
-
-		kbasep_hwcnt_backend_csf_accumulate_sample(&backend_csf->phys_layout,
-							   buf_dump_bytes, backend_csf->accum_buf,
-							   old_sample_buf, new_sample_buf,
-							   clearing_samples);
+		kbasep_hwcnt_backend_csf_accumulate_sample(backend_csf, old_sample_buf,
+							   new_sample_buf);
 
 		old_sample_buf = new_sample_buf;
 	}
@@ -875,6 +1041,8 @@ kbasep_hwcnt_backend_csf_get_physical_enable(struct kbase_hwcnt_backend_csf *bac
 	enable->shader_bm = phys_enable_map.shader_bm;
 	enable->tiler_bm = phys_enable_map.tiler_bm;
 	enable->mmu_l2_bm = phys_enable_map.mmu_l2_bm;
+	enable->fw_bm = phys_enable_map.fw_bm;
+	enable->csg_bm = phys_enable_map.csg_bm;
 	enable->counter_set = phys_counter_set;
 	enable->clk_enable_map = enable_map->clk_enable_map;
 }
@@ -893,6 +1061,17 @@ kbasep_hwcnt_backend_csf_dump_enable_nolock(struct kbase_hwcnt_backend *backend,
 
 	backend_csf->info->csf_if->assert_lock_held(backend_csf->info->csf_if->ctx);
 
+	/* Enabling counters is an indication that the power may have previously been off for all
+	 * blocks.
+	 *
+	 * In any case, the counters would not have been counting recently, so an 'off' block state
+	 * is an approximation for this.
+	 *
+	 * This will be transferred to the dump only after a dump_wait(), or dump_disable() in
+	 * cases where the caller requested such information. This is to handle when a
+	 * dump_enable() happens in between dump_wait() and dump_get().
+	 */
+	kbase_hwcnt_block_state_append(&backend_csf->accum_all_blk_stt, KBASE_HWCNT_STATE_OFF);
 	kbasep_hwcnt_backend_csf_get_physical_enable(backend_csf, enable_map, &enable);
 
 	/* enable_state should be DISABLED before we transfer it to enabled */
@@ -956,13 +1135,19 @@ static void kbasep_hwcnt_backend_csf_wait_enable_transition_complete(
 }
 
 /* CSF backend implementation of kbase_hwcnt_backend_dump_disable_fn */
-static void kbasep_hwcnt_backend_csf_dump_disable(struct kbase_hwcnt_backend *backend)
+static void kbasep_hwcnt_backend_csf_dump_disable(struct kbase_hwcnt_backend *backend,
+						  struct kbase_hwcnt_dump_buffer *dump_buffer,
+						  const struct kbase_hwcnt_enable_map *enable_map)
 {
 	unsigned long flags = 0UL;
 	struct kbase_hwcnt_backend_csf *backend_csf = (struct kbase_hwcnt_backend_csf *)backend;
 	bool do_disable = false;
 
-	WARN_ON(!backend_csf);
+	if (WARN_ON(!backend_csf ||
+		    (dump_buffer && (backend_csf->info->metadata != dump_buffer->metadata)) ||
+		    (enable_map && (backend_csf->info->metadata != enable_map->metadata)) ||
+		    (dump_buffer && !enable_map)))
+		return;
 
 	backend_csf->info->csf_if->lock(backend_csf->info->csf_if->ctx, &flags);
 
@@ -1044,10 +1229,47 @@ static void kbasep_hwcnt_backend_csf_dump_disable(struct kbase_hwcnt_backend *ba
 						 backend_csf->ring_buf, 0,
 						 backend_csf->info->ring_buf_cnt, false);
 
-	/* Reset accumulator, old_sample_buf and user_sample to all-0 to prepare
-	 * for next enable.
+	/* Disabling HWCNT is an indication that blocks have been powered off. This is important to
+	 * know for L2, CSHW, and Tiler blocks, as this is currently the only way a backend can
+	 * know if they are being powered off.
+	 *
+	 * In any case, even if they weren't really powered off, we won't be counting whilst
+	 * disabled.
+	 *
+	 * Update the block state information in the block state accumulator to show this, so that
+	 * in the next dump blocks will have been seen as powered off for some of the time.
 	 */
-	kbasep_hwcnt_backend_csf_reset_internal_buffers(backend_csf);
+	kbase_hwcnt_block_state_append(&backend_csf->accum_all_blk_stt, KBASE_HWCNT_STATE_OFF);
+
+	if (dump_buffer) {
+		/* In some use-cases, the caller will need the information whilst the counters are
+		 * disabled, but will not be able to call into the backend to dump them. Instead,
+		 * they have an opportunity here to request them to be accumulated into their
+		 * buffer immediately.
+		 *
+		 * This consists of taking a sample of the accumulated block state (as though a
+		 * real dump_get() had happened), then transfer ownership of that to the caller
+		 * (i.e. erasing our copy of it).
+		 */
+		kbase_hwcnt_block_state_accumulate(&backend_csf->sampled_all_blk_stt,
+						   &backend_csf->accum_all_blk_stt);
+		kbase_hwcnt_dump_buffer_block_state_update(dump_buffer, enable_map,
+							   backend_csf->sampled_all_blk_stt);
+		/* Now the block state has been passed out into the caller's own accumulation
+		 * buffer, clear our own accumulated and sampled block state - ownership has been
+		 * transferred.
+		 */
+		kbase_hwcnt_block_state_set(&backend_csf->sampled_all_blk_stt,
+					    KBASE_HWCNT_STATE_UNKNOWN);
+		kbase_hwcnt_block_state_set(&backend_csf->accum_all_blk_stt,
+					    KBASE_HWCNT_STATE_UNKNOWN);
+	}
+
+	/* Reset accumulator, old_sample_buf and block_states to all-0 to prepare for next enable.
+	 * Reset user buffers if ownership is transferred to the caller (i.e. dump_buffer
+	 * is provided).
+	 */
+	kbasep_hwcnt_backend_csf_reset_internal_buffers(backend_csf, dump_buffer);
 }
 
 /* CSF backend implementation of kbase_hwcnt_backend_dump_request_fn */
@@ -1072,6 +1294,11 @@ static int kbasep_hwcnt_backend_csf_dump_request(struct kbase_hwcnt_backend *bac
 		backend_csf->dump_state = KBASE_HWCNT_BACKEND_CSF_DUMP_COMPLETED;
 		*dump_time_ns = kbasep_hwcnt_backend_csf_timestamp_ns(backend);
 		kbasep_hwcnt_backend_csf_cc_update(backend_csf);
+		/* There is a possibility that the transition to enabled state will remain
+		 * during multiple dumps, hence append the OFF state.
+		 */
+		kbase_hwcnt_block_state_append(&backend_csf->accum_all_blk_stt,
+					       KBASE_HWCNT_STATE_OFF);
 		backend_csf->user_requested = true;
 		backend_csf->info->csf_if->unlock(backend_csf->info->csf_if->ctx, flags);
 		return 0;
@@ -1183,6 +1410,16 @@ static int kbasep_hwcnt_backend_csf_dump_wait(struct kbase_hwcnt_backend *backen
 
 	backend_csf->info->csf_if->unlock(backend_csf->info->csf_if->ctx, flags);
 
+	/* Now that we've completed a sample, also sample+clear the accumulated block state.
+	 *
+	 * This is to ensure that a dump_enable() that happens in between dump_wait() and
+	 * dump_get() is reported on the _next_ dump, not the _current_ dump. That is, the block
+	 * state is reported at the actual time that counters are being sampled.
+	 */
+	kbase_hwcnt_block_state_accumulate(&backend_csf->sampled_all_blk_stt,
+					   &backend_csf->accum_all_blk_stt);
+	kbase_hwcnt_block_state_set(&backend_csf->accum_all_blk_stt, KBASE_HWCNT_STATE_UNKNOWN);
+
 	return errcode;
 }
 
@@ -1223,8 +1460,7 @@ static int kbasep_hwcnt_backend_csf_dump_get(struct kbase_hwcnt_backend *backend
 		return -EINVAL;
 
 	/* Extract elapsed cycle count for each clock domain if enabled. */
-	kbase_hwcnt_metadata_for_each_clock(dst_enable_map->metadata, clk)
-	{
+	kbase_hwcnt_metadata_for_each_clock(dst_enable_map->metadata, clk) {
 		if (!kbase_hwcnt_clk_enable_map_enabled(dst_enable_map->clk_enable_map, clk))
 			continue;
 
@@ -1238,7 +1474,26 @@ static int kbasep_hwcnt_backend_csf_dump_get(struct kbase_hwcnt_backend *backend
 	 * as it is undefined to call this function without a prior succeeding
 	 * one to dump_wait().
 	 */
-	ret = kbase_hwcnt_csf_dump_get(dst, backend_csf->to_user_buf, dst_enable_map, accumulate);
+	ret = kbase_hwcnt_csf_dump_get(dst, backend_csf->to_user_buf,
+				       backend_csf->to_user_block_states, dst_enable_map,
+				       backend_csf->num_l2_slices,
+				       backend_csf->powered_shader_core_mask, accumulate);
+
+	/* If no error occurred (zero ret value), then update block state for all blocks in the
+	 * accumulation with the current sample's block state.
+	 */
+	if (!ret) {
+		kbase_hwcnt_dump_buffer_block_state_update(dst, dst_enable_map,
+							   backend_csf->sampled_all_blk_stt);
+		kbase_hwcnt_block_state_set(&backend_csf->sampled_all_blk_stt,
+					    KBASE_HWCNT_STATE_UNKNOWN);
+	}
+
+	/* Clear consumed user buffers. */
+	memset(backend_csf->to_user_buf, 0, backend_csf->info->metadata->dump_buf_bytes);
+	memset(backend_csf->to_user_block_states, 0,
+	       backend_csf->phys_layout.block_cnt * KBASE_HWCNT_BLOCK_STATE_BYTES *
+		       KBASE_HWCNT_BLOCK_STATE_STRIDE);
 
 	return ret;
 }
@@ -1269,6 +1524,12 @@ static void kbasep_hwcnt_backend_csf_destroy(struct kbase_hwcnt_backend_csf *bac
 	kfree(backend_csf->to_user_buf);
 	backend_csf->to_user_buf = NULL;
 
+	kfree(backend_csf->block_states);
+	backend_csf->block_states = NULL;
+
+	kfree(backend_csf->to_user_block_states);
+	backend_csf->to_user_block_states = NULL;
+
 	kfree(backend_csf);
 }
 
@@ -1285,6 +1546,7 @@ static int kbasep_hwcnt_backend_csf_create(struct kbase_hwcnt_backend_csf_info *
 {
 	struct kbase_hwcnt_backend_csf *backend_csf = NULL;
 	int errcode = -ENOMEM;
+	size_t block_state_bytes;
 
 	WARN_ON(!csf_info);
 	WARN_ON(!out_backend);
@@ -1307,6 +1569,17 @@ static int kbasep_hwcnt_backend_csf_create(struct kbase_hwcnt_backend_csf_info *
 	backend_csf->to_user_buf = kzalloc(csf_info->metadata->dump_buf_bytes, GFP_KERNEL);
 	if (!backend_csf->to_user_buf)
 		goto err_alloc_user_sample_buf;
+
+	/* Allocate space to store block state values for each block */
+	block_state_bytes = backend_csf->phys_layout.block_cnt * KBASE_HWCNT_BLOCK_STATE_BYTES *
+			    KBASE_HWCNT_BLOCK_STATE_STRIDE;
+	backend_csf->block_states = kzalloc(block_state_bytes, GFP_KERNEL);
+	if (!backend_csf->block_states)
+		goto err_alloc_block_states_buf;
+
+	backend_csf->to_user_block_states = kzalloc(block_state_bytes, GFP_KERNEL);
+	if (!backend_csf->to_user_block_states)
+		goto err_alloc_user_block_state_buf;
 
 	errcode = csf_info->csf_if->ring_buf_alloc(csf_info->csf_if->ctx, csf_info->ring_buf_cnt,
 						   &backend_csf->ring_buf_cpu_base,
@@ -1343,6 +1616,8 @@ static int kbasep_hwcnt_backend_csf_create(struct kbase_hwcnt_backend_csf_info *
 	complete_all(&backend_csf->dump_completed);
 	backend_csf->user_requested = false;
 	backend_csf->watchdog_last_seen_insert_idx = 0;
+	kbase_hwcnt_block_state_set(&backend_csf->accum_all_blk_stt, KBASE_HWCNT_STATE_UNKNOWN);
+	kbase_hwcnt_block_state_set(&backend_csf->sampled_all_blk_stt, KBASE_HWCNT_STATE_UNKNOWN);
 
 	*out_backend = backend_csf;
 	return 0;
@@ -1351,6 +1626,12 @@ err_alloc_workqueue:
 	backend_csf->info->csf_if->ring_buf_free(backend_csf->info->csf_if->ctx,
 						 backend_csf->ring_buf);
 err_ring_buf_alloc:
+	kfree(backend_csf->to_user_block_states);
+	backend_csf->to_user_block_states = NULL;
+err_alloc_user_block_state_buf:
+	kfree(backend_csf->block_states);
+	backend_csf->block_states = NULL;
+err_alloc_block_states_buf:
 	kfree(backend_csf->to_user_buf);
 	backend_csf->to_user_buf = NULL;
 err_alloc_user_sample_buf:
@@ -1417,7 +1698,7 @@ static void kbasep_hwcnt_backend_csf_term(struct kbase_hwcnt_backend *backend)
 	if (!backend)
 		return;
 
-	kbasep_hwcnt_backend_csf_dump_disable(backend);
+	kbasep_hwcnt_backend_csf_dump_disable(backend, NULL, NULL);
 
 	/* Set the backend in csf_info to NULL so we won't handle any external
 	 * notification anymore since we are terminating.
@@ -1427,6 +1708,22 @@ static void kbasep_hwcnt_backend_csf_term(struct kbase_hwcnt_backend *backend)
 	backend_csf->info->csf_if->unlock(backend_csf->info->csf_if->ctx, flags);
 
 	kbasep_hwcnt_backend_csf_destroy(backend_csf);
+}
+
+static void kbasep_hwcnt_backend_csf_acquire(const struct kbase_hwcnt_backend *backend)
+{
+	struct kbase_hwcnt_backend_csf *backend_csf = (struct kbase_hwcnt_backend_csf *)backend;
+	struct kbase_hwcnt_backend_csf_info *csf_info = backend_csf->info;
+
+	csf_info->csf_if->acquire(csf_info->csf_if->ctx);
+}
+
+static void kbasep_hwcnt_backend_csf_release(const struct kbase_hwcnt_backend *backend)
+{
+	struct kbase_hwcnt_backend_csf *backend_csf = (struct kbase_hwcnt_backend_csf *)backend;
+	struct kbase_hwcnt_backend_csf_info *csf_info = backend_csf->info;
+
+	csf_info->csf_if->release(csf_info->csf_if->ctx);
 }
 
 /**
@@ -1828,8 +2125,22 @@ int kbase_hwcnt_backend_csf_metadata_init(struct kbase_hwcnt_backend_interface *
 	if (csf_info->prfcnt_info.clk_cnt > BASE_MAX_NR_CLOCKS_REGULATORS)
 		return -EIO;
 
+	/* We should reject initializing the metadata for any malformed
+	 * firmware size. The legitimate firmware sizes are as follows:
+	 * 1. fw_size == 0 on older GPUs
+	 * 2. fw_size == block_size on GPUs that support FW counters but not CSG counters
+	 * 3. fw_size == (1 + #CSG) * block size on GPUs that support CSG counters
+	 */
+	if ((csf_info->prfcnt_info.prfcnt_fw_size != 0) &&
+	    (csf_info->prfcnt_info.prfcnt_fw_size != csf_info->prfcnt_info.prfcnt_block_size) &&
+	    (csf_info->prfcnt_info.prfcnt_fw_size !=
+	     ((csf_info->prfcnt_info.csg_count + 1) * csf_info->prfcnt_info.prfcnt_block_size)))
+		return -EINVAL;
+
+	gpu_info.has_fw_counters = csf_info->prfcnt_info.prfcnt_fw_size > 0;
 	gpu_info.l2_count = csf_info->prfcnt_info.l2_count;
-	gpu_info.core_mask = csf_info->prfcnt_info.core_mask;
+	gpu_info.csg_cnt = csf_info->prfcnt_info.csg_count;
+	gpu_info.sc_core_mask = csf_info->prfcnt_info.sc_core_mask;
 	gpu_info.clk_cnt = csf_info->prfcnt_info.clk_cnt;
 	gpu_info.prfcnt_values_per_block =
 		csf_info->prfcnt_info.prfcnt_block_size / KBASE_HWCNT_VALUE_HW_BYTES;
@@ -1846,7 +2157,7 @@ void kbase_hwcnt_backend_csf_metadata_term(struct kbase_hwcnt_backend_interface 
 
 	csf_info = (struct kbase_hwcnt_backend_csf_info *)iface->info;
 	if (csf_info->metadata) {
-		kbase_hwcnt_csf_metadata_destroy(csf_info->metadata);
+		kbase_hwcnt_metadata_destroy(csf_info->metadata);
 		csf_info->metadata = NULL;
 	}
 }
@@ -1873,6 +2184,8 @@ int kbase_hwcnt_backend_csf_create(struct kbase_hwcnt_backend_csf_if *csf_if, u3
 	iface->metadata = kbasep_hwcnt_backend_csf_metadata;
 	iface->init = kbasep_hwcnt_backend_csf_init;
 	iface->term = kbasep_hwcnt_backend_csf_term;
+	iface->acquire = kbasep_hwcnt_backend_csf_acquire;
+	iface->release = kbasep_hwcnt_backend_csf_release;
 	iface->timestamp_ns = kbasep_hwcnt_backend_csf_timestamp_ns;
 	iface->dump_enable = kbasep_hwcnt_backend_csf_dump_enable;
 	iface->dump_enable_nolock = kbasep_hwcnt_backend_csf_dump_enable_nolock;

@@ -31,6 +31,12 @@ config MTD_SPI_NOR_MISC
 	  Support obtaining flash information through the ioctl interface
 	  of the misc device.
 
+config MTD_SPI_NOR_AUTO_MERGE
+	bool "SPI flash auto merge two flash in one"
+	default n
+	help
+	  Enable the auto merge the two SPI flash in one.
+
 source "drivers/mtd/spi-nor/controllers/Kconfig"
 
 endif # MTD_SPI_NOR

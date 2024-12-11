@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
- * (C) COPYRIGHT 2014, 2018, 2020-2022 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2014-2024 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -29,30 +29,22 @@
 
 #if KBASE_KTRACE_TARGET_FTRACE
 
-DECLARE_EVENT_CLASS(mali_add_template,
-	TP_PROTO(struct kbase_context *kctx, u64 info_val),
-	TP_ARGS(kctx, info_val),
-	TP_STRUCT__entry(
-		__field(pid_t, kctx_tgid)
-		__field(u32, kctx_id)
-		__field(u64, info_val)
-	),
-	TP_fast_assign(
-		__entry->kctx_id = (kctx) ? kctx->id : 0u;
-		__entry->kctx_tgid = (kctx) ? kctx->tgid : 0;
-		__entry->info_val = info_val;
-	),
-	TP_printk("kctx=%d_%u info=0x%llx", __entry->kctx_tgid,
-			__entry->kctx_id, __entry->info_val)
-);
+DECLARE_EVENT_CLASS(mali_add_template, TP_PROTO(struct kbase_context *kctx, u64 info_val),
+		    TP_ARGS(kctx, info_val),
+		    TP_STRUCT__entry(__field(pid_t, kctx_tgid) __field(u32, kctx_id)
+					     __field(u64, info_val)),
+		    TP_fast_assign(__entry->kctx_id = (kctx) ? kctx->id : 0u;
+				   __entry->kctx_tgid = (kctx) ? kctx->tgid : 0;
+				   __entry->info_val = info_val;),
+		    TP_printk("kctx=%d_%u info=0x%llx", __entry->kctx_tgid, __entry->kctx_id,
+			      __entry->info_val));
 
 /* DEFINE_MALI_ADD_EVENT is available also to backends for backend-specific
  * simple trace codes
  */
-#define DEFINE_MALI_ADD_EVENT(name) \
-DEFINE_EVENT(mali_add_template, mali_##name, \
-	TP_PROTO(struct kbase_context *kctx, u64 info_val), \
-	TP_ARGS(kctx, info_val))
+#define DEFINE_MALI_ADD_EVENT(name)                  \
+	DEFINE_EVENT(mali_add_template, mali_##name, \
+		     TP_PROTO(struct kbase_context *kctx, u64 info_val), TP_ARGS(kctx, info_val))
 DEFINE_MALI_ADD_EVENT(CORE_CTX_DESTROY);
 DEFINE_MALI_ADD_EVENT(CORE_CTX_HWINSTR_TERM);
 DEFINE_MALI_ADD_EVENT(CORE_GPU_IRQ);
@@ -98,18 +90,21 @@ DEFINE_MALI_ADD_EVENT(PM_WAKE_WAITERS);
 DEFINE_MALI_ADD_EVENT(PM_POWEROFF_WAIT_WQ);
 DEFINE_MALI_ADD_EVENT(PM_RUNTIME_SUSPEND_CALLBACK);
 DEFINE_MALI_ADD_EVENT(PM_RUNTIME_RESUME_CALLBACK);
-#define KBASEP_L2_STATE(n) DEFINE_MALI_ADD_EVENT(PM_L2_ ## n);
+#define KBASEP_L2_STATE(n) DEFINE_MALI_ADD_EVENT(PM_L2_##n);
 #include "backend/gpu/mali_kbase_pm_l2_states.h"
 #undef KBASEP_L2_STATE
 DEFINE_MALI_ADD_EVENT(SCHED_RETAIN_CTX_NOLOCK);
 DEFINE_MALI_ADD_EVENT(SCHED_RELEASE_CTX);
-#ifdef CONFIG_MALI_ARBITER_SUPPORT
 
-DEFINE_MALI_ADD_EVENT(ARB_GPU_LOST);
 DEFINE_MALI_ADD_EVENT(ARB_VM_STATE);
 DEFINE_MALI_ADD_EVENT(ARB_VM_EVT);
+DEFINE_MALI_ADD_EVENT(ARB_GPU_GRANTED);
+DEFINE_MALI_ADD_EVENT(ARB_GPU_LOST);
+DEFINE_MALI_ADD_EVENT(ARB_GPU_STARTED);
+DEFINE_MALI_ADD_EVENT(ARB_GPU_STOP_REQUESTED);
+DEFINE_MALI_ADD_EVENT(ARB_GPU_STOPPED);
+DEFINE_MALI_ADD_EVENT(ARB_GPU_REQUESTED);
 
-#endif
 #if MALI_USE_CSF
 #include "backend/mali_kbase_debug_linux_ktrace_csf.h"
 #else

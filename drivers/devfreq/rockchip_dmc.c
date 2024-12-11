@@ -1284,9 +1284,11 @@ rockchip_dmcfreq_adjust_opp_table(struct rockchip_dmcfreq *dmcfreq)
 	}
 
 	freq_table = kzalloc(sizeof(*freq_table) * count, GFP_KERNEL);
+	if (!freq_table)
+		return -ENOMEM;
 	opp_table = dev_pm_opp_get_opp_table(dev);
-	if (!opp_table) {
-		ret = -ENOMEM;
+	if (IS_ERR(opp_table)) {
+		ret = PTR_ERR(opp_table);
 		goto out;
 	}
 
@@ -1329,7 +1331,7 @@ rockchip_dmcfreq_adjust_opp_table(struct rockchip_dmcfreq *dmcfreq)
 				dmcfreq->freq_info_rate[i]);
 			if (i == 0) {
 				ret = -EPERM;
-				goto out;
+				break;
 			} else {
 				opp->available = false;
 				dmcfreq->freq_count = i;

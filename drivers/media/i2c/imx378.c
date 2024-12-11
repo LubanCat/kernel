@@ -143,6 +143,9 @@ struct imx378_mode {
 	const struct regval *reg_list;
 	u32 hdr_mode;
 	u32 vc[PAD_MAX];
+	u32 bpp;
+	u32 link_freq_idx;
+	u32 lanes;
 };
 
 struct imx378 {
@@ -184,6 +187,7 @@ struct imx378 {
 	bool			has_init_exp;
 	struct preisp_hdrae_exp_s init_hdrae_exp;
 	u8			flip;
+	struct v4l2_fract	cur_fps;
 };
 
 #define to_imx378(sd) container_of(sd, struct imx378, subdev)
@@ -1769,6 +1773,9 @@ static const struct imx378_mode supported_modes[] = {
 		.reg_list = imx378_linear_10_3840x2160_regs,
 		.hdr_mode = NO_HDR,
 		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
+		.bpp = 10,
+		.link_freq_idx = 0,
+		.lanes = IMX378_LANES,
 	}, {
 		.width = 4056,
 		.height = 3040,
@@ -1783,6 +1790,9 @@ static const struct imx378_mode supported_modes[] = {
 		.reg_list = imx378_linear_10_4056x3040_regs,
 		.hdr_mode = NO_HDR,
 		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
+		.bpp = 10,
+		.link_freq_idx = 0,
+		.lanes = IMX378_LANES,
 	}, {
 		.width = 2028,
 		.height = 1520,
@@ -1797,6 +1807,9 @@ static const struct imx378_mode supported_modes[] = {
 		.reg_list = imx378_linear_12_2028x1520_regs,
 		.hdr_mode = NO_HDR,
 		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
+		.bpp = 12,
+		.link_freq_idx = 0,
+		.lanes = IMX378_LANES,
 	}, {
 		.width = 4056,
 		.height = 3040,
@@ -1811,7 +1824,15 @@ static const struct imx378_mode supported_modes[] = {
 		.reg_list = imx378_linear_12_4056x3040_regs,
 		.hdr_mode = NO_HDR,
 		.vc[PAD0] = V4L2_MBUS_CSI2_CHANNEL_0,
+		.bpp = 12,
+		.link_freq_idx = 0,
+		.lanes = IMX378_LANES,
 	},
+};
+
+static const u32 bus_code[] = {
+	MEDIA_BUS_FMT_SRGGB10_1X10,
+	MEDIA_BUS_FMT_SRGGB12_1X12,
 };
 
 static const s64 link_freq_menu_items[] = {
@@ -1932,6 +1953,10 @@ imx378_find_best_fit(struct imx378 *imx378, struct v4l2_subdev_format *fmt)
 		if (cur_best_fit_dist == -1 || dist < cur_best_fit_dist) {
 			cur_best_fit_dist = dist;
 			cur_best_fit = i;
+		} else if (dist == cur_best_fit_dist &&
+			   framefmt->code == supported_modes[i].bus_fmt) {
+			cur_best_fit = i;
+			break;
 		}
 	}
 
@@ -1970,19 +1995,14 @@ static int imx378_set_fmt(struct v4l2_subdev *sd,
 					 IMX378_VTS_MAX - mode->height,
 					 1, vblank_def);
 
-		if (imx378->cur_mode->bus_fmt == MEDIA_BUS_FMT_SRGGB10_1X10) {
-			imx378->cur_link_freq = 0;
-			imx378->cur_pixel_rate = PIXEL_RATE_WITH_848M_10BIT;
-		} else if (imx378->cur_mode->bus_fmt ==
-			   MEDIA_BUS_FMT_SRGGB12_1X12) {
-			imx378->cur_link_freq = 0;
-			imx378->cur_pixel_rate = PIXEL_RATE_WITH_848M_12BIT;
-		}
+		imx378->cur_link_freq = mode->link_freq_idx;
+		imx378->cur_pixel_rate = (u32)link_freq_menu_items[mode->link_freq_idx] / mode->bpp * 2 * mode->lanes;
 
 		__v4l2_ctrl_s_ctrl_int64(imx378->pixel_rate,
 					 imx378->cur_pixel_rate);
 		__v4l2_ctrl_s_ctrl(imx378->link_freq,
 				   imx378->cur_link_freq);
+		imx378->cur_fps = mode->max_fps;
 	}
 
 	mutex_unlock(&imx378->mutex);
@@ -2033,11 +2053,9 @@ static int imx378_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
-	struct imx378 *imx378 = to_imx378(sd);
-
-	if (code->index != 0)
+	if (code->index >= ARRAY_SIZE(bus_code))
 		return -EINVAL;
-	code->code = imx378->cur_mode->bus_fmt;
+	code->code = bus_code[code->index];
 
 	return 0;
 }
@@ -2083,7 +2101,80 @@ static int imx378_g_frame_interval(struct v4l2_subdev *sd,
 	struct imx378 *imx378 = to_imx378(sd);
 	const struct imx378_mode *mode = imx378->cur_mode;
 
-	fi->interval = mode->max_fps;
+	if (imx378->streaming)
+		fi->interval = imx378->cur_fps;
+	else
+		fi->interval = mode->max_fps;
+
+	return 0;
+}
+
+static const struct imx378_mode *imx378_find_mode(struct imx378 *imx378, int fps)
+{
+	const struct imx378_mode *mode = NULL;
+	const struct imx378_mode *match = NULL;
+	int cur_fps = 0;
+	int i = 0;
+
+	for (i = 0; i < imx378->cfg_num; i++) {
+		mode = &supported_modes[i];
+		if (mode->width == imx378->cur_mode->width &&
+		    mode->height == imx378->cur_mode->height &&
+		    mode->bus_fmt == imx378->cur_mode->bus_fmt &&
+		    mode->hdr_mode == imx378->cur_mode->hdr_mode) {
+			cur_fps = DIV_ROUND_CLOSEST(mode->max_fps.denominator, mode->max_fps.numerator);
+			if (cur_fps == fps) {
+				match = mode;
+				break;
+			}
+		}
+	}
+	return match;
+}
+
+static int imx378_s_frame_interval(struct v4l2_subdev *sd,
+				   struct v4l2_subdev_frame_interval *fi)
+{
+	struct imx378 *imx378 = to_imx378(sd);
+	const struct imx378_mode *mode = NULL;
+	struct v4l2_fract *fract = &fi->interval;
+	s64 h_blank, vblank_def;
+	u64 pixel_rate = 0;
+	int fps;
+
+	if (imx378->streaming)
+		return -EBUSY;
+
+	if (fi->pad != 0)
+		return -EINVAL;
+
+	if (fract->numerator == 0) {
+		v4l2_err(sd, "error param, check interval param\n");
+		return -EINVAL;
+	}
+	fps = DIV_ROUND_CLOSEST(fract->denominator, fract->numerator);
+	mode = imx378_find_mode(imx378, fps);
+	if (mode == NULL) {
+		v4l2_err(sd, "couldn't match fi\n");
+		return -EINVAL;
+	}
+
+	imx378->cur_mode = mode;
+
+	h_blank = mode->hts_def - mode->width;
+	__v4l2_ctrl_modify_range(imx378->hblank, h_blank,
+				 h_blank, 1, h_blank);
+	vblank_def = mode->vts_def - mode->height;
+	__v4l2_ctrl_modify_range(imx378->vblank, vblank_def,
+				 IMX378_VTS_MAX - mode->height,
+				 1, vblank_def);
+	pixel_rate = (u32)link_freq_menu_items[mode->link_freq_idx] / mode->bpp * 2 * mode->lanes;
+
+	__v4l2_ctrl_s_ctrl_int64(imx378->pixel_rate,
+				 pixel_rate);
+	__v4l2_ctrl_s_ctrl(imx378->link_freq,
+			   mode->link_freq_idx);
+	imx378->cur_fps = mode->max_fps;
 
 	return 0;
 }
@@ -2096,12 +2187,12 @@ static int imx378_g_mbus_config(struct v4l2_subdev *sd, unsigned int pad_id,
 	u32 val = 0;
 
 	if (mode->hdr_mode == NO_HDR)
-		val = 1 << (IMX378_LANES - 1) |
+		val = 1 << (mode->lanes - 1) |
 		V4L2_MBUS_CSI2_CHANNEL_0 |
 		V4L2_MBUS_CSI2_CONTINUOUS_CLOCK;
 
 	if (mode->hdr_mode == HDR_X2)
-		val = 1 << (IMX378_LANES - 1) |
+		val = 1 << (mode->lanes - 1) |
 		V4L2_MBUS_CSI2_CHANNEL_0 |
 		V4L2_MBUS_CSI2_CONTINUOUS_CLOCK |
 		V4L2_MBUS_CSI2_CHANNEL_1;
@@ -2129,6 +2220,9 @@ static long imx378_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 	long ret = 0;
 	u32 i, h, w;
 	u32 stream = 0;
+	int cur_best_fit = -1;
+	int cur_best_fit_dist = -1;
+	int cur_dist, cur_fps, dst_fps;
 
 	switch (cmd) {
 	case PREISP_CMD_SET_HDRAE_EXP:
@@ -2143,22 +2237,36 @@ static long imx378_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		break;
 	case RKMODULE_SET_HDR_CFG:
 		hdr = (struct rkmodule_hdr_cfg *)arg;
+		if (hdr->hdr_mode == imx378->cur_mode->hdr_mode)
+			return 0;
 		w = imx378->cur_mode->width;
 		h = imx378->cur_mode->height;
+		dst_fps = DIV_ROUND_CLOSEST(imx378->cur_mode->max_fps.denominator,
+			imx378->cur_mode->max_fps.numerator);
 		for (i = 0; i < imx378->cfg_num; i++) {
 			if (w == supported_modes[i].width &&
 			    h == supported_modes[i].height &&
+			    supported_modes[i].bus_fmt == imx378->cur_mode->bus_fmt &&
 			    supported_modes[i].hdr_mode == hdr->hdr_mode) {
-				imx378->cur_mode = &supported_modes[i];
-				break;
+				cur_fps = DIV_ROUND_CLOSEST(supported_modes[i].max_fps.denominator,
+					supported_modes[i].max_fps.numerator);
+				cur_dist = abs(cur_fps - dst_fps);
+				if (cur_best_fit_dist == -1 || cur_dist < cur_best_fit_dist) {
+					cur_best_fit_dist = cur_dist;
+					cur_best_fit = i;
+				} else if (cur_dist == cur_best_fit_dist) {
+					cur_best_fit = i;
+					break;
+				}
 			}
 		}
-		if (i == imx378->cfg_num) {
+		if (cur_best_fit == -1) {
 			dev_err(&imx378->client->dev,
 				"not find hdr mode:%d %dx%d config\n",
 				hdr->hdr_mode, w, h);
 			ret = -EINVAL;
 		} else {
+			imx378->cur_mode = &supported_modes[cur_best_fit];
 			w = imx378->cur_mode->hts_def -
 			    imx378->cur_mode->width;
 			h = imx378->cur_mode->vts_def -
@@ -2560,6 +2668,7 @@ static const struct v4l2_subdev_core_ops imx378_core_ops = {
 static const struct v4l2_subdev_video_ops imx378_video_ops = {
 	.s_stream = imx378_s_stream,
 	.g_frame_interval = imx378_g_frame_interval,
+	.s_frame_interval = imx378_s_frame_interval,
 };
 
 static const struct v4l2_subdev_pad_ops imx378_pad_ops = {
@@ -2576,6 +2685,14 @@ static const struct v4l2_subdev_ops imx378_subdev_ops = {
 	.video	= &imx378_video_ops,
 	.pad	= &imx378_pad_ops,
 };
+
+static void imx378_modify_fps_info(struct imx378 *imx378)
+{
+	const struct imx378_mode *mode = imx378->cur_mode;
+
+	imx378->cur_fps.denominator = mode->max_fps.denominator * mode->vts_def /
+				      imx378->cur_vts;
+}
 
 static int imx378_set_ctrl(struct v4l2_ctrl *ctrl)
 {
@@ -2682,6 +2799,7 @@ static int imx378_set_ctrl(struct v4l2_ctrl *ctrl)
 					(ctrl->val + imx378->cur_mode->height)
 					& 0xff);
 		imx378->cur_vts = ctrl->val + imx378->cur_mode->height;
+		imx378_modify_fps_info(imx378);
 		break;
 	case V4L2_CID_HFLIP:
 		if (ctrl->val)

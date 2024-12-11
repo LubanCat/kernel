@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
- * (C) COPYRIGHT 2019-2022 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2019-2023 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -21,6 +21,8 @@
 
 #ifndef _KBASE_RESET_GPU_H_
 #define _KBASE_RESET_GPU_H_
+
+struct kbase_device;
 
 /**
  * kbase_reset_gpu_prevent_and_wait - Prevent GPU resets from starting whilst
@@ -163,8 +165,7 @@ void kbase_reset_gpu_assert_failed_or_prevented(struct kbase_device *kbdev);
  * - false - Another thread is performing a reset, kbase_reset_gpu should
  *           not be called.
  */
-bool kbase_prepare_to_reset_gpu_locked(struct kbase_device *kbdev,
-				       unsigned int flags);
+bool kbase_prepare_to_reset_gpu_locked(struct kbase_device *kbdev, unsigned int flags);
 
 /**
  * kbase_prepare_to_reset_gpu - Prepare for resetting the GPU.
@@ -237,7 +238,7 @@ int kbase_reset_gpu_silent(struct kbase_device *kbdev);
 bool kbase_reset_gpu_is_active(struct kbase_device *kbdev);
 
 /**
- * kbase_reset_gpu_not_pending - Reports if the GPU reset isn't pending
+ * kbase_reset_gpu_is_not_pending - Reports if the GPU reset isn't pending
  *
  * @kbdev: Device pointer
  *

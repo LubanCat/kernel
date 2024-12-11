@@ -139,19 +139,11 @@ int spinand_select_target(struct spinand_device *spinand, unsigned int target)
 	return 0;
 }
 
-static int spinand_init_cfg_cache(struct spinand_device *spinand)
+static int spinand_read_cfg(struct spinand_device *spinand)
 {
 	struct nand_device *nand = spinand_to_nand(spinand);
-	struct device *dev = &spinand->spimem->spi->dev;
 	unsigned int target;
 	int ret;
-
-	spinand->cfg_cache = devm_kcalloc(dev,
-					  nand->memorg.ntargets,
-					  sizeof(*spinand->cfg_cache),
-					  GFP_KERNEL);
-	if (!spinand->cfg_cache)
-		return -ENOMEM;
 
 	for (target = 0; target < nand->memorg.ntargets; target++) {
 		ret = spinand_select_target(spinand, target);
@@ -167,6 +159,21 @@ static int spinand_init_cfg_cache(struct spinand_device *spinand)
 		if (ret)
 			return ret;
 	}
+
+	return 0;
+}
+
+static int spinand_init_cfg_cache(struct spinand_device *spinand)
+{
+	struct nand_device *nand = spinand_to_nand(spinand);
+	struct device *dev = &spinand->spimem->spi->dev;
+
+	spinand->cfg_cache = devm_kcalloc(dev,
+					  nand->memorg.ntargets,
+					  sizeof(*spinand->cfg_cache),
+					  GFP_KERNEL);
+	if (!spinand->cfg_cache)
+		return -ENOMEM;
 
 	return 0;
 }
@@ -864,6 +871,7 @@ static const struct spinand_manufacturer *spinand_manufacturers[] = {
 	&foresee_spinand_manufacturer,
 	&gigadevice_spinand_manufacturer,
 	&gsto_spinand_manufacturer,
+	&hiksemi_spinand_manufacturer,
 	&hyf_spinand_manufacturer,
 	&jsc_spinand_manufacturer,
 	&macronix_spinand_manufacturer,
@@ -877,6 +885,7 @@ static const struct spinand_manufacturer *spinand_manufacturers[] = {
 	&winbond_spinand_manufacturer,
 	&xincun_spinand_manufacturer,
 	&xtx_spinand_manufacturer,
+	&zbit_spinand_manufacturer,
 };
 
 static int spinand_manufacturer_match(struct spinand_device *spinand,
@@ -1089,6 +1098,10 @@ static int spinand_reinit(struct mtd_info *mtd)
 	struct device *dev = &spinand->spimem->spi->dev;
 	int ret, i;
 
+	ret = spinand_read_cfg(spinand);
+	if (ret)
+		return ret;
+
 	ret = spinand_init_quad_enable(spinand);
 	if (ret)
 		return ret;
@@ -1211,6 +1224,10 @@ static int spinand_init(struct spinand_device *spinand)
 	spinand->oobbuf = spinand->databuf + nanddev_page_size(nand);
 
 	ret = spinand_init_cfg_cache(spinand);
+	if (ret)
+		goto err_free_bufs;
+
+	ret = spinand_read_cfg(spinand);
 	if (ret)
 		goto err_free_bufs;
 

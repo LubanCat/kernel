@@ -1,5 +1,5 @@
 /*
- * Rockchip isp1 driver
+ * Rockchip isp driver
  *
  * Copyright (C) 2017 Rockchip Electronics Co., Ltd.
  *
@@ -114,13 +114,24 @@ enum {
 	ISP_UNITE_ONE = 2,
 };
 
-/* left and right index
- * ISP_UNITE_LEFT: left of image to isp process
- * ISP_UNITE_RIGHT: right of image to isp process
+/* image segmentation index
+ * ISP_UNITE_LEFT: left of image, or left top of image
+ * ISP_UNITE_RIGHT: right of image, or right top of image
+ * ISP_UNITE_LEFT_B: left bottom of image
+ * ISP_UNITE_RIGHT_B: right bottom of image
  */
 enum {
 	ISP_UNITE_LEFT = 0,
-	ISP_UNITE_RIGHT = 1,
+	ISP_UNITE_RIGHT,
+	ISP_UNITE_LEFT_B,
+	ISP_UNITE_RIGHT_B,
+	ISP_UNITE_MAX,
+};
+
+enum {
+	ISP_UNITE_DIV1 = 1,
+	ISP_UNITE_DIV2 = 2,
+	ISP_UNITE_DIV4 = 4,
 };
 
 /*
@@ -159,6 +170,7 @@ struct rkisp_sensor_info {
 /* struct rkisp_hdr - hdr configured
  * @op_mode: hdr optional mode
  * @esp_mode: hdr especial mode
+ * @src_bit: src bit of expander mode
  * @index: hdr dma index
  * @refcnt: open counter
  * @q_tx: dmatx buf list
@@ -169,7 +181,7 @@ struct rkisp_sensor_info {
 struct rkisp_hdr {
 	u8 op_mode;
 	u8 esp_mode;
-	u8 compr_bit;
+	u8 src_bit;
 	u8 index[HDR_DMA_MAX];
 	atomic_t refcnt;
 	struct v4l2_subdev *sensor;
@@ -263,15 +275,21 @@ struct rkisp_device {
 	u32 rd_mode;
 	int sw_rd_cnt;
 
+	u32 vicap_buf_cnt;
 	struct rkisp_rx_buf_pool pv_pool[RKISP_RX_BUF_POOL_MAX];
 
 	struct mutex buf_lock;
 	spinlock_t cmsk_lock;
+	spinlock_t aiisp_lock;
 	struct rkisp_cmsk_cfg cmsk_cfg;
+	struct rkisp_aiisp_cfg aiisp_cfg;
+	struct rkisp_fpn_cfg fpn_cfg;
+
 	bool is_cmsk_upd;
 	bool is_hw_link;
 	bool is_bigmode;
 	bool is_rdbk_auto;
+	bool is_m_online;
 	bool is_pre_on;
 	bool is_first_double;
 	bool is_probe_end;
@@ -279,39 +297,52 @@ struct rkisp_device {
 	bool is_suspend;
 	bool suspend_sync;
 	bool is_suspend_one_frame;
+	bool is_aiisp_en;
+	bool is_aiisp_upd;
+	bool is_frm_rd;
+	bool is_multi_one_sync;
+	bool is_wait_aiq;
 
 	struct rkisp_vicap_input vicap_in;
+	u32 hdr_wrap_line;
 
 	u8 multi_mode;
 	u8 multi_index;
 	u8 rawaf_irq_cnt;
 	u8 unite_index;
+	u8 unite_div;
 };
+
+void rkisp_vicap_hw_link(struct rkisp_device *dev, int on);
+void rkisp_online_update_reg(struct rkisp_device *dev, bool is_init, bool is_reset);
 
 static inline void
 rkisp_unite_write(struct rkisp_device *dev, u32 reg, u32 val, bool is_direct)
 {
-	rkisp_write(dev, reg, val, is_direct);
-	if (dev->hw_dev->unite)
-		rkisp_next_write(dev, reg, val, is_direct);
+	int i;
+
+	for (i = 0; i < dev->unite_div; i++)
+		rkisp_idx_write(dev, reg, val, i, is_direct);
 }
 
 static inline void
 rkisp_unite_set_bits(struct rkisp_device *dev, u32 reg, u32 mask,
 		     u32 val, bool is_direct)
 {
-	rkisp_set_bits(dev, reg, mask, val, is_direct);
-	if (dev->hw_dev->unite)
-		rkisp_next_set_bits(dev, reg, mask, val, is_direct);
+	int i;
+
+	for (i = 0; i < dev->unite_div; i++)
+		rkisp_idx_set_bits(dev, reg, mask, val, i, is_direct);
 }
 
 static inline void
 rkisp_unite_clear_bits(struct rkisp_device *dev, u32 reg, u32 mask,
 		       bool is_direct)
 {
-	rkisp_clear_bits(dev, reg, mask, is_direct);
-	if (dev->hw_dev->unite)
-		rkisp_next_clear_bits(dev, reg, mask, is_direct);
+	int i;
+
+	for (i = 0; i < dev->unite_div; i++)
+		rkisp_idx_clear_bits(dev, reg, mask, i, is_direct);
 }
 
 static inline bool rkisp_link_sensor(u32 isp_inp)

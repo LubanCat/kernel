@@ -377,7 +377,7 @@ out:
 
 static int parse_io_config(struct device *dev)
 {
-	int ret = 0, cnt;
+	int ret = 0, cnt, i;
 	struct device_node *node = dev->of_node;
 	struct rk_sleep_config *config = &sleep_config[RK_PM_MEM];
 
@@ -399,6 +399,13 @@ static int parse_io_config(struct device *dev)
 		}
 
 		config->sleep_io_config_cnt = cnt;
+
+		sip_smc_set_suspend_mode(SLEEP_IO_CONFIG, RK_PM_SLEEP_IO_CFG_CNT, cnt);
+
+		for (i = 0; i < cnt; i++)
+			sip_smc_set_suspend_mode(SLEEP_IO_CONFIG,
+						 RK_PM_SLEEP_IO_CFG_VAL,
+						 config->sleep_io_config[i]);
 	} else {
 		dev_dbg(dev, "not set sleep-pin-config\n");
 	}
@@ -431,7 +438,8 @@ static int pm_config_probe(struct platform_device *pdev)
 
 	sleep_config =
 		devm_kmalloc_array(&pdev->dev, RK_PM_STATE_MAX,
-				   sizeof(*sleep_config), GFP_KERNEL);
+				   sizeof(*sleep_config),
+				   GFP_KERNEL | __GFP_ZERO);
 	if (!sleep_config)
 		return -ENOMEM;
 

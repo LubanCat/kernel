@@ -769,7 +769,7 @@ static struct rockchip_clk_branch rv1106_clk_branches[] __initdata = {
 			RV1106_SUBDDRCLKGATE_CON(0), 1, GFLAGS),
 	GATE(CLK_CORE_DDRC, "clk_core_ddrc", "clk_core_ddrc_src", CLK_IS_CRITICAL,
 			RV1106_SUBDDRCLKGATE_CON(0), 3, GFLAGS),
-
+	FACTOR(0, "sclk_ddr", "dpll", 0, 1, 1),
 
 	/* PD_VEPU */
 	COMPOSITE_NODIV(HCLK_VEPU_ROOT, "hclk_vepu_root", mux_200m_100m_50m_24m_p, CLK_IS_CRITICAL,
@@ -891,8 +891,6 @@ static struct rockchip_clk_branch rv1106_clk_branches[] __initdata = {
 			RV1106_VOCLKSEL_CON(2), 1, 6, DFLAGS),
 	GATE(CLK_MACPHY, "clk_macphy", "xin24m", 0,
 			RV1106_VOCLKGATE_CON(2), 13, GFLAGS),
-	GATE(CLK_OTPC_ARB, "clk_otpc_arb", "xin24m", 0,
-			RV1106_VOCLKGATE_CON(2), 11, GFLAGS),
 	GATE(PCLK_OTPC_NS, "pclk_otpc_ns", "pclk_vo_root", 0,
 			RV1106_VOCLKGATE_CON(2), 3, GFLAGS),
 	GATE(CLK_SBPI_OTPC_NS, "clk_sbpi_otpc_ns", "xin24m", 0,
@@ -902,15 +900,11 @@ static struct rockchip_clk_branch rv1106_clk_branches[] __initdata = {
 			RV1106_VOCLKGATE_CON(2), 6, GFLAGS),
 	GATE(PCLK_OTPC_S, "pclk_otpc_s", "pclk_vo_root", 0,
 			RV1106_VOCLKGATE_CON(2), 7, GFLAGS),
-	GATE(CLK_SBPI_OTPC_S, "clk_sbpi_otpc_s", "xin24m", 0,
-			RV1106_VOCLKGATE_CON(2), 9, GFLAGS),
 	COMPOSITE_NOMUX(CLK_USER_OTPC_S, "clk_user_otpc_s", "xin24m", 0,
 			RV1106_VOCLKSEL_CON(3), 13, 3, DFLAGS,
 			RV1106_VOCLKGATE_CON(2), 10, GFLAGS),
 	GATE(PCLK_OTP_MASK, "pclk_otp_mask", "pclk_vo_root", 0,
 			RV1106_VOCLKGATE_CON(2), 14, GFLAGS),
-	GATE(CLK_PMC_OTP, "clk_pmc_otp", "clk_sbpi_otpc_s", 0,
-			RV1106_VOCLKGATE_CON(2), 15, GFLAGS),
 	GATE(HCLK_RGA2E, "hclk_rga2e", "hclk_vo_root", 0,
 			RV1106_VOCLKGATE_CON(0), 7, GFLAGS),
 	GATE(ACLK_RGA2E, "aclk_rga2e", "aclk_vo_root", 0,
@@ -1007,12 +1001,16 @@ static void _cru_pvtpll_calibrate(int count_offset, int length_offset, int targe
 	writel_relaxed(val, rv1106_cru_base + length_offset);
 	usleep_range(2000, 2100);
 	rate1 = readl_relaxed(rv1106_cru_base + count_offset);
-	if ((rate1 < target_rate) || (rate1 >= rate0))
+	if (rate1 < target_rate)
 		return;
 	if (abs(rate1 - target_rate) < (target_rate >> 5))
 		return;
 
-	step = rate0 - rate1;
+	if (rate1 < rate0)
+		step = rate0 - rate1;
+	else
+		step = 5;
+	step = max_t(unsigned int, step, 5);
 	delta = rate1 - target_rate;
 	length += delta / step;
 	val = HIWORD_UPDATE(length, PVTPLL_LENGTH_SEL_MASK, PVTPLL_LENGTH_SEL_SHIFT);
@@ -1135,7 +1133,7 @@ static void rockchip_rv1106_pvtpll_init(struct rockchip_clk_provider *ctx)
 	writel_relaxed(0xffff0004, ctx->reg_base + CRU_PVTPLL1_CON2_H);
 	writel_relaxed(0x00030003, ctx->reg_base + CRU_PVTPLL1_CON0_L);
 
-	schedule_delayed_work(&pvtpll_calibrate_work, msecs_to_jiffies(3000));
+	queue_delayed_work(system_freezable_wq, &pvtpll_calibrate_work, msecs_to_jiffies(300));
 }
 
 static int rv1106_clk_panic(struct notifier_block *this,

@@ -32,9 +32,7 @@
 
 static const uint32_t formats_for_cluster[] = {
 	DRM_FORMAT_XRGB2101010,
-	DRM_FORMAT_ARGB2101010,
 	DRM_FORMAT_XBGR2101010,
-	DRM_FORMAT_ABGR2101010,
 	DRM_FORMAT_XRGB8888,
 	DRM_FORMAT_ARGB8888,
 	DRM_FORMAT_XBGR8888,
@@ -123,8 +121,8 @@ static const uint32_t formats_for_rk356x_esmart[] = {
 	DRM_FORMAT_NV20, /* yuv422_10bit linear mode, 2 plane, no padding */
 	DRM_FORMAT_NV30, /* yuv444_10bit linear mode, 2 plane, no padding */
 #endif
-	DRM_FORMAT_YUYV, /* yuv422_8bit[YUYV] linear mode */
-	DRM_FORMAT_UYVY, /* yuv422_8bit[UYVY] linear mode */
+	DRM_FORMAT_YVYU, /* yuv422_8bit[YVYU] linear mode */
+	DRM_FORMAT_VYUY, /* yuv422_8bit[VYUY] linear mode */
 };
 
 static const uint32_t formats_for_smart[] = {
@@ -1616,6 +1614,7 @@ static const struct vop2_video_port_data rk3588_vop_video_ports[] = {
 	{
 	 .id = 0,
 	 .splice_vp_id = 1,
+	 .dclk_switch_id = BIT(ROCKCHIP_VOP_VP1),
 	 .lut_dma_rid = 0xd,
 	 .soc_id = { 0x3588, 0x3588 },
 	 .feature = VOP_FEATURE_OUTPUT_10BIT | VOP_FEATURE_ALPHA_SCALE |
@@ -1647,6 +1646,7 @@ static const struct vop2_video_port_data rk3588_vop_video_ports[] = {
 	},
 	{
 	 .id = 2,
+	 .dclk_switch_id = BIT(ROCKCHIP_VOP_VP1),
 	 .lut_dma_rid = 0xe,
 	 .soc_id = { 0x3588, 0x3588 },
 	 .feature = VOP_FEATURE_OUTPUT_10BIT | VOP_FEATURE_ALPHA_SCALE,
@@ -2228,6 +2228,7 @@ static const struct vop2_win_regs rk3528_cluster0_win_data = {
 	.y2r_en = VOP_REG(RK3568_CLUSTER0_WIN0_CTRL0, 0x1, 8),
 	.r2y_en = VOP_REG(RK3568_CLUSTER0_WIN0_CTRL0, 0x1, 9),
 	.csc_mode = VOP_REG(RK3568_CLUSTER0_WIN0_CTRL0, 0x7, 10),
+	.ymirror = VOP_REG(RK3568_CLUSTER0_WIN0_CTRL0, 0x1, 21),
 	.axi_yrgb_id = VOP_REG(RK3528_CLUSTER0_WIN0_CTRL2, 0x1f, 0),
 	.axi_uv_id = VOP_REG(RK3528_CLUSTER0_WIN0_CTRL2, 0x1f, 5),
 };
@@ -2250,6 +2251,7 @@ static const struct vop2_win_regs rk3568_cluster0_win_data = {
 	.y2r_en = VOP_REG(RK3568_CLUSTER0_WIN0_CTRL0, 0x1, 8),
 	.r2y_en = VOP_REG(RK3568_CLUSTER0_WIN0_CTRL0, 0x1, 9),
 	.csc_mode = VOP_REG(RK3568_CLUSTER0_WIN0_CTRL0, 0x3, 10),
+	.ymirror = VOP_REG(RK3568_CLUSTER0_WIN0_CTRL0, 0x1, 21),
 	.axi_yrgb_id = VOP_REG(RK3568_CLUSTER0_WIN0_CTRL2, 0x1f, 0),
 	.axi_uv_id = VOP_REG(RK3568_CLUSTER0_WIN0_CTRL2, 0x1f, 5),
 	.axi_id = VOP_REG(RK3568_CLUSTER0_CTRL, 0x1, 13),
@@ -2273,6 +2275,7 @@ static const struct vop2_win_regs rk3568_cluster1_win_data = {
 	.y2r_en = VOP_REG(RK3568_CLUSTER1_WIN0_CTRL0, 0x1, 8),
 	.r2y_en = VOP_REG(RK3568_CLUSTER1_WIN0_CTRL0, 0x1, 9),
 	.csc_mode = VOP_REG(RK3568_CLUSTER1_WIN0_CTRL0, 0x3, 10),
+	.ymirror = VOP_REG(RK3568_CLUSTER1_WIN0_CTRL0, 0x1, 21),
 	.axi_yrgb_id = VOP_REG(RK3568_CLUSTER1_WIN0_CTRL2, 0x1f, 0),
 	.axi_uv_id = VOP_REG(RK3568_CLUSTER1_WIN0_CTRL2, 0x1f, 5),
 	.axi_id = VOP_REG(RK3568_CLUSTER1_CTRL, 0x1, 13),
@@ -3886,6 +3889,17 @@ static const struct vop2_data rk3528_vop = {
 	.dump_regs_size = ARRAY_SIZE(rk3528_dump_regs),
 };
 
+static const struct vop_mcu_bypass_cfg rk3562_mcu_bypass_cfg = {
+	.timing = {
+		.mcu_pix_total = 53,
+		.mcu_cs_pst = 6,
+		.mcu_cs_pend = 48,
+		.mcu_rw_pst = 12,
+		.mcu_rw_pend = 30,
+	},
+	.dclk_rate = 150000000,
+};
+
 static const struct vop2_data rk3562_vop = {
 	.version = VOP_VERSION_RK3562,
 	.nr_vps = ARRAY_SIZE(rk3562_vop_video_ports),
@@ -3905,6 +3919,7 @@ static const struct vop2_data rk3562_vop = {
 	.win_size = ARRAY_SIZE(rk3562_vop_win_data),
 	.dump_regs = rk3562_dump_regs,
 	.dump_regs_size = ARRAY_SIZE(rk3562_dump_regs),
+	.mcu_bypass_cfg = &rk3562_mcu_bypass_cfg,
 };
 
 static const struct vop2_data rk3568_vop = {

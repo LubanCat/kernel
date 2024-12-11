@@ -256,7 +256,9 @@ static int rockchip_combphy_init(struct phy *phy)
 	if (cfg->pipe_phy_grf_reset.enable)
 		param_write(priv->phy_grf, &cfg->pipe_phy_grf_reset, false);
 
-	if (priv->mode == PHY_TYPE_USB3) {
+	if (priv->mode == PHY_TYPE_USB3 &&
+	    !device_property_present(priv->dev, "rockchip,dis-u3otg0-port") &&
+	    !device_property_present(priv->dev, "rockchip,dis-u3otg1-port")) {
 		ret = readx_poll_timeout_atomic(rockchip_combphy_is_ready,
 						priv, val,
 						val == cfg->pipe_phy_status.enable,
@@ -578,6 +580,34 @@ static int rk3528_combphy_cfg(struct rockchip_combphy_priv *priv)
 	default:
 		dev_err(priv->dev, "Unsupported rate: %lu\n", rate);
 		return -EINVAL;
+	}
+
+	if (device_property_read_bool(priv->dev, "rockchip,ext-refclk")) {
+		param_write(priv->phy_grf, &cfg->pipe_clk_ext, true);
+		if (priv->mode == PHY_TYPE_PCIE && rate == 100000000) {
+			/*
+			 * PLL charge pump current adjust = 111
+			 * PLL LPF R1 adjust = 1001
+			 * PLL KVCO adjust = 000 (min)
+			 * PLL KVCO fine tuning signals = 01
+			 */
+			val = readl(priv->mmio + 0x108);
+			val &= ~0x7;
+			val |= BIT(29) | (0x7 << 4 | 0x9 << 7);
+			writel(val, priv->mmio + 0x108);
+			val = readl(priv->mmio + 0x18);
+			val &= ~(0xf << 10);
+			val |= (0x2 << 10);
+			writel(val, priv->mmio + 0x18);
+		}
+	}
+
+	if (priv->mode == PHY_TYPE_PCIE) {
+		if (device_property_read_bool(priv->dev, "rockchip,enable-ssc")) {
+			val = readl(priv->mmio + 0x100);
+			val |= BIT(20);
+			writel(val, priv->mmio + 0x100);
+		}
 	}
 
 	return 0;
@@ -971,6 +1001,27 @@ static int rk3568_combphy_cfg(struct rockchip_combphy_priv *priv)
 	if (device_property_read_bool(priv->dev, "rockchip,ext-refclk")) {
 		param_write(priv->phy_grf, &cfg->pipe_clk_ext, true);
 		if (priv->mode == PHY_TYPE_PCIE && rate == 100000000) {
+			/*
+			 * PLL charge pump current adjust = 111
+			 * PLL LPF R1 adjust = 1001
+			 * PLL KVCO adjust = 000 (min)
+			 * PLL KVCO fine tuning signals = 01
+			 */
+			val = readl(priv->mmio + (0xa << 2));
+			val &= ~0x7;
+			val |= 0xf << 4;
+			writel(val, priv->mmio + (0xa << 2));
+
+			val = readl(priv->mmio + (0xb << 2));
+			val &= ~0x7;
+			val |= 0x4;
+			writel(val, priv->mmio + (0xb << 2));
+
+			val = readl(priv->mmio + (0x20 << 2));
+			val &= ~0x1c;
+			val |= 0x2 << 2;
+			writel(val, priv->mmio + (0x20 << 2));
+
 			val = readl(priv->mmio + (0xc << 2));
 			val |= 0x3 << 4 | 0x1 << 7;
 			writel(val, priv->mmio + (0xc << 2));

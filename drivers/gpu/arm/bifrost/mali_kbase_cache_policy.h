@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  *
- * (C) COPYRIGHT 2012-2013, 2015, 2020-2021 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2012-2023 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -26,8 +26,7 @@
 #ifndef _KBASE_CACHE_POLICY_H_
 #define _KBASE_CACHE_POLICY_H_
 
-#include "mali_kbase.h"
-#include <uapi/gpu/arm/bifrost/mali_base_kernel.h>
+#include <linux/types.h>
 
 /**
  * kbase_cache_enabled - Choose the cache policy for a specific region
@@ -44,4 +43,4 @@
  */
 u32 kbase_cache_enabled(u32 flags, u32 nr_pages);
 
-#endif				/* _KBASE_CACHE_POLICY_H_ */
+#endif /* _KBASE_CACHE_POLICY_H_ */

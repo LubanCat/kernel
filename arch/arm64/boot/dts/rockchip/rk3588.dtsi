@@ -251,6 +251,7 @@
 		resets = <&cru SRST_M_I2S7_8CH_RX>;
 		reset-names = "rx-m";
 		rockchip,capture-only;
+		rockchip,i2s-rx-wait-time-ms = <50>;
 		#sound-dai-cells = <0>;
 		status = "disabled";
 	};
@@ -445,6 +446,7 @@
 		phy-names = "dp";
 		power-domains = <&power RK3588_PD_VO1>;
 		rockchip,grf = <&vo1_grf>;
+		#sound-dai-cells = <1>;
 		status = "disabled";
 
 		ports {

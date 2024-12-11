@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 /*
  *
- * (C) COPYRIGHT 2022 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2022-2023 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -63,8 +63,8 @@ static void kbase_debug_csf_fault_wakeup(struct kbase_device *kbdev)
 	wake_up_interruptible(&kbdev->csf.dof.fault_wait_wq);
 }
 
-bool kbase_debug_csf_fault_notify(struct kbase_device *kbdev,
-	struct kbase_context *kctx, enum dumpfault_error_type error)
+bool kbase_debug_csf_fault_notify(struct kbase_device *kbdev, struct kbase_context *kctx,
+				  enum dumpfault_error_type error)
 {
 	unsigned long flags;
 
@@ -75,8 +75,8 @@ bool kbase_debug_csf_fault_notify(struct kbase_device *kbdev,
 		return false;
 
 	if (kctx && kbase_ctx_flag(kctx, KCTX_DYING)) {
-		dev_info(kbdev->dev, "kctx %d_%d is dying when error %d is reported",
-			kctx->tgid, kctx->id, error);
+		dev_info(kbdev->dev, "kctx %d_%d is dying when error %d is reported", kctx->tgid,
+			 kctx->id, error);
 		kctx = NULL;
 	}
 
@@ -88,8 +88,8 @@ bool kbase_debug_csf_fault_notify(struct kbase_device *kbdev,
 		goto unlock;
 	}
 
-	kbdev->csf.dof.kctx_tgid = kctx ? kctx->tgid : 0;
-	kbdev->csf.dof.kctx_id = kctx ? kctx->id : 0;
+	kbdev->csf.dof.kctx_tgid = kctx ? (unsigned int)kctx->tgid : 0U;
+	kbdev->csf.dof.kctx_id = kctx ? kctx->id : 0U;
 	kbdev->csf.dof.error_code = error;
 	kbase_debug_csf_fault_wakeup(kbdev);
 
@@ -142,7 +142,7 @@ static ssize_t debug_csf_fault_read(struct file *file, char __user *buffer, size
 	spin_unlock_irqrestore(&kbdev->csf.dof.lock, flags);
 
 	dev_info(kbdev->dev, "debug csf fault info read");
-	return simple_read_from_buffer(buffer, size, f_pos, buf, count);
+	return simple_read_from_buffer(buffer, size, f_pos, buf, (size_t)count);
 }
 
 static int debug_csf_fault_open(struct inode *in, struct file *file)
@@ -176,6 +176,9 @@ static ssize_t debug_csf_fault_write(struct file *file, const char __user *ubuf,
 	struct kbase_device *kbdev;
 	unsigned long flags;
 
+	CSTD_UNUSED(ubuf);
+	CSTD_UNUSED(ppos);
+
 	if (unlikely(!file)) {
 		pr_warn("%s: file is NULL", __func__);
 		return -EINVAL;
@@ -194,13 +197,15 @@ static ssize_t debug_csf_fault_write(struct file *file, const char __user *ubuf,
 	 */
 	wake_up(&kbdev->csf.dof.dump_wait_wq);
 
-	return count;
+	return (ssize_t)count;
 }
 
 static int debug_csf_fault_release(struct inode *in, struct file *file)
 {
 	struct kbase_device *kbdev;
 	unsigned long flags;
+
+	CSTD_UNUSED(file);
 
 	if (unlikely(!in)) {
 		pr_warn("%s: inode is NULL", __func__);
@@ -267,5 +272,6 @@ int kbase_debug_csf_fault_init(struct kbase_device *kbdev)
 
 void kbase_debug_csf_fault_term(struct kbase_device *kbdev)
 {
+	CSTD_UNUSED(kbdev);
 }
 #endif /* CONFIG_DEBUG_FS */
