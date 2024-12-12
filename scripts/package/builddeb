@@ -175,8 +175,7 @@ if is_enabled CONFIG_ARCH_ROCKCHIP; then
 	if [ "$ARCH" = "arm64" ] ; then
 		cp $objtree/arch/arm64/boot/dts/rockchip/uEnv/uEnv*.txt "$tmpdir/boot/uEnv"
 		cp $objtree/arch/arm64/boot/dts/rockchip/uEnv/${version#*-}/*.txt "$tmpdir/boot/uEnv"
-		sed -i "s/^uname_r=.*/uname_r=${version}/" $tmpdir/boot/uEnv/uEnv.txt
-		sed -i "s/^uname_r=.*/uname_r=${version}/" $tmpdir/boot/uEnv/uEnvLubanCat.txt
+		sed -i "s/^uname_r=.*/uname_r=${version}/" $tmpdir/boot/uEnv/uEnv*.txt
 	else
 		cp $objtree/arch/arm/boot/dts/uEnv/uEnv*.txt "$tmpdir/boot/uEnv"
 	fi
