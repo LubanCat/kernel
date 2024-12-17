@@ -1348,7 +1348,7 @@
 // PCIe30 Port1: PCIe-64P
 &pcie3x2 {
 	vpcie3v3-supply = <&vcc3v3_pciex4>;
-	reset-gpios = <&gpio4 RK_PB1 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
 
