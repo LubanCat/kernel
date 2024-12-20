@@ -24,9 +24,12 @@ if test -e ${devtype} ${devnum}:${distro_bootpart} /uEnv/uEnv.txt; then
     fdt addr  ${fdt_addr_r}
     fdt set /chosen bootargs
 
-    echo [boot.cmd] dtoverlay from /uEnv/uEnv.txt
     setenv dev_bootpart ${devnum}:${distro_bootpart}
-    dtfile ${fdt_addr_r} ${fdt_over_addr}  /uEnv/uEnv.txt ${env_addr_r}
+
+    if test "${enable_uboot_overlays}" = "1"; then
+        echo [boot.cmd] dtoverlay from /uEnv/uEnv.txt
+        dtfile ${fdt_addr_r} ${fdt_over_addr}  /uEnv/uEnv.txt ${env_addr_r}
+    fi
 
     echo [boot.cmd] [${devtype} ${devnum}:${distro_bootpart}] ...
     echo [boot.cmd] [booti] ...
