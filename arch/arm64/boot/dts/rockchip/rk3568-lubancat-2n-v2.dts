@@ -1403,7 +1403,7 @@
 	};
 
 	sata {
-	sata_pwr_en: sata-pwr-en {
+		sata_pwr_en: sata-pwr-en {
 			rockchip,pins = <0 RK_PA6 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
