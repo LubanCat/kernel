@@ -52,12 +52,7 @@
 // #include "rk3588-lubancat-5io-hdmi-rx.dtsi"
 
 /* Camera */
-// #include "rk3588-lubancat-5io-cam0.dtsi"
-// #include "rk3588-lubancat-5io-cam1.dtsi"
-// #include "rk3588-lubancat-5io-cam2.dtsi"
-// #include "rk3588-lubancat-5io-cam3.dtsi"
-// #include "rk3588-lubancat-5io-cam4.dtsi"
-// #include "rk3588-lubancat-5io-cam5.dtsi"
+#include "rk3588-lubancat-5io-csi.dtsi"
 
 / {
 	model = "Embedfire LubanCat-5IO";

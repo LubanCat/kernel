@@ -13,13 +13,6 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-can2-m0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-canfd1-m1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-canfd2-m0-overlay.dtbo
-# Camera
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam0-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam1-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam2-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam3-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam4-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam5-overlay.dtbo
 
 # Display
 # 四屏异显(4K+4K+4K+2K)分配方案:
@@ -69,5 +62,25 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dp0-vp2-overlay.dtbo
 
 # hdmi rx
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi-rx-overlay.dtbo
+
+# Camera
+# cam0
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam0-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam0-imx415-1080p-overlay.dtbo
+# cam1
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam1-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam1-imx415-1080p-overlay.dtbo
+# cam2
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam2-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam2-imx415-1080p-overlay.dtbo
+# cam3
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam3-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam3-imx415-1080p-overlay.dtbo
+# cam4
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam4-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam4-imx415-1080p-overlay.dtbo
+# cam5
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam5-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam5-imx415-1080p-overlay.dtbo
 
 #overlay_end
