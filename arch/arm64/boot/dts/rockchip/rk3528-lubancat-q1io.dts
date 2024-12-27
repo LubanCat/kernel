@@ -703,8 +703,8 @@
 		};
 	};
 
-	bm8563 {
-		bm8563_int: bm8563-int {
+	hym8563 {
+		hym8563_int: hym8563-int {
 			rockchip,pins = <1 RK_PA6 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 	};
