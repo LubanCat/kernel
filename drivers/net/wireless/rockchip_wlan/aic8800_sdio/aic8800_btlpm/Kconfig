@@ -1,0 +1,5 @@
+config AIC8800_SDIO_BTLPM_SUPPORT
+	tristate "aic8800 sdio bluetooth Support"
+	help
+	  This is support for aic bluetooh driver.
+

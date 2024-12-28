@@ -36,4 +36,6 @@ if BCMDHD
 source "drivers/net/wireless/rockchip_wlan/rkwifi/Kconfig"
 endif
 
+source "drivers/net/wireless/rockchip_wlan/aic8800_sdio/Kconfig"
+
 endif # WL_ROCKCHIP
