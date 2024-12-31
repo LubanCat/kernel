@@ -222,7 +222,7 @@ board_id() {
 	ADC_voltage_scale=$(cat /sys/bus/iio/devices/iio\:device0/in_voltage_scale)
 	echo "ADC_voltage_scale:"$ADC_voltage_scale
 
-	SOC_type=$(cat /proc/device-tree/compatible | cut -d,  -f 3)
+	SOC_type=$(cat /proc/device-tree/compatible | cut -d,  -f 3 | sed 's/\x0//g')
 	echo "SOC_type:"$SOC_type
 
 	if [[ "$SOC_type" == "rk3128" ]]; then
