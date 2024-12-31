@@ -10,7 +10,6 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/pinctrl/rockchip.h>
-#include <dt-bindings/pinctrl/rockchip.h>
 #include <dt-bindings/sensor-dev.h>
 #include "dt-bindings/usb/pd.h"
 #include "rk3562.dtsi"
@@ -18,12 +17,12 @@
 
 #include "rk3562-lubancat-lvds-10.1-1280x800-bsdn10.dtsi"
 //#include "rk3562-lubancat-lvds-10.1-800x1280.dtsi"
-//#include "rk3562-lubancat-mipi-5.0-1080x1920.dtsi"
+// #include "rk3562-lubancat-mipi-5.0-1080x1920.dtsi"
 
-//#include "rk3562-lubancat-1hs-cam0.dtsi"
-//#include "rk3562-lubancat-1hs-cam1.dtsi"
-//#include "rk3562-lubancat-1hs-cam2.dtsi"
-//#include "rk3562-lubancat-1hs-cam3.dtsi"
+#include "rk3562-lubancat-1hs-cam0.dtsi"
+// #include "rk3562-lubancat-1hs-cam1.dtsi"
+// #include "rk3562-lubancat-1hs-cam2.dtsi"
+// #include "rk3562-lubancat-1hs-cam3.dtsi"
 
 / {
 	model = "Embedfire RK3562 LubanCat-1HS";
@@ -33,7 +32,7 @@
 		gpio6 = &gpio6;
 	};
 
-	adc-keys {
+	adc-keys-1 {
 		compatible = "adc-keys";
 		io-channels = <&saradc0 1>;
 		io-channel-names = "buttons";
@@ -61,6 +60,20 @@
 		vol-up-key {
 			linux,code = <KEY_VOLUMEUP>;
 			label = "volume up";
+			press-threshold-microvolt = <18000>;
+		};
+	};
+
+	adc-keys-2 {
+		compatible = "adc-keys";
+		io-channels = <&saradc0 4>;
+		io-channel-names = "buttons";
+		poll-interval = <100>;
+		keyup-threshold-microvolt = <1800000>;
+
+		next-song {
+			linux,code = <KEY_NEXTSONG>;
+			label = "next song";
 			press-threshold-microvolt = <18000>;
 		};
 	};
@@ -192,7 +205,7 @@
 		compatible = "gpio-leds";
 
 		sys_led: sys-led {
-			label = "sys led";
+			label = "sys_led";
 			linux,default-trigger = "heartbeat";
 			default-state = "on";
 			gpios = <&gpio3 RK_PA7 GPIO_ACTIVE_LOW>;
@@ -216,53 +229,24 @@
 
 	rk809_sound: rk809-sound {
 		status = "okay";
-		compatible = "rockchip,multicodecs-card";
-		rockchip,card-name = "rockchip-rk809";
-		hp-det-gpio = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
-//		hp-con-gpio = <&gpio0 RK_PA6 GPIO_ACTIVE_HIGH>;
-		spk-con-gpio = <&gpio0 RK_PA6 GPIO_ACTIVE_HIGH>;
-		io-channels = <&saradc0 4>;
-		io-channel-names = "adc-detect";
-		keyup-threshold-microvolt = <1800000>;
-		poll-interval = <100>;
-		rockchip,format = "i2s";
-		rockchip,mclk-fs = <256>;
-		rockchip,cpu = <&sai0>;
-		rockchip,codec = <&rk809_codec>;
-#if 0
-		rockchip,audio-routing =
-						"Headphone", "LOUT1",
-						"Headphone", "ROUT1",
-						"Speaker", "LOUT2",
-						"Speaker", "ROUT2",
-						"Headphone", "Headphone Power",
-						"Headphone", "Headphone Power",
-						"Speaker", "Speaker Power",
-						"Speaker", "Speaker Power",
-						"LINPUT1", "Main Mic",
-						"LINPUT2", "Main Mic",
-						"RINPUT1", "Headset Mic",
-						"RINPUT2", "Headset Mic";
-#endif
+		compatible = "simple-audio-card";
 		pinctrl-names = "default";
 		pinctrl-0 = <&hp_det>;
-
-		play-pause-key {
-			label = "playpause";
-			linux,code = <KEY_PLAYPAUSE>;
-			press-threshold-microvolt = <2000>;
+		simple-audio-card,hp-det-gpio = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
+		simple-audio-card,pin-switches = "Headphones";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "rockchip,rk809-codec";
+		simple-audio-card,mclk-fs = <256>;
+		simple-audio-card,widgets =
+			"Microphone", "Mic Jack",
+			"Speaker", "Speaker",
+			"Headphone", "Headphones";
+			
+		simple-audio-card,cpu {
+			sound-dai = <&sai0>;
 		};
-
-		previous-song-key {
-			label = "previoussong";
-			linux,code = <KEY_PREVIOUSSONG>;
-			press-threshold-microvolt = <145000>;
-		};
-
-		next-song-key {
-			label = "nextsong";
-			linux,code = <KEY_NEXTSONG>;
-			press-threshold-microvolt = <290000>;
+		simple-audio-card,codec {
+			sound-dai = <&rk809_codec>;
 		};
 	};
 
@@ -561,18 +545,26 @@
 	ir_key_lubancat{
 	rockchip,usercode = <0xff00>;
 	rockchip,key_table =
-		<0xeb   KEY_POWER>,
-		<0xec   KEY_MENU>,
-		<0xfe   KEY_BACK>,
-		<0xb7   KEY_HOME>,
-		<0xa3   KEY_WWW>,
-		<0xf4   KEY_VOLUMEUP>,
-		<0xa7   KEY_VOLUMEDOWN>,
-		<0xf8   KEY_REPLY>,
-		<0xfc   KEY_UP>,
-		<0xfd   KEY_DOWN>,
-		<0xf1   KEY_LEFT>,
-		<0xe5   KEY_RIGHT>;
+        <0xba   KEY_POWER>,   //电源按键
+        <0xb8   KEY_MENU>,     //菜单按键
+        <0xbc   KEY_BACK>,      //返回按键
+        <0xbb   KEY_HOME>,      //home键按键
+        <0xea   KEY_PLAY>,      //播放按键
+        <0xbf   KEY_VOLUMEUP>,  //音量加按键
+        <0xe6   KEY_VOLUMEDOWN>,   //音量键按键
+        <0xf6   KEY_FASTFORWARD>,  //快进按键
+        <0xf8   KEY_FASTREVERSE>,  //快退按键
+        <0xf2   KEY_BACKSPACE>,    //BaskSpace按键
+        <0xf3   KEY_1>,            //按键1
+        <0xe7   KEY_2>,
+        <0xa1   KEY_3>,
+        <0xf7   KEY_4>,
+        <0xe3   KEY_5>,
+        <0xa5   KEY_6>,
+        <0xbd   KEY_7>,
+        <0xad   KEY_8>,
+        <0xb5   KEY_9>,
+        <0xe9   KEY_0>;            //按键0
 	};
 
 	ir_key2 {
@@ -645,6 +637,22 @@
 &pwm12 {
 	status = "okay";
 	pinctrl-0 = <&pwm12m1_pins>;
+};
+
+&can0 {
+	status = "okay";
+	assigned-clocks = <&cru CLK_CAN0>;
+	assigned-clock-rates = <200000000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&can0m2_pins>;
+};
+
+&can1 {
+	status = "okay";
+	assigned-clocks = <&cru CLK_CAN1>;
+	assigned-clock-rates = <200000000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&can1m1_pins>;
 };
 
 &i2c0 {
@@ -900,7 +908,7 @@
 		};
 
 		rk809_codec: codec {
-			#sound-dai-cells = <1>;
+			#sound-dai-cells = <0>;
 			compatible = "rockchip,rk809-codec", "rockchip,rk817-codec";
 			clocks = <&mclkout_sai0>;
 			clock-names = "mclk";
@@ -908,6 +916,8 @@
 			assigned-clock-rates = <12288000>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2s0m0_mclk>;
+			pinctrl-1 = <&spk_ctl_gpio>;
+			spk-ctl-gpios = <&gpio0 RK_PA6 GPIO_ACTIVE_HIGH>;
 			hp-volume = <20>;
 			spk-volume = <3>;
 			//mic-in-differential;
@@ -1012,8 +1022,12 @@
 	/* Reset time is 20ms, 100ms for rtl8211f */
 	snps,reset-delays-us = <0 20000 100000>;
 
+	// tx_delay = <0x28>;
+	// rx_delay = <0x01>;
+
 	tx_delay = <0x1e>;
 	/* rx_delay = <0x3f>; */
+
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&rgmiim0_miim
@@ -1075,6 +1089,22 @@
 	extcon = <&u2phy>;
 };
 
+&sfc {
+	pinctrl-0 = <&fspi_pins &fspi_csn0>;
+	pinctrl-names = "default";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "disabled";
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <24000000>;
+		spi-rx-bus-width = <4>;
+		spi-tx-bus-width = <1>;
+	};
+};
+
 &pinctrl {
 	leds {
 		sys_led_pin: sys-led-pin {
@@ -1096,6 +1126,10 @@
 		hp_det: hp-det {
 			rockchip,pins = <0 RK_PA0 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
+
+		spk_ctl_gpio: spk_ctl_gpio {
+			rockchip,pins = <0 RK_PA6 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
 	};
 
 	usb {
@@ -1108,7 +1142,7 @@
 		};
 	};
 
-	rtc {
+	rtc-hym8563 {
 		hym8563_int: hym8563-int {
 			rockchip,pins = <0 RK_PA5 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
