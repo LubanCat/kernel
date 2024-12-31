@@ -3,12 +3,12 @@ EXTRA_CFLAGS += -Wno-implicit-fallthrough
 #EXTRA_CFLAGS += -Wno-unused-function
 #EXTRA_CFLAGS += -Wno-maybe-uninitialized
 #EXTRA_CFLAGS += -Wno-unused-variable
-
+ccflags-y += -DCONFIG_AIC_FW_SDIO_PATH=\"$(CONFIG_AIC_FW_SDIO_PATH)\"
 RWNX_VERS_NUM := 6.4.3.0
 
 CONFIG_COUNTRY_CODE = "00"
 
-MODULE_NAME = aic8800_fdrv
+MODULE_NAME = aic8800_sdio_fdrv
 CONFIG_AIC8800_SDIO_WLAN_SUPPORT = m
 
 # Support of bootrom start
@@ -362,6 +362,7 @@ ccflags-y += -DANDROID_PLATFORM
 endif
 
 ifeq ($(CONFIG_PLATFORM_UBUNTU), y)
+ccflags-$(CONFIG_PLATFORM_UBUNTU) += -DCONFIG_PLATFORM_UBUNTU
 KDIR  ?= /lib/modules/$(shell uname -r)/build
 PWD   ?= $(shell pwd)
 KVER ?= $(shell uname -r)
