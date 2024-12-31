@@ -38,6 +38,7 @@
 #include <linux/firmware.h>
 #endif
 
+#define AIC_FDRV_FW_PATH              CONFIG_AIC_FW_SDIO_PATH
 #define FW_PATH_MAX_LEN 200
 extern char aic_fw_path[FW_PATH_MAX_LEN];
 
@@ -334,8 +335,36 @@ static int rwnx_load_firmware(u32 **fw_buf, const char *name, struct device *dev
         *fw_buf = NULL;
         return -1;
     }
-	
-	len = snprintf(path, FW_PATH_MAX_LEN, "%s/%s", aic_fw_path, name);
+
+    if (!AIC_FDRV_FW_PATH || !name) {
+        printk("Invalid firmware path or name\n");
+        *fw_buf = NULL;
+        __putname(path);
+        return -1;
+    }
+
+    if (!g_rwnx_plat || !g_rwnx_plat->sdiodev) {
+        printk("Invalid g_rwnx_plat or sdiodev\n");
+        return -1;
+    }
+
+    #if defined(CONFIG_PLATFORM_UBUNTU)
+		printk("%s: use AIC_FDRV_FW_PATH=%s\n", __func__, AIC_FDRV_FW_PATH);
+        if (g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8801) {
+            len = snprintf(path, FW_PATH_MAX_LEN, "%s/%s/%s",AIC_FDRV_FW_PATH, "aic8800", name);
+        } else if (g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DC) {
+            len = snprintf(path, FW_PATH_MAX_LEN, "%s/%s/%s",AIC_FDRV_FW_PATH, "aic8800DC", name);
+        } else if (g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DW) {
+            len = snprintf(path, FW_PATH_MAX_LEN, "%s/%s/%s",AIC_FDRV_FW_PATH, "aic8800DC", name);
+        } else if (g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800D80) {
+            len = snprintf(path, FW_PATH_MAX_LEN, "%s/%s/%s",AIC_FDRV_FW_PATH, "aic8800D80", name);
+        }else {
+            printk("%s unknown chipid %d\n", __func__, g_rwnx_plat->sdiodev->chipid);
+        }
+	#else
+		printk("%s: use define AIC_FDRV_FW_PATH\n", __func__);
+		len = snprintf(path, FW_PATH_MAX_LEN, "%s/%s",AIC_FDRV_FW_PATH, name);
+	#endif
 
     //len = snprintf(path, FW_PATH_MAX_LEN, "%s", name);
     if (len >= FW_PATH_MAX_LEN) {
@@ -345,7 +374,7 @@ static int rwnx_load_firmware(u32 **fw_buf, const char *name, struct device *dev
         return -1;
     }
 
-    AICWFDBG(LOGINFO, "%s :firmware path = %s  \n", __func__, path);
+    printk("%s :firmware path = %s  \n", __func__, path);
 
     /* open the firmware file */
     fp = filp_open(path, O_RDONLY, 0);
@@ -677,7 +706,7 @@ s8_l get_txpwr_max(s8_l power)
 	    }
 	}
 
-	printk("%s:txpwr_max:%d \r\n",__func__,power);
+	AICWFDBG(LOGINFO, "%s:txpwr_max:%d \r\n",__func__,power);
 	return power;
 }
 

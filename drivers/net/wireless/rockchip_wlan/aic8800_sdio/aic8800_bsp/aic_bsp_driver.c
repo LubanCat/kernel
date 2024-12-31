@@ -550,10 +550,28 @@ int rwnx_load_firmware(u32 **fw_buf, const char *name, struct device *device)
 	}
 
     if(strlen(aic_fw_path) > 0){
+		printk("%s: use aic_fw_path\n", __func__);
         len = snprintf(path, AICBSP_FW_PATH_MAX, "%s/%s", aic_fw_path, name);
-    }else{
-	    len = snprintf(path, AICBSP_FW_PATH_MAX, "%s/%s", AICBSP_FW_PATH, name);
+	}else{
+    #if defined(CONFIG_PLATFORM_UBUNTU)
+		printk("%s: use define AICBSP_FW_PATH\n", __func__);
+        if (aicbsp_sdiodev->chipid == PRODUCT_ID_AIC8801) {
+            len = snprintf(path, AICBSP_FW_PATH_MAX, "%s/%s/%s",AICBSP_FW_PATH, "aic8800", name);
+        } else if (aicbsp_sdiodev->chipid == PRODUCT_ID_AIC8800DC) {
+            len = snprintf(path, AICBSP_FW_PATH_MAX, "%s/%s/%s",AICBSP_FW_PATH, "aic8800DC", name);
+        } else if (aicbsp_sdiodev->chipid == PRODUCT_ID_AIC8800DW) {
+            len = snprintf(path, AICBSP_FW_PATH_MAX, "%s/%s/%s",AICBSP_FW_PATH, "aic8800DC", name);
+        } else if (aicbsp_sdiodev->chipid == PRODUCT_ID_AIC8800D80) {
+            len = snprintf(path, AICBSP_FW_PATH_MAX, "%s/%s/%s",AICBSP_FW_PATH, "aic8800D80", name);
+        }else {
+            printk("%s unknown chipid %d\n", __func__, aicbsp_sdiodev->chipid);
+        }
+	#else
+		printk("%s: use define AICBSP_FW_PATH\n", __func__);
+		len = snprintf(path, AICBSP_FW_PATH_MAX, "%s/%s",AICBSP_FW_PATH, name);
+	#endif
     }
+
 	if (len >= AICBSP_FW_PATH_MAX) {
 		printk("%s: %s file's path too long\n", __func__, name);
 		*fw_buf = NULL;

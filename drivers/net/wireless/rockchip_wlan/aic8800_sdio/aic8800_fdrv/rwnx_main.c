@@ -510,7 +510,7 @@ static const int rwnx_hwq2uapsd[NL80211_NUM_ACS] = {
 
 
 extern uint8_t scanning;
-int aicwf_dbg_level = LOGERROR|LOGINFO|LOGDEBUG|LOGTRACE;
+int aicwf_dbg_level = LOGERROR;
 module_param(aicwf_dbg_level, int, 0660);
 int testmode = 0;
 char aic_fw_path[200];
@@ -5360,7 +5360,7 @@ int rwnx_get_custom_mac_addr(u8_l *mac_addr_efuse){
 }
 #endif
 
-extern void *aicwf_prealloc_txq_alloc(size_t size);
+extern void *aicwf_sdio_prealloc_txq_alloc(size_t size);
 int rwnx_cfg80211_init(struct rwnx_plat *rwnx_plat, void **platform_data)
 {
 	struct rwnx_hw *rwnx_hw;
@@ -5458,7 +5458,7 @@ int rwnx_cfg80211_init(struct rwnx_plat *rwnx_plat, void **platform_data)
 	rwnx_hwq_init(rwnx_hw);
 
 #ifdef CONFIG_PREALLOC_TXQ
-        rwnx_hw->txq = (struct rwnx_txq*)aicwf_prealloc_txq_alloc(sizeof(struct rwnx_txq)*NX_NB_TXQ);
+        rwnx_hw->txq = (struct rwnx_txq*)aicwf_sdio_prealloc_txq_alloc(sizeof(struct rwnx_txq)*NX_NB_TXQ);
 #endif
 
 	for (i = 0; i < NX_NB_TXQ; i++) {
