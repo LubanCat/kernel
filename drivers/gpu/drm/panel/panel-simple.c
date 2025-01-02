@@ -41,6 +41,8 @@
 #include <drm/drm_panel.h>
 #include <drm/drm_dsc.h>
 
+#include <linux/nvmem-consumer.h>
+
 #include "panel-simple.h"
 
 enum panel_simple_cmd_type {
@@ -158,6 +160,35 @@ struct panel_simple {
 
 	struct drm_dsc_picture_parameter_set *pps;
 	enum drm_panel_orientation orientation;
+};
+
+
+struct entry {
+    u32 offset;
+    u32 length;
+};
+
+/**
+ * @magic: LCD config firmware magic number. 
+ * @vendor: LCD vendor name.
+ * @model: LCD model name.
+ * @version: LCD config firmware version.
+ * @timing_entry: Entry of timing table.
+ * @init_seq_entry: Entry of init sequence.
+ * @eixt_seq_entry: Entry of exit sequence.
+ * @touchscreen_entry: Entry of touchscreen properties.
+ * @firmware_size: Firmware size.
+ */
+struct firmware_header {
+	u32 magic;
+    u8 vendor[16];
+    u8 model[32];
+    u8 version[8];
+    struct entry timing_entry;
+    struct entry init_seq_entry;
+	struct entry eixt_seq_entry;
+	struct entry touchscreen_entry;
+	u32 firmware_size;
 };
 
 static inline void panel_simple_msleep(unsigned int msecs)
@@ -4676,6 +4707,116 @@ static bool of_child_node_is_present(const struct device_node *node,
 	return !!child;
 }
 
+static int panel_simple_of_get_firmware_desc_data(struct device *dev,
+					   struct panel_desc *desc)
+{
+	struct device_node *np = dev->of_node;
+	struct nvmem_device *nvmem;
+	struct firmware_header *header;
+	struct drm_display_mode *mode;
+	struct videomode *vm;
+	const u8 *init_data;
+	const u8 *exit_data;
+	u32 bus_flags;
+	int ret;
+
+	nvmem = devm_nvmem_device_get(dev, "eeprom");
+	if (IS_ERR(nvmem))
+		return PTR_ERR(nvmem);
+
+	header = (struct firmware_header *)devm_kzalloc(dev, sizeof(*header), GFP_KERNEL);
+	if (!header)
+		return -ENOMEM;
+
+	ret = nvmem_device_read(nvmem, 0, sizeof(*header), header);
+	if (ret < 0) {
+		dev_err(dev, "failed to read firmware header: %d\n", ret);
+		return ret;
+	}
+	dev_info(dev, "lcd firmware magic: %x\n", header->magic);
+	dev_info(dev, "lcd firmware version: %s, size: %d\n", header->version, header->firmware_size);
+	dev_info(dev, "lcd vendor: %s, model: %s\n", header->vendor, header->model);
+	
+	if (header->firmware_size > 0 && header->magic == 0xDEAD5A5A) {
+		vm = (struct videomode *)devm_kzalloc(dev, sizeof(*vm), GFP_KERNEL);
+		if (!vm)
+			return -ENOMEM;
+
+		ret = nvmem_device_read(nvmem, header->timing_entry.offset,
+					  header->timing_entry.length, vm);
+		if (ret < 0)
+			return ret;
+
+		init_data = (const u8 *)devm_kzalloc(dev, header->init_seq_entry.length, GFP_KERNEL);
+		if (!init_data)
+			return -ENOMEM;
+		
+		ret = nvmem_device_read(nvmem, header->init_seq_entry.offset,
+					  header->init_seq_entry.length,
+					  (void *)init_data);
+		if (ret < 0)
+			return ret;
+				
+		exit_data = (const u8 *)devm_kzalloc(dev, header->eixt_seq_entry.length,
+					  GFP_KERNEL);
+		if (!exit_data)
+			return -ENOMEM;
+
+		ret = nvmem_device_read(nvmem, header->eixt_seq_entry.offset,
+					  header->eixt_seq_entry.length,
+					  (void *)exit_data);
+		if (ret < 0)
+			return ret;
+	}
+
+	devm_nvmem_device_put(dev, nvmem);
+
+	mode = (struct drm_display_mode*)devm_kzalloc(dev, sizeof(*mode), GFP_KERNEL);
+	if (!mode)
+		return -ENOMEM;
+	
+	drm_display_mode_from_videomode(vm, mode);
+	if (bus_flags)
+		drm_bus_flags_from_videomode(vm, &bus_flags);
+	
+	desc->modes = mode;
+	desc->num_modes = 1;
+	desc->bus_flags = bus_flags;
+
+	of_property_read_u32(np, "prepare-delay-ms", &desc->delay.prepare);
+	of_property_read_u32(np, "enable-delay-ms", &desc->delay.enable);
+	of_property_read_u32(np, "disable-delay-ms", &desc->delay.disable);
+	of_property_read_u32(np, "unprepare-delay-ms", &desc->delay.unprepare);
+	of_property_read_u32(np, "reset-delay-ms", &desc->delay.reset);
+	of_property_read_u32(np, "init-delay-ms", &desc->delay.init);
+		
+	desc->init_seq = devm_kzalloc(dev, sizeof(*desc->init_seq),
+				      GFP_KERNEL);
+	if (!desc->init_seq)
+		return -ENOMEM;
+
+	ret = panel_simple_parse_cmd_seq(dev, init_data, header->init_seq_entry.length,
+						 desc->init_seq);
+	if (ret) {
+		dev_err(dev, "failed to parse init sequence\n");
+		return ret;
+	}
+
+	desc->exit_seq = devm_kzalloc(dev, sizeof(*desc->exit_seq),
+				      GFP_KERNEL);
+	if (!desc->exit_seq)
+		return -ENOMEM;
+
+	ret = panel_simple_parse_cmd_seq(dev, exit_data, header->eixt_seq_entry.length,
+						 desc->exit_seq);
+	if (ret) {
+		dev_err(dev, "failed to parse exit sequence\n");
+		return ret;
+	}	
+
+	return 0;
+}
+
 static int panel_simple_of_get_desc_data(struct device *dev,
 					 struct panel_desc *desc)
 {
@@ -5061,9 +5202,15 @@ static int panel_simple_dsi_of_get_desc_data(struct device *dev,
 	u32 val;
 	int err;
 
-	err = panel_simple_of_get_desc_data(dev, &desc->desc);
-	if (err)
-		return err;
+	err = panel_simple_of_get_firmware_desc_data(dev, &desc->desc);
+	if (!err) {
+		dev_info(dev, "found firmware desc data\n");
+	} else {
+		dev_info(dev, "not found firmware desc data, using defaults\n");
+		err = panel_simple_of_get_desc_data(dev, &desc->desc);
+		if (err)
+			return err;
+	}
 
 	if (!of_property_read_u32(np, "dsi,flags", &val))
 		desc->flags = val;
@@ -5298,7 +5445,8 @@ static int __init panel_simple_init(void)
 
 	return 0;
 }
-module_init(panel_simple_init);
+// module_init(panel_simple_init);
+late_initcall(panel_simple_init);
 
 static void __exit panel_simple_exit(void)
 {

@@ -28,6 +28,7 @@
 #include <linux/acpi.h>
 #include <linux/of.h>
 #include <asm/unaligned.h>
+#include <linux/nvmem-consumer.h>
 
 #define GOODIX_GPIO_INT_NAME		"irq"
 #define GOODIX_GPIO_RST_NAME		"reset"
@@ -116,6 +117,35 @@ struct goodix_ts_data {
 	u8 config[GOODIX_CONFIG_MAX_LENGTH];
 	unsigned short keymap[GOODIX_MAX_KEYS];
 };
+
+struct entry {
+    u32 offset;
+    u32 length;
+};
+
+/**
+ * @magic: LCD config firmware magic number. 
+ * @vendor: LCD vendor name.
+ * @model: LCD model name.
+ * @version: LCD config firmware version.
+ * @timing_entry: Entry of timing table.
+ * @init_seq_entry: Entry of init sequence.
+ * @eixt_seq_entry: Entry of exit sequence.
+ * @touchscreen_entry: Entry of touchscreen properties.
+ * @firmware_size: Firmware size.
+ */
+struct firmware_header {
+	u32 magic;
+    u8 vendor[16];
+    u8 model[32];
+    u8 version[8];
+    struct entry timing_entry;
+    struct entry init_seq_entry;
+	struct entry eixt_seq_entry;
+	struct entry touchscreen_entry;
+	u32 firmware_size;
+};
+
 
 static int goodix_check_cfg_8(struct goodix_ts_data *ts,
 			      const u8 *cfg, int len);
@@ -820,25 +850,6 @@ static int goodix_add_acpi_gpio_mappings(struct goodix_ts_data *ts)
 		dev_info(dev, "No ACPI GpioInt resource, assuming that the GPIO order is reset, int\n");
 		ts->irq_pin_access_method = IRQ_PIN_ACCESS_ACPI_GPIO;
 		gpio_mapping = acpi_goodix_int_last_gpios;
-	} else if (ts->gpio_count == 1 && ts->gpio_int_idx == 0) {
-		/*
-		 * On newer devices there is only 1 GpioInt resource and _PS0
-		 * does the whole reset sequence for us.
-		 */
-		acpi_device_fix_up_power(ACPI_COMPANION(dev));
-
-		/*
-		 * Before the _PS0 call the int GPIO may have been in output
-		 * mode and the call should have put the int GPIO in input mode,
-		 * but the GPIO subsys cached state may still think it is
-		 * in output mode, causing gpiochip_lock_as_irq() failure.
-		 *
-		 * Add a mapping for the int GPIO to make the
-		 * gpiod_int = gpiod_get(..., GPIOD_IN) call succeed,
-		 * which will explicitly set the direction to input.
-		 */
-		ts->irq_pin_access_method = IRQ_PIN_ACCESS_NONE;
-		gpio_mapping = acpi_goodix_int_first_gpios;
 	} else {
 		dev_warn(dev, "Unexpected ACPI resources: gpio_count %d, gpio_int_idx %d\n",
 			 ts->gpio_count, ts->gpio_int_idx);
@@ -1035,6 +1046,162 @@ static int goodix_i2c_test(struct i2c_client *client)
 	return error;
 }
 
+static bool touchscreen_get_prop_u32(struct device *dev,
+				     const char *property,
+				     unsigned int default_value,
+				     unsigned int *value)
+{
+	u32 val;
+	int error;
+
+	error = device_property_read_u32(dev, property, &val);
+	if (error) {
+		*value = default_value;
+		return false;
+	}
+
+	*value = val;
+	return true;
+}
+
+static void touchscreen_set_params(struct input_dev *dev,
+				   unsigned long axis,
+				   int min, int max, int fuzz)
+{
+	struct input_absinfo *absinfo;
+
+	if (!test_bit(axis, dev->absbit)) {
+		dev_warn(&dev->dev,
+			 "DT specifies parameters but the axis %lu is not set up\n",
+			 axis);
+		return;
+	}
+
+	absinfo = &dev->absinfo[axis];
+	absinfo->minimum = min;
+	absinfo->maximum = max;
+	absinfo->fuzz = fuzz;
+}
+
+static int touchscreen_parse_properties_from_firmware(struct input_dev *input, bool multitouch,
+				  struct touchscreen_properties *prop)
+{
+	struct device *dev = input->dev.parent;
+	struct input_absinfo *absinfo;
+	struct nvmem_device *nvmem;
+	struct firmware_header *header;
+	struct touchscreen_properties *touch_prop;
+	unsigned int axis, axis_x, axis_y;
+	unsigned int minimum, maximum, fuzz;
+	bool data_present;
+	int ret;
+
+	nvmem = devm_nvmem_device_get(dev, "eeprom");
+	if (IS_ERR(nvmem))
+		return PTR_ERR(nvmem);
+
+	header = (struct firmware_header *)devm_kzalloc(dev, sizeof(*header), GFP_KERNEL);
+	if (!header)
+		return -ENOMEM;
+	
+	ret = nvmem_device_read(nvmem, 0, sizeof(*header), (void *)header);
+	if (ret < 0) {
+		dev_err(dev, "Failed to read firmware header: %d\n", ret);
+		return ret;
+	}
+
+	if (header->firmware_size <= 0 || header->magic != 0xDEAD5A5A) {
+		dev_err(dev, "Invalid eeprom firmware\n");
+		return -EINVAL;
+	}
+
+	touch_prop = (struct touchscreen_properties *)devm_kzalloc(dev, sizeof(*touch_prop), GFP_KERNEL);
+	if (!touch_prop)
+		return -ENOMEM;
+
+	ret = nvmem_device_read(nvmem, header->touchscreen_entry.offset, 
+					header->touchscreen_entry.length, (void *)touch_prop);
+	if (ret < 0) {
+		return ret;
+	}
+
+	devm_nvmem_device_put(dev, nvmem);
+
+	dev_info(dev, "LCD model: %s, touch invert_x: %d, invert_y: %d, swap_x_y: %d\n", 
+			header->model, touch_prop->invert_x, touch_prop->invert_y, touch_prop->swap_x_y);
+
+	input_alloc_absinfo(input);
+	if (!input->absinfo)
+		return -ENOMEM;
+
+	axis_x = multitouch ? ABS_MT_POSITION_X : ABS_X;
+	axis_y = multitouch ? ABS_MT_POSITION_Y : ABS_Y;
+
+	data_present = touchscreen_get_prop_u32(dev, "touchscreen-min-x",
+						input_abs_get_min(input, axis_x),
+						&minimum);
+	data_present |= touchscreen_get_prop_u32(dev, "touchscreen-size-x",
+						 input_abs_get_max(input,
+								   axis_x) + 1,
+						 &maximum);
+	data_present |= touchscreen_get_prop_u32(dev, "touchscreen-fuzz-x",
+						 input_abs_get_fuzz(input, axis_x),
+						 &fuzz);
+	if (data_present)
+		touchscreen_set_params(input, axis_x, minimum, maximum - 1, fuzz);
+
+	data_present = touchscreen_get_prop_u32(dev, "touchscreen-min-y",
+						input_abs_get_min(input, axis_y),
+						&minimum);
+	data_present |= touchscreen_get_prop_u32(dev, "touchscreen-size-y",
+						 input_abs_get_max(input,
+								   axis_y) + 1,
+						 &maximum);
+	data_present |= touchscreen_get_prop_u32(dev, "touchscreen-fuzz-y",
+						 input_abs_get_fuzz(input, axis_y),
+						 &fuzz);
+	if (data_present)
+		touchscreen_set_params(input, axis_y, minimum, maximum - 1, fuzz);
+
+	axis = multitouch ? ABS_MT_PRESSURE : ABS_PRESSURE;
+	data_present = touchscreen_get_prop_u32(dev,
+						"touchscreen-max-pressure",
+						input_abs_get_max(input, axis),
+						&maximum);
+	data_present |= touchscreen_get_prop_u32(dev,
+						 "touchscreen-fuzz-pressure",
+						 input_abs_get_fuzz(input, axis),
+						 &fuzz);
+	if (data_present)
+		touchscreen_set_params(input, axis, 0, maximum, fuzz);
+
+	if (!prop)
+		return -EINVAL;
+
+	prop->max_x = input_abs_get_max(input, axis_x);
+	prop->max_y = input_abs_get_max(input, axis_y);
+
+	prop->invert_x = touch_prop->invert_x;
+	if (prop->invert_x) {
+		absinfo = &input->absinfo[axis_x];
+		absinfo->maximum -= absinfo->minimum;
+		absinfo->minimum = 0;
+	}
+
+	prop->invert_y = touch_prop->invert_x;
+	if (prop->invert_y) {
+		absinfo = &input->absinfo[axis_y];
+		absinfo->maximum -= absinfo->minimum;
+		absinfo->minimum = 0;
+	}
+
+	prop->swap_x_y = touch_prop->swap_x_y;
+	if (prop->swap_x_y)
+		swap(input->absinfo[axis_x], input->absinfo[axis_y]);
+
+	return 0;
+}
+
 /**
  * goodix_configure_dev - Finish device initialization
  *
@@ -1091,7 +1258,13 @@ retry_read_config:
 	goodix_read_config(ts);
 
 	/* Try overriding touchscreen parameters via device properties */
-	touchscreen_parse_properties(ts->input_dev, true, &ts->prop);
+	error = touchscreen_parse_properties_from_firmware(ts->input_dev, true, &ts->prop);
+	if (!error) {
+		dev_info(&ts->client->dev, "Found touchscreen properties in eeprom\n");
+	} else {
+		dev_info(&ts->client->dev, "No touchscreen properties in eeprom, using defaults\n");
+		touchscreen_parse_properties(ts->input_dev, true, &ts->prop);
+	}
 
 	if (!ts->prop.max_x || !ts->prop.max_y || !ts->max_touch_num) {
 		if (!ts->reset_controller_at_probe &&
