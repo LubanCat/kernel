@@ -134,34 +134,6 @@
 		pinctrl-0 = <&usb20_host_pwr_en>;
 	};
 
-	mipi_dsi_power: mipi-dsi-power {
-		compatible = "regulator-fixed";
-		regulator-name = "mipi_dsi_power";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		regulator-always-on;
-		regulator-boot-on;
-		enable-active-high;
-		gpio = <&gpio0 RK_PB6 GPIO_ACTIVE_HIGH>;
-		vin-supply = <&vcc_sys>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&lcd_pwr_en>;
-	};
-
-	adc_keys: adc-keys {
-		compatible = "adc-keys";
-		io-channels = <&saradc 1>;
-		io-channel-names = "buttons";
-		keyup-threshold-microvolt = <1800000>;
-		poll-interval = <100>;
-
-		power {
-			label = "power";
-			linux,code = <KEY_POWER>;
-			press-threshold-microvolt = <1750>;
-		};
-	};
-
 	es8388_sound: es8388-sound {
 		status = "okay";
 		compatible = "rockchip,multicodecs-card";
@@ -623,72 +595,6 @@
 	assigned-clock-parents = <&cru PLL_VPLL>;
 };
 
-&mdio0 {
-	rgmii_phy0: phy@1 {
-		compatible = "ethernet-phy-ieee802.3-c22";
-		reg = <0x1>;
-		clocks = <&cru REFCLKO25M_GMAC0_OUT>;
-	};
-};
-
-&mdio1 {
-	rgmii_phy1: phy@1 {
-		compatible = "ethernet-phy-ieee802.3-c22";
-		reg = <0x1>;
-		clocks = <&cru REFCLKO25M_GMAC1_OUT>;
-	};
-};
-
-&gmac0 {
-	/* Use rgmii-rxid mode to disable rx delay inside Soc */
-	phy-mode = "rgmii-rxid";
-	clock_in_out = "output";
-
-	snps,reset-gpio = <&gpio3 RK_PB7 GPIO_ACTIVE_LOW>;
-	snps,reset-active-low;
-	/* Reset time is 20ms, 100ms for rtl8211f */
-	snps,reset-delays-us = <0 20000 100000>;
-
-	pinctrl-names = "default";
-	pinctrl-0 = <&eth0m0_miim
-			&eth0m0_tx_bus2
-			&eth0m0_rx_bus2
-			&eth0m0_rgmii_clk
-			&eth0m0_rgmii_bus
-			&ethm0_clk0_25m_out>;
-
-	tx_delay = <0x05>;
-	rx_delay = <0x05>;
-
-	phy-handle = <&rgmii_phy0>;
-	status = "okay";
-};
-
-&gmac1 {
-	/* Use rgmii-rxid mode to disable rx delay inside Soc */
-	phy-mode = "rgmii-rxid";
-	clock_in_out = "output";
-
-	snps,reset-gpio = <&gpio2 RK_PD6 GPIO_ACTIVE_LOW>;
-	snps,reset-active-low;
-	/* Reset time is 20ms, 100ms for rtl8211f */
-	snps,reset-delays-us = <0 20000 100000>;
-
-	pinctrl-names = "default";
-	pinctrl-0 = <&eth1m0_miim
-			&eth1m0_tx_bus2
-			&eth1m0_rx_bus2
-			&eth1m0_rgmii_clk
-			&eth1m0_rgmii_bus
-			&ethm0_clk1_25m_out>;
-
-	tx_delay = <0x20>;
-	rx_delay = <0x01>;
-
-	phy-handle = <&rgmii_phy1>;
-	status = "okay";
-};
-
 /* USB3 OTG0/DP1.4 Alt */
 &usbdp_phy {
 	orientation-switch;
@@ -911,12 +817,6 @@
 		};
 		usb20_host_pwr_en: usb20-host-pwr-en {
 			rockchip,pins = <0 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-	};
-
-	mipi-dsi {
-		lcd_pwr_en: lcd-pwr-en {
-			rockchip,pins = <0 RK_PB6 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
