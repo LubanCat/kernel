@@ -651,7 +651,7 @@
 			&eth0m0_rx_bus2
 			&eth0m0_rgmii_clk
 			&eth0m0_rgmii_bus
-			&ethm0_clk0_25m_out>;
+			&eth0m0_mclk>;
 
 	tx_delay = <0x05>;
 	rx_delay = <0x05>;
@@ -676,7 +676,7 @@
 			&eth1m0_rx_bus2
 			&eth1m0_rgmii_clk
 			&eth1m0_rgmii_bus
-			&ethm0_clk1_25m_out>;
+			&eth0m0_mclk>;
 
 	tx_delay = <0x20>;
 	rx_delay = <0x01>;
