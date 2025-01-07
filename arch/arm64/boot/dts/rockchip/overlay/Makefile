@@ -122,8 +122,33 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3568-lubancat-2h-1080p-overlay.dtbo
 
 dtbo-$(CONFIG_CPU_RK3576) += \
+	rk3576-lubancat-can0-m2-overlay.dtbo \
+	rk3576-lubancat-can1-m3-overlay.dtbo \
+	rk3576-lubancat-i2c0-m1-overlay.dtbo \
+	rk3576-lubancat-i2c3-m2-overlay.dtbo \
+	rk3576-lubancat-i2c4-m1-overlay.dtbo \
 	rk3576-lubancat-i2c7-m1-overlay.dtbo \
-	rk3576-lubancat-pwm1-ch0-m3-overlay.dtbo
+	rk3576-lubancat-i2c7-m2-overlay.dtbo \
+	rk3576-lubancat-i2c8-m2-overlay.dtbo \
+	rk3576-lubancat-i2c9-m1-overlay.dtbo \
+	rk3576-lubancat-pwm0-ch0-m1-overlay.dtbo \
+	rk3576-lubancat-pwm0-ch1-m0-overlay.dtbo \
+	rk3576-lubancat-pwm1-ch0-m1-overlay.dtbo \
+	rk3576-lubancat-pwm1-ch0-m3-overlay.dtbo \
+	rk3576-lubancat-pwm1-ch1-m1-overlay.dtbo \
+	rk3576-lubancat-pwm2-ch3-m3-overlay.dtbo \
+	rk3576-lubancat-pwm2-ch6-m3-overlay.dtbo \
+	rk3576-lubancat-pwm2-ch7-m3-overlay.dtbo \
+	rk3576-lubancat-spi1-m0-overlay.dtbo \
+	rk3576-lubancat-spi3-m0-overlay.dtbo \
+	rk3576-lubancat-spi3-m1-overlay.dtbo \
+	rk3576-lubancat-uart10-m1-overlay.dtbo \
+	rk3576-lubancat-uart3-m0-overlay.dtbo \
+	rk3576-lubancat-uart3-m1-overlay.dtbo \
+	rk3576-lubancat-uart5-m0-overlay.dtbo \
+	rk3576-lubancat-uart6-m0-overlay.dtbo \
+	rk3576-lubancat-uart7-m0-overlay.dtbo \
+	rk3576-lubancat-uart8-m2-overlay.dtbo
 
 dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-4-xl9535-overlay.dtbo \
