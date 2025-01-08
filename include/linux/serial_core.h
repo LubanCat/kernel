@@ -236,6 +236,7 @@ struct uart_port {
 	int			hw_stopped;		/* sw-assisted CTS flow state */
 	unsigned int		mctrl;			/* current modem ctrl settings */
 	unsigned int		timeout;		/* character-based timeout */
+	unsigned int		frame_time;		/* frame timing in ns */
 	unsigned int		type;			/* port type */
 	const struct uart_ops	*ops;
 	unsigned int		custom_divisor;
@@ -258,6 +259,7 @@ struct uart_port {
 	const struct attribute_group **tty_groups;	/* all attributes (serial core use only) */
 	struct serial_rs485     rs485;
 	struct gpio_desc	*rs485_term_gpio;	/* enable RS485 bus termination */
+	struct gpio_desc	*rs485_de_gpio;		/* enable RS485 de */
 	struct serial_iso7816   iso7816;
 	void			*private_data;		/* generic platform data pointer */
 
@@ -503,20 +505,14 @@ bool uart_try_toggle_sysrq(struct uart_port *port, unsigned int ch);
 
 static inline int uart_handle_sysrq_char(struct uart_port *port, unsigned int ch)
 {
-	if (!port->sysrq)
-		return 0;
-
-	if (ch && time_before(jiffies, port->sysrq)) {
-		if (sysrq_mask()) {
+	if (port->sysrq) {
+		if (ch && time_before(jiffies, port->sysrq)) {
 			handle_sysrq(ch);
 			port->sysrq = 0;
 			return 1;
 		}
-		if (uart_try_toggle_sysrq(port, ch))
-			return 1;
+		port->sysrq = 0;
 	}
-	port->sysrq = 0;
-
 	return 0;
 }
 
@@ -602,5 +598,5 @@ static inline int uart_handle_break(struct uart_port *port)
 					 (cflag) & CRTSCTS || \
 					 !((cflag) & CLOCAL))
 
-int uart_get_rs485_mode(struct uart_port *port);
+void uart_get_rs485_mode(struct uart_port *port);
 #endif /* LINUX_SERIAL_CORE_H */
