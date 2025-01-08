@@ -4776,8 +4776,7 @@ static int panel_simple_of_get_firmware_desc_data(struct device *dev,
 		return -ENOMEM;
 	
 	drm_display_mode_from_videomode(vm, mode);
-	if (bus_flags)
-		drm_bus_flags_from_videomode(vm, &bus_flags);
+	drm_bus_flags_from_videomode(vm, &bus_flags);
 	
 	desc->modes = mode;
 	desc->num_modes = 1;
