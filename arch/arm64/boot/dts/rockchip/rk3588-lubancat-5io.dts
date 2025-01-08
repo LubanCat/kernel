@@ -1558,16 +1558,6 @@
     status = "okay";
 };
 
-&uart4 {
-	status = "okay";
-	pinctrl-0 = <&uart4m2_xfer>;
-};
-
-&uart7 {
-	status = "okay";
-	pinctrl-0 = <&uart7m2_xfer>;
-};
-
 &can1 {
 	assigned-clocks = <&cru CLK_CAN1>;
 	assigned-clock-rates = <150000000>;
