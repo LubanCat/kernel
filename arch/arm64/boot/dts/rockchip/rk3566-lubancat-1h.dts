@@ -1332,7 +1332,7 @@
 /* mini pcie */
 &pcie2x1 {
 	reset-gpios = <&gpio0 RK_PB6 GPIO_ACTIVE_HIGH>;
-	disable-gpios = <&gpio0 RK_PB2 GPIO_ACTIVE_HIGH>;
+	disable-gpios = <&gpio0 RK_PB7 GPIO_ACTIVE_HIGH>;
 	vpcie3v3-supply = <&mini_pcie_3v3>;
 	status = "okay";
 };
