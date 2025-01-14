@@ -7,7 +7,7 @@
 
 		__overlay__ {
 			status = "okay";
-			pinctrl-names = "default";
+			pinctrl-names = "active";
 			pinctrl-0 = <&pwm1m1_ch1>;
 		};
 	};
