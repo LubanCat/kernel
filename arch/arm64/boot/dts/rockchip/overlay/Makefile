@@ -148,7 +148,12 @@ dtbo-$(CONFIG_CPU_RK3576) += \
 	rk3576-lubancat-uart5-m0-overlay.dtbo \
 	rk3576-lubancat-uart6-m0-overlay.dtbo \
 	rk3576-lubancat-uart7-m0-overlay.dtbo \
-	rk3576-lubancat-uart8-m2-overlay.dtbo
+	rk3576-lubancat-uart8-m2-overlay.dtbo \
+	rk3576-lubancat-3-cam0-imx415-overlay.dtbo \
+	rk3576-lubancat-3-cam1-imx415-overlay.dtbo \
+	rk3576-lubancat-3-cam2-imx415-overlay.dtbo \
+	rk3576-lubancat-3-cam3-imx415-overlay.dtbo \
+	rk3576-lubancat-3-cam4-imx415-overlay.dtbo
 
 dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-4-xl9535-overlay.dtbo \

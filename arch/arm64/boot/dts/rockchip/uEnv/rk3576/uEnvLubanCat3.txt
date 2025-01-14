@@ -35,4 +35,15 @@ enable_uboot_overlays=1
 
 # Display
 
+# CAM0
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam0-imx415-overlay.dtbo
+# CAM1
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam1-imx415-overlay.dtbo
+# CAM2
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam2-imx415-overlay.dtbo
+# CAM3
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam3-imx415-overlay.dtbo
+# CAM4
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam4-imx415-overlay.dtbo
+
 #overlay_end

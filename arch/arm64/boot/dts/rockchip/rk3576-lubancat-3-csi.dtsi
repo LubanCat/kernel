@@ -6,7 +6,74 @@
  */
 
 / {
-	ext_cam_37m_clk: external-camera-37m-clock {
+	ext_cam0_37m_clk: external-camera-37m-clock {
+		compatible = "fixed-clock";
+		clock-frequency = <37125000>;
+		clock-output-names = "ext_cam0_37m_clk";
+		#clock-cells = <0>;
+	};
+
+	ext_cam0_25m_clk: external-camera-25m-clock {
+		compatible = "fixed-clock";
+		clock-frequency = <25000000>;
+		clock-output-names = "ext_cam0_25m_clk";
+		#clock-cells = <0>;
+	};
+
+	ext_cam0_24m_clk: external-camera-24m-clock {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <24000000>;
+		clock-output-names = "ext_cam0_24m_clk";
+	};
+
+	ext_cam0_27m_clk: external-camera-27m-clock {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <27000000>;
+		clock-output-names = "ext_cam0_27m_clk";
+	};
+
+	vdd_cam0_5v: vdd-cam0-5v-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "vdd_cam0_5v";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+	};
+
+	cam0_dovdd: cam0-dovdd {
+		compatible = "regulator-fixed";
+		regulator-name = "cam0_dovdd";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		vin-supply = <&vdd_cam0_5v>;
+	};
+
+	cam0_avdd: cam0-avdd {
+		compatible = "regulator-fixed";
+		regulator-name = "cam0_avdd";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		vin-supply = <&vdd_cam0_5v>;
+	};
+
+	cam0_dvdd: cam0-dvdd {
+		compatible = "regulator-fixed";
+		regulator-name = "cam0_dvdd";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		vin-supply = <&vdd_cam0_5v>;
+	};
+
+    	ext_cam_37m_clk: external-camera-37m-clock {
 		compatible = "fixed-clock";
 		clock-frequency = <37125000>;
 		clock-output-names = "ext_cam_37m_clk";
@@ -74,9 +141,63 @@
 	};
 };
 
+&csi2_dcphy0 {
+	status = "disabled";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			dcphy0_in_imx415: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&imx415_out0>;
+				data-lanes = <1 2 3 4>;
+			};
+
+			dcphy0_in_ov5647: endpoint@2 {
+				reg = <2>;
+				remote-endpoint = <&ov5647_out0>;
+				data-lanes = <1 2>;
+			};
+
+			dcphy0_in_ov5648: endpoint@3 {
+				reg = <3>;
+				remote-endpoint = <&ov5648_out0>;
+				data-lanes = <1 2>;
+			};
+
+			dcphy0_in_ov8858: endpoint@4 {
+				reg = <4>;
+				remote-endpoint = <&ov8858_out0>;
+				data-lanes = <1 2>;
+			};
+
+			dcphy0_in_sc530ai: endpoint@5 {
+				reg = <5>;
+				remote-endpoint = <&sc530ai_out0>;
+				data-lanes = <1 2 3 4>;
+			};
+		};
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			csidcphy0_out: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&mipi0_csi2_input>;
+			};
+		};
+	};
+};
+
 // CAM 1
 &csi2_dphy1 {
-	status = "okay";
+	status = "disabled";
 
 	ports {
 		#address-cells = <1>;
@@ -105,8 +226,9 @@
 	};
 };
 
+// CAM 2
 &csi2_dphy2 {
-	status = "okay";
+	status = "disabled";
 
 	ports {
 		#address-cells = <1>;
@@ -135,8 +257,9 @@
 	};
 };
 
+// CAM 3
 &csi2_dphy3 {
-	status = "okay";
+	status = "disabled";
 
 	ports {
 		#address-cells = <1>;
@@ -165,8 +288,9 @@
 	};
 };
 
+// CAM 4
 &csi2_dphy4 {
-	status = "okay";
+	status = "disabled";
 
 	ports {
 		#address-cells = <1>;
@@ -195,14 +319,155 @@
 	};
 };
 
+// CAM 0
+&i2c3 {
+	status = "disabled";
+	pinctrl-0 = <&i2c3m0_xfer>;
+
+	dw9714_0: dw9714-0@c {
+		status = "okay";
+		compatible = "dongwoon,dw9714";
+		reg = <0xc>;
+		rockchip,camera-module-index = <0>;
+		rockchip,vcm-max-current = <100>;
+		rockchip,vcm-start-current = <0>;
+		rockchip,vcm-rated-current = <100>;
+		rockchip,vcm-step-mode = <0xd>;
+		rockchip,vcm-dlc-enable = <0>;
+		rockchip,vcm-mclk = <0>;
+		rockchip,vcm-t-src = <0>;
+		rockchip,camera-module-facing = "back";
+	};
+
+	imx415_0: imx415@1a {
+		compatible = "sony,imx415";
+		status = "disabled";
+		reg = <0x1a>;
+		clocks = <&ext_cam0_37m_clk>;
+		clock-names = "xvclk";
+		avdd-supply = <&cam0_avdd>;
+		dovdd-supply = <&cam0_dovdd>;
+		dvdd-supply = <&cam0_dvdd>;
+		reset-gpios = <&gpio1 RK_PD3 GPIO_ACTIVE_LOW>;
+
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "CMK-OT2022-PX1";
+		rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
+		port {
+			imx415_out0: endpoint {
+				remote-endpoint = <&dcphy0_in_imx415>;
+				data-lanes = <1 2 3 4>;
+			};
+		};
+	};
+
+	ov5647_0: ov5647-0@36 {
+		compatible = "ovti,ov5647";
+		status = "disabled";
+		reg = <0x36>;
+		clocks = <&ext_cam0_25m_clk>;
+		clock-names = "ext_cam_25m_clk";
+		//reset-gpios = <&gpio1 RK_PD3 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio1 RK_PD2 GPIO_ACTIVE_HIGH>;
+		lens-focus = <&dw9714_0>;
+
+		port {
+			ov5647_out0: endpoint {
+			remote-endpoint = <&dcphy0_in_ov5647>;
+			data-lanes = <1 2>;
+			};
+		};
+	};
+
+	ov5648_0: ov5648-0@36 {
+		compatible = "ovti,ov5648";
+		status = "disabled";
+		reg = <0x36>;
+		clocks = <&ext_cam0_24m_clk>;
+		clock-names = "xvclk";
+		dovdd-supply= <&cam0_dovdd>; /* 1.8v */
+		avdd-supply = <&cam0_avdd>;  /* 2.8v */
+		dvdd-supply = <&cam0_dvdd>;  /* 1.2v */
+		reset-gpios = <&gpio1 RK_PD3 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio1 RK_PD2 GPIO_ACTIVE_HIGH>;
+		rotation = <180>;
+
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "THDS11073";
+		rockchip,camera-module-lens-name = "Largan-40122a1";
+		lens-focus = <&dw9714_0>;
+
+		port {
+			/* MIPI CSI-2 bus endpoint */
+			ov5648_out0: endpoint {
+				remote-endpoint = <&dcphy0_in_ov5648>;
+				clock-lanes = <0>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	ov8858_0: ov8858-0@36 {
+		compatible = "ovti,ov8858";
+		status = "disabled";
+		reg = <0x36>;
+		clocks = <&ext_cam0_24m_clk>;
+		clock-names = "xvclk";
+		dovdd-supply= <&cam0_dovdd>; /* 1.8v */
+		avdd-supply = <&cam0_avdd>;  /* 2.8v */
+		dvdd-supply = <&cam0_dvdd>;  /* 1.2v */
+		reset-gpios = <&gpio1 RK_PD3 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio1 RK_PD2 GPIO_ACTIVE_HIGH>;
+		rotation = <180>;
+
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "HS5885-BNSM1018-V01";
+		rockchip,camera-module-lens-name = "default";
+		lens-focus = <&dw9714_0>;
+		port {
+			/* MIPI CSI-2 bus endpoint */
+			ov8858_out0: endpoint {
+				remote-endpoint = <&dcphy0_in_ov8858>;
+				clock-lanes = <0>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	sc530ai_0: sc530ai-0@30 {
+		compatible = "smartsens,sc530ai";
+		status = "disabled";
+		reg = <0x30>;
+		clocks = <&ext_cam0_24m_clk>;
+		clock-names = "xvclk";
+		reset-gpios = <&gpio1 RK_PD3 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio1 RK_PD2 GPIO_ACTIVE_HIGH>;
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "CMK-OT2115-PC1";
+		rockchip,camera-module-lens-name = "30IRC-F16";
+		rotation = <180>;
+
+		port {
+			sc530ai_out0: endpoint {
+				remote-endpoint = <&dcphy0_in_sc530ai>;
+				data-lanes = <1 2 3 4>;
+			};
+		};
+	};
+};
+
 // CAM 1
 &i2c4 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&i2c4m2_xfer>;
 
 	dcphy1_imx415: dcphy1-imx415@1a {
 		compatible = "sony,imx415";
-		status = "okay";
+		status = "disabled";
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
@@ -229,12 +494,12 @@
 
 // CAM 2
 &i2c5 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&i2c5m3_xfer>;
 
 	dcphy2_imx415: dcphy2-imx415@1a {
 		compatible = "sony,imx415";
-		status = "okay";
+		status = "disabled";
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
@@ -261,12 +526,12 @@
 
 // CAM 3
 &i2c7 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&i2c7m1_xfer>;
 
 	dcphy3_imx415: dcphy3-imx415@1a {
 		compatible = "sony,imx415";
-		status = "okay";
+		status = "disabled";
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
@@ -293,12 +558,12 @@
 
 // CAM 4
 &i2c8 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&i2c8m2_xfer>;
 
 	dcphy4_imx415: dcphy4-imx415@1a {
 		compatible = "sony,imx415";
-		status = "okay";
+		status = "disabled";
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
@@ -323,8 +588,83 @@
 	};
 };
 
+// CAM 0
+&mipi0_csi2 {
+	status = "disabled";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			mipi0_csi2_input: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&csidcphy0_out>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			mipi0_csi2_output: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&cif_mipi_in0>;
+			};
+		};
+	};
+};
+
+&rkcif_mipi_lvds {
+	status = "disabled";
+
+	port {
+		cif_mipi_in0: endpoint {
+			remote-endpoint = <&mipi0_csi2_output>;
+		};
+	};
+};
+
+&rkcif_mipi_lvds_sditf {
+	status = "disabled";
+
+	port {
+		mipi_lvds_sditf: endpoint {
+			remote-endpoint = <&isp_vir0>;
+		};
+	};
+};
+
+&rkisp_vir0 {
+	status = "disabled";
+
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		isp_vir0: endpoint@0 {
+			reg = <0>;
+			remote-endpoint = <&mipi_lvds_sditf>;
+		};
+	};
+};
+
+&rkisp_vir0_sditf {
+	status = "disabled";
+};
+
+&rkvpss_vir0 {
+	status = "disabled";
+};
+
+// CAM 1
 &mipi1_csi2 {
-	status = "okay";
+	status = "disabled";
 
 	ports {
 		#address-cells = <1>;
@@ -354,8 +694,9 @@
 	};
 };
 
+// CAM 2
 &mipi2_csi2 {
-	status = "okay";
+	status = "disabled";
 
 	ports {
 		#address-cells = <1>;
@@ -385,8 +726,9 @@
 	};
 };
 
+// CAM 3
 &mipi3_csi2 {
-	status = "okay";
+	status = "disabled";
 
 	ports {
 		#address-cells = <1>;
@@ -416,8 +758,9 @@
 	};
 };
 
+// CAM 4
 &mipi4_csi2 {
-	status = "okay";
+	status = "disabled";
 
 	ports {
 		#address-cells = <1>;
@@ -447,12 +790,8 @@
 	};
 };
 
-&rkcif {
-	status = "okay";
-};
-
 &rkcif_mipi_lvds1 {
-	status = "okay";
+	status = "disabled";
 
 	port {
 		cif_mipi_in1: endpoint {
@@ -462,7 +801,7 @@
 };
 
 &rkcif_mipi_lvds1_sditf {
-	status = "okay";
+	status = "disabled";
 
 	port {
 		mipi1_lvds_sditf: endpoint {
@@ -472,7 +811,7 @@
 };
 
 &rkcif_mipi_lvds2 {
-	status = "okay";
+	status = "disabled";
 
 	port {
 		cif_mipi_in2: endpoint {
@@ -482,7 +821,7 @@
 };
 
 &rkcif_mipi_lvds2_sditf {
-	status = "okay";
+	status = "disabled";
 
 	port {
 		mipi2_lvds_sditf: endpoint {
@@ -492,7 +831,7 @@
 };
 
 &rkcif_mipi_lvds3 {
-	status = "okay";
+	status = "disabled";
 
 	port {
 		cif_mipi_in3: endpoint {
@@ -502,7 +841,7 @@
 };
 
 &rkcif_mipi_lvds3_sditf {
-	status = "okay";
+	status = "disabled";
 
 	port {
 		mipi3_lvds_sditf: endpoint {
@@ -512,7 +851,7 @@
 };
 
 &rkcif_mipi_lvds4 {
-	status = "okay";
+	status = "disabled";
 
 	port {
 		cif_mipi_in4: endpoint {
@@ -522,7 +861,7 @@
 };
 
 &rkcif_mipi_lvds4_sditf {
-	status = "okay";
+	status = "disabled";
 
 	port {
 		mipi4_lvds_sditf: endpoint {
@@ -531,20 +870,8 @@
 	};
 };
 
-&rkcif_mmu {
-	status = "okay";
-};
-
-&rkisp {
-	status = "okay";
-};
-
-&rkisp_mmu {
-	status = "okay";
-};
-
 &rkisp_vir1 {
-	status = "okay";
+	status = "disabled";
 
 	port {
 		#address-cells = <1>;
@@ -558,7 +885,7 @@
 };
 
 &rkisp_vir2 {
-	status = "okay";
+	status = "disabled";
 
 	port {
 		#address-cells = <1>;
@@ -572,7 +899,7 @@
 };
 
 &rkisp_vir3 {
-	status = "okay";
+	status = "disabled";
 
 	port {
 		#address-cells = <1>;
@@ -586,7 +913,7 @@
 };
 
 &rkisp_vir4 {
-	status = "okay";
+	status = "disabled";
 
 	port {
 		#address-cells = <1>;
@@ -600,42 +927,57 @@
 };
 
 &rkisp_vir1_sditf {
-	status = "okay";
+	status = "disabled";
 };
 
 &rkisp_vir2_sditf {
-	status = "okay";
+	status = "disabled";
 };
 
 &rkisp_vir3_sditf {
-	status = "okay";
+	status = "disabled";
 };
 
 &rkisp_vir4_sditf {
-	status = "okay";
+	status = "disabled";
 };
-
-&rkvpss {
-	status = "okay";
-};
-
-&rkvpss_mmu {
-	status = "okay";
-};
-
 
 &rkvpss_vir1 {
-	status = "okay";
+	status = "disabled";
 };
 
 &rkvpss_vir2 {
-	status = "okay";
+	status = "disabled";
 };
 
 &rkvpss_vir3 {
-	status = "okay";
+	status = "disabled";
 };
 
 &rkvpss_vir4 {
-	status = "okay";
+	status = "disabled";
+};
+
+&rkcif {
+	status = "disabled";
+};
+
+&rkcif_mmu {
+	status = "disabled";
+};
+
+&rkisp {
+	status = "disabled";
+};
+
+&rkisp_mmu {
+	status = "disabled";
+};
+
+&rkvpss {
+	status = "disabled";
+};
+
+&rkvpss_mmu {
+	status = "disabled";
 };

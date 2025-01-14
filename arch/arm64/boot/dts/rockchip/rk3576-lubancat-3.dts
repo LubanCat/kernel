@@ -20,9 +20,7 @@
 
 #include "rk3576-lubancat-dsi-1080p.dtsi"
 
-#include "rk3576-lubancat-cam-dcphy-1x.dtsi"
-
-#include "rk3576-lubancat-cam-dphy-4x.dtsi"
+#include "rk3576-lubancat-3-csi.dtsi"
 
 / {
 	model = "EmbedFire LubanCat-3";
