@@ -1456,6 +1456,7 @@ static long btchr_ioctl(struct file *file_p,unsigned int cmd, unsigned long arg)
             return 1;
         case DWFW_CMPLT:
             AICBT_INFO(" btchr_ioctl DWFW_CMPLT");
+            return 1;
 #if 1
 	case SET_ISO_CFG:
             AICBT_INFO("btchr_ioctl SET_ISO_CFG");
@@ -1464,7 +1465,7 @@ static long btchr_ioctl(struct file *file_p,unsigned int cmd, unsigned long arg)
 		}
 		//hdev->voice_setting = *(uint16_t*)arg;
 		AICBT_INFO(" voice settings = %d", hdev->voice_setting);
-		//return 1;
+		return 1;
 #endif
         case GET_USB_INFO:
 			//ret = download_patch(fw_info,1);
