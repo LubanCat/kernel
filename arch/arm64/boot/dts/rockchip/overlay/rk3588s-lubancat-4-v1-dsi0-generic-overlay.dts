@@ -115,9 +115,9 @@
 				nvmem-names = "eeprom";
 			};
 
-			eeprom0: eeprom@55 {
-				compatible = "atmel,24c256";
-				reg = <0x55>;
+			eeprom0: eeprom@51 {
+				compatible = "atmel,24c64";
+				reg = <0x51>;
 				label = "eeprom";
 			};
 		};
