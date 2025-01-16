@@ -693,7 +693,7 @@
 			&eth1m0_rx_bus2
 			&eth1m0_rgmii_clk
 			&eth1m0_rgmii_bus
-			&eth0m0_mclk>;
+			&eth1m0_mclk>;
 
 	tx_delay = <0x20>;
 	rx_delay = <0x01>;
