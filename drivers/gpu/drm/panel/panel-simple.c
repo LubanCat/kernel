@@ -4733,41 +4733,46 @@ static int panel_simple_of_get_firmware_desc_data(struct device *dev,
 		dev_err(dev, "failed to read firmware header: %d\n", ret);
 		return ret;
 	}
+
+	if (header->firmware_size <= 0 || header->magic != 0xDEAD5A5A) {
+		dev_err(dev, "Invalid eeprom firmware");
+		return -EINVAL;
+	}
+
 	dev_info(dev, "lcd firmware magic: %x\n", header->magic);
 	dev_info(dev, "lcd firmware version: %s, size: %d\n", header->version, header->firmware_size);
 	dev_info(dev, "lcd vendor: %s, model: %s\n", header->vendor, header->model);
 	
-	if (header->firmware_size > 0 && header->magic == 0xDEAD5A5A) {
-		vm = (struct videomode *)devm_kzalloc(dev, sizeof(*vm), GFP_KERNEL);
-		if (!vm)
-			return -ENOMEM;
 
-		ret = nvmem_device_read(nvmem, header->timing_entry.offset,
-					  header->timing_entry.length, vm);
-		if (ret < 0)
-			return ret;
+	vm = (struct videomode *)devm_kzalloc(dev, sizeof(*vm), GFP_KERNEL);
+	if (!vm)
+		return -ENOMEM;
 
-		init_data = (const u8 *)devm_kzalloc(dev, header->init_seq_entry.length, GFP_KERNEL);
-		if (!init_data)
-			return -ENOMEM;
+	ret = nvmem_device_read(nvmem, header->timing_entry.offset,
+				  header->timing_entry.length, vm);
+	if (ret < 0)
+		return ret;
+
+	init_data = (const u8 *)devm_kzalloc(dev, header->init_seq_entry.length, GFP_KERNEL);
+	if (!init_data)
+		return -ENOMEM;
 		
-		ret = nvmem_device_read(nvmem, header->init_seq_entry.offset,
-					  header->init_seq_entry.length,
-					  (void *)init_data);
-		if (ret < 0)
-			return ret;
+	ret = nvmem_device_read(nvmem, header->init_seq_entry.offset,
+				  header->init_seq_entry.length,
+				  (void *)init_data);
+	if (ret < 0)
+		return ret;
 				
-		exit_data = (const u8 *)devm_kzalloc(dev, header->eixt_seq_entry.length,
-					  GFP_KERNEL);
-		if (!exit_data)
-			return -ENOMEM;
+	exit_data = (const u8 *)devm_kzalloc(dev, header->eixt_seq_entry.length,
+				  GFP_KERNEL);
+	if (!exit_data)
+		return -ENOMEM;
 
-		ret = nvmem_device_read(nvmem, header->eixt_seq_entry.offset,
-					  header->eixt_seq_entry.length,
-					  (void *)exit_data);
-		if (ret < 0)
-			return ret;
-	}
+	ret = nvmem_device_read(nvmem, header->eixt_seq_entry.offset,
+				  header->eixt_seq_entry.length,
+				  (void *)exit_data);
+	if (ret < 0)
+		return ret;
 
 	devm_nvmem_device_put(dev, nvmem);
 
