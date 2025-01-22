@@ -11,6 +11,7 @@
  * 1. fix g_mbus_config lane config issues.
  * 2. and add debug info
  * 3. add r1a version support
+  * V0.0X01.0X07  modify otp mode : sensor or rockchip
  */
 
 #include <linux/clk.h>
@@ -20,34 +21,30 @@
 #include <linux/i2c.h>
 #include <linux/module.h>
 #include <linux/pm_runtime.h>
-#include <linux/of.h>
-#include <linux/of_graph.h>
 #include <linux/regulator/consumer.h>
 #include <linux/sysfs.h>
 #include <linux/slab.h>
-#include <linux/pinctrl/consumer.h>
 #include <linux/version.h>
 #include <linux/rk-camera-module.h>
-
-#include <media/v4l2-async.h>
 #include <media/media-entity.h>
-#include <media/v4l2-common.h>
+#include <media/v4l2-async.h>
 #include <media/v4l2-ctrls.h>
-#include <media/v4l2-device.h>
-#include <media/v4l2-event.h>
-#include <media/v4l2-fwnode.h>
-#include <media/v4l2-image-sizes.h>
-#include <media/v4l2-mediabus.h>
 #include <media/v4l2-subdev.h>
+#include <media/v4l2-fwnode.h>
+#include <linux/pinctrl/consumer.h>
+#include <linux/rk-preisp.h>
+#include "../platform/rockchip/isp/rkisp_tb_helper.h"
+#include <linux/of_graph.h>
+#include "otp_eeprom.h"
 
-#define DRIVER_VERSION			KERNEL_VERSION(0, 0x01, 0x06)
+#define DRIVER_VERSION			KERNEL_VERSION(0, 0x01, 0x07)
 
 #ifndef V4L2_CID_DIGITAL_GAIN
 #define V4L2_CID_DIGITAL_GAIN		V4L2_CID_GAIN
 #endif
-#define OV8858_PIXEL_RATE		(552000000LL * 2LL * 2LL / 10LL)
+#define OV8858_PIXEL_RATE		(360000000LL * 2LL * 2LL / 10LL)
 
-#define MIPI_FREQ			552000000U
+#define MIPI_FREQ			360000000U
 #define OV8858_XVCLK_FREQ		24000000
 
 #define CHIP_ID				0x008858
@@ -97,6 +94,9 @@
 #define OV8858_NAME			"ov8858"
 #define OV8858_MEDIA_BUS_FMT		MEDIA_BUS_FMT_SBGGR10_1X10
 
+/* use RK_OTP or sensor-reg_otp mode */
+#define RK_OTP
+
 #define ov8858_write_1byte(client, reg, val)	\
 	ov8858_write_reg((client), (reg), OV8858_REG_VALUE_08BIT, (val))
 
@@ -105,6 +105,7 @@
 
 static const struct regval *ov8858_global_regs;
 
+#ifndef RK_OTP
 struct ov8858_otp_info_r1a {
 	int flag; // bit[7]: info, bit[6]:wb, bit[5]:vcm, bit[4]:lenc
 	int module_id;
@@ -137,6 +138,7 @@ struct ov8858_otp_info_r2a {
 	int vcm_end;
 	int vcm_dir;
 };
+#endif
 
 static const char * const ov8858_supply_names[] = {
 	"avdd",		/* Analog power */
@@ -189,17 +191,21 @@ struct ov8858 {
 	unsigned int		lane_num;
 	unsigned int		cfg_num;
 	unsigned int		pixel_rate;
-	bool			power_on;
-
-	struct ov8858_otp_info_r1a *otp_r1a;
-	struct ov8858_otp_info_r2a *otp_r2a;
+	bool			power_on;	
 	u32			module_index;
 	const char		*module_facing;
 	const char		*module_name;
 	const char		*len_name;
+#ifdef RK_OTP
+	struct otp_info		*otp;
+#else
+	struct ov8858_otp_info_r1a *otp_r1a;
+	struct ov8858_otp_info_r2a *otp_r2a;
+#endif
 	struct rkmodule_inf	module_inf;
 	struct rkmodule_awb_cfg	awb_cfg;
 	struct rkmodule_lsc_cfg	lsc_cfg;
+	
 };
 
 #define to_ov8858(sd) container_of(sd, struct ov8858, subdev)
@@ -1415,8 +1421,6 @@ static const struct regval ov8858_1632x1224_regs_r2a_2lane[] = {
  */
 static const struct regval ov8858_3264x2448_regs_r2a_2lane[] = {
 	{0x0100, 0x00},
-	{0x0302, 0x2e},// pll1_multi
-	{0x030d, 0x2e},
 	{0x3501, 0x9a},// exposure M
 	{0x3502, 0x20},// exposure L
 	{0x3778, 0x1a},//
@@ -1861,7 +1865,7 @@ static const struct ov8858_mode supported_modes_r2a_2lane[] = {
 		.height = 2448,
 		.max_fps = {
 			.numerator = 10000,
-			.denominator = 230000,
+			.denominator = 150000,
 		},
 		.exp_def = 0x09a0,
 		.hts_def = 0x0794 * 2,
@@ -2138,6 +2142,56 @@ static int ov8858_g_frame_interval(struct v4l2_subdev *sd,
 	return 0;
 }
 
+#ifdef RK_OTP
+
+static void ov8858_get_otp(struct otp_info *otp,
+			       struct rkmodule_inf *inf)
+{
+	u32 i=0;
+	/* awb */
+	if (otp->awb_data.flag) {
+		inf->awb.flag = 1;
+		inf->awb.r_value = otp->awb_data.r_ratio;
+		inf->awb.b_value = otp->awb_data.b_ratio;
+		inf->awb.gr_value = otp->awb_data.g_ratio;
+		inf->awb.gb_value = 0x0;
+				   
+		inf->awb.golden_r_value = otp->awb_data.r_golden;
+		inf->awb.golden_b_value = otp->awb_data.b_golden;
+		inf->awb.golden_gr_value = otp->awb_data.g_golden;
+		inf->awb.golden_gb_value = 0x0;
+	}
+				   
+	/* lsc */
+	if (otp->lsc_data.flag) {
+		inf->lsc.flag = 1;
+		inf->lsc.width = otp->basic_data.size.width;
+		inf->lsc.height = otp->basic_data.size.height;
+		inf->lsc.table_size = otp->lsc_data.table_size;
+	
+		for (i = 0; i < 289; i++) {
+			inf->lsc.lsc_r[i] = (otp->lsc_data.data[i * 2] << 8) |
+				otp->lsc_data.data[i * 2 + 1];
+			inf->lsc.lsc_gr[i] = (otp->lsc_data.data[i * 2 + 578] << 8) |
+				otp->lsc_data.data[i * 2 + 579];
+			inf->lsc.lsc_gb[i] = (otp->lsc_data.data[i * 2 + 1156] << 8) |
+				otp->lsc_data.data[i * 2 + 1157];
+			inf->lsc.lsc_b[i] = (otp->lsc_data.data[i * 2 + 1734] << 8) |
+				otp->lsc_data.data[i * 2 + 1735];
+		}
+	}  
+	/* af */
+	if (otp->af_data.flag) {
+		inf->af.flag = 1;
+		inf->af.dir_cnt = 1;
+		inf->af.af_otp[0].vcm_start = otp->af_data.af_inf;
+		inf->af.af_otp[0].vcm_end = otp->af_data.af_macro;
+		inf->af.af_otp[0].vcm_dir = 0;
+	}
+				   
+}
+
+#else
 static void ov8858_get_r1a_otp(struct ov8858_otp_info_r1a *otp_r1a,
 			       struct rkmodule_inf *inf)
 {
@@ -2289,16 +2343,29 @@ static void ov8858_get_r2a_otp(struct ov8858_otp_info_r2a *otp_r2a,
 			inf->lsc.lsc_r[i] = otp_r2a->lenc[j++];
 	}
 }
+#endif
 
 static void ov8858_get_module_inf(struct ov8858 *ov8858,
 				  struct rkmodule_inf *inf)
 {
+
+#ifdef RK_OTP	
+	struct otp_info *otp = ov8858->otp;
+#else
 	struct ov8858_otp_info_r1a *otp_r1a = ov8858->otp_r1a;
-	struct ov8858_otp_info_r2a *otp_r2a = ov8858->otp_r2a;
+	struct ov8858_otp_info_r2a *otp_r2a = ov8858->otp_r2a;	
+#endif
 
 	strlcpy(inf->base.sensor, OV8858_NAME, sizeof(inf->base.sensor));
 	strlcpy(inf->base.module, ov8858->module_name, sizeof(inf->base.module));
 	strlcpy(inf->base.lens, ov8858->len_name, sizeof(inf->base.lens));
+
+	
+#ifdef RK_OTP
+	if (otp)
+		ov8858_get_otp(otp, inf);
+
+#else
 
 	if (ov8858->is_r2a) {
 		if (otp_r2a)
@@ -2307,6 +2374,8 @@ static void ov8858_get_module_inf(struct ov8858 *ov8858,
 		if (otp_r1a)
 			ov8858_get_r1a_otp(otp_r1a, inf);
 	}
+		
+#endif			
 }
 
 static void ov8858_set_awb_cfg(struct ov8858 *ov8858,
@@ -2426,6 +2495,7 @@ static long ov8858_compat_ioctl32(struct v4l2_subdev *sd,
 }
 #endif
 
+#ifndef RK_OTP
 /*--------------------------------------------------------------------------*/
 static int ov8858_apply_otp_r1a(struct ov8858 *ov8858)
 {
@@ -2602,6 +2672,7 @@ static int ov8858_apply_otp(struct ov8858 *ov8858)
 
 	return ret;
 }
+#endif
 
 static int __ov8858_start_stream(struct ov8858 *ov8858)
 {
@@ -2617,11 +2688,11 @@ static int __ov8858_start_stream(struct ov8858 *ov8858)
 	mutex_lock(&ov8858->mutex);
 	if (ret)
 		return ret;
-
+#ifndef RK_OTP
 	ret = ov8858_apply_otp(ov8858);
 	if (ret)
 		return ret;
-
+#endif
 	return ov8858_write_reg(ov8858->client,
 				OV8858_REG_CTRL_MODE,
 				OV8858_REG_VALUE_08BIT,
@@ -2865,6 +2936,9 @@ static int ov8858_g_mbus_config(struct v4l2_subdev *sd, unsigned int pad_id,
 				struct v4l2_mbus_config *config)
 {
 	struct ov8858  *sensor = to_ov8858 (sd);
+	struct device *dev = &sensor->client->dev;
+
+	dev_info(dev, "%s(%d) enter!\n", __func__, __LINE__);
 
 	if (2 == sensor->lane_num) {
 		config->type = V4L2_MBUS_CSI2_DPHY;
@@ -3060,6 +3134,7 @@ err_free_handler:
 	return ret;
 }
 
+#ifndef RK_OTP
 static int ov8858_otp_read_r1a(struct ov8858 *ov8858)
 {
 	int otp_flag, addr, temp, i;
@@ -3334,6 +3409,7 @@ static int ov8858_otp_read(struct ov8858 *ov8858)
 
 	return ret;
 }
+#endif
 
 static int ov8858_check_sensor_id(struct ov8858 *ov8858,
 				   struct i2c_client *client)
@@ -3454,6 +3530,12 @@ static int ov8858_probe(struct i2c_client *client,
 	struct v4l2_subdev *sd;
 	char facing[2];
 	int ret;
+#ifdef RK_OTP
+	struct device_node *eeprom_ctrl_node;
+	struct i2c_client *eeprom_ctrl_client;
+	struct v4l2_subdev *eeprom_ctrl;
+	struct otp_info *otp_ptr;
+#endif
 
 	dev_info(dev, "driver version: %02x.%02x.%02x",
 		DRIVER_VERSION >> 16,
@@ -3537,8 +3619,38 @@ static int ov8858_probe(struct i2c_client *client,
 	ret = ov8858_check_sensor_id(ov8858, client);
 	if (ret)
 		goto err_power_off;
+		
+#ifdef RK_OTP
 
+	eeprom_ctrl_node = of_parse_phandle(node, "eeprom-ctrl", 0);
+	if (eeprom_ctrl_node) {
+		eeprom_ctrl_client = of_find_i2c_device_by_node(eeprom_ctrl_node);
+		of_node_put(eeprom_ctrl_node);
+		if (IS_ERR_OR_NULL(eeprom_ctrl_client)) {
+			dev_err(dev, "can not get node\n");
+			goto continue_probe;
+		}
+		eeprom_ctrl = i2c_get_clientdata(eeprom_ctrl_client);
+		if (IS_ERR_OR_NULL(eeprom_ctrl)) {
+			dev_err(dev, "can not get eeprom i2c client\n");
+		} else {
+			otp_ptr = devm_kzalloc(dev, sizeof(*otp_ptr), GFP_KERNEL);
+			if (!otp_ptr)
+				return -ENOMEM;
+			ret = v4l2_subdev_call(eeprom_ctrl,	core, ioctl, 0, otp_ptr);
+			if (!ret) {
+				ov8858->otp = otp_ptr;
+			} else {
+				ov8858->otp = NULL;
+				devm_kfree(dev, otp_ptr);
+			}
+		}
+	}
+continue_probe:
+#else
 	ov8858_otp_read(ov8858);
+#endif
+
 
 #ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
 	sd->internal_ops = &ov8858_internal_ops;
@@ -3598,10 +3710,14 @@ static int ov8858_remove(struct i2c_client *client)
 	media_entity_cleanup(&sd->entity);
 #endif
 	v4l2_ctrl_handler_free(&ov8858->ctrl_handler);
+	
+#ifndef RK_OTP	
 	if (ov8858->otp_r2a)
 		kfree(ov8858->otp_r2a);
 	if (ov8858->otp_r1a)
 		kfree(ov8858->otp_r1a);
+#endif
+		
 	mutex_destroy(&ov8858->mutex);
 
 	pm_runtime_disable(&client->dev);
@@ -3609,7 +3725,7 @@ static int ov8858_remove(struct i2c_client *client)
 		__ov8858_power_off(ov8858);
 	pm_runtime_set_suspended(&client->dev);
 
-	return 0;
+		return 0;
 }
 
 #if IS_ENABLED(CONFIG_OF)
