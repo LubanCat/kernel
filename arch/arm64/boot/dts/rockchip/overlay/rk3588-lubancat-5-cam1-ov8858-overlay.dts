@@ -13,21 +13,21 @@
 / {
 /* Link path: sensor->csi2_dphy1->mipi2_csi2->rkcif_mipi_lvds2--->rkcif_mipi_lvds2_sditf->rkisp0_vir2 */
 	fragment@0 {
-		target = <&i2c1>;
+		target = <&i2c5>;
 		__overlay__ {
 			status = "okay";
 		};
 	};
 
 	fragment@1 {
-		target = <&dcphy0_imx415>;
+		target = <&dcphy1_ov8858>;
 		__overlay__ {
 			status = "okay";
 		};
 	};
 
 	fragment@2 {
-		target = <&csi2_dcphy0>;
+		target = <&csi2_dcphy1>;
 
 		__overlay__ {
 			status = "okay";
@@ -35,7 +35,7 @@
 	};
 
 	fragment@3 {
-		target = <&mipi0_csi2>;
+		target = <&mipi1_csi2>;
 
 		__overlay__ {
 			status = "okay";
@@ -43,7 +43,7 @@
 	};
 
 	fragment@4 {
-		target = <&mipi_dcphy0>;
+		target = <&mipi_dcphy1>;
 
 		__overlay__ {
 			status = "okay";
@@ -59,7 +59,7 @@
 	};
 
 	fragment@6 {
-		target = <&rkcif_mipi_lvds>;
+		target = <&rkcif_mipi_lvds1>;
 
 		__overlay__ {
 			status = "okay";
@@ -67,7 +67,7 @@
 	};
 
 	fragment@7 {
-		target = <&rkcif_mipi_lvds_sditf>;
+		target = <&rkcif_mipi_lvds1_sditf>;
 
 		__overlay__ {
 			status = "okay";
@@ -83,7 +83,7 @@
 	};
 
 	fragment@9 {
-		target = <&rkisp0>;
+		target = <&rkisp1>;
 
 		__overlay__ {
 			status = "okay";
@@ -91,7 +91,7 @@
 	};
 
 	fragment@10 {
-		target = <&isp0_mmu>;
+		target = <&isp1_mmu>;
 
 		__overlay__ {
 			status = "okay";
@@ -99,7 +99,7 @@
 	};
 
 	fragment@11 {
-		target = <&rkisp0_vir0>;
+		target = <&rkisp1_vir0>;
 
 		__overlay__ {
 			status = "okay";
