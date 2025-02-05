@@ -90,6 +90,7 @@
 
 #define OF_CAMERA_PINCTRL_STATE_DEFAULT	"rockchip,camera_default"
 #define OF_CAMERA_PINCTRL_STATE_SLEEP	"rockchip,camera_sleep"
+#define OF_CAMERA_CAPTURE_MODE   "rockchip,ov8858-capture-mode"
 
 #define OV8858_NAME			"ov8858"
 #define OV8858_MEDIA_BUS_FMT		MEDIA_BUS_FMT_SBGGR10_1X10
@@ -205,7 +206,7 @@ struct ov8858 {
 	struct rkmodule_inf	module_inf;
 	struct rkmodule_awb_cfg	awb_cfg;
 	struct rkmodule_lsc_cfg	lsc_cfg;
-	
+	u32 capture_mode;
 };
 
 #define to_ov8858(sd) container_of(sd, struct ov8858, subdev)
@@ -3441,7 +3442,16 @@ static int ov8858_check_sensor_id(struct ov8858 *ov8858,
 			ov8858->cfg_num = ARRAY_SIZE(supported_modes_r2a_4lane);
 		} else {
 			ov8858_global_regs = ov8858_global_regs_r2a_2lane;
-			ov8858->cur_mode = &supported_modes_r2a_2lane[0];
+			if(ov8858->capture_mode == 0) {
+				dev_info(&ov8858->client->dev, "capture_mode is 3264x2448\n");
+				ov8858->cur_mode = &supported_modes_r2a_2lane[0];
+			} else if(ov8858->capture_mode == 1) {
+				dev_info(&ov8858->client->dev, "capture_mode is 1632x1224\n");
+				ov8858->cur_mode = &supported_modes_r2a_2lane[1];
+			} else {
+				dev_info(&ov8858->client->dev, "capture_mode is 3264x2448\n");
+				ov8858->cur_mode = &supported_modes_r2a_2lane[0];
+			};
 			supported_modes = supported_modes_r2a_2lane;
 			ov8858->cfg_num = ARRAY_SIZE(supported_modes_r2a_2lane);
 		}
@@ -3559,6 +3569,12 @@ static int ov8858_probe(struct i2c_client *client,
 		dev_err(dev,
 			"could not get module information!\n");
 		return -EINVAL;
+	}
+
+	ret = of_property_read_u32(node, OF_CAMERA_CAPTURE_MODE, &ov8858->capture_mode);
+	if (ret) {
+		ov8858->capture_mode = 0;
+		dev_warn(dev, " Get capture_mode failed! captrue revolution setting to 3264x2448\n");
 	}
 
 	ov8858->xvclk = devm_clk_get(dev, "xvclk");
