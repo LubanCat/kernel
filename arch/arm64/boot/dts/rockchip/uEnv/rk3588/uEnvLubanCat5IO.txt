@@ -67,26 +67,32 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dp0-vp2-overlay.dtbo
 # cam0
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam0-imx415-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam0-imx415-1080p-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam0-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam0-ov8858-3264x2448-15fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam0-ov8858-1632x1224-30fps-overlay.dtbo
 # cam1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam1-imx415-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam1-imx415-1080p-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam1-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam1-ov8858-3264x2448-15fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam1-ov8858-1632x1224-30fps-overlay.dtbo
 # cam2
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam2-imx415-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam2-imx415-1080p-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam2-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam2-ov8858-3264x2448-15fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam2-ov8858-1632x1224-30fps-overlay.dtbo
 # cam3
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam3-imx415-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam3-imx415-1080p-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam3-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam3-ov8858-3264x2448-15fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam3-ov8858-1632x1224-30fps-overlay.dtbo
 # cam4
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam4-imx415-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam4-imx415-1080p-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam4-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam4-ov8858-3264x2448-15fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam4-ov8858-1632x1224-30fps-overlay.dtbo
 # cam5
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam5-imx415-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam5-imx415-1080p-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam5-ov8858-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam5-ov8858-3264x2448-15fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam5-ov8858-1632x1224-30fps-overlay.dtbo
 
 #overlay_end
