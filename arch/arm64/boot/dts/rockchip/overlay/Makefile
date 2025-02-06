@@ -5,7 +5,8 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk356x-lubancat-csi0-sc132gs-overlay.dtbo \
 	rk356x-lubancat-csi0-ov5647-overlay.dtbo \
 	rk356x-lubancat-csi0-ov5648-overlay.dtbo \
-	rk356x-lubancat-csi0-ov8858-overlay.dtbo \
+	rk356x-lubancat-csi0-ov8858-3264x2448-15fps-overlay.dtbo \
+	rk356x-lubancat-csi0-ov8858-1632x1224-30fps-overlay.dtbo \
 	rk356x-lubancat-csi0-imx415-overlay.dtbo \
 	rk356x-lubancat-csi0-sc530ai-overlay.dtbo \
 	rk3566-lubancat0-csi0-sc530ai-overlay.dtbo \
@@ -17,7 +18,8 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3568-lubancat2io-csi0-sc530ai-overlay.dtbo \
 	rk3568-lubancat2n-csi0-sc530ai-overlay.dtbo \
 	rk356x-lubancat-csi1-ov5648-overlay.dtbo \
-	rk356x-lubancat-csi1-ov8858-overlay.dtbo \
+	rk356x-lubancat-csi1-ov8858-3264x2448-15fps-overlay.dtbo \
+	rk356x-lubancat-csi1-ov8858-1632x1224-30fps-overlay.dtbo \
 	rk356x-lubancat-csi1-ov5647-overlay.dtbo \
 	rk356x-lubancat-csi1-sc132gs-overlay.dtbo \
 	rk356x-lubancat-csi1-sc530ai-overlay.dtbo \
