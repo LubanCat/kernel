@@ -702,6 +702,11 @@
 	status = "disabled";
 };
 
+/* this is a watchdog */
+&wdt {
+	status = "okay";
+};
+
 /* USB3 OTG0/DP1.4 Alt */
 &usbdp_phy {
 	orientation-switch;
