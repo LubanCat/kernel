@@ -275,11 +275,18 @@ static int rockchip_gpio_set_config(struct gpio_chip *gc, unsigned int offset,
 				  unsigned long config)
 {
 	enum pin_config_param param = pinconf_to_config_param(config);
-	unsigned int debounce = pinconf_to_config_argument(config);
+	unsigned int debounce;
+	int ret = -ENOTSUPP;
 
 	switch (param) {
+	case PIN_CONFIG_BIAS_DISABLE:
+	case PIN_CONFIG_BIAS_PULL_UP:
+	case PIN_CONFIG_BIAS_PULL_DOWN:
+		ret = gpiochip_generic_config(gc, offset, config);
+		break;
 	case PIN_CONFIG_INPUT_DEBOUNCE:
-		rockchip_gpio_set_debounce(gc, offset, debounce);
+		debounce = pinconf_to_config_argument(config);
+		ret = rockchip_gpio_set_debounce(gc, offset, debounce);
 		/*
 		 * Rockchip's gpio could only support up to one period
 		 * of the debounce clock(pclk), which is far away from
@@ -291,10 +298,12 @@ static int rockchip_gpio_set_config(struct gpio_chip *gc, unsigned int offset,
 		 * still return -ENOTSUPP as before, to make sure the caller
 		 * of gpiod_set_debounce won't change its behaviour.
 		 */
-		return -ENOTSUPP;
+		break;
 	default:
-		return -ENOTSUPP;
+		break;
 	}
+
+	return ret;
 }
 
 /*
