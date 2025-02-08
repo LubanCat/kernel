@@ -1,0 +1,132 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/usb/pd.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pwm/pwm.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/input/rk-input.h>
+#include <dt-bindings/display/drm_mipi_dsi.h>
+#include <dt-bindings/display/rockchip_vop.h>
+#include <dt-bindings/sensor-dev.h>
+
+/ {
+    fragment@0 {
+        target = <&i2c7>;
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@1 {
+        target = <&dcphy3_imx415>;
+        __overlay__ {
+            status = "okay";
+            rockchip,imx415-capture-mode=<1>;
+        };
+    };
+
+    fragment@2 {
+        target = <&csi2_dphy3>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@3 {
+        target = <&mipi3_csi2>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@4 {
+        target = <&rkcif>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@5 {
+        target = <&rkcif_mipi_lvds3>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@6 {
+        target = <&rkcif_mipi_lvds3_sditf>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@7 {
+        target = <&rkcif_mmu>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@8 {
+        target = <&rkisp>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@9 {
+        target = <&rkisp_mmu>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@10 {
+        target = <&rkisp_vir3>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@11 {
+        target = <&rkisp_vir3_sditf>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@12 {
+        target = <&rkvpss>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@13 {
+        target = <&rkvpss_mmu>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@14 {
+        target = <&rkvpss_vir3>;
+
+        __overlay__ {
+            status = "okay";
+        };
+    };
+};

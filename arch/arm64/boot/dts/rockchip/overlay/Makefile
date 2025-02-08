@@ -156,6 +156,11 @@ dtbo-$(CONFIG_CPU_RK3576) += \
 	rk3576-lubancat-3-cam2-imx415-overlay.dtbo \
 	rk3576-lubancat-3-cam3-imx415-overlay.dtbo \
 	rk3576-lubancat-3-cam4-imx415-overlay.dtbo \
+	rk3576-lubancat-3-cam0-imx415-1080p-overlay.dtbo \
+	rk3576-lubancat-3-cam1-imx415-1080p-overlay.dtbo \
+	rk3576-lubancat-3-cam2-imx415-1080p-overlay.dtbo \
+	rk3576-lubancat-3-cam3-imx415-1080p-overlay.dtbo \
+	rk3576-lubancat-3-cam4-imx415-1080p-overlay.dtbo \
 	rk3576-lubancat-3-hdmi-disabled-ovetlay.dtbo \
 	rk3576-lubancat-3-dp-disabled-ovetlay.dtbo \
 	rk3576-lubancat-3-dsi-800x1280-10-1inch-ebf410177-overlay.dtbo \
