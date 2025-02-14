@@ -1362,7 +1362,7 @@
 &pcie2x1l0 {
 	reset-gpios = <&gpio0 RK_PC5 GPIO_ACTIVE_HIGH>;
 	disable-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
-	vpcie3v3-supply = <&vcc3v3_m2_pcie>;
+	vpcie3v3-supply = <&vcc3v3_ekey_pcie>;
 	status = "okay";
 };
 
