@@ -1526,7 +1526,7 @@ static int rk_pcie_hardware_io_unconfig(struct rk_pcie *rk_pcie)
 	reset_control_assert(rk_pcie->rsts);
 	if (rk_pcie_check_keep_power_in_suspend(rk_pcie)) {
 		rk_pcie_disable_power(rk_pcie);
-		gpiod_set_value_cansleep(rk_pcie->rst_gpio, 0);
+		gpiod_set_value_cansleep(rk_pcie->rst_gpio, 1);
 	}
 
 	return 0;
