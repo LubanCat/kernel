@@ -1516,7 +1516,7 @@ static const struct imx415_mode supported_modes[] = {
 			.denominator = 300000,
 		},
 		.exp_def = 0x08ca - 0x08,
-		.hts_def = 0x044c * 2 * 2,
+		.hts_def = 0x044c * IMX415_4LANES  * 2,
 		.vts_def = 0x08ca,
 		.global_reg_list = imx415_global_10bit_3864x2192_regs,
 		.reg_list = imx415_linear_10bit_3864x2192_891M_regs,
