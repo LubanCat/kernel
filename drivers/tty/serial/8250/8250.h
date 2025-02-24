@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
+// SPDX-License-Identifier: GPL-2.0+
 /*
  *  Driver for 8250/16550-type serial ports
  *
@@ -10,8 +10,6 @@
 #include <linux/serial_8250.h>
 #include <linux/serial_reg.h>
 #include <linux/dmaengine.h>
-
-#include "../serial_mctrl_gpio.h"
 
 struct uart_8250_dma {
 	int (*tx_dma)(struct uart_8250_port *p);
@@ -48,7 +46,7 @@ struct uart_8250_dma {
 	unsigned char		tx_running;
 	unsigned char		tx_err;
 	unsigned char		rx_running;
-#if defined(CONFIG_ARCH_ROCKCHIP) && defined(CONFIG_NO_GKI)
+#ifdef CONFIG_ARCH_ROCKCHIP
 	size_t			rx_index;
 #endif
 };
@@ -91,7 +89,6 @@ struct serial8250_config {
 #define UART_BUG_NOMSR	(1 << 2)	/* UART has buggy MSR status bits (Au1x00) */
 #define UART_BUG_THRE	(1 << 3)	/* UART has buggy THRE reassertion */
 #define UART_BUG_PARITY	(1 << 4)	/* UART mishandles parity if FIFO enabled */
-#define UART_BUG_TXRACE	(1 << 5)	/* UART Tx fails to set remote DR */
 
 
 #ifdef CONFIG_SERIAL_8250_SHARE_IRQ
@@ -122,28 +119,6 @@ static inline void serial_out(struct uart_8250_port *up, int offset, int value)
 	up->port.serial_out(&up->port, offset, value);
 }
 
-/*
- * For the 16C950
- */
-static void serial_icr_write(struct uart_8250_port *up, int offset, int value)
-{
-	serial_out(up, UART_SCR, offset);
-	serial_out(up, UART_ICR, value);
-}
-
-static unsigned int __maybe_unused serial_icr_read(struct uart_8250_port *up,
-						   int offset)
-{
-	unsigned int value;
-
-	serial_icr_write(up, UART_ACR, up->acr | UART_ACR_ICRRD);
-	serial_out(up, UART_SCR, offset);
-	value = serial_in(up, UART_ICR);
-	serial_icr_write(up, UART_ACR, up->acr);
-
-	return value;
-}
-
 void serial8250_clear_and_reinit_fifos(struct uart_8250_port *p);
 
 static inline int serial_dl_read(struct uart_8250_port *up)
@@ -156,73 +131,6 @@ static inline void serial_dl_write(struct uart_8250_port *up, int value)
 	up->dl_write(up, value);
 }
 
-static inline void serial8250_set_IER(struct uart_8250_port *up,
-				      unsigned char ier)
-{
-	struct uart_port *port = &up->port;
-	unsigned int flags;
-	bool is_console;
-
-	is_console = uart_console(port);
-
-	if (is_console)
-		console_atomic_lock(&flags);
-
-	serial_out(up, UART_IER, ier);
-
-	if (is_console)
-		console_atomic_unlock(flags);
-}
-
-static inline unsigned char serial8250_clear_IER(struct uart_8250_port *up)
-{
-	struct uart_port *port = &up->port;
-	unsigned int clearval = 0;
-	unsigned int prior;
-	unsigned int flags;
-	bool is_console;
-
-	is_console = uart_console(port);
-
-	if (up->capabilities & UART_CAP_UUE)
-		clearval = UART_IER_UUE;
-
-	if (is_console)
-		console_atomic_lock(&flags);
-
-	prior = serial_port_in(port, UART_IER);
-	serial_port_out(port, UART_IER, clearval);
-
-	if (is_console)
-		console_atomic_unlock(flags);
-
-	return prior;
-}
-
-static inline bool serial8250_set_THRI(struct uart_8250_port *up)
-{
-	if (up->ier & UART_IER_THRI)
-		return false;
-	up->ier |= UART_IER_THRI;
-#if defined(CONFIG_ARCH_ROCKCHIP) && defined(CONFIG_NO_GKI)
-	up->ier |= UART_IER_PTIME;
-#endif
-	serial8250_set_IER(up, up->ier);
-	return true;
-}
-
-static inline bool serial8250_clear_THRI(struct uart_8250_port *up)
-{
-	if (!(up->ier & UART_IER_THRI))
-		return false;
-	up->ier &= ~UART_IER_THRI;
-#if defined(CONFIG_ARCH_ROCKCHIP) && defined(CONFIG_NO_GKI)
-	up->ier &= ~UART_IER_PTIME;
-#endif
-	serial8250_set_IER(up, up->ier);
-	return true;
-}
-
 struct uart_8250_port *serial8250_get_port(int line);
 
 void serial8250_rpm_get(struct uart_8250_port *p);
@@ -232,86 +140,16 @@ void serial8250_rpm_get_tx(struct uart_8250_port *p);
 void serial8250_rpm_put_tx(struct uart_8250_port *p);
 
 int serial8250_em485_config(struct uart_port *port, struct serial_rs485 *rs485);
-void serial8250_em485_start_tx(struct uart_8250_port *p);
-void serial8250_em485_stop_tx(struct uart_8250_port *p);
 void serial8250_em485_destroy(struct uart_8250_port *p);
-
-/* MCR <-> TIOCM conversion */
-static inline int serial8250_TIOCM_to_MCR(int tiocm)
-{
-	int mcr = 0;
-
-	if (tiocm & TIOCM_RTS)
-		mcr |= UART_MCR_RTS;
-	if (tiocm & TIOCM_DTR)
-		mcr |= UART_MCR_DTR;
-	if (tiocm & TIOCM_OUT1)
-		mcr |= UART_MCR_OUT1;
-	if (tiocm & TIOCM_OUT2)
-		mcr |= UART_MCR_OUT2;
-	if (tiocm & TIOCM_LOOP)
-		mcr |= UART_MCR_LOOP;
-
-	return mcr;
-}
-
-static inline int serial8250_MCR_to_TIOCM(int mcr)
-{
-	int tiocm = 0;
-
-	if (mcr & UART_MCR_RTS)
-		tiocm |= TIOCM_RTS;
-	if (mcr & UART_MCR_DTR)
-		tiocm |= TIOCM_DTR;
-	if (mcr & UART_MCR_OUT1)
-		tiocm |= TIOCM_OUT1;
-	if (mcr & UART_MCR_OUT2)
-		tiocm |= TIOCM_OUT2;
-	if (mcr & UART_MCR_LOOP)
-		tiocm |= TIOCM_LOOP;
-
-	return tiocm;
-}
-
-/* MSR <-> TIOCM conversion */
-static inline int serial8250_MSR_to_TIOCM(int msr)
-{
-	int tiocm = 0;
-
-	if (msr & UART_MSR_DCD)
-		tiocm |= TIOCM_CAR;
-	if (msr & UART_MSR_RI)
-		tiocm |= TIOCM_RNG;
-	if (msr & UART_MSR_DSR)
-		tiocm |= TIOCM_DSR;
-	if (msr & UART_MSR_CTS)
-		tiocm |= TIOCM_CTS;
-
-	return tiocm;
-}
 
 static inline void serial8250_out_MCR(struct uart_8250_port *up, int value)
 {
 	serial_out(up, UART_MCR, value);
-
-	if (up->gpios)
-		mctrl_gpio_set(up->gpios, serial8250_MCR_to_TIOCM(value));
 }
 
 static inline int serial8250_in_MCR(struct uart_8250_port *up)
 {
-	int mctrl;
-
-	mctrl = serial_in(up, UART_MCR);
-
-	if (up->gpios) {
-		unsigned int mctrl_gpio = 0;
-
-		mctrl_gpio = mctrl_gpio_get_outputs(up->gpios, &mctrl_gpio);
-		mctrl |= serial8250_TIOCM_to_MCR(mctrl_gpio);
-	}
-
-	return mctrl;
+	return serial_in(up, UART_MCR);
 }
 
 #if defined(__alpha__) && !defined(CONFIG_PCI)
@@ -379,9 +217,6 @@ static inline int is_omap1510_8250(struct uart_8250_port *pt)
 #ifdef CONFIG_SERIAL_8250_DMA
 extern int serial8250_tx_dma(struct uart_8250_port *);
 extern int serial8250_rx_dma(struct uart_8250_port *);
-#if defined(CONFIG_ARCH_ROCKCHIP) && defined(CONFIG_NO_GKI)
-extern int serial8250_start_rx_dma(struct uart_8250_port *);
-#endif
 extern void serial8250_rx_dma_flush(struct uart_8250_port *);
 extern int serial8250_request_dma(struct uart_8250_port *);
 extern void serial8250_release_dma(struct uart_8250_port *);
@@ -394,12 +229,6 @@ static inline int serial8250_rx_dma(struct uart_8250_port *p)
 {
 	return -1;
 }
-#if defined(CONFIG_ARCH_ROCKCHIP) && defined(CONFIG_NO_GKI)
-static inline int serial8250_start_rx_dma(struct uart_8250_port *p)
-{
-	return -1;
-}
-#endif
 static inline void serial8250_rx_dma_flush(struct uart_8250_port *p) { }
 static inline int serial8250_request_dma(struct uart_8250_port *p)
 {
