@@ -12,8 +12,15 @@ if test -e ${devtype} ${devnum}:${distro_bootpart} /uEnv/uEnv.txt; then
     setenv bootargs ${bootargs} root=/dev/mmcblk${devnum}p${rootfs_part} boot_part=${distro_bootpart} ${cmdline}
     printenv bootargs
 
-    echo [boot.cmd] load ${devtype} ${devnum}:${distro_bootpart} ${ramdisk_addr_r} /initrd-${uname_r} ...
-    load ${devtype} ${devnum}:${distro_bootpart} ${ramdisk_addr_r} /initrd-${uname_r}
+    if test -e ${devtype} ${devnum}:${distro_bootpart} /initrd-${uname_r}; then
+        echo [boot.cmd] load ${devtype} ${devnum}:${distro_bootpart} ${ramdisk_addr_r} /initrd-${uname_r} ...
+        load ${devtype} ${devnum}:${distro_bootpart} ${ramdisk_addr_r} /initrd-${uname_r}
+    fi
+
+    if test -e ${devtype} ${devnum}:${distro_bootpart} /${initrd}; then
+        echo [boot.cmd] load ${devtype} ${devnum}:${distro_bootpart} ${ramdisk_addr_r} /${initrd} ...
+        load ${devtype} ${devnum}:${distro_bootpart} ${ramdisk_addr_r} /${initrd}
+    fi
 
     echo [boot.cmd] loading ${devtype} ${devnum}:${distro_bootpart} ${kernel_addr_r} /Image-${uname_r} ...
     load ${devtype} ${devnum}:${distro_bootpart} ${kernel_addr_r} /Image-${uname_r}
