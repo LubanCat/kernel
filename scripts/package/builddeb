@@ -179,7 +179,9 @@ if is_enabled CONFIG_ARCH_ROCKCHIP; then
 		cp $objtree/arch/arm/boot/dts/uEnv/uEnv*.txt "$tmpdir/boot/uEnv"
 		cp $objtree/arch/arm/boot/dts/uEnv/${version#*-}/*.txt "$tmpdir/boot/uEnv"
 	fi
+	main_version=$(echo "${version}" | cut -d'.' -f1,2)
 	sed -i "s/^uname_r=.*/uname_r=${version}/" $tmpdir/boot/uEnv/uEnv*.txt
+	sed -i "/^uname_r=.*/a initrd=initrd-${main_version}" $tmpdir/boot/uEnv/uEnv*.txt
 fi
 
 if is_enabled CONFIG_MODULES; then
