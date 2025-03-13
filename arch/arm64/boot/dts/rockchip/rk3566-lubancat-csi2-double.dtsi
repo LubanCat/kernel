@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 &i2c1 {
-	status = "okay";
+	status = "disabled";
 	// ov5648 Camare
 	dw9714: dw9714@c {
 		status = "disabled";
@@ -98,7 +98,7 @@
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
 
-		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-index = <0>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "default";
 		rockchip,camera-module-lens-name = "default";
@@ -122,7 +122,7 @@
 		status = "disabled";
 		compatible = "dongwoon,dw9714";
 		reg = <0xc>;
-		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-index = <1>;
 		rockchip,vcm-max-current = <100>;
 		rockchip,vcm-start-current = <0>;
 		rockchip,vcm-rated-current = <100>;
