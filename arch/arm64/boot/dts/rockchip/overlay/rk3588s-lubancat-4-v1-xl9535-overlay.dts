@@ -153,7 +153,7 @@
 		xl9535 {
 			pinctrl_xl9535:pinctrl_xl9535{
 				rockchip,pins =
-					<0 RK_PC0 RK_FUNC_GPIO &pcfg_pull_none>;
+					<0 RK_PC0 RK_FUNC_GPIO &pcfg_pull_up>;
 				};
 			};
         dht11 {
