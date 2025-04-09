@@ -1440,7 +1440,7 @@ static int rkvdec_vdpu383_reset(struct mpp_dev *mpp)
 	mpp_debug_enter();
 
 	/* disable irq */
-	writel(link->info->ip_en_val & BIT(15), link->reg_base + link->info->ip_en_base);
+	writel(link->info->ip_en_val | BIT(15), link->reg_base + link->info->ip_en_base);
 	/* use ip reset to reset core and mmu */
 	writel(link->info->ip_reset_en, link->reg_base + link->info->ip_reset_base);
 	ret = readl_relaxed_poll_timeout(link->reg_base + link->info->status_base,
@@ -1932,6 +1932,7 @@ static int rkvdec2_probe_default(struct platform_device *pdev)
 
 	mpp = &dec->mpp;
 	platform_set_drvdata(pdev, mpp);
+	mpp->is_irq_startup = false;
 
 	if (pdev->dev.of_node) {
 		match = of_match_node(mpp_rkvdec2_dt_match, pdev->dev.of_node);
@@ -1965,6 +1966,7 @@ static int rkvdec2_probe_default(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
+	mpp->is_irq_startup = true;
 	mpp->session_max_buffers = RKVDEC_SESSION_MAX_BUFFERS;
 	rkvdec2_procfs_init(mpp);
 	if (dec->link_dec && (mpp->task_capacity > 1))
