@@ -32,37 +32,32 @@
  *  US6,570,884, US6,115,776, and US6,327,625.
  ***********************************************************************************/
 
-#ifndef _LINUX_rtl8125_FIRMWARE_H
-#define _LINUX_rtl8125_FIRMWARE_H
+#ifndef _LINUX_R8125_FIBER_H
+#define _LINUX_R8125_FIBER_H
 
-#include <linux/device.h>
-#include <linux/firmware.h>
-
-struct rtl8125_private;
-typedef void (*rtl8125_fw_write_t)(struct rtl8125_private *tp, u16 reg, u16 val);
-typedef u32 (*rtl8125_fw_read_t)(struct rtl8125_private *tp, u16 reg);
-
-#define RTL8125_VER_SIZE		32
-
-struct rtl8125_fw {
-        rtl8125_fw_write_t phy_write;
-        rtl8125_fw_read_t phy_read;
-        rtl8125_fw_write_t mac_mcu_write;
-        rtl8125_fw_read_t mac_mcu_read;
-        const struct firmware *fw;
-        const char *fw_name;
-        struct device *dev;
-
-        char version[RTL8125_VER_SIZE];
-
-        struct rtl8125_fw_phy_action {
-                __le32 *code;
-                size_t size;
-        } phy_action;
+enum {
+        FIBER_MODE_NIC_ONLY = 0,
+        FIBER_MODE_RTL8125D_RTL8221D,
+        FIBER_MODE_MAX
 };
 
-int rtl8125_fw_request_firmware(struct rtl8125_fw *rtl_fw);
-void rtl8125_fw_release_firmware(struct rtl8125_fw *rtl_fw);
-void rtl8125_fw_write_firmware(struct rtl8125_private *tp, struct rtl8125_fw *rtl_fw);
+enum {
+        FIBER_STAT_NOT_CHECKED = 0,
+        FIBER_STAT_DISCONNECT,
+        FIBER_STAT_CONNECT_GPO_C45,
+        FIBER_STAT_MAX
+};
 
-#endif /* _LINUX_rtl8125_FIRMWARE_H */
+#define HW_FIBER_MODE_ENABLED(_M)        ((_M)->HwFiberModeVer > 0)
+#define HW_FIBER_STATUS_CONNECTED(_M)        (((_M)->HwFiberStat == FIBER_STAT_CONNECT_GPO_C45))
+#define HW_FIBER_STATUS_DISCONNECTED(_M)        ((_M)->HwFiberStat == FIBER_STAT_DISCONNECT)
+
+struct rtl8125_private;
+
+void rtl8125_hw_fiber_phy_config(struct rtl8125_private *tp);
+void rtl8125_check_fiber_mode_support(struct rtl8125_private *tp);
+void rtl8125_fiber_mdio_write( struct rtl8125_private *tp, u32 reg, u16 val);
+u16 rtl8125_fiber_mdio_read(struct rtl8125_private *tp, u32 reg);
+unsigned int rtl8125_fiber_link_ok(struct net_device *dev);
+
+#endif /* _LINUX_R8125_FIBER_H */
