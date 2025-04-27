@@ -173,12 +173,14 @@ fi
 if is_enabled CONFIG_ARCH_ROCKCHIP; then
 	mkdir -p "$tmpdir/boot/uEnv"
 	if [ "$ARCH" = "arm64" ] ; then
-		cp $objtree/arch/arm64/boot/dts/rockchip/uEnv/uEnv*.txt "$tmpdir/boot/uEnv"
-		cp $objtree/arch/arm64/boot/dts/rockchip/uEnv/${version#*-}/*.txt "$tmpdir/boot/uEnv"
+		uenv_patch="$objtree/arch/arm64/boot/dts/rockchip/uEnv"
 	else
-		cp $objtree/arch/arm/boot/dts/uEnv/uEnv*.txt "$tmpdir/boot/uEnv"
-		cp $objtree/arch/arm/boot/dts/uEnv/${version#*-}/*.txt "$tmpdir/boot/uEnv"
+		uenv_patch="$objtree/arch/arm/boot/dts/uEnv"
 	fi
+	cp $uenv_patch/uEnv*.txt "$tmpdir/boot/uEnv"
+	cp $uenv_patch/${version##*-}/*.txt "$tmpdir/boot/uEnv"
+	cp $uenv_patch/boot.cmd "$tmpdir/boot/"
+	mkimage -T script -C none -d $tmpdir/boot/boot.cmd $tmpdir/boot/boot.scr
 	main_version=$(echo "${version}" | cut -d'.' -f1,2)
 	sed -i "s/^uname_r=.*/uname_r=${version}/" $tmpdir/boot/uEnv/uEnv*.txt
 	sed -i "/^uname_r=.*/a initrd=initrd-${main_version}" $tmpdir/boot/uEnv/uEnv*.txt
