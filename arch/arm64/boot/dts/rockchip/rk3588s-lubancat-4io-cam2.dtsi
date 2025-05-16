@@ -7,10 +7,10 @@
 #include "rk3588-lubancat-cam.dtsi"
 
 /* Link path: sensor->csi2_dphy1->mipi2_csi2->rkcif_mipi_lvds2--->rkcif_mipi_lvds2_sditf->rkisp0_vir2 */
-&i2c2 {
+&i2c1 {
 	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&i2c2m4_xfer>;
+	pinctrl-0 = <&i2c1m2_xfer>;
 
 	dphy1_dw9714: dw9714@c {
 		status = "okay";
@@ -33,7 +33,7 @@
 		reg = <0x36>;
 		clocks = <&ext_cam_25m_clk>;
 		clock-names = "ext_cam_25m_clk";
-		pwdn-gpios = <&gpio6 4 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_LOW>;
 		lens-focus = <&dphy1_dw9714>;
 
 		port {
@@ -53,8 +53,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio6 4 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio6 5 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <2>;
@@ -82,8 +82,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio6 4 GPIO_ACTIVE_LOW>;
-		reset-gpios = <&gpio6 5 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <2>;
@@ -111,8 +111,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio6 4 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio6 5 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <2>;
@@ -133,7 +133,7 @@
 
 	dcphy2_imx415: imx415@1a {
 		compatible = "sony,imx415";
-		status = "okay";
+		status = "disabled";
 		reg = <0x1a>;
 		clocks = <&ext_cam_37m_clk>;
 		clock-names = "xvclk";
@@ -141,8 +141,8 @@
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
-		pwdn-gpios = <&gpio6 4 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio6 5 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <0>;
 		rockchip,camera-module-facing = "back";
@@ -157,6 +157,35 @@
 			};
 		};
 	};
+
+	dcphy2_gc2093: gc2093@37 {
+		compatible = "galaxycore,gc2093";
+		status = "okay";
+		reg = <0x37>;
+		clocks = <&ext_cam_24m_clk>;
+		clock-names = "xvclk";
+		//power-domains = <&power RK3588_PD_VI>;
+
+		avdd-supply = <&cam_avdd>;
+		dovdd-supply = <&cam_dovdd>;
+		dvdd-supply = <&cam_dvdd>;
+		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_LOW>;
+
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "front";
+		rockchip,camera-module-name = "SIDA209300461";
+		rockchip,camera-module-lens-name = "60IRC-F20";
+
+		// NO_HDR:0 HDR_X2:5 HDR_X3:6
+		// rockchip,camera-hdr-mode = <0>;
+		port {
+			gc2093_dcphy2_out: endpoint {
+				remote-endpoint = <&dcphy2_in_gc2093>;
+				data-lanes = <1 2>;
+			};
+		};
+	}; 
 };
 
 &csi2_dphy0_hw {
@@ -202,6 +231,12 @@
 			dcphy2_in_imx415: endpoint@5 {
 				reg = <5>;
 				remote-endpoint = <&imx415_dcphy2_out>;
+				data-lanes = <1 2>;
+			};
+
+			dcphy2_in_gc2093: endpoint@6 {
+				reg = <6>;
+				remote-endpoint = <&gc2093_dcphy2_out>;
 				data-lanes = <1 2>;
 			};
 		};
