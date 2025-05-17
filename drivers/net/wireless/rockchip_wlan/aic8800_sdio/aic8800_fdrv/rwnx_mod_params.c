@@ -269,6 +269,7 @@ static const int mcs_map_to_rate[4][3] = {
 #define MAX_VHT_RATE(map, nss, bw) (mcs_map_to_rate[bw][map] * (nss))
 
 extern struct ieee80211_regdomain *reg_regdb[];
+extern int reg_regdb_size;
 
 char ccode_channels[200];
 int index_for_channel_list = 0;
@@ -891,6 +892,7 @@ static void rwnx_set_vht_capa(struct rwnx_hw *rwnx_hw, struct wiphy *wiphy)
 	        rwnx_hw->vht_cap_5G.cap &= ~IEEE80211_VHT_CAP_SHORT_GI_80;
 	    }
 
+		rwnx_hw->vht_cap_5G.cap |= IEEE80211_VHT_CAP_MAX_A_MPDU_LENGTH_EXPONENT_MASK;
 	} 
 #endif//USE_5G
 	return;
@@ -1728,7 +1730,7 @@ void rwnx_custregd(struct rwnx_hw *rwnx_hw, struct wiphy *wiphy)
     if (!rwnx_hw->mod_params->custregd)
         return;
 
-    //wiphy->regulatory_flags |= REGULATORY_IGNORE_STALE_KICKOFF;
+    wiphy->regulatory_flags |= REGULATORY_IGNORE_STALE_KICKOFF;
     wiphy->regulatory_flags |= REGULATORY_WIPHY_SELF_MANAGED;
 
     rtnl_lock();

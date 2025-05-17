@@ -169,7 +169,7 @@ void rwnx_ps_bh_traffic_req(struct rwnx_hw *rwnx_hw, struct rwnx_sta *sta,
 	//         sta->mac_addr))
 	//    return;
 	if (!sta->ps.active) {
-	printk("sta %pM is not in Power Save mode", sta->mac_addr);
+		AICWFDBG(LOGTRACE,"sta %pM is not in Power Save mode", sta->mac_addr);
 		return;
 	}
 #ifdef CREATE_TRACE_POINTS
@@ -218,8 +218,12 @@ void rwnx_ps_bh_traffic_req(struct rwnx_hw *rwnx_hw, struct rwnx_sta *sta,
 	} else {
 		int i, tid;
 
-		foreach_sta_txq_prio(sta, txq, tid, i, rwnx_hw) {
-			u16 txq_len = skb_queue_len(&txq->sk_list);
+		//foreach_sta_txq_prio(sta, txq, tid, i, rwnx_hw) {
+		for (i = 0; i < NX_NB_TID_PER_STA; i++) {
+			u16 txq_len;
+			tid = nx_tid_prio[i];
+			txq = rwnx_txq_sta_get(sta, tid, rwnx_hw);
+			txq_len = skb_queue_len(&txq->sk_list);
 
 			if (txq->ps_id != ps_id)
 				continue;
@@ -641,7 +645,10 @@ void rwnx_tx_push(struct rwnx_hw *rwnx_hw, struct rwnx_txhdr *txhdr, int flags)
 		sw_txhdr->need_cfm = 1;
 		sw_txhdr->desc.host.hostid = ((1<<31) | rwnx_hw->sdio_env.txdesc_free_idx[0]);
 		aicwf_sdio_host_txdesc_push(&(rwnx_hw->sdio_env), 0, (long)skb);
-		AICWFDBG(LOGINFO, "need cfm ethertype:%8x,user_idx=%d, skb=%p\n", sw_txhdr->desc.host.ethertype, rwnx_hw->sdio_env.txdesc_free_idx[0], skb);
+		if((sw_txhdr->desc.host.flags & TXU_CNTRL_MGMT))
+			AICWFDBG(LOGINFO, "need cfm mgmt:%x,user_idx=%d, skb=%p\n", *(skb->data+sw_txhdr->headroom), rwnx_hw->sdio_env.txdesc_free_idx[0], skb);
+		else
+			AICWFDBG(LOGINFO, "need cfm ethertype:%8x,user_idx=%d, skb=%p\n", sw_txhdr->desc.host.ethertype, rwnx_hw->sdio_env.txdesc_free_idx[0], skb);
 	} else {
 		sw_txhdr->need_cfm = 0;
 		sw_txhdr->desc.host.hostid = 0;
@@ -1395,7 +1402,7 @@ netdev_tx_t rwnx_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	struct ethhdr eth_t;
 #ifdef CONFIG_FILTER_TCP_ACK
-	struct msg_buf *msgbuf;
+	struct msg_buf *msgbuf = NULL;
 #endif
 
 #ifdef CONFIG_ONE_TXQ
@@ -1418,7 +1425,11 @@ netdev_tx_t rwnx_start_xmit(struct sk_buff *skb, struct net_device *dev)
 		skb = newskb;
 	}
 
+	if(skb->priority < 3)
+		skb->priority = 0;
+
 #ifdef CONFIG_FILTER_TCP_ACK
+	if(cpu_to_le16(skb->len) <= MAX_TCP_ACK){
 		msgbuf=intf_tcp_alloc_msg(msgbuf);
 		msgbuf->rwnx_vif=rwnx_vif;
 		msgbuf->skb=skb;
@@ -1428,6 +1439,7 @@ netdev_tx_t rwnx_start_xmit(struct sk_buff *skb, struct net_device *dev)
 			move_tcpack_msg(rwnx_hw,msgbuf);
 			kfree(msgbuf);
 		}
+	}
 #endif
 
 	memcpy(&eth_t, skb->data, sizeof(struct ethhdr));
@@ -1614,6 +1626,8 @@ int rwnx_start_mgmt_xmit(struct rwnx_vif *vif, struct rwnx_sta *sta,
 	size_t len = params->len;
 	bool no_cck = params->no_cck;
 	#endif
+
+	AICWFDBG(LOGDEBUG,"mgmt xmit %x %x ",buf[0],buf[1]);
 
     if((g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8801) ||
         ((g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DC ||

@@ -38,6 +38,7 @@
 #include <linux/firmware.h>
 #endif
 
+#define AIC_FDRV_FW_PATH              CONFIG_AIC_FW_SDIO_PATH
 #define FW_PATH_MAX_LEN 200
 extern char aic_fw_path[FW_PATH_MAX_LEN];
 
@@ -55,6 +56,7 @@ typedef struct
     txpwr_lvl_conf_t txpwr_lvl;
     txpwr_lvl_conf_v2_t txpwr_lvl_v2;
     txpwr_lvl_conf_v3_t txpwr_lvl_v3;
+    txpwr_lvl_adj_conf_t txpwr_lvl_adj;
 	txpwr_loss_conf_t txpwr_loss;
     txpwr_ofst_conf_t txpwr_ofst;
 	txpwr_ofst2x_conf_t txpwr_ofst2x;
@@ -333,8 +335,36 @@ static int rwnx_load_firmware(u32 **fw_buf, const char *name, struct device *dev
         *fw_buf = NULL;
         return -1;
     }
-	
-	len = snprintf(path, FW_PATH_MAX_LEN, "%s/%s", aic_fw_path, name);
+
+    if (!AIC_FDRV_FW_PATH || !name) {
+        printk("Invalid firmware path or name\n");
+        *fw_buf = NULL;
+        __putname(path);
+        return -1;
+    }
+
+    if (!g_rwnx_plat || !g_rwnx_plat->sdiodev) {
+        printk("Invalid g_rwnx_plat or sdiodev\n");
+        return -1;
+    }
+
+    #if defined(CONFIG_PLATFORM_UBUNTU)
+		printk("%s: use AIC_FDRV_FW_PATH=%s\n", __func__, AIC_FDRV_FW_PATH);
+        if (g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8801) {
+            len = snprintf(path, FW_PATH_MAX_LEN, "%s/%s/%s",AIC_FDRV_FW_PATH, "aic8800", name);
+        } else if (g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DC) {
+            len = snprintf(path, FW_PATH_MAX_LEN, "%s/%s/%s",AIC_FDRV_FW_PATH, "aic8800DC", name);
+        } else if (g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DW) {
+            len = snprintf(path, FW_PATH_MAX_LEN, "%s/%s/%s",AIC_FDRV_FW_PATH, "aic8800DC", name);
+        } else if (g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800D80) {
+            len = snprintf(path, FW_PATH_MAX_LEN, "%s/%s/%s",AIC_FDRV_FW_PATH, "aic8800D80", name);
+        }else {
+            printk("%s unknown chipid %d\n", __func__, g_rwnx_plat->sdiodev->chipid);
+        }
+	#else
+		printk("%s: use define AIC_FDRV_FW_PATH\n", __func__);
+		len = snprintf(path, FW_PATH_MAX_LEN, "%s/%s",AIC_FDRV_FW_PATH, name);
+	#endif
 
     //len = snprintf(path, FW_PATH_MAX_LEN, "%s", name);
     if (len >= FW_PATH_MAX_LEN) {
@@ -344,7 +374,7 @@ static int rwnx_load_firmware(u32 **fw_buf, const char *name, struct device *dev
         return -1;
     }
 
-    AICWFDBG(LOGINFO, "%s :firmware path = %s  \n", __func__, path);
+    printk("%s :firmware path = %s  \n", __func__, path);
 
     /* open the firmware file */
     fp = filp_open(path, O_RDONLY, 0);
@@ -627,6 +657,94 @@ void get_userconfig_xtal_cap(xtal_cap_conf_t *xtal_cap)
     AICWFDBG(LOGINFO, "%s:enable       :%d\r\n", __func__, xtal_cap->enable);
     AICWFDBG(LOGINFO, "%s:xtal_cap     :%d\r\n", __func__, xtal_cap->xtal_cap);
     AICWFDBG(LOGINFO, "%s:xtal_cap_fine:%d\r\n", __func__, xtal_cap->xtal_cap_fine);
+}
+
+s8_l get_txpwr_max(s8_l power)
+{
+	int i=0;
+
+	if (g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800D80){
+		for (i = 0; i <= 11; i++){
+			if(power < userconfig_info.txpwr_lvl_v3.pwrlvl_11b_11ag_2g4[i])
+				power = userconfig_info.txpwr_lvl_v3.pwrlvl_11b_11ag_2g4[i];
+		}
+	    for (i = 0; i <= 9; i++){
+			if(power < userconfig_info.txpwr_lvl_v3.pwrlvl_11n_11ac_2g4[i])
+				power = userconfig_info.txpwr_lvl_v3.pwrlvl_11n_11ac_2g4[i];
+	    }
+	    for (i = 0; i <= 11; i++){
+			if(power < userconfig_info.txpwr_lvl_v3.pwrlvl_11ax_2g4[i])
+				power = userconfig_info.txpwr_lvl_v3.pwrlvl_11ax_2g4[i];
+	    }
+		for (i = 4; i <= 11; i++){
+			if(power < userconfig_info.txpwr_lvl_v3.pwrlvl_11a_5g[i])
+				power = userconfig_info.txpwr_lvl_v3.pwrlvl_11a_5g[i];
+		}
+	    for (i = 0; i <= 9; i++){
+			if(power < userconfig_info.txpwr_lvl_v3.pwrlvl_11n_11ac_5g[i])
+				power = userconfig_info.txpwr_lvl_v3.pwrlvl_11n_11ac_5g[i];
+	    }
+		for (i = 0; i <= 11; i++){
+			if(power < userconfig_info.txpwr_lvl_v3.pwrlvl_11ax_5g[i])
+				power = userconfig_info.txpwr_lvl_v3.pwrlvl_11ax_5g[i];
+		}
+
+		if(userconfig_info.txpwr_loss.loss_enable == 1)
+			power += userconfig_info.txpwr_loss.loss_value;
+	}else if(g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DC || g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DW){
+		for (i = 0; i <= 11; i++){
+			if(power < userconfig_info.txpwr_lvl_v2.pwrlvl_11b_11ag_2g4[i])
+				power = userconfig_info.txpwr_lvl_v2.pwrlvl_11b_11ag_2g4[i];
+		}
+	    for (i = 0; i <= 9; i++){
+			if(power < userconfig_info.txpwr_lvl_v2.pwrlvl_11n_11ac_2g4[i])
+				power = userconfig_info.txpwr_lvl_v2.pwrlvl_11n_11ac_2g4[i];
+	    }
+	    for (i = 0; i <= 11; i++){
+			if(power < userconfig_info.txpwr_lvl_v2.pwrlvl_11ax_2g4[i])
+				power = userconfig_info.txpwr_lvl_v2.pwrlvl_11ax_2g4[i];
+	    }
+	}
+
+	AICWFDBG(LOGINFO, "%s:txpwr_max:%d \r\n",__func__,power);
+	return power;
+}
+
+
+void set_txpwr_loss_ofst(s8_l value)
+{
+	int i=0;
+	if (g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800D80){
+		for (i = 0; i <= 11; i++){
+			userconfig_info.txpwr_lvl_v3.pwrlvl_11b_11ag_2g4[i] += value;
+		}
+	    for (i = 0; i <= 9; i++){
+			userconfig_info.txpwr_lvl_v3.pwrlvl_11n_11ac_2g4[i] += value;
+	    }
+	    for (i = 0; i <= 11; i++){
+			userconfig_info.txpwr_lvl_v3.pwrlvl_11ax_2g4[i] += value;
+	    }
+		for (i = 4; i <= 11; i++){
+			userconfig_info.txpwr_lvl_v3.pwrlvl_11a_5g[i] += value;
+		}
+	    for (i = 0; i <= 9; i++){
+			userconfig_info.txpwr_lvl_v3.pwrlvl_11n_11ac_5g[i] += value;
+	    }
+		for (i = 0; i <= 11; i++){
+			userconfig_info.txpwr_lvl_v3.pwrlvl_11ax_5g[i] += value;
+		}
+	}else if(g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DC || g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DW){
+		for (i = 0; i <= 11; i++){
+			userconfig_info.txpwr_lvl_v2.pwrlvl_11b_11ag_2g4[i] += value;
+		}
+	    for (i = 0; i <= 9; i++){
+			userconfig_info.txpwr_lvl_v2.pwrlvl_11n_11ac_2g4[i] += value;
+	    }
+	    for (i = 0; i <= 11; i++){
+			userconfig_info.txpwr_lvl_v2.pwrlvl_11ax_2g4[i] += value;
+	    }
+	}
+	printk("%s:value:%d\r\n", __func__, value);
 }
 
 
@@ -1040,6 +1158,26 @@ void rwnx_plat_nvram_set_value_v3(char *command, char *value)
         userconfig_info.txpwr_lvl_v3.pwrlvl_11ax_5g[10] = rwnx_atoi(value);
     } else if (!strcmp(command,     "lvl_11ax_mcs11_5g")) {
         userconfig_info.txpwr_lvl_v3.pwrlvl_11ax_5g[11] = rwnx_atoi(value);
+    } else if (!strcmp(command, "lvl_adj_enable")) {
+        userconfig_info.txpwr_lvl_adj.enable = rwnx_atoi(value);
+    } else if (!strcmp(command, "lvl_adj_2g4_chan_1_4")) {
+        userconfig_info.txpwr_lvl_adj.pwrlvl_adj_tbl_2g4[0] = rwnx_atoi(value);
+    } else if (!strcmp(command, "lvl_adj_2g4_chan_5_9")) {
+        userconfig_info.txpwr_lvl_adj.pwrlvl_adj_tbl_2g4[1] = rwnx_atoi(value);
+    } else if (!strcmp(command, "lvl_adj_2g4_chan_10_13")) {
+        userconfig_info.txpwr_lvl_adj.pwrlvl_adj_tbl_2g4[2] = rwnx_atoi(value);
+    } else if (!strcmp(command, "lvl_adj_5g_chan_42")) {
+        userconfig_info.txpwr_lvl_adj.pwrlvl_adj_tbl_5g[0] = rwnx_atoi(value);
+    } else if (!strcmp(command, "lvl_adj_5g_chan_58")) {
+        userconfig_info.txpwr_lvl_adj.pwrlvl_adj_tbl_5g[1] = rwnx_atoi(value);
+    } else if (!strcmp(command, "lvl_adj_5g_chan_106")) {
+        userconfig_info.txpwr_lvl_adj.pwrlvl_adj_tbl_5g[2] = rwnx_atoi(value);
+    } else if (!strcmp(command, "lvl_adj_5g_chan_122")) {
+        userconfig_info.txpwr_lvl_adj.pwrlvl_adj_tbl_5g[3] = rwnx_atoi(value);
+    } else if (!strcmp(command, "lvl_adj_5g_chan_138")) {
+        userconfig_info.txpwr_lvl_adj.pwrlvl_adj_tbl_5g[4] = rwnx_atoi(value);
+    } else if (!strcmp(command, "lvl_adj_5g_chan_155")) {
+        userconfig_info.txpwr_lvl_adj.pwrlvl_adj_tbl_5g[5] = rwnx_atoi(value);
     } else if (!strcmp(command, "loss_enable")) {
         userconfig_info.txpwr_loss.loss_enable = rwnx_atoi(value);
     } else if (!strcmp(command, "loss_value")) {
@@ -1078,7 +1216,7 @@ void rwnx_plat_nvram_set_value_v3(char *command, char *value)
     } else if (!strcmp(command, "ofst_2g4_ofdm_lowrate_chan_5_9")) {
         userconfig_info.txpwr_ofst2x.pwrofst2x_tbl_2g4[2][1] = rwnx_atoi(value);
 	} else if (!strcmp(command, "ofst_2g4_ofdm_lowrate_chan_10_13")) {
-        userconfig_info.txpwr_ofst2x.pwrofst2x_tbl_2g4[2][0] = rwnx_atoi(value);
+        userconfig_info.txpwr_ofst2x.pwrofst2x_tbl_2g4[2][2] = rwnx_atoi(value);
     } else if (!strcmp(command, "ofst_5g_ofdm_lowrate_chan_42")) {
         userconfig_info.txpwr_ofst2x.pwrofst2x_tbl_5g[0][0] = rwnx_atoi(value);
     } else if (!strcmp(command, "ofst_5g_ofdm_lowrate_chan_58")) {
@@ -1873,6 +2011,23 @@ void get_userconfig_txpwr_lvl_v3_in_fdrv(txpwr_lvl_conf_v3_t *txpwr_lvl_v3)
     AICWFDBG(LOGINFO, "%s:lvl_11ax_mcs9_5g:%d\r\n",     __func__, txpwr_lvl_v3->pwrlvl_11ax_5g[9]);
     AICWFDBG(LOGINFO, "%s:lvl_11ax_mcs10_5g:%d\r\n",    __func__, txpwr_lvl_v3->pwrlvl_11ax_5g[10]);
     AICWFDBG(LOGINFO, "%s:lvl_11ax_mcs11_5g:%d\r\n",    __func__, txpwr_lvl_v3->pwrlvl_11ax_5g[11]);
+}
+
+void get_userconfig_txpwr_lvl_adj_in_fdrv(txpwr_lvl_adj_conf_t *txpwr_lvl_adj)
+{
+    *txpwr_lvl_adj = userconfig_info.txpwr_lvl_adj;
+
+    AICWFDBG(LOGINFO, "%s:enable:%d\r\n",                   __func__, txpwr_lvl_adj->enable);
+    AICWFDBG(LOGINFO, "%s:lvl_adj_2g4_chan_1_4:%d\r\n",     __func__, txpwr_lvl_adj->pwrlvl_adj_tbl_2g4[0]);
+    AICWFDBG(LOGINFO, "%s:lvl_adj_2g4_chan_5_9:%d\r\n",     __func__, txpwr_lvl_adj->pwrlvl_adj_tbl_2g4[1]);
+    AICWFDBG(LOGINFO, "%s:lvl_adj_2g4_chan_10_13:%d\r\n",   __func__, txpwr_lvl_adj->pwrlvl_adj_tbl_2g4[2]);
+
+    AICWFDBG(LOGINFO, "%s:lvl_adj_5g_chan_42:%d\r\n",       __func__, txpwr_lvl_adj->pwrlvl_adj_tbl_5g[0]);
+    AICWFDBG(LOGINFO, "%s:lvl_adj_5g_chan_58:%d\r\n",       __func__, txpwr_lvl_adj->pwrlvl_adj_tbl_5g[1]);
+    AICWFDBG(LOGINFO, "%s:lvl_adj_5g_chan_106:%d\r\n",      __func__, txpwr_lvl_adj->pwrlvl_adj_tbl_5g[2]);
+    AICWFDBG(LOGINFO, "%s:lvl_adj_5g_chan_122:%d\r\n",      __func__, txpwr_lvl_adj->pwrlvl_adj_tbl_5g[3]);
+    AICWFDBG(LOGINFO, "%s:lvl_adj_5g_chan_138:%d\r\n",      __func__, txpwr_lvl_adj->pwrlvl_adj_tbl_5g[4]);
+    AICWFDBG(LOGINFO, "%s:lvl_adj_5g_chan_155:%d\r\n",      __func__, txpwr_lvl_adj->pwrlvl_adj_tbl_5g[5]);
 }
 
 /**

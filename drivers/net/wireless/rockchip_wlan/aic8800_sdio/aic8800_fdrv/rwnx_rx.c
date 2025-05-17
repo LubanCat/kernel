@@ -47,44 +47,23 @@ u16 tx_legrates_lut_rate[] = {
 	540
 };
 
-
-u16 legrates_lut_rate[] = {
-	10,
-	20,
-	55,
-	110,
-	0,
-	0,
-	0,
-	0,
-	480,
-	240,
-	120,
-	60,
-	540,
-	360,
-	180,
-	90
-};
-
-
-const u8 legrates_lut[] = {
-	0,                          /* 0 */
-	1,                          /* 1 */
-	2,                          /* 2 */
-	3,                          /* 3 */
-	-1,                         /* 4 */
-	-1,                         /* 5 */
-	-1,                         /* 6 */
-	-1,                         /* 7 */
-	10,                         /* 8 */
-	8,                          /* 9 */
-	6,                          /* 10 */
-	4,                          /* 11 */
-	11,                         /* 12 */
-	9,                          /* 13 */
-	7,                          /* 14 */
-	5                           /* 15 */
+struct rwnx_legrate legrates_lut[] = {
+	[0] = { .idx = 0, .rate = 10},
+	[1] = { .idx = 1, .rate = 20},
+	[2] = { .idx = 2, .rate = 55},
+	[3] = { .idx = 3, .rate = 110},
+	[4] = { .idx = -1, .rate = 0},
+	[5] = { .idx = -1, .rate = 0},
+	[6] = { .idx = -1, .rate = 0},
+	[7] = { .idx = -1, .rate = 0},
+	[8] = { .idx = 10, .rate = 480},
+	[9] = { .idx = 8, .rate = 240},
+	[10] = { .idx = 6, .rate = 120},
+	[11] = { .idx = 4, .rate = 60},
+	[12] = { .idx = 11, .rate = 540},
+	[13] = { .idx = 9, .rate = 360},
+	[14] = { .idx = 7, .rate = 180},
+	[15] = { .idx = 5, .rate = 90},
 };
 
 struct vendor_radiotap_hdr {
@@ -283,7 +262,7 @@ static void rwnx_rx_statistic(struct rwnx_hw *rwnx_hw, struct hw_rxhdr *hw_rxhdr
 			break;
 		}
 	} else {
-		int idx = legrates_lut[rxvect->leg_rate];
+		int idx = legrates_lut[rxvect->leg_rate].idx;
 		if (idx < 4) {
 			rate_idx = idx * 2 + rxvect->pre_type;
 		} else {
@@ -681,6 +660,9 @@ static void rwnx_rx_mgmt(struct rwnx_hw *rwnx_hw, struct rwnx_vif *rwnx_vif,
 	const u8* ie;
 	u32 len;
 
+	if(skb->data[0]!=0x80)
+		AICWFDBG(LOGDEBUG,"rxmgmt:%x,%x\n", skb->data[0], skb->data[1]);
+
     if (ieee80211_is_assoc_req(mgmt->frame_control) && rwnx_vif->wdev.iftype == NL80211_IFTYPE_AP) {
         printk("ASSOC_REQ: sta_idx %d MAC %pM\n", rwnx_vif->ap.aic_index, mgmt->sa);
         sta->sta_idx = rwnx_vif->ap.aic_index;
@@ -1018,7 +1000,7 @@ static void rwnx_rx_add_rtap_hdr(struct rwnx_hw *rwnx_hw,
 		struct ieee80211_supported_band *band =
 				rwnx_hw->wiphy->bands[phy_info->phy_band];
 		rtap->it_present |= cpu_to_le32(1 << IEEE80211_RADIOTAP_RATE);
-		BUG_ON((rate_idx = legrates_lut[rxvect->leg_rate]) == -1);
+		BUG_ON((rate_idx = legrates_lut[rxvect->leg_rate].idx) == -1);
 		if (phy_info->phy_band == NL80211_BAND_5GHZ)
 			rate_idx -= 4;  /* rwnx_ratetable_5ghz[0].hw_value == 4 */
 		*pos = DIV_ROUND_UP(band->bitrates[rate_idx].bitrate, 5);
@@ -1544,7 +1526,7 @@ int reord_single_frame_ind(struct aicwf_rx_priv *rx_priv, struct recv_msdu *prfr
     	memset(rx_skb->cb, 0, sizeof(rx_skb->cb));
 
 #ifdef CONFIG_FILTER_TCP_ACK
-	filter_rx_tcp_ack(rwnx_vif->rwnx_hw,rx_skb->data, cpu_to_le16(skb->len));
+	filter_rx_tcp_ack(rwnx_vif->rwnx_hw,rx_skb->data, cpu_to_le16(rx_skb->len));
 #endif
 
 #ifdef CONFIG_RX_NETIF_RECV_SKB//AIDEN test
@@ -1771,7 +1753,7 @@ int reord_process_unit(struct aicwf_rx_priv *rx_priv, struct sk_buff *skb, u16 s
 
     spin_lock_bh(&preorder_ctrl->reord_list_lock);
     if (reord_need_check(preorder_ctrl, pframe->seq_num)) {
-#if 0
+#if 1
         if(pframe->rx_data[42] == 0x80){//this is rtp package
             if(pframe->seq_num == preorder_ctrl->ind_sn){
                 printk("%s pframe->seq_num1:%d \r\n", __func__, pframe->seq_num);
@@ -1943,7 +1925,7 @@ void rwnx_rxdata_process_amsdu(struct rwnx_hw *rwnx_hw, struct sk_buff *skb, u8 
             }
             //printk("sublen = %d, %x, %x, %x, %x\r\n", sublen,skb->data[0], skb->data[1], skb->data[12], skb->data[13]);
 #if 1
-            sub_skb = __dev_alloc_skb(sublen - 6 + 12, GFP_KERNEL);
+            sub_skb = __dev_alloc_skb(sublen - 6 + 12, GFP_ATOMIC);
             if(!sub_skb){
                 printk("sub_skb alloc fail:%d\n", sublen);
                 break;

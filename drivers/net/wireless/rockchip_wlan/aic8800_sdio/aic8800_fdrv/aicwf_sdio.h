@@ -57,6 +57,10 @@
 #define SDIO_ACTIVE_ST                   1
 
 #define DATA_FLOW_CTRL_THRESH 2
+#ifdef CONFIG_TX_NETIF_FLOWCTRL
+#define AICWF_SDIO_TX_LOW_WATER          100
+#define AICWF_SDIO_TX_HIGH_WATER         500
+#endif
 
 typedef enum {
 	SDIO_TYPE_DATA         = 0X00,
@@ -103,6 +107,7 @@ struct aic_sdio_reg {
 struct aic_sdio_dev {
 	struct rwnx_hw *rwnx_hw;
 	struct sdio_func *func;
+	struct sdio_func *func2;
 	struct device *dev;
 	struct aicwf_bus *bus_if;
 	struct rwnx_cmd_mgr cmd_mgr;
@@ -110,6 +115,10 @@ struct aic_sdio_dev {
 	struct aicwf_rx_priv *rx_priv;
 	struct aicwf_tx_priv *tx_priv;
 	u32 state;
+#ifdef CONFIG_TX_NETIF_FLOWCTRL
+	u8 flowctrl;
+	spinlock_t tx_flow_lock;
+#endif
 
     #if defined(CONFIG_SDIO_PWRCTRL)
 	//for sdio pwr ctrl
@@ -129,6 +138,8 @@ struct aic_sdio_dev {
 };
 extern struct aicwf_rx_buff_list aic_rx_buff_list;
 int aicwf_sdio_writeb(struct aic_sdio_dev *sdiodev, uint regaddr, u8 val);
+int aicwf_sdio_func2_readb(struct aic_sdio_dev *sdiodev, uint regaddr, u8 *val);
+int aicwf_sdio_func2_writeb(struct aic_sdio_dev *sdiodev, uint regaddr, u8 val);
 void aicwf_sdio_hal_irqhandler(struct sdio_func *func);
 
 #if defined(CONFIG_SDIO_PWRCTRL)
@@ -139,6 +150,9 @@ void aicwf_sdio_reg_init(struct aic_sdio_dev *sdiodev);
 int aicwf_sdio_func_init(struct aic_sdio_dev *sdiodev);
 int aicwf_sdiov3_func_init(struct aic_sdio_dev *sdiodev);
 void aicwf_sdio_func_deinit(struct aic_sdio_dev *sdiodev);
+#ifdef CONFIG_TX_NETIF_FLOWCTRL
+void aicwf_sdio_tx_netif_flowctrl(struct rwnx_hw *rwnx_hw, bool state);
+#endif
 int aicwf_sdio_flow_ctrl(struct aic_sdio_dev *sdiodev);
 int aicwf_sdio_flow_ctrl_msg(struct aic_sdio_dev *sdiodev);
 #ifdef CONFIG_PREALLOC_RX_SKB

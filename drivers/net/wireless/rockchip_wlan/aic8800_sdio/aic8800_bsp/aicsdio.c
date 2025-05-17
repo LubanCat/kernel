@@ -48,6 +48,8 @@ static void aicbsp_platform_power_off(void);
 
 struct aic_sdio_dev *aicbsp_sdiodev = NULL;
 static struct semaphore *aicbsp_notify_semaphore;
+static struct semaphore *aicbsp_probe_semaphore = NULL;
+
 static const struct sdio_device_id aicbsp_sdmmc_ids[];
 static bool aicbsp_load_fw_in_fdrv = false;
 
@@ -56,7 +58,7 @@ static bool aicbsp_load_fw_in_fdrv = false;
 //#ifdef CONFIG_PLATFORM_UBUNTU
 //static const char* aic_default_fw_path = "/lib/firmware/aic8800_sdio";
 //#else
-static const char* aic_default_fw_path = CONFIG_AIC_FW_PATH;
+static const char* aic_default_fw_path = CONFIG_AIC_FW_SDIO_PATH;
 //#endif
 char aic_fw_path[FW_PATH_MAX];
 module_param_string(aic_fw_path, aic_fw_path, FW_PATH_MAX, 0660);
@@ -264,6 +266,16 @@ static int aicbsp_sdio_probe(struct sdio_func *func,
 	struct aicwf_bus *bus_if;
 	int err = -ENODEV;
 
+	if (func == NULL) {
+		sdio_err("%s func is null\n", __func__);
+		return err;
+	}
+
+	if (aicbsp_probe_semaphore == NULL) {
+		sdio_err("%s bsp_probe_semaphore is null\n", __func__);
+		return err;
+	}
+
 	sdio_dbg("%s:%d vid:0x%04X  did:0x%04X\n", __func__, func->num,
 		func->vendor, func->device);
 
@@ -283,8 +295,11 @@ static int aicbsp_sdio_probe(struct sdio_func *func,
 		return err;
 	}
 
-	func = func->card->sdio_func[1 - 1]; //replace 2 with 1
 	host = func->card->host;
+	host->caps |= MMC_CAP_NONREMOVABLE;
+
+	func = func->card->sdio_func[1 - 1]; //replace 2 with 1
+
 	sdio_dbg("%s after replace:%d\n", __func__, func->num);
 
 	bus_if = kzalloc(sizeof(struct aicwf_bus), GFP_KERNEL);
@@ -331,8 +346,10 @@ static int aicbsp_sdio_probe(struct sdio_func *func,
 		sdio_err("sdio bus init err\r\n");
 		goto fail;
 	}
-	host->caps |= MMC_CAP_NONREMOVABLE;
+
 	aicbsp_platform_init(sdiodev);
+
+	up(aicbsp_probe_semaphore);
 
 	return 0;
 fail:
@@ -343,33 +360,37 @@ fail:
 	return err;
 }
 
+
 static void aicbsp_sdio_remove(struct sdio_func *func)
 {
 	struct mmc_host *host;
 	struct aicwf_bus *bus_if = NULL;
 	struct aic_sdio_dev *sdiodev = NULL;
 
-	sdio_dbg("%s\n", __func__);
+	AICWFDBG(LOGINFO, "%s\n", __func__);
 	if (aicbsp_sdiodev == NULL) {
-		sdio_dbg("%s: allready unregister\n", __func__);
-		return;
+		AICWFDBG(LOGERROR, "%s: allready unregister\n", __func__);
+		goto done;
+	}
+	if (func == NULL) {
+		AICWFDBG(LOGERROR, "%s, sdio func is null\n", __func__);
+		goto done;
 	}
 
-    bus_if = aicbsp_get_drvdata(&func->dev);
-
-	if (!bus_if) {
-        AICWFDBG(LOGERROR, "%s bus_if is NULL \r\n", __func__);
-		return;
-	}
-
-	func = aicbsp_sdiodev->func;
 	host = func->card->host;
 	host->caps &= ~MMC_CAP_NONREMOVABLE;
 
+	bus_if = aicbsp_get_drvdata(&func->dev);
+
+	if (!bus_if) {
+		AICWFDBG(LOGERROR, "%s bus_if is NULL \r\n", __func__);
+		goto done;
+	}
+
 	sdiodev = bus_if->bus_priv.sdio;
 	if (!sdiodev) {
-        AICWFDBG(LOGERROR, "%s sdiodev is NULL \r\n", __func__);
-		return;
+		AICWFDBG(LOGERROR, "%s sdiodev is NULL \r\n", __func__);
+		goto done;
 	}
 
 	aicwf_sdio_release(sdiodev);
@@ -377,10 +398,15 @@ static void aicbsp_sdio_remove(struct sdio_func *func)
 
 	dev_set_drvdata(&sdiodev->func->dev, NULL);
 	kfree(sdiodev);
-	kfree(bus_if);
+
+done:
+	if (bus_if)
+		kfree(bus_if);
 	aicbsp_sdiodev = NULL;
+	aicbsp_probe_semaphore = NULL;
 	sdio_dbg("%s done\n", __func__);
 }
+
 
 static int aicbsp_sdio_suspend(struct device *dev)
 {
@@ -388,17 +414,10 @@ static int aicbsp_sdio_suspend(struct device *dev)
 	int err;
 	mmc_pm_flag_t sdio_flags;
 
-#ifdef CONFIG_PLATFORM_ROCKCHIP
+#if defined(CONFIG_PLATFORM_ROCKCHIP) || defined(CONFIG_PLATFORM_ROCKCHIP2)
 #ifdef CONFIG_GPIO_WAKEUP
     //BT_SLEEP:true,BT_WAKEUP:false
     rfkill_rk_sleep_bt(false);
-#endif
-#endif
-
-#ifdef CONFIG_PLATFORM_ROCKCHIP2
-#ifdef CONFIG_GPIO_WAKEUP
-        //BT_SLEEP:true,BT_WAKEUP:false
-        rfkill_rk_sleep_bt(false);
 #endif
 #endif
 
@@ -419,7 +438,7 @@ static int aicbsp_sdio_suspend(struct device *dev)
 		return err;
 	}
 
-#ifdef CONFIG_PLATFORM_ROCKCHIP
+#if defined(CONFIG_PLATFORM_ROCKCHIP) || defined(CONFIG_PLATFORM_ROCKCHIP2)
 #ifdef CONFIG_GPIO_WAKEUP
 		//BT_SLEEP:true,BT_WAKEUP:false
 		rfkill_rk_sleep_bt(true);
@@ -427,21 +446,19 @@ static int aicbsp_sdio_suspend(struct device *dev)
 #endif
 #endif
 
-#ifdef CONFIG_PLATFORM_ROCKCHIP2
-#ifdef CONFIG_GPIO_WAKEUP
-            //BT_SLEEP:true,BT_WAKEUP:false
-            rfkill_rk_sleep_bt(true);
-            printk("%s BT wake to SLEEP\r\n", __func__);
-#endif
-#endif
-
-
 	return 0;
 }
 
 static int aicbsp_sdio_resume(struct device *dev)
 {
 	sdio_dbg("%s\n", __func__);
+
+#if defined(CONFIG_PLATFORM_ROCKCHIP) || defined(CONFIG_PLATFORM_ROCKCHIP2)
+#ifdef CONFIG_GPIO_WAKEUP
+		//BT_SLEEP:true,BT_WAKEUP:false
+		rfkill_rk_sleep_bt(false);
+#endif
+#endif
 
 	return 0;
 }
@@ -570,11 +587,22 @@ static void aicbsp_platform_power_off(void)
 
 int aicbsp_sdio_init(void)
 {
+	struct semaphore aic_chipup_sem;
+
+	sema_init(&aic_chipup_sem, 0);
+	aicbsp_probe_semaphore = &aic_chipup_sem;
+	
 	if (sdio_register_driver(&aicbsp_sdio_driver)) {
 		return -1;
 	} else {
 		//may add mmc_rescan here
 	}
+	if (down_timeout(aicbsp_probe_semaphore, msecs_to_jiffies(2000)) != 0){
+		printk("%s aicbsp_sdio_probe fail\r\n", __func__);
+		return -1;
+	}
+
+	
 	return 0;
 }
 
@@ -1600,22 +1628,33 @@ void aicwf_sdio_release_func2(struct aic_sdio_dev *sdiodev)
 
 void aicwf_sdio_release(struct aic_sdio_dev *sdiodev)
 {
-	struct aicwf_bus *bus_if;
+	struct aicwf_bus *bus_if = NULL;
+	struct aicwf_bus *bus_if_t = NULL;
 	int ret = 0;
 
 	sdio_dbg("%s\n", __func__);
+	if (sdiodev->func == NULL) {
+		printk("%s, NULL sdio func\n", __func__);
+		return;
+	}
 
 	bus_if = aicbsp_get_drvdata(sdiodev->dev);
-	bus_if->state = BUS_DOWN_ST;
+	if (bus_if)
+		bus_if->state = BUS_DOWN_ST;
 
-	sdio_claim_host(sdiodev->func);
-	//disable sdio interrupt
-	ret = aicwf_sdio_writeb(sdiodev, sdiodev->sdio_reg.intr_config_reg, 0x0);
-	if (ret < 0) {
-		sdio_err("reg:%d write failed!, ret=%d\n", sdiodev->sdio_reg.intr_config_reg, ret);
+	bus_if_t = dev_get_drvdata(sdiodev->dev);
+
+	if ((bus_if_t != NULL) && (sdiodev->bus_if == bus_if_t)) {
+		sdio_dbg("%s bsp release\n", __func__);
+		sdio_claim_host(sdiodev->func);
+		//disable sdio interrupt
+		ret = aicwf_sdio_writeb(sdiodev, sdiodev->sdio_reg.intr_config_reg, 0x0);
+		if (ret < 0) {
+			sdio_err("reg:%d write failed!, ret=%d\n", sdiodev->sdio_reg.intr_config_reg, ret);
+		}
+		sdio_release_irq(sdiodev->func);
+		sdio_release_host(sdiodev->func);
 	}
-	sdio_release_irq(sdiodev->func);
-	sdio_release_host(sdiodev->func);
 
 	if(sdiodev->chipid == PRODUCT_ID_AIC8800DC || sdiodev->chipid == PRODUCT_ID_AIC8800DW){
 		aicwf_sdio_release_func2(sdiodev);
@@ -1632,6 +1671,8 @@ void aicwf_sdio_release(struct aic_sdio_dev *sdiodev)
 
 	rwnx_cmd_mgr_deinit(&sdiodev->cmd_mgr);
 }
+
+
 
 void aicwf_sdio_reg_init(struct aic_sdio_dev *sdiodev)
 {
@@ -1841,15 +1882,34 @@ int aicwf_sdiov3_func_init(struct aic_sdio_dev *sdiodev)
 
 void aicwf_sdio_func_deinit(struct aic_sdio_dev *sdiodev)
 {
-	sdio_claim_host(sdiodev->func);
-	sdio_disable_func(sdiodev->func);
-	sdio_release_host(sdiodev->func);
+	struct aicwf_bus *bus_if = NULL;
+
+	if (sdiodev->func == NULL) {
+		sdio_err("%s, NULL sdio func\n", __func__);
+		return;
+	}
+
+	bus_if = dev_get_drvdata(sdiodev->dev);
+	if (bus_if == NULL) {
+		sdio_err("%s, bus_if is null\n", __func__);
+		return;
+	}
+
+	if (sdiodev->bus_if == bus_if) {
+		sdio_dbg("%s bsp disable\n", __func__);
+		sdio_claim_host(sdiodev->func);
+		sdio_disable_func(sdiodev->func);
+		sdio_release_host(sdiodev->func);
+	}
+
 	if(sdiodev->chipid == PRODUCT_ID_AIC8800DC || sdiodev->chipid == PRODUCT_ID_AIC8800DW){
 		sdio_claim_host(sdiodev->func_msg);
 		sdio_disable_func(sdiodev->func_msg);
 		sdio_release_host(sdiodev->func_msg);
 	}
+
 }
+
 
 void *aicwf_sdio_bus_init(struct aic_sdio_dev *sdiodev)
 {
@@ -1923,7 +1983,7 @@ fail:
 	return NULL;
 }
 
-void get_fw_path(char* fw_path){
+void get_sdio_fw_path(char* fw_path){
 	if (strlen(aic_fw_path) > 0) {
 		memcpy(fw_path, aic_fw_path, strlen(aic_fw_path));
 	}else{
@@ -1931,7 +1991,7 @@ void get_fw_path(char* fw_path){
 	}
 }
 
-int get_testmode(void){
+int get_sdio_testmode(void){
 	return testmode;
 }
 
@@ -1967,8 +2027,8 @@ uint8_t crc8_ponl_107(uint8_t *p_buffer, uint16_t cal_size)
     return crc;
 }
 
-EXPORT_SYMBOL(get_fw_path);
-EXPORT_SYMBOL(get_testmode);
+EXPORT_SYMBOL(get_sdio_fw_path);
+EXPORT_SYMBOL(get_sdio_testmode);
 EXPORT_SYMBOL(get_sdio_func);
 EXPORT_SYMBOL(set_irq_handler);
 

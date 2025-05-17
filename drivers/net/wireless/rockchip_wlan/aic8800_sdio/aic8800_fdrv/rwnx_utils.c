@@ -14,8 +14,8 @@
 #include "rwnx_prof.h"
 #include "ipc_host.h"
 
-extern int get_testmode(void);
-extern void get_fw_path(char* fw_path);
+extern int get_sdio_testmode(void);
+extern void get_sdio_fw_path(char* fw_path);
 extern int testmode;
 extern char aic_fw_path[200];
 
@@ -30,9 +30,9 @@ int rwnx_init_aic(struct rwnx_hw *rwnx_hw)
 #endif
 	rwnx_cmd_mgr_init(rwnx_hw->cmd_mgr);
 
-	testmode = get_testmode();
+	testmode = get_sdio_testmode();
 	memset(aic_fw_path, 0, 200);
-	get_fw_path(aic_fw_path);
+	get_sdio_fw_path(aic_fw_path);
 
 	return 0;
 }

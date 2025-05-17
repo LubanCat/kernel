@@ -3,13 +3,13 @@ EXTRA_CFLAGS += -Wno-implicit-fallthrough
 #EXTRA_CFLAGS += -Wno-unused-function
 #EXTRA_CFLAGS += -Wno-maybe-uninitialized
 #EXTRA_CFLAGS += -Wno-unused-variable
-
+ccflags-y += -DCONFIG_AIC_FW_SDIO_PATH=\"$(CONFIG_AIC_FW_SDIO_PATH)\"
 RWNX_VERS_NUM := 6.4.3.0
 
 CONFIG_COUNTRY_CODE = "00"
 
-MODULE_NAME = aic8800_fdrv
-CONFIG_AIC8800_WLAN_SUPPORT = m
+MODULE_NAME = aic8800_sdio_fdrv
+CONFIG_AIC8800_SDIO_WLAN_SUPPORT = m
 
 # Support of bootrom start
 CONFIG_START_FROM_BOOTROM = y
@@ -73,6 +73,7 @@ CONFIG_RADAR_OR_IR_DETECT =n
 CONFIG_DOWNLOAD_FW =n
 CONFIG_RFTEST=y
 CONFIG_USB_BT =y
+CONFIG_SDIO_BT=n
 CONFIG_USE_5G ?= y
 CONFIG_SDIO_PWRCTRL ?= y
 CONFIG_CREATE_TRACE_POINTS = n
@@ -80,32 +81,46 @@ CONFIG_TXRX_THREAD_PRIO = y
 # CONFIG_COEX = n for BT_ONLY, CONFIG_COEX =y for combo and sw
 CONFIG_COEX = y
 CONFIG_RX_NETIF_RECV_SKB = y
-CONFIG_GPIO_WAKEUP = y
+CONFIG_GPIO_WAKEUP ?= n
 CONFIG_SET_VENDOR_EXTENSION_IE = n
 CONFIG_SUPPORT_REALTIME_CHANGE_MAC = y
 CONFIG_WPA3_FOR_OLD_KERNEL ?= n
 CONFIG_VHT_FOR_OLD_KERNEL ?= n
 CONFIG_HE_FOR_OLD_KERNEL ?= n
-CONFIG_PREALLOC_RX_SKB = n
+CONFIG_PREALLOC_RX_SKB ?= n
 CONFIG_WIFI_SUSPEND_FOR_LINUX = n
 # Need to set fw path in BOARD_KERNEL_CMDLINE
 CONFIG_USE_FW_REQUEST = n
 CONFIG_USE_P2P0=n
+CONFIG_TX_NETIF_FLOWCTRL = n
+CONFIG_ONE_TXQ = n
 CONFIG_BR_SUPPORT =n
 BR_NAME = br0
 CONFIG_FDRV_NO_REG_SDIO=n
 CONFIG_SCHED_SCAN = n
-CONFIG_OOB = n
+CONFIG_OOB ?= n
 CONFIG_USE_CUSTOMER_MAC = n
-CONFIG_PREALLOC_TXQ = y
+CONFIG_PREALLOC_TXQ ?= y
 CONFIG_DPD = y
 CONFIG_FORCE_DPD_CALIB = y
-CONFIG_FILTER_TCP_ACK =n
-CONFIG_RESV_MEM_SUPPORT = y
+CONFIG_LOFT_CALIB = n
+CONFIG_FILTER_TCP_ACK =y
+CONFIG_RESV_MEM_SUPPORT ?= y
 CONFIG_GKI = n
 CONFIG_TEMP_COMP = n
+CONFIG_EXT_FEM_8800DCDW = n
+# CONFIG_MCC = n for sta and p2p concurrent in same channel.
+CONFIG_MCC = y
 
-CONFIG_PLATFORM_ROCKCHIP = y
+ifneq ($(CONFIG_WIRELESS_EXT), y)
+CONFIG_USE_WIRELESS_EXT = n
+endif
+
+ifeq ($(CONFIG_EXT_FEM_8800DCDW), y)
+CONFIG_DPD = n
+CONFIG_FORCE_DPD_CALIB = n
+CONFIG_LOFT_CALIB = y
+endif
 
 # Support of MU-MIMO transmission (need FW support)
 ifeq ($(CONFIG_RWNX_BFMER), y)
@@ -128,7 +143,7 @@ CONFIG_RWNX_SW_PROFILING ?= n
 CONFIG_RWNX_DBG ?= y
 CONFIG_DEBUG_FS ?= n
 
-obj-$(CONFIG_AIC8800_WLAN_SUPPORT) := $(MODULE_NAME).o
+obj-$(CONFIG_AIC8800_SDIO_WLAN_SUPPORT) := $(MODULE_NAME).o
 $(MODULE_NAME)-y := \
 	rwnx_msg_tx.o          \
 	rwnx_msg_rx.o          \
@@ -155,6 +170,7 @@ $(MODULE_NAME)-y := \
 	aicwf_compat_8800d80.o \
 	rwnx_wakelock.o		\
 	regdb.o				   \
+	aic_priv_cmd.o		\
 	aicwf_rx_prealloc.o
 
 $(MODULE_NAME)-$(CONFIG_BR_SUPPORT)       += aic_br_ext.o
@@ -168,6 +184,7 @@ $(MODULE_NAME)-$(CONFIG_SDIO_SUPPORT)     += sdio_host.o
 $(MODULE_NAME)-$(CONFIG_SDIO_SUPPORT)     += aicwf_txrxif.o
 $(MODULE_NAME)-$(CONFIG_SDIO_SUPPORT)     += aicwf_sdio.o
 $(MODULE_NAME)-$(CONFIG_FILTER_TCP_ACK)   += aicwf_tcp_ack.o
+$(MODULE_NAME)-$(CONFIG_SDIO_BT)   += aic_btsdio.o
 
 $(MODULE_NAME)-$(CONFIG_USB_SUPPORT)     += usb_host.o
 $(MODULE_NAME)-$(CONFIG_USB_SUPPORT)     += aicwf_txrxif.o
@@ -179,7 +196,6 @@ $(MODULE_NAME)-$(CONFIG_GKI)     += rwnx_gki.o
 ccflags-$(CONFIG_DEBUG_FS) += -DCONFIG_RWNX_DEBUGFS
 ccflags-$(CONFIG_DEBUG_FS) += -DCONFIG_RWNX_UM_HELPER_DFLT=\"$(CONFIG_RWNX_UM_HELPER_DFLT)\"
 ccflags-$(CONFIG_RWNX_P2P_DEBUGFS) += -DCONFIG_RWNX_P2P_DEBUGFS
-ccflags-y += -DCONFIG_PLATFORM_ROCKCHIP
 
 # FW VARS
 ccflags-y += -DNX_VIRT_DEV_MAX=4
@@ -216,7 +232,7 @@ ccflags-y += -DCONFIG_RWNX_FULLMAC
 ccflags-y += -I$(srctree)
 ccflags-y += -I$(srctree)/$(src)
 ccflags-y += -I$(srctree)/$(src)/../aic8800_bsp
-ccflags-y += -DCONFIG_AIC_FW_PATH=\"$(CONFIG_AIC_FW_PATH)\"
+ccflags-y += -DCONFIG_AIC_FW_SDIO_PATH=\"$(CONFIG_AIC_FW_SDIO_PATH)\"
 ccflags-$(CONFIG_RWNX_RADAR) += -DCONFIG_RWNX_RADAR
 ccflags-$(CONFIG_RWNX_MON_DATA) += -DCONFIG_RWNX_MON_DATA
 ccflags-$(CONFIG_RWNX_BFMER) += -DCONFIG_RWNX_BFMER
@@ -248,10 +264,14 @@ ccflags-$(CONFIG_USE_CUSTOMER_MAC) += -DCONFIG_USE_CUSTOMER_MAC
 ccflags-$(CONFIG_PREALLOC_TXQ) += -DCONFIG_PREALLOC_TXQ
 ccflags-$(CONFIG_DPD) += -DCONFIG_DPD
 ccflags-$(CONFIG_FORCE_DPD_CALIB) += -DCONFIG_FORCE_DPD_CALIB -DCONFIG_DPD
+ccflags-$(CONFIG_LOFT_CALIB) += -DCONFIG_LOFT_CALIB
 ccflags-$(CONFIG_FILTER_TCP_ACK) += -DCONFIG_FILTER_TCP_ACK
+ccflags-$(CONFIG_SDIO_BT) += -DCONFIG_SDIO_BT
 ccflags-$(CONFIG_RESV_MEM_SUPPORT) += -DCONFIG_RESV_MEM_SUPPORT
 ccflags-$(CONFIG_GKI) += -DCONFIG_GKI
 ccflags-$(CONFIG_TEMP_COMP) += -DCONFIG_TEMP_COMP
+ccflags-$(CONFIG_EXT_FEM_8800DCDW) += -DCONFIG_EXT_FEM_8800DCDW
+ccflags-$(CONFIG_MCC) += -DCONFIG_MCC
 
 
 ifeq ($(CONFIG_SDIO_SUPPORT), y)
@@ -290,3 +310,83 @@ ccflags-$(CONFIG_ARP_OFFLOAD) += -DAICWF_ARP_OFFLOAD
 ccflags-$(CONFIG_RADAR_DETECT) += -DRADAR_OR_IR_DETECT
 ccflags-$(CONFIG_DOWNLOAD_FW)  += -DCONFIG_DOWNLOAD_FW
 ccflags-$(CONFIG_RX_NETIF_RECV_SKB) += -DCONFIG_RX_NETIF_RECV_SKB
+ccflags-$(CONFIG_ONE_TXQ)  += -DCONFIG_ONE_TXQ
+ccflags-$(CONFIG_TX_NETIF_FLOWCTRL) += -DCONFIG_TX_NETIF_FLOWCTRL
+
+ccflags-y += -DAIC_TRACE_INCLUDE_PATH=$(src)
+MAKEFLAGS +=-j$(shell nproc)
+
+########## Platform support list ##########
+CONFIG_PLATFORM_ROCKCHIP ?= n
+CONFIG_PLATFORM_ROCKCHIP2 ?= n
+CONFIG_PLATFORM_ALLWINNER ?= n
+CONFIG_PLATFORM_INGENIC_T20 ?= n
+CONFIG_PLATFORM_AMLOGIC ?= n
+CONFIG_PLATFORM_UBUNTU ?= y
+
+ifeq ($(CONFIG_PLATFORM_ROCKCHIP), y)
+ARCH := arm64
+KDIR ?= /home/yaya/E/Rockchip/3566/firefly/Android11.0/Firefly-RK356X_Android11.0_git_20210824/RK356X_Android11.0/kernel
+CROSS_COMPILE := /home/yaya/E/Rockchip/3566/firefly/Android11.0/Firefly-RK356X_Android11.0_git_20210824/RK356X_Android11.0/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+ccflags-$(CONFIG_PLATFORM_ROCKCHIP) += -DCONFIG_PLATFORM_ROCKCHIP
+ccflags-y += -DANDROID_PLATFORM
+endif
+
+ifeq ($(CONFIG_PLATFORM_ROCKCHIP2), y)
+ARCH := arm64
+KDIR ?= /home/yaya/E/Rockchip/3566/firefly/Android11.0/Firefly-RK356X_Android11.0_git_20210824/RK356X_Android11.0/kernel
+CROSS_COMPILE := /home/yaya/E/Rockchip/3566/firefly/Android11.0/Firefly-RK356X_Android11.0_git_20210824/RK356X_Android11.0/prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+
+ccflags-$(CONFIG_PLATFORM_ROCKCHIP2) += -DCONFIG_PLATFORM_ROCKCHIP2
+ccflags-y += -DANDROID_PLATFORM
+endif
+
+
+ifeq ($(CONFIG_PLATFORM_ALLWINNER), y)
+ccflags-$(CONFIG_PLATFORM_ALLWINNER) += -DCONFIG_PLATFORM_ALLWINNER
+ccflags-y += -DANDROID_PLATFORM
+KDIR  ?= /home/yaya/E/Allwinner/r818/Android10/lichee/kernel/linux-4.9/
+ARCH ?= arm64
+CROSS_COMPILE ?= /home/yaya/E/Allwinner/r818/Android10/android/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
+endif
+
+ifeq ($(CONFIG_PLATFORM_INGENIC_T20), y)
+KDIR ?= /home/yaya/E/T40/kernel
+ARCH ?= mips
+CROSS_COMPILE ?= /home/yaya/E/T40/mips-linux-gnu-ingenic-gcc7.2.0-glibc2.29-fp64/bin/mips-linux-gnu-
+endif
+
+ifeq ($(CONFIG_PLATFORM_AMLOGIC), y)
+ccflags-$(CONFIG_PLATFORM_AMLOGIC) += -DCONFIG_PLATFORM_AMLOGIC
+ccflags-y += -DANDROID_PLATFORM
+endif
+
+ifeq ($(CONFIG_PLATFORM_UBUNTU), y)
+ccflags-$(CONFIG_PLATFORM_UBUNTU) += -DCONFIG_PLATFORM_UBUNTU
+KDIR  ?= /lib/modules/$(shell uname -r)/build
+PWD   ?= $(shell pwd)
+KVER ?= $(shell uname -r)
+MODDESTDIR ?= /lib/modules/$(KVER)/kernel/drivers/net/wireless/
+ARCH ?= x86_64
+CROSS_COMPILE ?=
+endif
+###########################################
+
+
+all: modules
+modules:
+	make -C $(KDIR) M=$(PWD) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules
+
+install:
+	mkdir -p $(MODDESTDIR)
+	install -p -m 644 $(MODULE_NAME).ko  $(MODDESTDIR)
+	/sbin/depmod -a ${KVER}
+
+uninstall:
+	rm -rfv $(MODDESTDIR)/$(MODULE_NAME).ko
+	/sbin/depmod -a ${KVER}
+
+clean:
+	rm -rf *.o *.ko *.o.* *.mod.* modules.* Module.* .a* .o* .*.o.* *.mod .tmp* .cache.mk
+
+
