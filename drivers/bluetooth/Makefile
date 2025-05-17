@@ -33,6 +33,7 @@ obj-$(CONFIG_BT_BCM)		+= btbcm.o
 obj-$(CONFIG_BT_RTL)		+= btrtl.o
 obj-$(CONFIG_BT_QCA)		+= btqca.o
 obj-$(CONFIG_BT_RTKBTUSB)   += rtk_btusb.o
+obj-$(CONFIG_BT_AICBTUSB)	+= aic_btusb.o
 
 obj-$(CONFIG_BT_HCIUART_NOKIA)	+= hci_nokia.o
 
