@@ -8,7 +8,7 @@
 
 
 #include "rk3588-lubancat-5io.dts"
-#include "rk3588j.dtsi"
+// #include "rk3588j.dtsi"
 
 / {
 	/* RK3588 LubanCat-5IO Industrial */
