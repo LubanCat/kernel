@@ -3182,6 +3182,13 @@ static int phy_rtl8211f_led_fixup(struct phy_device *phydev)
 
     if (np){
         of_property_read_u32(np, "realtek,led-data", &led_data);
+	// 		if (!of_property_read_u32(np, "realtek,led-data", &led_data))
+    // 	        pr_info("phy_rtl8211f_led_fixup: found device tree node, led_data=0x%x\n", led_data);
+    // 	    else
+    // 	        pr_info("phy_rtl8211f_led_fixup: found device tree node, but no realtek,led-data property, use default 0x%x\n", led_data);
+    // 	} 
+	// else {
+    //     pr_info("phy_rtl8211f_led_fixup: no device tree node found, use default led_data=0x%x\n", led_data);
 	}
 
 	value = phy_read(phydev, 31);
