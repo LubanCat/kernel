@@ -141,6 +141,82 @@
 			};
 		};
 	};
+
+	gc4653: gc4653@29 {
+		compatible = "galaxycore,gc4653";
+		status = "disabled";
+		reg = <0x29>;
+		clocks = <&ext_cam_clk>;
+		clock-names = "xvclk";
+
+		dovdd-supply= <&cam_dovdd>; 
+		avdd-supply = <&cam_avdd>;  
+		dvdd-supply = <&cam_dvdd>;  
+
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "3568";
+		rockchip,camera-module-lens-name = "default";
+
+		port {
+			gc4653_out1: endpoint {
+				remote-endpoint = <&dphy1_in_gc4653>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	gc2053: gc2053@37 {
+		compatible = "galaxycore,gc2053";
+		status = "disabled";
+		reg = <0x37>;
+		clocks = <&ext_cam_clk>;
+		clock-names = "xvclk";
+
+		dovdd-supply= <&cam_dovdd>; 
+		avdd-supply = <&cam_avdd>;  
+		dvdd-supply = <&cam_dvdd>;
+
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "3568";
+		rockchip,camera-module-lens-name = "default";
+
+		// NO_HDR:0 HDR_X2:5 HDR_X3:6
+		// rockchip,camera-hdr-mode = <0>;
+		port {
+			gc2053_out1: endpoint {
+				remote-endpoint = <&dphy1_in_gc2053>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	gc08a8: gc08a8@31 {
+		compatible = "galaxycore,gc08a8";
+		status = "disabled";
+		reg = <0x31>;
+		clocks = <&ext_cam_clk>;
+		clock-names = "xvclk";
+
+		dovdd-supply= <&cam_dovdd>; 
+		avdd-supply = <&cam_avdd>;  
+		dvdd-supply = <&cam_dvdd>; 
+
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "3568";
+		rockchip,camera-module-lens-name = "default";
+
+		// NO_HDR:0 HDR_X2:5 HDR_X3:6
+		// rockchip,camera-hdr-mode = <0>;
+		port {
+			gc08a8_out1: endpoint {
+				remote-endpoint = <&dphy1_in_gc08a8>;
+				data-lanes = <1 2>;	
+			};
+		};
+	};
 };
 
 &i2c5 {
@@ -302,6 +378,24 @@
 				reg = <4>;
 				remote-endpoint = <&sc132gs_out>;
 				data-lanes = <1>;
+			};
+
+			dphy1_in_gc4653: endpoint@5 {
+				reg = <5>;
+				remote-endpoint = <&gc4653_out1>;
+				data-lanes = <1 2>;
+			};
+
+			dphy1_in_gc2053: endpoint@6 {
+				reg = <6>;
+				remote-endpoint = <&gc2053_out1>;
+				data-lanes = <1 2>;
+			};
+
+			dphy1_in_gc08a8: endpoint@7 {
+				reg = <7>;
+				remote-endpoint = <&gc08a8_out1>;
+				data-lanes = <1 2>;
 			};
 		};
 

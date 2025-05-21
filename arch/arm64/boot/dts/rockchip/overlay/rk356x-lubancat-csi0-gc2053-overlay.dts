@@ -1,0 +1,11 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@3 {
+		target = <&gc2053>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+};

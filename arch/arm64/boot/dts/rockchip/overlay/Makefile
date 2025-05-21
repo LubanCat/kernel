@@ -29,6 +29,9 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk356x-lubancat-csi0-sc132gs-overlay.dtbo \
 	rk356x-lubancat-csi0-ov5647-overlay.dtbo \
 	rk356x-lubancat-csi0-ov5648-overlay.dtbo \
+	rk356x-lubancat-csi0-gc4653-overlay.dtbo \
+	rk356x-lubancat-csi0-gc08a8-overlay.dtbo \
+	rk356x-lubancat-csi0-gc2053-overlay.dtbo \
 	rk356x-lubancat-csi0-ov8858-3264x2448-15fps-overlay.dtbo \
 	rk356x-lubancat-csi0-ov8858-1632x1224-30fps-overlay.dtbo \
 	rk356x-lubancat-csi1-ov5648-overlay.dtbo \
