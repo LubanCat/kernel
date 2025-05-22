@@ -1270,6 +1270,7 @@
 				 JL2XXX_LED2_LINK100  | \
 				 JL2XXX_LED2_LINK1000 | \
 				 JL2XXX_LED2_ACTIVITY )>; //JL PHY
+		realtek,led-data = <0x6d60>;  //8211F phy
 	};
 };
 
@@ -1285,6 +1286,7 @@
 				 JL2XXX_LED2_LINK100  | \
 				 JL2XXX_LED2_LINK1000 | \
 				 JL2XXX_LED2_ACTIVITY )>; //JL PHY
+		realtek,led-data = <0x6d60>;  //8211F phy
 	};
 };
 
