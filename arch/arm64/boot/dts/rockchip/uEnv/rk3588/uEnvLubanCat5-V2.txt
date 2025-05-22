@@ -57,6 +57,7 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam0-imx415-1080p-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam0-ov8858-3264x2448-15fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam0-ov8858-1632x1224-30fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam0-gc08a8-overlay.dtbo
 # cam1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam1-imx415-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam1-imx415-1080p-overlay.dtbo
@@ -67,6 +68,8 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam2-imx415-1080p-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam2-ov8858-3264x2448-15fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam2-ov8858-1632x1224-30fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam2-gc4653-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam2-gc2053-overlay.dtbo
 # cam3
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam3-imx415-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam3-imx415-1080p-overlay.dtbo
