@@ -33,7 +33,7 @@
 		reg = <0x36>;
 		clocks = <&ext_cam_25m_clk>;
 		clock-names = "ext_cam_25m_clk";
-		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_HIGH>;
 		lens-focus = <&dphy1_dw9714>;
 
 		port {
@@ -54,7 +54,7 @@
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
 		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <2>;
@@ -82,8 +82,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_LOW>;
-		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <2>;
@@ -102,7 +102,7 @@
 		};
 	};
 
-    dphy1_ov13850: ov13850@10 {
+	dphy1_ov13850: ov13850@10 {
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
@@ -129,7 +129,7 @@
 				data-lanes = <1 2>;
 			};
 		};
-    };
+	};
 
 	dcphy2_imx415: imx415@1a {
 		compatible = "sony,imx415";
