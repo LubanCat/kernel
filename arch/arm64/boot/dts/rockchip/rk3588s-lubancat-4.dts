@@ -42,14 +42,14 @@
 /* dp0 display */
 
 /***** vp2 *****/
-// #include "rk3588s-lubancat-dsi0-ebf410125_1080p.dtsi" 	//5.5寸
-// #include "rk3588s-lubancat-dsi0-ebf410173_1024x600.dtsi" //7寸
-// #include "rk3588s-lubancat-dsi0-ebf410177_800x1280.dtsi" //10.1寸
+// #include "rk3588s-lubancat-4-dsi0-1080x1920-5.5inch-ebf410125.dtsi"
+// #include "rk3588s-lubancat-4-dsi0-1024x600-7inch-ebf410173.dtsi"
+// #include "rk3588s-lubancat-4-dsi0-800x1280-10.1inch-ebf410177.dtsi"
 
 /***** vp3 *****/
-// #include "rk3588s-lubancat-dsi1-ebf410125_1080p.dtsi" 	//5.5寸
-// #include "rk3588s-lubancat-dsi1-ebf410173_1024x600.dtsi" //7寸
-// #include "rk3588s-lubancat-dsi1-ebf410177_800x1280.dtsi" //10.1寸
+// #include "rk3588s-lubancat-4-dsi1-1080x1920-5.5inch-ebf410125.dtsi"
+// #include "rk3588s-lubancat-4-dsi1-1024x600-7inch-ebf410173.dtsi"
+// #include "rk3588s-lubancat-4-dsi1-800x1280-10.1inch-ebf410177.dtsi"
 
 / {
 	model = "Embedfire LubanCat-4";
@@ -299,7 +299,7 @@
 		>;
 	};
 
-	backlight0: backlight0 {
+	backlight_dsi0: backlight-dsi0 {
 		compatible = "pwm-backlight";
 		pwms = <&pwm2 0 25000 0>;
 		brightness-levels = <
@@ -339,7 +339,7 @@
 		default-brightness-level = <200>;
 	};
 
-	backlight1: backlight1 {
+	backlight_dsi1: backlight-dsi1 {
 		compatible = "pwm-backlight";
 		pwms = <&pwm6 0 25000 0>;
 		brightness-levels = <

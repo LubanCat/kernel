@@ -40,19 +40,19 @@ enable_uboot_overlays=1
 # 规则5.开启vp2和vp3设备树插件,搭配规则3,可实现8k+4k+2k三屏异显
 
 ## vp0
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-hdmi0-8k-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-hdmi0-8k-overlay.dtbo
 ## vp1
 #
 ## vp2
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-dp0-in-vp2-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi0-800x1280-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi0-1024x600-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi0-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-dp0-in-vp2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi0-800x1280-10.1inch-ebf410177-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi0-1024x600-7inch-ebf410173-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi0-1080x1920-5.5inch-ebf410125-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi0-generic-overlay.dtbo
 ## vp3
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi1-800x1280-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi1-1024x600-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi1-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi1-800x1280-10.1inch-ebf410177-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi1-1024x600-7inch-ebf410173-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi1-1080x1920-5.5inch-ebf410125-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi1-generic-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo
 
@@ -74,7 +74,7 @@ enable_uboot_overlays=1
 
 
 # 开启sata0, mini pcie接口可接msata硬盘
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4-sata0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-sata0-overlay.dtbo
 
 # 扩展板
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-xl9535-overlay.dtbo
