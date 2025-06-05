@@ -35,10 +35,16 @@
 /* dp0 display */
 
 /***** vp2 *****/
+// #include "rk3588s-lubancat-4io-dsi0-1080x1920-5.5inch-ebf410125.dtsi"
+// #include "rk3588s-lubancat-4io-dsi0-1024x600-7inch-ebf410173.dtsi"
 // #include "rk3588s-lubancat-4io-dsi0-800x1280-10.1inch-ebf410177.dtsi"
+// #include "rk3588s-lubancat-4io-dsi0-800x1280-10.1inch-s8001280b1060b.dtsi"
 
 /***** vp3 *****/
+// #include "rk3588s-lubancat-4io-dsi1-1080x1920-5.5inch-ebf410125.dtsi"
+// #include "rk3588s-lubancat-4io-dsi1-1024x600-7inch-ebf410173.dtsi"
 // #include "rk3588s-lubancat-4io-dsi1-800x1280-10.1inch-ebf410177.dtsi"
+// #include "rk3588s-lubancat-4io-dsi1-800x1280-10.1inch-s8001280b1060b.dtsi"
 
 / {
 	model = "Embedfire LubanCat-4IO";
@@ -1654,7 +1660,7 @@
 	status = "okay";
 };
 
-#if 1
+/* RS485 */
 &uart4 {
 	status = "okay";
 	pinctrl-names = "default";
@@ -1670,27 +1676,15 @@
 	rs485-de-gpios = <&gpio1 RK_PA6 GPIO_ACTIVE_HIGH>;
 	linux,rs485-enabled-at-boot-time;
 };
-#endif
 
-#if 0
-&uart4 {
-	status = "okay";
-	pinctrl-0 = <&uart4m2_xfer>;
-};
-
-&uart7 {
-	status = "okay";
-	pinctrl-0 = <&uart7m2_xfer>;
-};
-#endif
-
+/* RS232 */
 &uart0 {
 	status = "okay";
 	pinctrl-0 = <&uart0m0_xfer>;
 };
 
 &uart9 {
-	status = "disabled";
+	status = "okay";
 	pinctrl-0 = <&uart9m2_xfer>;
 };
 

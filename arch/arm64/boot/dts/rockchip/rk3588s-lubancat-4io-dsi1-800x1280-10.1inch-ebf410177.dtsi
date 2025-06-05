@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2021 Rockchip Electronics Co., Ltd.
+ *
+ */
+
 &mipi_dcphy1 {
 	status = "okay";
 };
@@ -285,10 +291,10 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c5m3_xfer>;
 
-	gt911_dsi1: gt911@14 {
+	gt911_dsi1: gt911@5d {
 		status = "okay";
 		compatible = "goodix,gt911";
-		reg = <0x14>;
+		reg = <0x5d>;
 		interrupt-parent = <&gpio3>;
 		interrupts = <RK_PB7 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&gpio3 RK_PD2 GPIO_ACTIVE_LOW>;
