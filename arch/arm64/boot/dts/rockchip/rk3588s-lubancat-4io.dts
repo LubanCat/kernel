@@ -18,6 +18,9 @@
 #include "rk3588s.dtsi"
 #include "rk3588-linux.dtsi"
 
+/* MIPI CSI 节点配置 */
+#include "rk3588s-lubancat-4io-csi.dtsi"
+/* 开启链路节点 */
 // #include "rk3588s-lubancat-4io-cam0.dtsi"
 // #include "rk3588s-lubancat-4io-cam1.dtsi"
 // #include "rk3588s-lubancat-4io-cam2.dtsi"

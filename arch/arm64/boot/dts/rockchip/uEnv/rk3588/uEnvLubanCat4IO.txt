@@ -30,6 +30,15 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-dsi1-1080x1920-5.5inch-ebf410125-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo
 
+# CAM0
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam0-imx415-overlay.dtbo
+# CAM1
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam1-imx415-overlay.dtbo
+# CAM2
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam2-imx415-overlay.dtbo
+# CAM3
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam3-imx415-overlay.dtbo
+
 # 开启sata0, mini pcie接口可接msata硬盘
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-sata0-overlay.dtbo
 
