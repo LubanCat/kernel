@@ -1,3 +1,7 @@
+/* Link path: 
+ * sensor->csi2_dphy0->mipi2_csi2->rkcif_mipi_lvds2->rkcif_mipi_lvds2_sditf->rkisp1_vir0
+ */
+
 &i2c3 {
 	status = "okay";
 };
