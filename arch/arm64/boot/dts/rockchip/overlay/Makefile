@@ -119,6 +119,7 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-5io-dsi0-vp2-1080p-overlay.dtbo \
 	rk3588-lubancat-5io-dsi0-vp2-1024x600-overlay.dtbo \
 	rk3588-lubancat-5io-dsi0-vp2-800x1280-overlay.dtbo \
+	rk3588-lubancat-5io-dsi0-vp2-800x1280-10.1inch-s8001280b1060b-overlay.dtbo \
 	rk3588-lubancat-5io-dsi1-vp3-1080p-overlay.dtbo \
 	rk3588-lubancat-5io-dsi1-vp3-1024x600-overlay.dtbo \
 	rk3588-lubancat-5io-dsi1-vp3-800x1280-overlay.dtbo \
