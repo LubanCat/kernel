@@ -1,0 +1,48 @@
+/* Link path:
+ * sensor->csi2_dphy0->mipi2_csi2->rkcif_mipi_lvds2->rkcif_mipi_lvds2_sditf->rkisp1_vir0
+ */
+
+&i2c3 {
+	status = "okay";
+};
+
+&dphy0_imx415 {
+	status = "okay";
+};
+
+&csi2_dphy0 {
+	status = "okay";
+};
+
+&mipi2_csi2 {
+	status = "okay";
+};
+
+&rkcif {
+	status = "okay";
+};
+
+&rkcif_mipi_lvds2 {
+	status = "okay";
+};
+
+&rkcif_mipi_lvds2_sditf {
+	status = "okay";
+};
+
+&rkcif_mmu {
+	status = "okay";
+};
+
+&rkisp1 {
+	status = "okay";
+};
+
+&isp1_mmu {
+	status = "okay";
+};
+
+&rkisp1_vir0 {
+	status = "okay";
+};
+

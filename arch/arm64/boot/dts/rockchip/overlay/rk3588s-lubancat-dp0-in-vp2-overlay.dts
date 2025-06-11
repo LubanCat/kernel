@@ -1,0 +1,46 @@
+/dts-v1/;
+/plugin/;
+
+/* dp0 display */
+/ {
+	fragment@0 {
+		target = <&dp0>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&route_dp0>;
+
+		__overlay__ {
+			status = "okay";
+			connect = <&vp2_out_dp0>;
+		};
+	};
+
+	fragment@2 {
+		target = <&dp0_in_vp0>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@3 {
+		target = <&dp0_in_vp1>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@4 {
+		target = <&dp0_in_vp2>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+};

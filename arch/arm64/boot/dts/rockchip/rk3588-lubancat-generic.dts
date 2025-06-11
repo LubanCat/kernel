@@ -18,8 +18,8 @@
 #include "rk3588-linux.dtsi"
 
 / {
-	model = "Embedfire LubanCat";
-	compatible = "rockchip,rk3588s-lubancat", "rockchip,rk3588";
+	model = "Embedfire LubanCat-RK3588";
+	compatible = "rockchip,rk3588-lubancat", "rockchip,rk3588";
 
 	vcc12v_dcin: vcc12v-dcin {
 		compatible = "regulator-fixed";
@@ -29,7 +29,7 @@
 		regulator-min-microvolt = <12000000>;
 		regulator-max-microvolt = <12000000>;
 	};
-	
+
 	vcc5v0_sys: vcc5v0-sys {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc5v0_sys";
@@ -39,7 +39,7 @@
 		regulator-max-microvolt = <5000000>;
 		vin-supply = <&vcc12v_dcin>;
 	};
-	
+
 	vcc4v0_sys: vcc4v0-sys {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc4v0_sys";
@@ -106,7 +106,7 @@
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
 		vin-supply = <&vcc5v0_sys>;
-	}; 
+	};
 
 	dp0_sound: dp0-sound {
 		status = "okay";
@@ -134,7 +134,7 @@
 };
 
 &dmc_opp_table {
-    /delete-node/ opp-2750000000;
+	/delete-node/ opp-2750000000;
 };
 
 &av1d {
@@ -146,7 +146,7 @@
 };
 
 &spdif_tx2 {
-    status = "okay";
+	status = "okay";
 };
 
 &i2s5_8ch {
@@ -642,12 +642,12 @@
 };
 
 &i2s0_8ch {
-    status = "okay";
-    rockchip,clk-trcm = <1>;
-    pinctrl-0 = <&i2s0_lrck
-             &i2s0_sclk
-             &i2s0_sdi0
-             &i2s0_sdo0>;
+	status = "okay";
+	rockchip,clk-trcm = <1>;
+	pinctrl-0 = <&i2s0_lrck
+			 &i2s0_sclk
+			 &i2s0_sdi0
+			 &i2s0_sdo0>;
 };
 
 &saradc {
