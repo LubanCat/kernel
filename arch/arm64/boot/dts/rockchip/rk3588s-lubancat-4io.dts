@@ -83,8 +83,8 @@
 		poll-interval = <100>;
 		keyup-threshold-microvolt = <1800000>;
 		adc-power-key {
-			linux,code = <KEY_VOLUMEDOWN>;
-			label = "volume down";
+			linux,code = <KEY_DOWN>;
+			label = "KEY DOWN";
 			press-threshold-microvolt = <1750>;
 		};
 	};
@@ -96,8 +96,8 @@
 		poll-interval = <100>;
 		keyup-threshold-microvolt = <1800000>;
 		adc-power-key {
-			linux,code = <KEY_VOLUMEUP>;
-			label = "volume up";
+			linux,code = <KEY_UP>;
+			label = "KEY UP";
 			press-threshold-microvolt = <1750>;
 		};
 	};
