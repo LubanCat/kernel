@@ -30,14 +30,14 @@ enable_uboot_overlays=1
 
 # Display 显示输出配置
 # 8k插件，开启之后vp0的hdmi0或者hdmi1能输出8k
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi-8k-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-hdmi-8k-overlay.dtbo
 
 # vp0 (插件只能同时开一个)
 dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp0-overlay.dtbo
 
 # vp1 (默认配置为dp0开启，打开设备树则关闭dp显示)
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dp0-disabled-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-dp0-disabled-overlay.dtbo
 
 # vp2 (插件只能同时开一个)
 dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
@@ -102,5 +102,8 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam5-gc08a8-3264x2448-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam5-gc2053-1920x1080-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam5-gc4653-2560x1440-30fps-overlay.dtbo
+
+# 扩展板
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-v2-xl9535-overlay.dtbo
 
 #overlay_end

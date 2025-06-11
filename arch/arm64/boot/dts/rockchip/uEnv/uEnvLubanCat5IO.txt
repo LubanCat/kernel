@@ -40,7 +40,7 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi1-vp1-overlay.dtbo
 
 # 三屏异显(8K+4K+2K), 注：每个vp只能绑定到一个接口, 需开启8k显示设备树插件
 ## vp0
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi-8k-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-hdmi-8k-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi0-vp0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi1-vp0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dp0-vp0-overlay.dtbo
