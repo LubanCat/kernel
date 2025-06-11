@@ -1660,10 +1660,12 @@ static void rockchip_usb2phy_sm_work(struct work_struct *work)
 	case PHY_STATE_DISCONNECT:
 		if (!rport->suspended) {
 			dev_dbg(&rport->phy->dev, "Disconnected\n");
+#if 0
 			mutex_unlock(&rport->mutex);
 			rockchip_usb2phy_power_off(rport->phy);
 			mutex_lock(&rport->mutex);
 			rport->suspended = true;
+#endif
 		}
 
 		/*
