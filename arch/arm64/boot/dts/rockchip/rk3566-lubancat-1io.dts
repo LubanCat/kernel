@@ -27,7 +27,7 @@
 		status = "okay";
 		compatible = "gpio-leds";
 
-		sys_led: sys_led {
+		sys_led: sys-led {
 			label = "sys_led";
 			status = "okay";
 			linux,default-trigger = "heartbeat";
@@ -487,6 +487,31 @@
 	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_HIGH>;
 };
 
+&imx415 {
+	pwdn-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_LOW>;
+};
+
+&sc530ai {
+	pwdn-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_LOW>;
+};
+
+&gc08a8 {
+	pwdn-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_LOW>;
+};
+
+&gc2053 {
+	pwdn-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_LOW>;
+	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_LOW>;
+};
+
+&gc4653 {
+	pwdn-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_HIGH>;
+};
+
 //cam1-gpio-setting
 &cam1_ov5647 {
 	pwdn-gpios = <&gpio3 RK_PA7 GPIO_ACTIVE_LOW>;
@@ -503,6 +528,11 @@
 };
 
 &cam1_sc132gs {
+	pwdn-gpios = <&gpio3 RK_PA7 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio2 RK_PB0 GPIO_ACTIVE_HIGH>;
+};
+
+&cam1_sc530ai {
 	pwdn-gpios = <&gpio3 RK_PA7 GPIO_ACTIVE_HIGH>;
 	reset-gpios = <&gpio2 RK_PB0 GPIO_ACTIVE_HIGH>;
 };
@@ -594,7 +624,8 @@
 
 &sdmmc0 {
 	max-frequency = <150000000>;
-	supports-sd;
+	no-sdio;
+	no-mmc;
 	bus-width = <4>;
 	cap-mmc-highspeed;
 	cap-sd-highspeed;
@@ -702,7 +733,7 @@
 };
 
 &gmac1 {
-	snps,reset-gpio = <&gpio4 RK_PC2 GPIO_ACTIVE_LOW>;
+	snps,reset-gpio = <&gpio0 RK_PA6 GPIO_ACTIVE_LOW>;
 	tx_delay = <0x16>;
 	rx_delay = <0x06>;
 	status = "okay";

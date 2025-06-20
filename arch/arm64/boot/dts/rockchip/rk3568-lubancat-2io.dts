@@ -277,9 +277,9 @@
 		vin-supply = <&vcc5v0_sys>;
 	};
 
-	mini_pcie_3v3: minipcie-3v3-regulator {
+	pcie2_3v3: pcie2-3v3-regulator {
 		compatible = "regulator-fixed";
-		regulator-name = "mini_pcie_3v3";
+		regulator-name = "pcie2_3v3";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		enable-active-high;
@@ -314,20 +314,6 @@
 			50000	3
 			55000	4
 		>;
-	};
-
-	adc_keys: adc-keys {
-		compatible = "adc-keys";
-		io-channels = <&saradc 0>;
-		io-channel-names = "buttons";
-		keyup-threshold-microvolt = <1800000>;
-		poll-interval = <100>;
-
-		restart-key {
-			label = "restart";
-			linux,code = <KEY_RESTART>;
-			press-threshold-microvolt = <9>;
-		};
 	};
 
 	rk_headset: rk-headset {
@@ -620,6 +606,15 @@
 };
 
 &sdmmc0 {
+	max-frequency = <150000000>;
+	no-sdio;
+	no-mmc;
+	bus-width = <4>;
+	cap-mmc-highspeed;
+	cap-sd-highspeed;
+	disable-wp;
+	sd-uhs-sdr104;
+	vmmc-supply = <&vcc3v3_sd>;
 	status = "okay";
 };
 
@@ -657,6 +652,30 @@
 	reset-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_HIGH>;
 };
 
+&imx415 {
+	pwdn-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_LOW>;
+};
+
+&sc530ai {
+	pwdn-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_HIGH>;
+};
+
+&gc08a8 {
+	pwdn-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_LOW>;
+};
+
+&gc2053 {
+	pwdn-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_LOW>;
+	reset-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_LOW>;
+};
+
+&gc4653 {
+	pwdn-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_HIGH>;
+};
 
 //cam1-gpio-setting
 &cam1_ov5647 {
@@ -678,6 +697,11 @@
 	reset-gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_HIGH>;
 };
 
+&cam1_sc530ai {
+	pwdn-gpios = <&gpio1 RK_PB1 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_HIGH>;
+};
+
 // mipi dsi0 gpio set
 &dsi0_panel {
 	reset-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_LOW>;
@@ -688,6 +712,15 @@
 	interrupts = <RK_PA0 IRQ_TYPE_LEVEL_LOW>;
 	reset-gpios = <&gpio0 RK_PA5 GPIO_ACTIVE_LOW>;
 	irq-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
+};
+
+&gt911_dsi0_1 {
+	interrupt-parent = <&gpio0>;
+	interrupts = <RK_PA0 IRQ_TYPE_LEVEL_LOW>;
+	reset-gpios = <&gpio0 RK_PA5 GPIO_ACTIVE_LOW>;
+	irq-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&tp0_irq>;
 };
 
 &gt928_dsi0 {
@@ -707,6 +740,15 @@
 	interrupts = <RK_PA1 IRQ_TYPE_LEVEL_LOW>;
 	reset-gpios = <&gpio3 RK_PB0 GPIO_ACTIVE_LOW>;
 	irq-gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
+};
+
+&gt911_dsi1_1 {
+	interrupt-parent = <&gpio3>;
+	interrupts = <RK_PA1 IRQ_TYPE_LEVEL_LOW>;
+	reset-gpios = <&gpio3 RK_PB0 GPIO_ACTIVE_LOW>;
+	irq-gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&tp1_irq>;
 };
 
 &gt928_dsi1 {
@@ -792,7 +834,7 @@
 
 &u2phy1_host {
 	status = "okay";
-	phy-supply = <&vcc5v0_usb20_hub>;
+	phy-supply = <&vcc5v0_usb20_host2>;
 };
 
 &usb_host1_ehci {
@@ -845,7 +887,7 @@
 &pcie2x1 {
 	reset-gpios = <&gpio3 RK_PC1 GPIO_ACTIVE_HIGH>;
 	disable-gpios = <&gpio3 RK_PC2 GPIO_ACTIVE_HIGH>;
-	vpcie3v3-supply = <&mini_pcie_3v3>;
+	vpcie3v3-supply = <&pcie2_3v3>;
 	status = "okay";
 };
 
@@ -949,6 +991,16 @@
 
 		usb_otg_vbus_en: usb-otg-vbus-en {
 			rockchip,pins = <0 RK_PD4 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	dsi {
+		tp0_irq: tp0-irq {
+			rockchip,pins = <0 RK_PA0 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		tp1_irq: tp1-irq {
+			rockchip,pins = <3 RK_PA1 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 };

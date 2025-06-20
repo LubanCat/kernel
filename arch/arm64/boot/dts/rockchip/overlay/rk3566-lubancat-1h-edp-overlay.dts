@@ -12,7 +12,7 @@
 
 		__overlay__ {
 			status = "okay";
-			connect = <&vp1_out_edp>;
+			connect = <&vp0_out_edp>;
 		};
 	};
 
@@ -28,7 +28,7 @@
 		target = <&edp_in_vp0>;
 
 		__overlay__ {
-			status = "disabled";
+			status = "okay";
 		};
 	};
 
@@ -36,7 +36,7 @@
 		target = <&edp_in_vp1>;
 
 		__overlay__ {
-			status = "okay";
+			status = "disabled";
 		};
 	};
 
@@ -68,10 +68,8 @@
 		__overlay__ {
 			edp_panel: edp-panel {
 				compatible = "simple-panel";
-				backlight = <&backlight2>;
+				backlight = <&backlight_lvds_edp>;
 				status = "okay";
-				power-supply = <&vdd_3v3_edp_lcd>;
-				enable-gpios = <&gpio2 RK_PD7 GPIO_ACTIVE_HIGH>;
 				//bus-format = <MEDIA_BUS_FMT_RBG888_1X24>;
 				prepare-delay-ms = <100>; //AUX通信前延时
 				enable-delay-ms = <100>;
@@ -96,12 +94,44 @@
 					};
 				};
 
-				ports {
+				port {
 					panel_in_edp: endpoint {
 						remote-endpoint = <&edp_out_panel>;
 					};
 				};
 			};
+		};
+	};
+
+	fragment@6 {
+		target = <&route_hdmi>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@7 {
+		target = <&hdmi_in_vp0>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@8 {
+		target = <&hdmi_in_vp1>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@9 {
+		target = <&hdmi>;
+
+		__overlay__ {
+			status = "disabled";
 		};
 	};
 };

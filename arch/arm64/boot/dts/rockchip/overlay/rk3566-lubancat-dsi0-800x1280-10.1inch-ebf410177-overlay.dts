@@ -54,7 +54,6 @@
 				backlight = <&backlight>;
 				reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_LOW>;
 				power-supply = <&mipi_dsi0_power>;
-
 				enable-delay-ms = <35>;
 				prepare-delay-ms = <6>;
 				reset-delay-ms = <0>;
@@ -332,7 +331,6 @@
 				reset-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_LOW>;
 				irq-gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
 			};
-			
 		};
 	};
 

@@ -128,7 +128,7 @@
 				prepare-delay-ms = <100>; //AUX通信前延时
 				enable-delay-ms = <100>;
 
-				ports {
+				port {
 					panel_in_edp: endpoint {
 						remote-endpoint = <&edp_out_panel>;
 					};

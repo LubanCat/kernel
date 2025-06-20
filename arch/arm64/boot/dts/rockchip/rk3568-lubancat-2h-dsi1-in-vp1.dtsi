@@ -55,18 +55,5 @@
 		reg = <0x5d>;
 		touchscreen-inverted-y;
 	};
-
-	rockpi_mcu_0: rockpi-mcu-0@45 {
-		compatible = "rockpi_mcu";
-		reg = <0x45>;
-		status = "disabled";
-	};
-
-	rockpi_ft5406_0: rockpi_ft5406-0@38 {
-		compatible = "rockpi_ft5406";
-		reg = <0x38>;
-		status = "disabled";
-	};
-
 };
 

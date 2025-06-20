@@ -94,6 +94,18 @@
 		touchscreen-inverted-y = <1>;
 	};
 
+	gt911_dsi1_1: gt911-1@5d {
+		status = "disabled";
+		compatible = "goodix,gt911";
+		reg = <0x5d>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <RK_PC3 IRQ_TYPE_LEVEL_LOW>;
+		reset-gpios = <&gpio2 RK_PC4 GPIO_ACTIVE_LOW>;
+		irq-gpios = <&gpio2 RK_PC3 GPIO_ACTIVE_HIGH>;
+		touchscreen-inverted-x = <1>;
+		touchscreen-swapped-x-y = <1>;
+	};
+
 	gt928_dsi1: gt928@5d {
 		status = "disabled";
 		compatible = "goodix,gt928";
@@ -102,17 +114,5 @@
 		interrupts = <RK_PC3 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&gpio2 RK_PC4 GPIO_ACTIVE_LOW>;
 		irq-gpios = <&gpio2 RK_PC3 GPIO_ACTIVE_HIGH>;
-	};
-
-	rockpi_mcu_1: rockpi-mcu-1@45 {
-		compatible = "rockpi_mcu";
-		reg = <0x45>;
-		status = "disabled";
-	};
-
-	rockpi_ft5406_1: rockpi_ft5406-1@38 {
-		compatible = "rockpi_ft5406";
-		reg = <0x38>;
-		status = "disabled";
 	};
 };

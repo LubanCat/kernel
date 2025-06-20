@@ -11,14 +11,14 @@
 
 // MIPI-DSI屏幕
 // MIPI-DSI0
-// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-7.0-1024x600.dtsi"  //野火7寸屏幕
-// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-10.1-800x1280.dtsi"  //野火10寸屏幕
-// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-1080p.dtsi"  //野火5寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi0-800x1280-10.1inch-ebf410177.dtsi"
+// #include "rk3568-lubancat-2-v2-dsi0-1024x600-7inch-ebf410173.dtsi"
+// #include "rk3568-lubancat-2-v2-dsi0-1080x1920-5.5inch-ebf410125.dtsi"
 
 // MIPI-DSI1
-// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-7.0-1024x600.dtsi" //野火7寸屏幕
-// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-10.1-800x1280.dtsi"  //野火10寸屏幕
-// #include "rk3568-lubancat-2-v2-dsi0-in-vp1-1080p.dtsi"  // 野火5寸屏幕
+// #include "rk3568-lubancat-2-v2-dsi1-800x1280-10.1inch-ebf410177.dtsi"
+// #include "rk3568-lubancat-2-v2-dsi1-1024x600-7inch-ebf410173.dtsi"
+// #include "rk3568-lubancat-2-v2-dsi1-1080x1920-5.5inch-ebf410125.dtsi"
 /* 注意：
 V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 如果需要MIPI-DSI+HDMI显示，
@@ -260,12 +260,12 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 };
 
 &gmac0 {
-	tx_delay = <0x18>;
+	tx_delay = <0x08>;
 	rx_delay = <0x07>;
 };
 
 &gmac1 {
-	tx_delay = <0x22>;
+	tx_delay = <0x18>;
 	rx_delay = <0x07>;
 };
 
@@ -294,14 +294,19 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
 };
 
-&gc4653 {
+&sc132gs {
 	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
 	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
 };
 
+&imx415 {
+	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
+};
+
 &gc08a8 {
 	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
 };
 
 &gc2053 {
@@ -309,7 +314,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
 };
 
-&sc132gs {
+&gc4653 {
 	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
 	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
 };
@@ -347,6 +352,13 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 	irq-gpios = <&gpio0 RK_PB5 GPIO_ACTIVE_HIGH>;
 };
 
+&gt911_dsi0_1 {
+	interrupt-parent = <&gpio0>;
+	interrupts = <RK_PB5 IRQ_TYPE_LEVEL_LOW>;
+	reset-gpios = <&gpio0 RK_PB6 GPIO_ACTIVE_LOW>;
+	irq-gpios = <&gpio0 RK_PB5 GPIO_ACTIVE_HIGH>;
+};
+
 &gt928_dsi0 {
 	interrupt-parent = <&gpio0>;
 	interrupts = <RK_PB5 IRQ_TYPE_LEVEL_LOW>;
@@ -364,6 +376,24 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 	interrupts = <RK_PB0 IRQ_TYPE_LEVEL_LOW>;
 	reset-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_LOW>;
 	irq-gpios = <&gpio3 RK_PB0 GPIO_ACTIVE_HIGH>;
+};
+
+&gt911_dsi1_1 {
+	interrupt-parent = <&gpio3>;
+	interrupts = <RK_PB0 IRQ_TYPE_LEVEL_LOW>;
+	reset-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_LOW>;
+	irq-gpios = <&gpio3 RK_PB0 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&tp1_irq>;
+};
+
+&gt928_dsi1 {
+	interrupt-parent = <&gpio3>;
+	interrupts = <RK_PB0 IRQ_TYPE_LEVEL_LOW>;
+	reset-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_LOW>;
+	irq-gpios = <&gpio3 RK_PB0 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&mipi_dsi1_irq>;
 };
 
 &gt928_dsi1 {
@@ -393,6 +423,12 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 	cam {
 		cam1_pwr_en: cam1_pwr_en {
 			rockchip,pins = <3 RK_PD1 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	dsi {
+		tp1_irq: tp1-irq {
+			rockchip,pins = <3 RK_PB0 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 };

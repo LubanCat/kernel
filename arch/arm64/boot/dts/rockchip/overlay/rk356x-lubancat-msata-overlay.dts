@@ -2,8 +2,6 @@
 /plugin/;
 
 / {
-	compatible = "rockchip,rk3568";
-
 	fragment@0 {
 		target = <&pcie2x1>;
 

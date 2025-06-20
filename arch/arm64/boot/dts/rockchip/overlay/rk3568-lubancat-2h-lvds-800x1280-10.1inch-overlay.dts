@@ -7,6 +7,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 
 / {
+
 	fragment@0 {
 		target = <&route_dsi0>;
 
@@ -33,27 +34,19 @@
 	};
 
 	fragment@3 {
-		target = <&dsi0_in_vp1>;
-
-		__overlay__ {
-			status = "disabled";
-		};
-	};
-
-	fragment@4 {
 		target = <&dsi0>;
 
 		__overlay__ {
 			status = "okay";
 			#address-cells = <1>;
 			#size-cells = <0>;
-
+			
 			dsi0_panel: panel@0 {
 				compatible = "simple-panel-dsi";
 				reg = <0>;
-				backlight = <&backlight>;
-				reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_LOW>;
-				power-supply = <&mipi_dsi0_power>;
+				backlight = <&backlight_lvds_edp>;
+				reset-gpios = <&gpio4 RK_PC6 GPIO_ACTIVE_LOW>;
+				enable-gpios = <&gpio3 RK_PB1 GPIO_ACTIVE_HIGH>;
 
 				enable-delay-ms = <35>;
 				prepare-delay-ms = <6>;
@@ -70,31 +63,61 @@
 				dsi,lanes  = <4>;
 
 				panel-init-sequence = [
-					15 00 02 80 AC
-					15 00 02 81 B8
-					15 00 02 82 09
-					15 00 02 83 78
-					15 00 02 84 7f
-					15 00 02 85 bb
-					15 00 02 86 70
-				];
-
-				panel-exit-sequence = [
-					05 78 01 28
-					05 00 01 10
+					23 00 02 27 AA
+					23 00 02 48 02
+					23 00 02 B6 20
+					23 00 02 01 20
+					23 00 02 02 00
+					23 00 02 03 53
+					23 00 02 04 48
+					23 00 02 05 18
+					23 00 02 06 18
+					23 00 02 07 00
+					23 00 02 08 0C
+					23 00 02 09 02
+					23 00 02 0A 0A
+					23 00 02 0B 82
+					23 00 02 0C 22
+					23 00 02 0D 01
+					23 00 02 0E 80
+					23 00 02 0F 20
+					23 00 02 10 20
+					23 00 02 11 03
+					23 00 02 12 1B
+					23 00 02 13 03
+					23 00 02 14 01
+					23 00 02 15 23
+					23 00 02 16 40
+					23 00 02 17 00
+					23 00 02 18 01
+					23 00 02 19 23
+					23 00 02 1A 40
+					23 00 02 1B 00
+					23 00 02 1E 46
+					23 00 02 51 30
+					23 00 02 1F 10
+					23 00 02 2A 01
+					//如下为SSR展频，不加可能点不亮
+					23 00 02 6A	08
+					23 00 02 6C	9E
+					23 00 02 6D 07
+					23 00 02 6E	00
+					23 00 02 6F	8A
+					23 00 02 70 19
+					23 64 02 71 00
 				];
 
 				disp_timings0: display-timings {
 					native-mode = <&dsi0_timing0>;
 					dsi0_timing0: timing0 {
-						clock-frequency = <51669000>;
-						hactive = <1024>;
-						vactive = <600>;
-						hsync-len = <10>;
-						hback-porch = <160>;
-						hfront-porch = <160>;
-						vsync-len = <1>;
-						vback-porch = <23>;
+						clock-frequency = <60000000>;
+						hactive = <800>;
+						vactive = <1280>;
+						hsync-len = <24>;
+						hback-porch = <24>;
+						hfront-porch = <72>;
+						vsync-len = <2>;
+						vback-porch = <10>;
 						vfront-porch = <12>;
 						hsync-active = <0>;
 						vsync-active = <0>;
@@ -126,63 +149,6 @@
 					};
 				};
 			};
-		};
-	};
-
-	fragment@5 {
-		target = <&i2c1>;
-
-		__overlay__ {
-			status = "okay";
-			clock-frequency = <100000>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			gt911: gt911@5d {
-				status = "okay";
-				compatible = "goodix,gt911";
-				reg = <0x5d>;
-				interrupt-parent = <&gpio3>;
-				interrupts = <RK_PA1 IRQ_TYPE_LEVEL_LOW>;
-				reset-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_LOW>;
-				irq-gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
-				touchscreen-inverted-x;
-				touchscreen-inverted-y;
-
 			};
-			
 		};
-	};
-
-	fragment@6 {
-		target = <&route_hdmi>;
-
-		__overlay__ {
-			status = "disabled";
-		};
-	};
-
-	fragment@7 {
-		target = <&hdmi_in_vp0>;
-
-		__overlay__ {
-			status = "disabled";
-		};
-	};
-
-	fragment@8 {
-		target = <&hdmi_in_vp1>;
-
-		__overlay__ {
-			status = "disabled";
-		};
-	};
-
-	fragment@9 {
-		target = <&hdmi>;
-
-		__overlay__ {
-			status = "disabled";
-		};
-	};
 };

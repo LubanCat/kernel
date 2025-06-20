@@ -3,14 +3,14 @@
 
 / {
 	fragment@0 {
-		target = <&ov5648>;
+		target = <&gc08a8>;
 		__overlay__ {
 			status = "okay";
 		};
 	};
 
 	fragment@1 {
-		target = <&dw9714>;
+		target = <&i2c1>;
 		__overlay__ {
 			status = "okay";
 		};

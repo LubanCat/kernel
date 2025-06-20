@@ -53,7 +53,7 @@
 				reg = <0>;
 				backlight = <&backlight_lvds_edp>;
 				reset-gpios = <&gpio4 RK_PC3 GPIO_ACTIVE_LOW>;
-				
+
 				enable-delay-ms = <35>;
 				prepare-delay-ms = <6>;
 				reset-delay-ms = <0>;
@@ -117,21 +117,18 @@
 					native-mode = <&dsi0_timing0>;
 					dsi0_timing0: timing0 {
 						clock-frequency = <65000000>;
-						 hactive = <1280>;
-             vactive = <800>;
-
-             hsync-len   = <32>;
-             hback-porch = <10>;
-             hfront-porch= <8>; //1330
-
-             vsync-len    = <6>;
-             vback-porch  = <3>;
-             vfront-porch = <3>;  //812
-
-             hsync-active = <0>;
-             vsync-active = <0>;
-             de-active = <0>;
-             pixelclk-active = <0>;
+						hactive = <1280>;
+						vactive = <800>;
+						hsync-len   = <32>;
+						hback-porch = <10>;
+						hfront-porch= <8>; //1330
+						vsync-len    = <6>;
+						vback-porch  = <3>;
+						vfront-porch = <3>;  //812
+						hsync-active = <0>;
+						vsync-active = <0>;
+						de-active = <0>;
+						pixelclk-active = <0>;
 					};
 				};
 

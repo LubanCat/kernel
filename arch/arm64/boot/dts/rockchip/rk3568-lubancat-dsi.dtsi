@@ -75,7 +75,7 @@
 };
 
 &i2c1 {
-	status = "okay";
+	status = "disabled";
 	clock-frequency = <100000>;
 
 	gt911_dsi0: gt911@5d {
@@ -90,6 +90,18 @@
 		touchscreen-inverted-y = <1>;
 	};
 
+	gt911_dsi0_1: gt911-1@5d {
+		status = "disabled";
+		compatible = "goodix,gt911";
+		reg = <0x5d>;
+		// interrupt-parent = < >;
+		// interrupts = < >;
+		// reset-gpios = < >;
+		// irq-gpios = < >;
+		touchscreen-inverted-x = <1>;
+		touchscreen-swapped-x-y = <1>;
+	};
+
 	gt928_dsi0: gt928@5d {
 		status = "disabled";
 		compatible = "goodix,gt928";
@@ -98,18 +110,6 @@
 		// interrupts = < >;
 		// reset-gpios = < >;
 		// irq-gpios = < >;
-	};
-
-	rockpi_mcu_0: rockpi-mcu-0@45 {
-		compatible = "rockpi_mcu";
-		reg = <0x45>;
-		status = "disabled";
-	};
-
-	rockpi_ft5406_0: rockpi_ft5406-0@38 {
-		compatible = "rockpi_ft5406";
-		reg = <0x38>;
-		status = "disabled";
 	};
 };
 
@@ -191,7 +191,7 @@
 };
 
 &i2c5 {
-	status = "okay";
+	status = "disabled";
 	clock-frequency = <100000>;
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -208,6 +208,17 @@
 		touchscreen-inverted-y = <1>;
 	};
 
+	gt911_dsi1_1: gt911-1@5d {
+		status = "disabled";
+		compatible = "goodix,gt911";
+		reg = <0x5d>;
+		// interrupt-parent = < >;
+		// interrupts = < >;
+		// reset-gpios = < >;
+		// irq-gpios = < >;
+		touchscreen-inverted-x = <1>;
+		touchscreen-swapped-x-y = <1>;
+	};
 	gt928_dsi1: gt928@5d {
 		status = "disabled";
 		compatible = "goodix,gt928";
@@ -216,17 +227,5 @@
 		// interrupts = < >;
 		// reset-gpios = < >;
 		// irq-gpios = < >;
-	};
-
-	rockpi_mcu_1: rockpi-mcu-1@45 {
-		compatible = "rockpi_mcu";
-		reg = <0x45>;
-		status = "disabled";
-	};
-
-	rockpi_ft5406_1: rockpi_ft5406-1@38 {
-		compatible = "rockpi_ft5406";
-		reg = <0x38>;
-		status = "disabled";
 	};
 };
