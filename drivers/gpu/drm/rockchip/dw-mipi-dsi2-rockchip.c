@@ -815,7 +815,7 @@ static void dw_mipi_dsi2_pre_enable(struct dw_mipi_dsi2 *dsi2)
 	 */
 	if (!(dsi2->mode_flags & MIPI_DSI_CLOCK_NON_CONTINUOUS))
 		regmap_update_bits(dsi2->regmap, DSI2_PHY_CLK_CFG,
-				   CLK_TYPE_MASK, CONTIUOUS_CLK);
+				   CLK_TYPE_MASK, NON_CONTINUOUS_CLK);
 
 	regmap_write(dsi2->regmap, DSI2_PWR_UP, POWER_UP);
 	dw_mipi_dsi2_set_cmd_mode(dsi2);
@@ -826,6 +826,9 @@ static void dw_mipi_dsi2_pre_enable(struct dw_mipi_dsi2 *dsi2)
 
 static void dw_mipi_dsi2_enable(struct dw_mipi_dsi2 *dsi2)
 {
+	if (!(dsi2->mode_flags & MIPI_DSI_CLOCK_NON_CONTINUOUS))
+		regmap_update_bits(dsi2->regmap, DSI2_PHY_CLK_CFG,
+							CLK_TYPE_MASK, CONTIUOUS_CLK);
 	dw_mipi_dsi2_ipi_set(dsi2);
 
 	if (dsi2->mode_flags & MIPI_DSI_MODE_VIDEO)
