@@ -1548,6 +1548,17 @@
 };
 
 &pinctrl {
+	dsi {
+                dsi0_reset: dsi0-reset {
+                        rockchip,pins = <0 RK_PD7 RK_FUNC_GPIO &pcfg_pull_up>;
+                };
+
+                tp1_irq: tp1-irq {
+                        rockchip,pins = <3 RK_PC4 RK_FUNC_GPIO &pcfg_pull_up>;
+                };
+        };
+
+	
 	hym8563 {
 		hym8563_int: hym8563-int {
 			rockchip,pins = <0 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up>;

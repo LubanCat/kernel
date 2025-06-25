@@ -170,9 +170,11 @@ rk3588-lubancat-5-dsi1-vp3-800x1280-10.1inch-s8001280b1060b-overlay.dtbo \
 	rk3588-lubancat-5io-cam4-imx415-1080p-overlay.dtbo \
 	rk3588-lubancat-5io-cam5-imx415-1080p-overlay.dtbo \
 	rk3588s-lubancat-4-dsi0-800x1280-10.1inch-ebf410177-overlay.dtbo \
+	rk3588s-lubancat-4-dsi0-800x1280-10.1inch-s8001280b1060b-overlay.dtbo \
 	rk3588s-lubancat-4-dsi0-1024x600-7inch-ebf410173-overlay.dtbo \
 	rk3588s-lubancat-4-dsi0-1080x1920-5.5inch-ebf410125-overlay.dtbo \
 	rk3588s-lubancat-4-dsi1-800x1280-10.1inch-ebf410177-overlay.dtbo \
+	rk3588s-lubancat-4-dsi1-800x1280-10.1inch-s8001280b1060b-overlay.dtbo \
 	rk3588s-lubancat-4-dsi1-1024x600-7inch-ebf410173-overlay.dtbo \
 	rk3588s-lubancat-4-dsi1-1080x1920-5.5inch-ebf410125-overlay.dtbo \
 	rk3588s-lubancat-4-cam0-ov8858-3264x2448-15fps-overlay.dtbo \
