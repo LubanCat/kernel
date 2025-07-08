@@ -77,6 +77,7 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3566-lubancat-0-xl9535-overlay.dtbo \
 	rk3566-lubancat-1-spi3-can-mcp2515-overlay.dtbo \
 	rk3566-lubancat-1-xl9535-overlay.dtbo \
+	rk3566-lubancat-1-i2c0-rtc-bm8563-overlay.dtbo \
 	rk3566-lubancat-1n-xl9535-overlay.dtbo \
 	rk3566-lubancat-1h-rs485-1-overlay.dtbo \
 	rk3566-lubancat-1h-rs485-2-overlay.dtbo \
