@@ -38,6 +38,7 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-800x1280-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-generic-overlay.dtbo
 
 # vp3 (插件只能同时开一个)
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-1080p-overlay.dtbo
@@ -45,6 +46,7 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-1024x600-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-generic-overlay.dtbo
 
 # cam0
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-cam0-imx415-overlay.dtbo
