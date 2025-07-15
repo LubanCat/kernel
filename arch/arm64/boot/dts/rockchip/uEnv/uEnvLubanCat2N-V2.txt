@@ -49,12 +49,14 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-7.0-1024x600-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-10.1-800x1280-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-generic-overlay.dtbo
 #dsi1-vp0
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-1080p-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-rpi-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-7.0-1024x600-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-10.1-800x1280-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-generic-overlay.dtbo
 #cam0(mipi-csi0)
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov5647-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov8858-3264x2448-15fps-overlay.dtbo
