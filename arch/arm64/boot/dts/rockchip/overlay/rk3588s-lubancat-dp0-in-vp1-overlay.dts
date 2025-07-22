@@ -1,0 +1,50 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/display/drm_mipi_dsi.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	fragment@0 {
+		target = <&dp0>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&route_dp0>;
+
+		__overlay__ {
+			status = "okay";
+			connect = <&vp1_out_dp0>;
+		};
+	};
+
+	fragment@2 {
+		target = <&dp0_in_vp0>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@4 {
+		target = <&dp0_in_vp1>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@5 {
+		target = <&dp0_in_vp2>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+};
