@@ -39,8 +39,9 @@ enable_uboot_overlays=1
 
 ## vp0
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-hdmi0-8k-overlay.dtbo
+dtoverlay=/dtb/overlay/rk3588s-lubancat-4-hdmi0-overlay.dtbo
 ## vp1
-#
+dtoverlay=/dtb/overlay/rk3588s-lubancat-dp0-in-vp1-overlay.dtbo
 ## vp2
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-dp0-in-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-4-v1-dsi0-800x1280-10.1inch-ebf410177-overlay.dtbo
