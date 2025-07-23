@@ -1,0 +1,46 @@
+uname_r=
+size=0x1000000
+cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
+
+enable_uboot_overlays=1
+#overlay_start
+
+# Display 显示输出配置
+# 每个vp对应一个显示接口，同一个vp同时只能开启一个屏幕
+# 规则1.默认在主设备树中开启hdmi0(vp0,4K)和dp0(vp1,4K)，可即插即用。
+# 规则2.开启vp2和vp3设备树插件，配合规则1,可实现4k+4k+4k+2k四屏异显
+# 规则3.显示8K,同时占用vp0和vp1,还要开启hdmi0-8k设备树插件来配置时钟。
+# 规则4.根据规则1和规则3,如果hdmi0设置为8k的话,dp0不能连接显示器,否则会导致系统崩溃。
+# 规则5.开启vp2和vp3设备树插件,搭配规则3,可实现8k+4k+2k三屏异显
+
+## vp0
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-hdmi0-8k-overlay.dtbo
+dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-hdmi0-overlay.dtbo
+## vp1
+dtoverlay=/dtb/overlay/rk3588s-lubancat-dp0-in-vp1-overlay.dtbo
+## vp2
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-dp0-in-vp2-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-dsi0-800x1280-10.1inch-ebf410177-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-dsi0-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-dsi0-1024x600-7inch-ebf410173-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-dsi0-1080x1920-5.5inch-ebf410125-overlay.dtbo
+## vp3
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-dsi1-800x1280-10.1inch-ebf410177-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-dsi1-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-dsi1-1024x600-7inch-ebf410173-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-dsi1-1080x1920-5.5inch-ebf410125-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo
+
+# CAM0
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam0-imx415-overlay.dtbo
+# CAM1
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam1-imx415-overlay.dtbo
+# CAM2
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam2-imx415-overlay.dtbo
+# CAM3
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam3-imx415-overlay.dtbo
+
+# 开启sata0, mini pcie接口可接msata硬盘
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-sata0-overlay.dtbo
+
+#overlay_end

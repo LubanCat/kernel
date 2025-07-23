@@ -51,12 +51,7 @@
 // #include "rk3588-lubancat-5io-hdmi-rx.dtsi"
 
 /* Camera */
-// #include "rk3588-lubancat-5io-cam0.dtsi"
-// #include "rk3588-lubancat-5io-cam1.dtsi"
-// #include "rk3588-lubancat-5io-cam2.dtsi"
-// #include "rk3588-lubancat-5io-cam3.dtsi"
-// #include "rk3588-lubancat-5io-cam4.dtsi"
-// #include "rk3588-lubancat-5io-cam5.dtsi"
+#include "rk3588-lubancat-5io-csi.dtsi"
 
 / {
 	model = "Embedfire LubanCat-5IO";
@@ -388,10 +383,6 @@
 	test-power {
 		status = "okay";
 	};
-};
-
-&dmc_opp_table {
-	/delete-node/ opp-2750000000;
 };
 
 &rockchip_suspend {
@@ -760,12 +751,12 @@
 
 		regulators {
 			vdd_gpu_s0: vdd_gpu_mem_s0: DCDC_REG1 {
-				regulator-always-on;
 				regulator-boot-on;
 				regulator-min-microvolt = <550000>;
 				regulator-max-microvolt = <950000>;
 				regulator-ramp-delay = <12500>;
 				regulator-name = "vdd_gpu_s0";
+				regulator-enable-ramp-delay = <400>;
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -786,12 +777,13 @@
 			vdd_log_s0: DCDC_REG3 {
 				regulator-always-on;
 				regulator-boot-on;
-				regulator-min-microvolt = <750000>;
-				regulator-max-microvolt = <750000>;
+				regulator-min-microvolt = <675000>;
+				regulator-max-microvolt = <800000>;
 				regulator-ramp-delay = <12500>;
 				regulator-name = "vdd_log_s0";
 				regulator-state-mem {
-					regulator-on-in-suspend;
+					regulator-off-in-suspend;
+					regulator-suspend-microvolt = <750000>;
 				};
 			};
 
@@ -811,8 +803,8 @@
 			vdd_ddr_s0: DCDC_REG5 {
 				regulator-always-on;
 				regulator-boot-on;
-				regulator-min-microvolt = <850000>;
-				regulator-max-microvolt = <850000>;
+				regulator-min-microvolt = <675000>;
+				regulator-max-microvolt = <900000>;
 				regulator-ramp-delay = <12500>;
 				regulator-name = "vdd_ddr_s0";
 				regulator-state-mem {
@@ -850,6 +842,7 @@
 				regulator-name = "vcc_3v3_s3";
 				regulator-state-mem {
 					regulator-on-in-suspend;
+					regulator-suspend-microvolt = <3300000>;
 				};
 			};
 
@@ -874,7 +867,7 @@
 				};
 			};
 
-			avcc_1v8_s0: PLDO_REG1 {
+			vcc_1v8_s0: PLDO_REG1 {
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-min-microvolt = <1800000>;
@@ -882,18 +875,18 @@
 				regulator-name = "vcc_1v8_s0";
 				regulator-state-mem {
 					regulator-on-in-suspend;
+					regulator-suspend-microvolt = <1800000>;
 				};
 			};
 
-			vcc_1v8_s0: PLDO_REG2 {
+			avcc_1v8_s0: PLDO_REG2 {
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <1800000>;
-				regulator-name = "vcc_1v8_s0";
+				regulator-name = "avcc_1v8_s0";
 				regulator-state-mem {
 					regulator-off-in-suspend;
-					regulator-suspend-microvolt = <1800000>;
 				};
 			};
 
@@ -969,8 +962,8 @@
 			avdd_0v75_s0: NLDO_REG3 {
 				regulator-always-on;
 				regulator-boot-on;
-				regulator-min-microvolt = <750000>;
-				regulator-max-microvolt = <750000>;
+				regulator-min-microvolt = <837500>;
+				regulator-max-microvolt = <837500>;
 				regulator-name = "avdd_0v75_s0";
 				regulator-state-mem {
 					regulator-off-in-suspend;
@@ -983,17 +976,6 @@
 				regulator-min-microvolt = <850000>;
 				regulator-max-microvolt = <850000>;
 				regulator-name = "avdd_0v85_s0";
-				regulator-state-mem {
-					regulator-off-in-suspend;
-				};
-			};
-
-			vdd_0v75_s0: NLDO_REG5 {
-				regulator-always-on;
-				regulator-boot-on;
-				regulator-min-microvolt = <750000>;
-				regulator-max-microvolt = <750000>;
-				regulator-name = "vdd_0v75_s0";
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -1023,7 +1005,7 @@
 
 &i2s0_8ch {
 	status = "okay";
-	rockchip,clk-trcm = <1>;
+	rockchip,trcm-sync-tx-only;
 	pinctrl-0 = <&i2s0_lrck
 			 &i2s0_sclk
 			 &i2s0_sdi0
@@ -1150,26 +1132,26 @@
 	ir_key_lubancat{
 	rockchip,usercode = <0xff00>;
 	rockchip,key_table =
-        <0xba   KEY_POWER>,   //电源按键
-        <0xb8   KEY_MENU>,     //菜单按键
-        <0xbc   KEY_BACK>,      //返回按键
-        <0xbb   KEY_HOME>,      //home键按键
-        <0xea   KEY_PLAY>,      //播放按键
-        <0xbf   KEY_VOLUMEUP>,  //音量加按键
-        <0xe6   KEY_VOLUMEDOWN>,   //音量键按键
-        <0xf6   KEY_FASTFORWARD>,  //快进按键
-        <0xf8   KEY_FASTREVERSE>,  //快退按键
-        <0xf2   KEY_BACKSPACE>,    //BaskSpace按键
-        <0xf3   KEY_1>,            //按键1
-        <0xe7   KEY_2>,
-        <0xa1   KEY_3>,
-        <0xf7   KEY_4>,
-        <0xe3   KEY_5>,
-        <0xa5   KEY_6>,
-        <0xbd   KEY_7>,
-        <0xad   KEY_8>,
-        <0xb5   KEY_9>,
-        <0xe9   KEY_0>;            //按键0
+		<0xba   KEY_POWER>,   //电源按键
+		<0xb8   KEY_MENU>,     //菜单按键
+		<0xbc   KEY_BACK>,      //返回按键
+		<0xbb   KEY_HOME>,      //home键按键
+		<0xea   KEY_PLAY>,      //播放按键
+		<0xbf   KEY_VOLUMEUP>,  //音量加按键
+		<0xe6   KEY_VOLUMEDOWN>,   //音量键按键
+		<0xf6   KEY_FASTFORWARD>,  //快进按键
+		<0xf8   KEY_FASTREVERSE>,  //快退按键
+		<0xf2   KEY_BACKSPACE>,    //BaskSpace按键
+		<0xf3   KEY_1>,            //按键1
+		<0xe7   KEY_2>,
+		<0xa1   KEY_3>,
+		<0xf7   KEY_4>,
+		<0xe3   KEY_5>,
+		<0xa5   KEY_6>,
+		<0xbd   KEY_7>,
+		<0xad   KEY_8>,
+		<0xb5   KEY_9>,
+		<0xe9   KEY_0>;            //按键0
 	};
 };
 
@@ -1243,6 +1225,10 @@
 	status = "okay";
 };
 
+&rkvtunnel {
+	status = "okay";
+};
+
 /* this is a watchdog */
 &wdt {
 	status = "okay";
@@ -1300,6 +1286,7 @@
 	rgmii_phy0: phy@0 {
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x0>;
+		realtek,led-data = <0x6d60>;  //8211F phy
 	};
 };
 
@@ -1307,6 +1294,7 @@
 	rgmii_phy1: phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x01>;
+		realtek,led-data = <0x6d60>;  //8211F phy
 	};
 };
 
@@ -1327,7 +1315,7 @@
 // PCIe30 Port1: PCIe-64P
 &pcie3x2 {
 	vpcie3v3-supply = <&vcc3v3_pciex4>;
-	reset-gpios = <&gpio4 RK_PB1 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
 
@@ -1350,7 +1338,7 @@
 &pcie2x1l0 {
 	reset-gpios = <&gpio0 RK_PC5 GPIO_ACTIVE_HIGH>;
 	disable-gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
-	vpcie3v3-supply = <&vcc3v3_m2_pcie>;
+	vpcie3v3-supply = <&vcc3v3_ekey_pcie>;
 	status = "okay";
 };
 

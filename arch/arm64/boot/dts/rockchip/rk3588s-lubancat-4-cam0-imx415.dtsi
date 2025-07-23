@@ -1,7 +1,5 @@
-// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
-/*
- * Copyright (c) 2020 Rockchip Electronics Co., Ltd.
- *
+/* Link path: 
+ * sensor->csi2_dcphy0->mipi0_csi2->rkcif_mipi_lvds->rkcif_mipi_lvds_sditf->rkisp0_vir0 
  */
 
 &i2c1 {

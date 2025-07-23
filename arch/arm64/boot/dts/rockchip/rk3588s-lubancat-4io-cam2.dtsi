@@ -1,0 +1,77 @@
+/* Link path: 
+ * sensor->csi2_dphy1->mipi2_csi2->rkcif_mipi_lvds2->rkcif_mipi_lvds2_sditf->rkisp0_vir2
+ */
+
+&i2c1 {
+	status = "okay";
+};
+
+/* 对焦马达 可选 */
+&dphy1_dw9714 {
+	status = "okay";
+};
+
+/* 摄像头 只能开启一个 */
+&dphy1_ov5647 {
+	status = "disabled";
+};
+
+&dphy1_ov5648 {
+	status = "disabled";
+};
+
+&dphy1_ov8858 {
+	status = "disabled";
+};
+
+&dphy1_ov13850 {
+	status = "disabled";
+};
+
+&dphy1_imx415 {
+	status = "okay";
+};
+
+&dphy1_gc2093 {
+	status = "disabled";
+};
+
+&csi2_dphy0_hw {
+	status = "okay";
+};
+
+&csi2_dphy1 {
+	status = "okay";
+};
+
+&mipi2_csi2 {
+	status = "okay";
+};
+
+&rkcif {
+	status = "okay";
+};
+
+&rkcif_mipi_lvds2 {
+	status = "okay";
+};
+
+&rkcif_mipi_lvds2_sditf {
+	status = "okay";
+};
+
+&rkcif_mmu {
+	status = "okay";
+};
+
+&rkisp0 {
+	status = "okay";
+};
+
+&isp0_mmu {
+	status = "okay";
+};
+
+&rkisp0_vir2 {
+	status = "okay";
+};

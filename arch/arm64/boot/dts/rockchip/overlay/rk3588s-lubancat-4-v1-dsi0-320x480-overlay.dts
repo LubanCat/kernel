@@ -1,0 +1,175 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/display/drm_mipi_dsi.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	fragment@0 {
+		target = <&mipi_dcphy0>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&route_dsi0>;
+
+		__overlay__ {
+			status = "okay";
+			connect = <&vp3_out_dsi0>;
+		};
+	};
+
+	fragment@2 {
+		target = <&dsi0_in_vp3>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@3 {
+		target = <&dsi0>;
+
+		__overlay__ {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			dsi0_panel: panel@0 {
+				status = "okay";
+				compatible = "simple-panel-dsi";
+				reg = <0>;
+				backlight = <&backlight_dsi0>;
+				power-supply = <&mipi_dsi0_power>;
+				reset-gpios = <&gpio1 RK_PA1 GPIO_ACTIVE_LOW>;
+
+				enable-delay-ms = <20>;
+				prepare-delay-ms = <10>;
+				reset-delay-ms = <10>;
+				init-delay-ms = <120>;
+				unprepare-delay-ms = <20>;
+				disable-delay-ms = <20>;
+
+				size,width = <49>;
+				size,height = <74>;
+
+				dsi,flags = <(MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_NO_EOT_PACKET)>;
+				dsi,format = <MIPI_DSI_FMT_RGB888>;
+				dsi,lanes  = <1>;
+
+				panel-init-sequence = [
+					15 00 02 F0 C3
+					15 00 02 F0 96
+					15 00 02 36 48
+					15 00 02 3A 77
+					15 00 02 B4 01
+					39 00 09 E8 40 8A 00 00 29 19 A5 33
+					15 00 02 C1 06
+					15 00 02 C2 A7
+					15 00 02 C5 18
+					39 00 0F E0 F0 09 0B 06 04 15 2F 54 42 3C 17 14 18 1B
+					39 00 0F E1 F0 09 0B 06 04 03 2D 43 42 3B 16 14 17 1B
+					15 00 02 F0 3C
+					15 00 02 F0 69
+					05 00 01 21
+					05 78 01 11
+					05 14 01 29
+				];
+
+				panel-exit-sequence = [
+					05 78 01 28
+					05 00 01 10
+				];
+
+				disp0_timings0: display-timings {
+					native-mode = <&dsi0_timing0>;
+					dsi0_timing0: timing0 {
+						clock-frequency = <11784960>;
+						hactive = <320>;		
+						vactive = <480>;		
+						hsync-len = <19>;		
+						hback-porch = <19>;		
+						hfront-porch = <38>;	
+						vsync-len = <4>;		
+						vback-porch = <4>;		
+						vfront-porch = <8>;		
+						hsync-active = <0>;
+						vsync-active = <0>;
+						de-active = <0>;
+						pixelclk-active = <0>;
+					};
+				};
+
+				ports {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					port@0 {
+						reg = <0>;
+						panel_in_dsi0: endpoint {
+							remote-endpoint = <&dsi0_out_panel>;
+						};
+					};
+				};
+			};
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@1 {
+					reg = <1>;
+					dsi0_out_panel: endpoint {
+						remote-endpoint = <&panel_in_dsi0>;
+					};
+				};
+			};
+		};
+	};
+
+	fragment@4 {
+		target = <&i2c5>;
+
+		__overlay__ {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&i2c5m3_xfer>;
+
+			/*
+			focaltech@38 {
+				compatible = "focaltech,fts";    
+				reg = <0x38>;
+				status = "okay";
+				pinctrl-names = "default";
+				pinctrl-0 = <&tp_gpio>;
+				interrupt-parent = <&gpio0>;
+				interrupts = <RK_PB5 IRQ_TYPE_LEVEL_LOW>;
+				focaltech,irq-gpio = <&gpio0 RK_PB5 GPIO_ACTIVE_HIGH>;
+				focaltech,reset-gpio = <&gpio0 RK_PB6 GPIO_ACTIVE_LOW>;
+				focaltech,max-touch-number = <5>;
+				focaltech,display-coords =  <0 0 320 480>;     
+			};
+			*/
+		};
+	};
+
+	/*
+	fragment@5 {
+		target = <&pinctrl>;
+
+		__overlay__ {
+			tp_gpio: tp-gpio {
+				rockchip,pins = 
+					<0 RK_PB5 RK_FUNC_GPIO &pcfg_pull_up>,
+					<0 RK_PB6 RK_FUNC_GPIO &pcfg_pull_none>;
+			};
+		};
+	};
+	*/
+};

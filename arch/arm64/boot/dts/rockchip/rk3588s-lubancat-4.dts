@@ -18,12 +18,9 @@
 #include "rk3588s.dtsi"
 #include "rk3588-linux.dtsi"
 
-// #include "rk3588s-lubancat-40pin.dtsi"
-// #include "rk3588s-lubancat-csi2.dtsi"
-// #include "rk3588s-lubancat-csi2_cam0.dtsi"
-// #include "rk3588s-lubancat-csi2_cam1.dtsi"
-// #include "rk3588s-lubancat-csi2_cam2.dtsi"
+/* MIPI CSI 节点配置 */
 #include "rk3588s-lubancat-4-csi.dtsi"
+/* IMX415 示例, 开启链路节点 */
 // #include "rk3588s-lubancat-4-cam0-imx415.dtsi"
 // #include "rk3588s-lubancat-4-cam1-imx415.dtsi"
 // #include "rk3588s-lubancat-4-cam2-imx415.dtsi"
@@ -36,19 +33,21 @@
  */
 /***** vp0 *****/
 /* hdmi0 display */
+// #include "rk3588s-lubancat-4-hdmi0.dtsi"
 
 /***** vp1 *****/
 /* dp0 display */
+// #include "rk3588s-lubancat-4-dp0.dtsi"
 
 /***** vp2 *****/
-// #include "rk3588s-lubancat-dsi0-ebf410125_1080p.dtsi" 	//5.5寸
-// #include "rk3588s-lubancat-dsi0-ebf410173_1024x600.dtsi" //7寸
-// #include "rk3588s-lubancat-dsi0-ebf410177_800x1280.dtsi" //10.1寸
+// #include "rk3588s-lubancat-4-dsi0-1080x1920-5.5inch-ebf410125.dtsi"
+// #include "rk3588s-lubancat-4-dsi0-1024x600-7inch-ebf410173.dtsi"
+// #include "rk3588s-lubancat-4-dsi0-800x1280-10.1inch-ebf410177.dtsi"
 
 /***** vp3 *****/
-// #include "rk3588s-lubancat-dsi1-ebf410125_1080p.dtsi" 	//5.5寸
-// #include "rk3588s-lubancat-dsi1-ebf410173_1024x600.dtsi" //7寸
-// #include "rk3588s-lubancat-dsi1-ebf410177_800x1280.dtsi" //10.1寸
+// #include "rk3588s-lubancat-4-dsi1-1080x1920-5.5inch-ebf410125.dtsi"
+// #include "rk3588s-lubancat-4-dsi1-1024x600-7inch-ebf410173.dtsi"
+// #include "rk3588s-lubancat-4-dsi1-800x1280-10.1inch-ebf410177.dtsi"
 
 / {
 	model = "Embedfire LubanCat-4";
@@ -224,7 +223,7 @@
 	dp0_sound: dp0-sound {
 		status = "okay";
 		compatible = "rockchip,hdmi";
-		rockchip,card-name= "rockchip-dp0";
+		rockchip,card-name = "rockchip-dp0";
 		rockchip,mclk-fs = <512>;
 		rockchip,cpu = <&spdif_tx2>;
 		rockchip,codec = <&dp0 1>;
@@ -298,7 +297,7 @@
 		>;
 	};
 
-	backlight0: backlight0 {
+	backlight_dsi0: backlight-dsi0 {
 		compatible = "pwm-backlight";
 		pwms = <&pwm2 0 25000 0>;
 		brightness-levels = <
@@ -338,7 +337,7 @@
 		default-brightness-level = <200>;
 	};
 
-	backlight1: backlight1 {
+	backlight_dsi1: backlight-dsi1 {
 		compatible = "pwm-backlight";
 		pwms = <&pwm6 0 25000 0>;
 		brightness-levels = <
@@ -381,10 +380,6 @@
 	test-power {
 		status = "okay";
 	};
-};
-
-&dmc_opp_table {
-	/delete-node/ opp-2750000000;
 };
 
 &av1d {
@@ -742,12 +737,12 @@
 
 		regulators {
 			vdd_gpu_s0: vdd_gpu_mem_s0: DCDC_REG1 {
-				regulator-always-on;
 				regulator-boot-on;
 				regulator-min-microvolt = <550000>;
 				regulator-max-microvolt = <950000>;
 				regulator-ramp-delay = <12500>;
 				regulator-name = "vdd_gpu_s0";
+				regulator-enable-ramp-delay = <400>;
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -768,12 +763,13 @@
 			vdd_log_s0: DCDC_REG3 {
 				regulator-always-on;
 				regulator-boot-on;
-				regulator-min-microvolt = <750000>;
-				regulator-max-microvolt = <750000>;
+				regulator-min-microvolt = <675000>;
+				regulator-max-microvolt = <800000>;
 				regulator-ramp-delay = <12500>;
 				regulator-name = "vdd_log_s0";
 				regulator-state-mem {
-					regulator-on-in-suspend;
+					regulator-off-in-suspend;
+					regulator-suspend-microvolt = <750000>;
 				};
 			};
 
@@ -793,8 +789,8 @@
 			vdd_ddr_s0: DCDC_REG5 {
 				regulator-always-on;
 				regulator-boot-on;
-				regulator-min-microvolt = <850000>;
-				regulator-max-microvolt = <850000>;
+				regulator-min-microvolt = <675000>;
+				regulator-max-microvolt = <900000>;
 				regulator-ramp-delay = <12500>;
 				regulator-name = "vdd_ddr_s0";
 				regulator-state-mem {
@@ -832,6 +828,7 @@
 				regulator-name = "vcc_3v3_s3";
 				regulator-state-mem {
 					regulator-on-in-suspend;
+					regulator-suspend-microvolt = <3300000>;
 				};
 			};
 
@@ -969,13 +966,6 @@
 					regulator-off-in-suspend;
 				};
 			};
-
-			nldo5_s0: NLDO_REG5 {
-				regulator-name = "nldo5_s0";
-				regulator-state-mem {
-					regulator-off-in-suspend;
-				};
-			};
 		};
 	};
 };
@@ -1001,7 +991,7 @@
 
 &i2s0_8ch {
 	status = "okay";
-	rockchip,clk-trcm = <1>;
+	rockchip,trcm-sync-tx-only;
 	pinctrl-0 = <&i2s0_lrck
 			 &i2s0_sclk
 			 &i2s0_sdi0
@@ -1128,26 +1118,26 @@
 	ir_key_lubancat{
 	rockchip,usercode = <0xff00>;
 	rockchip,key_table =
-        <0xba   KEY_POWER>,   //电源按键
-        <0xb8   KEY_MENU>,     //菜单按键
-        <0xbc   KEY_BACK>,      //返回按键
-        <0xbb   KEY_HOME>,      //home键按键
-        <0xea   KEY_PLAY>,      //播放按键
-        <0xbf   KEY_VOLUMEUP>,  //音量加按键
-        <0xe6   KEY_VOLUMEDOWN>,   //音量键按键
-        <0xf6   KEY_FASTFORWARD>,  //快进按键
-        <0xf8   KEY_FASTREVERSE>,  //快退按键
-        <0xf2   KEY_BACKSPACE>,    //BaskSpace按键
-        <0xf3   KEY_1>,            //按键1
-        <0xe7   KEY_2>,
-        <0xa1   KEY_3>,
-        <0xf7   KEY_4>,
-        <0xe3   KEY_5>,
-        <0xa5   KEY_6>,
-        <0xbd   KEY_7>,
-        <0xad   KEY_8>,
-        <0xb5   KEY_9>,
-        <0xe9   KEY_0>;            //按键0
+		<0xba   KEY_POWER>,   //电源按键
+		<0xb8   KEY_MENU>,     //菜单按键
+		<0xbc   KEY_BACK>,      //返回按键
+		<0xbb   KEY_HOME>,      //home键按键
+		<0xea   KEY_PLAY>,      //播放按键
+		<0xbf   KEY_VOLUMEUP>,  //音量加按键
+		<0xe6   KEY_VOLUMEDOWN>,   //音量键按键
+		<0xf6   KEY_FASTFORWARD>,  //快进按键
+		<0xf8   KEY_FASTREVERSE>,  //快退按键
+		<0xf2   KEY_BACKSPACE>,    //BaskSpace按键
+		<0xf3   KEY_1>,            //按键1
+		<0xe7   KEY_2>,
+		<0xa1   KEY_3>,
+		<0xf7   KEY_4>,
+		<0xe3   KEY_5>,
+		<0xa5   KEY_6>,
+		<0xbd   KEY_7>,
+		<0xad   KEY_8>,
+		<0xb5   KEY_9>,
+		<0xe9   KEY_0>;            //按键0
 	};
 
 	ir_key2 {
@@ -1277,6 +1267,10 @@
 	status = "okay";
 };
 
+&rkvtunnel {
+	status = "okay";
+};
+
 /* this is a watchdog */
 &wdt {
 	status = "okay";
@@ -1310,10 +1304,11 @@
 	rgmii_phy1: phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x1>;
+		realtek,led-data = <0x6d60>;  //8211F phy
 	};
 };
 
-/* SATA30/PCIe20x1_2 Combo PHY */
+/* SATA30_HOST0/PCIe20x1_2 Combo PHY */
 &combphy0_ps {
 	status = "okay";
 };
@@ -1386,7 +1381,7 @@
 	status = "okay";
 };
 
-/* USB3.1/SATA/PCIe20x1_1 Combo PHY */
+/* USB30_HOST2/SATA30_HOST2/PCIe20x1_1 Combo PHY */
 &combphy2_psu {
 	status = "okay";
 };
@@ -1451,61 +1446,10 @@
 	status = "okay";
 };
 
-/* hdmi0 display */
-&hdmi0 {
-	enable-gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
-	cec-enable = "true";
-	status = "okay";
-};
-
-&route_hdmi0{
-	status = "okay";
-	connect = <&vp0_out_hdmi0>;
-};
-
-&hdmi0_in_vp0 {
-	status = "okay";
-};
-
-&hdmi0_in_vp1 {
-	status = "disabled";
-};
-
-&hdmi0_in_vp2 {
-	status = "disabled";
-};
-
-&hdptxphy_hdmi0 {
-	status = "okay";
-};
-
-/* dp0 display */
-&dp0 {
-	status = "okay";
-};
-
-&route_dp0 {
-	status = "okay";
-	connect = <&vp1_out_dp0>;
-};
-
-&dp0_in_vp0 {
-	status = "disabled";
-};
-
-&dp0_in_vp1 {
-	status = "okay";
-};
-
-&dp0_in_vp2 {
-	status = "disabled";
-};
-
 &vop {
 	status = "okay";
-	disable-win-move;
-	assigned-clocks = <&cru ACLK_VOP>;
-	assigned-clock-rates = <800000000>;
+	vop-supply = <&vdd_log_s0>;
+	// disable-win-move;
 };
 
 &vop_mmu {
@@ -1516,7 +1460,7 @@
 &vp0 {
 	rockchip,plane-mask = <(1 << ROCKCHIP_VOP2_CLUSTER0 | 1 << ROCKCHIP_VOP2_ESMART0)>;
 	rockchip,primary-plane = <ROCKCHIP_VOP2_ESMART0>;
-	cursor-win-id = <ROCKCHIP_VOP2_CLUSTER0>;
+	// cursor-win-id = <ROCKCHIP_VOP2_CLUSTER0>;
 };
 
 &vp1 {
