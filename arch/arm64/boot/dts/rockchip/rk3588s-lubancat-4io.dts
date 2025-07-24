@@ -1615,7 +1615,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart4m2_xfer &rs485_1_rts>;
 	rs485-de-gpios = <&gpio3 RK_PD3 GPIO_ACTIVE_HIGH>;
-	linux,rs485-enabled-at-boot-time;
 };
 
 &uart7 {
@@ -1623,7 +1622,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart7m2_xfer &rs485_2_rts>;
 	rs485-de-gpios = <&gpio1 RK_PA6 GPIO_ACTIVE_HIGH>;
-	linux,rs485-enabled-at-boot-time;
 };
 
 /* RS232 */
