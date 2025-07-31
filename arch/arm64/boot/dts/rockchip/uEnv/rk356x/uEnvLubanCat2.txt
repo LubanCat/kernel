@@ -5,9 +5,8 @@ cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 root
 enable_uboot_overlays=1
 #overlay_start
 
+# 40pin
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2-xl9535-overlay.dtbo
-#40pin
-#dtoverlay=/dtb/overlay/rk3568-lubancat-msata-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-i2c3-m0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-i2c3-m1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-i2c5-m0-overlay.dtbo
@@ -36,18 +35,20 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3568-lubancat-can1-m0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-canfd1-m1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-canfd1-m0-overlay.dtbo
-#rtc modules
+# rtc modules
 #dtoverlay=/dtb/overlay/rk356x-lubancat-i2c3-m0-rtc-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-i2c3-m1-rtc-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-i2c5-m0-rtc-overlay.dtbo
 #mini-pcie 5G modules
 #dtoverlay=/dtb/overlay/rk356x-lubancat-pcie2x1-disabled-overlay.dtbo
-#display
+# sata
+#dtoverlay=/dtb/overlay/rk3568-lubancat-msata-overlay.dtbo
+# display
 #dtoverlay=/dtb/overlay/rk3568-lubancat-hdmi-disabled-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-dsi0-1080x1920-5.5inch-ebf410125-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-dsi0-1024x600-7inch-ebf410173-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-dsi0-800x1280-10.1inch-ebf410177-overlay.dtbo
-#cam0(mipi-csi0)
+# cam0(mipi-csi0)
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov8858-3264x2448-15fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov8858-1632x1224-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-gc4653-2560x1440-30fps-overlay.dtbo
@@ -56,4 +57,3 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-imx415-overlay.dtbo
 
 #overlay_end
-

@@ -7,17 +7,17 @@ enable_uboot_overlays=1
 
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-rs485-1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-rs485-2-overlay.dtbo
-#mini-pcie 5G modules
+# mini-pcie 5G modules
 #dtoverlay=/dtb/overlay/rk356x-lubancat-pcie2x1-disabled-overlay.dtbo
-#dsi0-vp0
+# dsi0-vp0
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi0-1080x1920-5.5inch-ebf410125-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi0-1024x600-7inch-ebf410173-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi0-800x1280-10.1inch-ebf410177-overlay.dtbo
-#dsi1-vp0
+# dsi1-vp0
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-1080x1920-5.5inch-ebf410125-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-1024x600-7inch-ebf410173-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-800x1280-10.1inch-ebf410177-overlay.dtbo
-#edp-in-vp0
+# edp-in-vp0
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-edp-in-vp0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-edp-touch-overlay.dtbo
 # cam0(mipi-csi0)
