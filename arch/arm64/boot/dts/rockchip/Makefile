@@ -19,6 +19,7 @@ dtb-$(CONFIG_CPU_RK3568) += rk3568-lubancat-2-v2.dtb
 dtb-$(CONFIG_CPU_RK3568) += rk3568-lubancat-2-v3.dtb
 dtb-$(CONFIG_CPU_RK3568) += rk3568-lubancat-2n.dtb
 dtb-$(CONFIG_CPU_RK3568) += rk3568-lubancat-2n-v2.dtb
+dtb-$(CONFIG_CPU_RK3568) += rk3568-lubancat-2n-v3.dtb
 dtb-$(CONFIG_CPU_RK3568) += rk3568-lubancat-2io.dtb
 dtb-$(CONFIG_CPU_RK3568) += rk3568-lubancat-2h.dtb
 dtb-$(CONFIG_CPU_RK3568) += rk3566-lubancat-cm4.dtb
