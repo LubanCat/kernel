@@ -40,49 +40,6 @@
 		rockchip,camera-module-facing = "back";
 	};
 
-	ov5647: ov5647@36 {
-		compatible = "ovti,ov5647";
-		status = "disabled";
-		reg = <0x36>;
-		clocks = <&ext_cam_25m_clk>;
-		clock-names = "ext_cam_25m_clk";
-		lens-focus = <&dw9714>;
-
-		port {
-			ov5647_out: endpoint {
-				remote-endpoint = <&dphy0_in_ov5647>;
-				data-lanes = <1 2>;
-			};
-		};
-	};
-
-	ov5648: camera@36 {
-		compatible = "ovti,ov5648";
-		status = "disabled";
-		reg = <0x36>;
-		clocks = <&ext_cam_clk>;
-		clock-names = "xvclk";
-		dovdd-supply= <&cam_dovdd>; /* 1.8v */
-		avdd-supply = <&cam_avdd>;  /* 2.8v */
-		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		rotation = <180>;
-
-		rockchip,camera-module-index = <0>;
-		rockchip,camera-module-facing = "back";
-		rockchip,camera-module-name = "THDS11073";
-		rockchip,camera-module-lens-name = "Largan-40122a1";
-		lens-focus = <&dw9714>;
-
-		port {
-			/* MIPI CSI-2 bus endpoint */
-			ov5648_out: endpoint {
-				remote-endpoint = <&dphy0_in_ov5648>;
-				clock-lanes = <0>;
-				data-lanes = <1 2>;
-			};
-		};
-	};
-
 	ov8858: ov8858@36 {
 		compatible = "ovti,ov8858";
 		status = "disabled";
@@ -106,58 +63,6 @@
 				remote-endpoint = <&dphy0_in_ov8858>;
 				clock-lanes = <0>;
 				data-lanes = <1 2>;
-			};
-		};
-	};
-
-   ov13850: ov13850@10 {
-		compatible = "ovti,ov13850";
-		status = "disabled";
-		reg = <0x10>;
-		clocks = <&ext_cam_clk>;
-		clock-names = "xvclk";
-		dovdd-supply= <&cam_dovdd>; /* 1.8v */
-		avdd-supply = <&cam_avdd>;  /* 2.8v */
-		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		rotation = <180>;
-
-		rockchip,camera-module-index = <2>;
-		rockchip,camera-module-facing = "back";
-		rockchip,camera-module-name = "ZC-OV13850R2A-V1";
-		rockchip,camera-module-lens-name = "Largan-50064B31";
-		lens-focus = <&dw9714>;
-
-		port {
-			/* MIPI CSI-2 bus endpoint */
-			ov13850_out: endpoint {
-				remote-endpoint = <&dphy0_in_ov13850>;
-				clock-lanes = <0>;
-				data-lanes = <1 2 3 4>;
-			};
-		};
-	};
-
-	sc132gs: sc132gs@30 {
-		compatible = "smartsens,sc132gs";
-		status = "disabled";
-		reg = <0x30>;
-		clocks = <&ext_cam_clk>;
-		clock-names = "xvclk";
-
-		dovdd-supply= <&cam_dovdd>; /* 1.8v */
-		avdd-supply = <&cam_avdd>;  /* 2.8v */
-		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-
-		rockchip,camera-module-index = <1>;
-		rockchip,camera-module-facing = "back";
-		rockchip,camera-module-name = "default";
-		rockchip,camera-module-lens-name = "default";
-
-		port {
-			sc132gs_out: endpoint {
-				remote-endpoint = <&dphy0_in_sc132gs>;
-				clock-lanes = <0>;
-				data-lanes = <1>;
 			};
 		};
 	};
@@ -201,34 +106,10 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			dphy0_in_ov5648: endpoint@1 {
-				reg = <1>;
-				remote-endpoint = <&ov5648_out>;
-				data-lanes = <1 2>;
-			};
-
 			dphy0_in_ov8858: endpoint@2 {
 				reg = <2>;
 				remote-endpoint = <&ov8858_out>;
 				data-lanes = <1 2>;
-			};
-
-			dphy0_in_ov13850: endpoint@3 {
-				reg = <3>;
-				remote-endpoint = <&ov13850_out>;
-				data-lanes = <1 2 3 4>;
-			};
-
-			dphy0_in_ov5647: endpoint@4 {
-				reg = <4>;
-				remote-endpoint = <&ov5647_out>;
-				data-lanes = <1 2>;
-			};
-
-			dphy0_in_sc132gs: endpoint@5 {
-				reg = <5>;
-				remote-endpoint = <&sc132gs_out>;
-				data-lanes = <1>;
 			};
 
 			dphy0_in_imx415: endpoint@6 {
@@ -281,4 +162,3 @@
 &rkcif {
 	status = "okay";
 };
-

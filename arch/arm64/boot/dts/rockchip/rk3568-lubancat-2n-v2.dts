@@ -818,41 +818,13 @@
 };
 
 //cam0-gpio-setting
-&ov5647 {
-	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_LOW>;
-};
-
-&ov5648 {
-	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
-};
-
 &ov8858 {
 	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
 	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
 };
 
-&sc132gs {
-	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
-};
-
 //cam1-gpio-setting
-&cam1_ov5647 {
-	pwdn-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_LOW>;
-};
-
-&cam1_ov5648 {
-	pwdn-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_LOW>;
-};
-
 &cam1_ov8858 {
-	pwdn-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
-};
-
-&cam1_sc132gs {
 	pwdn-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
 	reset-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
 };
