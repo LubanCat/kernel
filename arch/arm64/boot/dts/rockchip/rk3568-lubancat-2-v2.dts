@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * Copyright (c) 2020 Rockchip Electronics Co., Ltd.
- *
- */
+* Copyright (c) 2020 Rockchip Electronics Co., Ltd.
+*
+*/
 
 #include "rk3568-lubancat-2.dtsi"
 // 双摄像头
@@ -28,7 +28,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 / {
 	model = "EmbedFire LubanCat-2";
 	compatible = "embedfire,lubancat-2-v2", "rockchip,rk3568";
-
+	
 	mipi_dsi0_power: mipi-dsi0-power-regulator {
 		compatible = "regulator-fixed";
 		enable-active-high;
@@ -38,7 +38,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		regulator-name = "mipi_dsi0_power";
 		regulator-always-on;
 	};
-
+	
 	mipi_dsi1_power: mipi-dsi1-power-regulator {
 		compatible = "regulator-fixed";
 		enable-active-high;
@@ -48,7 +48,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		regulator-name = "mipi_dsi1_power";
 		regulator-always-on;
 	};
-
+	
 	vdd_cam1_5v: vdd-cam1-5v-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vdd_cam1_5v";
@@ -60,7 +60,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		enable-active-high;
 		regulator-always-on;
 	};
-
+	
 	cam1_dovdd: cam1-dovdd {
 		compatible = "regulator-fixed";
 		regulator-name = "cam1_dovdd";
@@ -70,7 +70,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		regulator-max-microvolt = <1800000>;
 		vin-supply = <&vdd_cam1_5v>;
 	};
-
+	
 	cam1_avdd: cam1-avdd {
 		compatible = "regulator-fixed";
 		regulator-name = "cam1_avdd";
@@ -80,7 +80,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		regulator-max-microvolt = <2800000>;
 		vin-supply = <&vdd_cam1_5v>;
 	};
-
+	
 	cam1_dvdd: cam1-dvdd {
 		compatible = "regulator-fixed";
 		regulator-name = "cam1_dvdd";
@@ -90,44 +90,44 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		regulator-max-microvolt = <1200000>;
 		vin-supply = <&vdd_cam1_5v>;
 	};
-
+	
 	backlight1: backlight1 {
 		status = "okay";
 		compatible = "pwm-backlight";
 		pwms = <&pwm5 0 50000 0>;
 		brightness-levels = <
-			 95  95  95  95  95  95  95  95
-			 95  95  95  95  95  95  95  95
-			 95  95  95  95  95  95  95  95
-			 95  95  95  95  95  95  95  95
-			 95  95  95  95  95  95  95  95
-			 95  95  95  95  95  95  95  95
-			 95  95  95  95  95  95  95  95
-			 95  95  95  95  95  95  95  95
-			 95  95  95  95  95  95  95  95
-			 95  95  95  95  95  95  95  95
-			 95  95  95  95  95  95  95  95
-			 88  89  90  91  92  93  94  95
-			 96  97  98  99 100 101 102 103
-			104 105 106 107 108 109 110 111
-			112 113 114 115 116 117 118 119
-			120 121 122 123 124 125 126 127
-			128 129 130 131 132 133 134 135
-			136 137 138 139 140 141 142 143
-			144 145 146 147 148 149 150 151
-			152 153 154 155 156 157 158 159
-			160 161 162 163 164 165 166 167
-			168 169 170 171 172 173 174 175
-			176 177 178 179 180 181 182 183
-			184 185 186 187 188 189 190 191
-			192 193 194 195 196 197 198 199
-			200 201 202 203 204 205 206 207
-			208 209 210 211 212 213 214 215
-			216 217 218 219 220 221 222 223
-			224 225 226 227 228 229 230 231
-			232 233 234 235 236 237 238 239
-			240 241 242 243 244 245 246 247
-			248 249 250 251 252 253 254 255
+		95  95  95  95  95  95  95  95
+		95  95  95  95  95  95  95  95
+		95  95  95  95  95  95  95  95
+		95  95  95  95  95  95  95  95
+		95  95  95  95  95  95  95  95
+		95  95  95  95  95  95  95  95
+		95  95  95  95  95  95  95  95
+		95  95  95  95  95  95  95  95
+		95  95  95  95  95  95  95  95
+		95  95  95  95  95  95  95  95
+		95  95  95  95  95  95  95  95
+		88  89  90  91  92  93  94  95
+		96  97  98  99 100 101 102 103
+		104 105 106 107 108 109 110 111
+		112 113 114 115 116 117 118 119
+		120 121 122 123 124 125 126 127
+		128 129 130 131 132 133 134 135
+		136 137 138 139 140 141 142 143
+		144 145 146 147 148 149 150 151
+		152 153 154 155 156 157 158 159
+		160 161 162 163 164 165 166 167
+		168 169 170 171 172 173 174 175
+		176 177 178 179 180 181 182 183
+		184 185 186 187 188 189 190 191
+		192 193 194 195 196 197 198 199
+		200 201 202 203 204 205 206 207
+		208 209 210 211 212 213 214 215
+		216 217 218 219 220 221 222 223
+		224 225 226 227 228 229 230 231
+		232 233 234 235 236 237 238 239
+		240 241 242 243 244 245 246 247
+		248 249 250 251 252 253 254 255
 		>;
 		default-brightness-level = <200>;
 	};
@@ -135,7 +135,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 
 &pwm3 {
 	status = "okay";
-
+	
 	compatible = "rockchip,remotectl-pwm";
 	interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
 	remote_pwm_id = <3>;
@@ -143,30 +143,30 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 	remote_support_psci = <0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pwm3_pins>;
-
+	
 	ir_key_lubancat{
 		rockchip,usercode = <0xff00>;
 		rockchip,key_table =
-			<0xba   KEY_POWER>,   		//电源按键
-			<0xb8   KEY_MENU>,     		//菜单按键
-			<0xbc   KEY_BACK>,      	//返回按键
-			<0xbb   KEY_HOME>,      	//home键按键
-			<0xea   KEY_PLAY>,      	//播放按键
-			<0xbf   KEY_VOLUMEUP>,  	//音量加按键
-			<0xe6   KEY_VOLUMEDOWN>,   	//音量键按键
-			<0xf6   KEY_FASTFORWARD>,  	//快进按键
-			<0xf8   KEY_FASTREVERSE>,  	//快退按键
-			<0xf2   KEY_BACKSPACE>,    	//BaskSpace按键
-			<0xf3   KEY_1>,            	//按键1
-			<0xe7   KEY_2>,
-			<0xa1   KEY_3>,
-			<0xf7   KEY_4>,
-			<0xe3   KEY_5>,
-			<0xa5   KEY_6>,
-			<0xbd   KEY_7>,
-			<0xad   KEY_8>,
-			<0xb5   KEY_9>,
-			<0xe9   KEY_0>;            	//按键0
+		<0xba   KEY_POWER>,//电源按键
+		<0xb8   KEY_MENU>,//菜单按键
+		<0xbc   KEY_BACK>,//返回按键
+		<0xbb   KEY_HOME>,//home键按键
+		<0xea   KEY_PLAY>,//播放按键
+		<0xbf   KEY_VOLUMEUP>,//音量加按键
+		<0xe6   KEY_VOLUMEDOWN>,//音量键按键
+		<0xf6   KEY_FASTFORWARD>,//快进按键
+		<0xf8   KEY_FASTREVERSE>,//快退按键
+		<0xf2   KEY_BACKSPACE>,//BaskSpace按键
+		<0xf3   KEY_1>,//按键1
+		<0xe7   KEY_2>,
+		<0xa1   KEY_3>,
+		<0xf7   KEY_4>,
+		<0xe3   KEY_5>,
+		<0xa5   KEY_6>,
+		<0xbd   KEY_7>,
+		<0xad   KEY_8>,
+		<0xb5   KEY_9>,
+		<0xe9   KEY_0>;//按键0
 	};
 };
 
@@ -284,16 +284,16 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		mipi_dsi0_pwr_en: mipi-dsi0-pwr-en {
 			rockchip,pins = <3 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
-
+		
 		mipi_dsi1_pwr_en: mipi-dsi1-pwr-en {
 			rockchip,pins = <3 RK_PC7 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
-
+		
 		mipi_dsi1_irq: mipi-dsi1-irq {
 			rockchip,pins = <3 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 	};
-
+	
 	cam {
 		cam1_pwr_en: cam1_pwr_en {
 			rockchip,pins = <3 RK_PD1 RK_FUNC_GPIO &pcfg_pull_none>;
