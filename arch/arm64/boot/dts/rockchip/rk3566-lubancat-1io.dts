@@ -470,6 +470,21 @@
 	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_LOW>;
 };
 
+&gc4653 {
+	pwdn-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_HIGH>;
+};
+
+&gc2053 {
+	pwdn-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_LOW>;
+	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_LOW>;
+};
+
+&gc08a8 {
+	pwdn-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_HIGH>;
+};
+
 //cam1-gpio-setting
 &cam1_ov8858 {
 	pwdn-gpios = <&gpio3 RK_PA7 GPIO_ACTIVE_HIGH>;
