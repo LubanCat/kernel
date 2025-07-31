@@ -162,26 +162,15 @@
 
 	rk809_sound: rk809-sound {
 		status = "okay";
-		compatible = "simple-audio-card";
-		simple-audio-card,format = "i2s";
-		simple-audio-card,name = "rockchip,rk809-codec";
-		simple-audio-card,mclk-fs = <256>;
-
-		simple-audio-card,cpu {
-			sound-dai = <&i2s1_8ch>;
-		};
-		simple-audio-card,codec {
-			sound-dai = <&rk809_codec>;
-		};
-	};
-	
-	rk_headset: rk-headset {
-		status = "okay";
-		compatible = "rockchip_headset";
-		headset_gpio = <&gpio0 RK_PB5 GPIO_ACTIVE_HIGH>;
+		compatible = "rockchip,multicodecs-card";
+		rockchip,card-name = "rockchip-rk809";
+		hp-det-gpio = <&gpio0 RK_PB5 GPIO_ACTIVE_HIGH>;
+		rockchip,format = "i2s";
+		rockchip,mclk-fs = <256>;
+		rockchip,cpu = <&i2s1_8ch>;
+		rockchip,codec = <&rk809_codec>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hp_det>;
-		io-channels = <&saradc 1>;
 	};
 
 	backlight: backlight {
@@ -241,13 +230,12 @@
 
 &i2s1_8ch {
 	status = "okay";
-	rockchip,clk-trcm = <1>;
-	/delete-property/ rockchip,playback-only;
+	rockchip,trcm-sync-tx-only;
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2s1m0_sclktx
-					&i2s1m0_lrcktx
-					&i2s1m0_sdi0
-					&i2s1m0_sdo0>;
+		     &i2s1m0_lrcktx
+		     &i2s1m0_sdi0
+		     &i2s1m0_sdo0>;
 };
 
 &pwm0 {
