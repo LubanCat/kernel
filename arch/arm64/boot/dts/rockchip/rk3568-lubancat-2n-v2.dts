@@ -256,56 +256,45 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&sys_led_pin>;
 		};
+	};
 
-		fan0: fan0 {
-			label = "fan0";
-			default-state = "on";
-			linux,default-trigger = "none";
-			gpios = <&gpio0 RK_PB7 GPIO_ACTIVE_HIGH>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&fan0_pin>;
-		};
+	fan_chassis: fan-chassis {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		pwms = <&pwm0 0 50000 0>;
+		cooling-levels = <0 100 150 200 255>;
+		rockchip,temp-trips = <
+			40000	1
+			45000	2
+			50000	3
+			55000	4
+		>;
+	};
 
-		fan1: fan1 {
-			label = "fan1";
-			default-state = "on";
-			linux,default-trigger = "none";
-			gpios = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&fan1_pin>;
-		};
-
+	fan_cpu: fan-cpu {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		pwms = <&pwm7 0 50000 0>;
+		cooling-levels = <0 100 150 200 255>;
+		rockchip,temp-trips = <
+			40000	1
+			45000	2
+			50000	3
+			55000	4
+		>;
 	};
 
 	rk809_sound: rk809-sound {
 		status = "okay";
-		compatible = "simple-audio-card";
-		simple-audio-card,format = "i2s";
-		simple-audio-card,name = "rockchip,rk809-codec";
-		simple-audio-card,mclk-fs = <256>;
-		simple-audio-card,widgets =
-			"Microphone", "Mic Jack",
-			"Headphone", "Headphone Jack";
-		simple-audio-card,routing =
-			"Mic Jack", "MICBIAS1",
-			"IN1P", "Mic Jack",
-			"Headphone Jack", "HPOL",
-			"Headphone Jack", "HPOR";
-		simple-audio-card,cpu {
-			sound-dai = <&i2s1_8ch>;
-		};
-		simple-audio-card,codec {
-			sound-dai = <&rk809_codec>;
-		};
-	};
-
-	rk_headset: rk-headset {
-		status = "okay";
-		compatible = "rockchip_headset";
-		headset_gpio = <&gpio0 RK_PB0 GPIO_ACTIVE_HIGH>;
+		compatible = "rockchip,multicodecs-card";
+		rockchip,card-name = "rockchip-rk809";
+		hp-det-gpio = <&gpio0 RK_PB0 GPIO_ACTIVE_HIGH>;
+		rockchip,format = "i2s";
+		rockchip,mclk-fs = <256>;
+		rockchip,cpu = <&i2s1_8ch>;
+		rockchip,codec = <&rk809_codec>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hp_det>;
-		io-channels = <&saradc 1>;
 	};
 
 	backlight: backlight {
@@ -430,13 +419,16 @@
 
 &i2s1_8ch {
 	status = "okay";
-	rockchip,clk-trcm = <1>;
-	/delete-property/ rockchip,playback-only;
+	rockchip,trcm-sync-tx-only;
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2s1m0_sclktx
-			 &i2s1m0_lrcktx
-			 &i2s1m0_sdi0
-			 &i2s1m0_sdo0>;
+		     &i2s1m0_lrcktx
+		     &i2s1m0_sdi0
+		     &i2s1m0_sdo0>;
+};
+
+&pwm7 {
+	status = "okay";
 };
 
 &pwm5 {
@@ -473,6 +465,10 @@
 		<0xf1   KEY_LEFT>,
 		<0xe5   KEY_RIGHT>;
 	};
+};
+
+&pwm0 {
+	status = "okay";
 };
 
 &xin32k {
@@ -910,14 +906,6 @@
 	leds {
 		sys_led_pin: sys-led-pin {
 			rockchip,pins = <0 RK_PC7 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-
-		fan0_pin: fan0-pin {
-			rockchip,pins = <0 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-
-		fan1_pin: fan1-pin {
-			rockchip,pins = <0 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 };
