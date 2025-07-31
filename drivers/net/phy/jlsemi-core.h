@@ -15,7 +15,7 @@
 #ifndef _JLSEMI_CORE_H
 #define _JLSEMI_CORE_H
 
-#define JLSEMI_KERNEL_DEVICE_TREE_USE	0
+#define JLSEMI_KERNEL_DEVICE_TREE_USE	1
 
 #include <linux/phy.h>
 #include <linux/version.h>
