@@ -1,0 +1,63 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target = <&cam1_ov8858>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&cam1_dw9714>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@2 {
+		target = <&csi2_dphy2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	
+	fragment@3 {
+		target = <&mipi_csi2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@4 {
+		target = <&rkcif_mipi_lvds>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+
+	fragment@5 {
+		target = <&rkcif_mipi_lvds_sditf>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@6 {
+		target = <&rkisp_vir1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@7 {
+		target = <&i2c5>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+};
