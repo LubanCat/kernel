@@ -156,7 +156,7 @@
 	};
 
 	fragment@5 {
-		target = <&gt911_edp>;
+		target = <&gt911_lvds>;
 
 		__overlay__ {
 			status = "okay";
