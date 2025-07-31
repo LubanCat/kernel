@@ -744,15 +744,15 @@
 
 &gmac0 {
 	snps,reset-gpio = <&gpio1 RK_PA1 GPIO_ACTIVE_LOW>;
-	tx_delay = <0x04>;
-	rx_delay = <0x03>;
+	tx_delay = <0x26>;
+	rx_delay = <0x0f>;
 	status = "okay";
 };
 
 &gmac1 {
 	snps,reset-gpio = <&gpio0 RK_PC7 GPIO_ACTIVE_LOW>;
-	tx_delay = <0x15>;
-	rx_delay = <0x00>;
+	tx_delay = <0x4e>;
+	rx_delay = <0x0a>;
 	status = "okay";
 };
 
