@@ -603,7 +603,7 @@
 	};
 
 	gt911_lvds: gt911-lvds@5d {
-		status = "okay";
+		status = "disabled";
 		interrupt-parent = <&gpio2>;
 		interrupts = <RK_PD2 IRQ_TYPE_LEVEL_LOW>;
 		irq-gpios = <&gpio2 RK_PD2 GPIO_ACTIVE_HIGH>;
@@ -881,7 +881,6 @@
 };
 
 &gt911_dsi1 {
-	status = "okay";
 	interrupt-parent = <&gpio3>;
 	interrupts = <RK_PB6 IRQ_TYPE_LEVEL_LOW>;
 	reset-gpios = <&gpio3 RK_PB7 GPIO_ACTIVE_LOW>;
@@ -904,7 +903,7 @@
 	pinctrl-0 = <&i2c4m0_xfer>;
 
 	gt911_edp: gt911-edp@5d {
-		status = "okay";
+		status = "disabled";
 		interrupt-parent = <&gpio4>;
 		interrupts = <RK_PB4 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&gpio4 RK_PB5 GPIO_ACTIVE_LOW>;

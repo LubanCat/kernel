@@ -154,4 +154,12 @@
 			};
 		};
 	};
+
+	fragment@5 {
+		target = <&gt911_edp>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
 };

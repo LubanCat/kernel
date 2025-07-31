@@ -136,4 +136,12 @@
 			};
 		};
 	};
+
+	fragment@6 {
+		target = <&gt911_lvds>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
 };
