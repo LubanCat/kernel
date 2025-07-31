@@ -76,26 +76,6 @@
 				prepare-delay-ms = <100>; //AUX通信前延时
 				enable-delay-ms = <100>;
 
-				display-timings {
-					native-mode = <&timing0>;
-
-					timing0: timing0 {
-						clock-frequency = <140000000>;
-						hactive = <1920>;
-						vactive = <1080>;
-						hfront-porch = <40>;
-						hsync-len = <40>;
-						hback-porch = <80>;
-						vfront-porch = <16>;
-						vsync-len = <8>;
-						vback-porch = <16>;
-						hsync-active = <0>;
-						vsync-active = <0>;
-						de-active = <0>;
-						pixelclk-active = <0>;
-					};
-				};
-
 				ports {
 					panel_in_edp: endpoint {
 						remote-endpoint = <&edp_out_panel>;
