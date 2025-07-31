@@ -258,15 +258,6 @@
 			pinctrl-0 = <&sys_led_pin>;
 		};
 
-		fan0: fan0 {
-			label = "fan0";
-			default-state = "on";
-			linux,default-trigger = "none";
-			gpios = <&gpio0 RK_PB7 GPIO_ACTIVE_HIGH>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&fan0_pin>;
-		};
-
 		spk_ctrl: spk_ctrl {
 			label = "spk_ctrl";
 			default-state = "on";
@@ -275,6 +266,19 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&spk_ctrl_pin>;
 		};
+	};
+
+	fan_cpu: fan-cpu {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		pwms = <&pwm0 0 50000 0>;
+		cooling-levels = <0 100 150 200 255>;
+		rockchip,temp-trips = <
+			40000	1
+			45000	2
+			50000	3
+			55000	4
+		>;
 	};
 
 	rk809_sound: rk809-sound {
@@ -451,6 +455,10 @@
 };
 
 &pwm9 {
+	status = "okay";
+};
+
+&pwm0 {
 	status = "okay";
 };
 
