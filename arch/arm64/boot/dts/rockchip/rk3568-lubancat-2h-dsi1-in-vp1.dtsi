@@ -53,7 +53,6 @@
 		status = "disabled";
 		compatible = "goodix,gt928";
 		reg = <0x5d>;
-		touchscreen-inverted-y;
 	};
 
 	rockpi_mcu_0: rockpi-mcu-0@45 {
