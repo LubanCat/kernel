@@ -21,10 +21,20 @@ board_info() {
 				BOARD_DTB='rk3562-lubancat-1hs.dtb'
 				BOARD_uEnv='uEnvLubanCat1HS.txt'
 				;;
+			0007)
+				BOARD_NAME='LubanCat-1HS-test'
+				BOARD_DTB='rk3562-lubancat-1hs-test.dtb'
+				BOARD_uEnv='uEnvLubanCat1HS-test.txt'
+				;;
 			0100)
-				BOARD_NAME='LubanCat-1HS'
+				BOARD_NAME='LubanCat-1HSI'
 				BOARD_DTB='rk3562-lubancat-1hs.dtb'
 				BOARD_uEnv='uEnvLubanCat1HS.txt'
+				;;
+			0107)
+				BOARD_NAME='LubanCat-1HS-test'
+				BOARD_DTB='rk3562-lubancat-1hs-test.dtb'
+				BOARD_uEnv='uEnvLubanCat1HS-test.txt'
 				;;
 			*)
 				echo "Device ID Error !!!"
