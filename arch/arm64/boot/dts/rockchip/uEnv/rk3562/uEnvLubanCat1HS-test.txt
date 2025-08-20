@@ -1,0 +1,22 @@
+uname_r=
+size=0x1000000
+cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
+
+enable_uboot_overlays=1
+#overlay_start
+
+# Display
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-lvds-1280x800-10.1inch-bsdn10-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-mipi-1080x1920-5.5inch-ebf410125-overlay.dtbo
+dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-mipi-1024x600-7inch-ebf410173-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-mipi-800x1280-10.1inch-ebf410177-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-mipi-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-mipi-generic-overlay.dtbo
+
+# rk3562只有一个isp无法支持同时预览2个imx415 4k30fps，如需图像预览，需关闭其中一个单独测试，以下同时开启仅测试架测试用
+# CAM0
+dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-test-cam0-imx415-3840x2160-30fps-overlay.dtbo
+# CAM1
+dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-test-cam1-imx415-3840x2160-30fps-overlay.dtbo
+
+#overlay_end

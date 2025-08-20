@@ -6,6 +6,7 @@ dtb-$(CONFIG_CPU_RK3528) += rk3528-lubancat-q1io.dtb
 
 dtb-$(CONFIG_CPU_RK3562) += rk3562-lubancat-generic.dtb
 dtb-$(CONFIG_CPU_RK3562) += rk3562-lubancat-1hs.dtb
+dtb-$(CONFIG_CPU_RK3562) += rk3562-lubancat-1hs-test.dtb
 
 dtb-$(CONFIG_CPU_RK3568) += rk356x-lubancat-generic.dtb
 dtb-$(CONFIG_CPU_RK3568) += rk3566-lubancat-0.dtb
