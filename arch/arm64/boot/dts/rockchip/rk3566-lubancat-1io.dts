@@ -470,9 +470,9 @@
 	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_LOW>;
 };
 
-&gc4653 {
+&gc08a8 {
 	pwdn-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_LOW>;
 };
 
 &gc2053 {
@@ -480,7 +480,7 @@
 	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_LOW>;
 };
 
-&gc08a8 {
+&gc4653 {
 	pwdn-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_HIGH>;
 	reset-gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_HIGH>;
 };
