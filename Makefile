@@ -1594,7 +1594,7 @@ CLEAN_FILES += include/ksym vmlinux.symvers modules-only.symvers \
 MRPROPER_FILES += include/config include/generated          \
 		  arch/$(SRCARCH)/include/generated .objdiff \
 		  debian snap tar-install \
-		  .config .config.old .version \
+		  .config .config.old \
 		  Module.symvers \
 		  certs/signing_key.pem \
 		  certs/x509.genkey \
