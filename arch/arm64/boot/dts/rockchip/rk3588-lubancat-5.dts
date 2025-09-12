@@ -28,7 +28,7 @@
 // #include "rk3588-lubancat-5-hdmi1.dtsi"
 // #include "rk3588-lubancat-5-dsi0-ebf410125_1080p.dtsi"
 
-//vp3 
+//vp3
 // #include "rk3588-lubancat-5-dsi1-ebf410125_1080p.dtsi"
 
 #include "rk3588-lubancat-5-csi.dtsi"
@@ -64,7 +64,7 @@
 		io-channel-names = "buttons";
 		keyup-threshold-microvolt = <1800000>;
 		poll-interval = <100>;
-		
+
 		up {
 			label = "up";
 			linux,code = <KEY_UP>;
@@ -134,7 +134,7 @@
 		regulator-max-microvolt = <5000000>;
 		vin-supply = <&vcc5v0_sys>;
 	};
-	
+
 	combophy_avdd1v8: combophy-avdd1v8 {
 		compatible = "regulator-fixed";
 		regulator-name = "combophy_avdd1v8";
@@ -213,7 +213,7 @@
 		regulator-boot-on;
 		regulator-always-on;
 	};
-	
+
 	hdmiin_sound: hdmiin-sound {
 		compatible = "rockchip,hdmi";
 		rockchip,mclk-fs = <128>;
@@ -329,7 +329,7 @@
 		224 225 226 227 228 229 230 231
 		232 233 234 235 236 237 238 239
 		240 241 242 243 244 245 246 247
-		248 249 250 251 252 253 254 255	
+		248 249 250 251 252 253 254 255
 		>;
 		default-brightness-level = <200>;
 	};
@@ -370,7 +370,7 @@
 		224 225 226 227 228 229 230 231
 		232 233 234 235 236 237 238 239
 		240 241 242 243 244 245 246 247
-		248 249 250 251 252 253 254 255	
+		248 249 250 251 252 253 254 255
 		>;
 		default-brightness-level = <200>;
 	};
@@ -396,7 +396,7 @@
 // };
 
 &dmc_opp_table {
-    /delete-node/ opp-2750000000;
+	/delete-node/ opp-2750000000;
 };
 
 &av1d {
@@ -510,7 +510,6 @@
 		#interrupt-cells = <2>;
 	};
 };
-
 
 &i2c0 {
 	pinctrl-names = "default";
@@ -1455,7 +1454,7 @@
 &usbdrd_dwc3_0 {
 	dr_mode = "otg";
 	usb-role-switch;
-	
+
 	status = "okay";
 	port {
 		#address-cells = <1>;
@@ -1557,7 +1556,7 @@
 
 &route_dp0 {
 	status = "okay";
-	connect = <&vp1_out_dp0>;	
+	connect = <&vp1_out_dp0>;
 };
 
 &dp0_in_vp0 {
@@ -1596,7 +1595,7 @@
 	status = "okay";
 };
 
-&i2s7_8ch{
+&i2s7_8ch {
 	status = "okay";
 };
 

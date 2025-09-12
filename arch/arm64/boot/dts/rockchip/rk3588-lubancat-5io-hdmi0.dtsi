@@ -11,15 +11,16 @@
 	};
 };
 
-&route_hdmi0{
-	status = "okay";
-	connect = <&vp0_out_hdmi0>;
-};
-
+/* hdmi0 display */
 &hdmi0 {
 	enable-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
 	cec-enable = "true";
 	status = "okay";
+};
+
+&route_hdmi0{
+	status = "okay";
+	connect = <&vp0_out_hdmi0>;
 };
 
 &hdmi0_in_vp0 {
@@ -34,6 +35,6 @@
 	status = "disabled";
 };
 
-&i2s5_8ch {
+&hdptxphy_hdmi0 {
 	status = "okay";
 };
