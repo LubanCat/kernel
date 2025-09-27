@@ -408,12 +408,12 @@
 		reg = <0x21>;
 		gpio-controller;
 		#gpio-cells = <2>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_pca9535_1>;
-		interrupt-parent = <&gpio2>;
-		interrupts = <RK_PC4 IRQ_TYPE_LEVEL_LOW>;
-		interrupt-controller;
-		#interrupt-cells = <2>;
+		// pinctrl-names = "default";
+		// pinctrl-0 = <&pinctrl_pca9535_1>;
+		// interrupt-parent = <&gpio2>;
+		// interrupts = <RK_PC4 IRQ_TYPE_LEVEL_LOW>;
+		// interrupt-controller;
+		// #interrupt-cells = <2>;
 	};
 };
 
@@ -428,12 +428,12 @@
 		reg = <0x21>;
 		gpio-controller;
 		#gpio-cells = <2>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_pca9535_2>;
-		interrupt-parent = <&gpio2>;
-		interrupts = <RK_PC5 IRQ_TYPE_LEVEL_LOW>;
-		interrupt-controller;
-		#interrupt-cells = <2>;
+		// pinctrl-names = "default";
+		// pinctrl-0 = <&pinctrl_pca9535_2>;
+		// interrupt-parent = <&gpio2>;
+		// interrupts = <RK_PC5 IRQ_TYPE_LEVEL_LOW>;
+		// interrupt-controller;
+		// #interrupt-cells = <2>;
 	};
 };
 
@@ -1605,10 +1605,10 @@
 
 	io {
 		pinctrl_pca9535_1: pinctrl-pca9535-1{
-			rockchip,pins = <2 RK_PC4 RK_FUNC_GPIO &pcfg_pull_none>;
+			rockchip,pins = <2 RK_PC4 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 		pinctrl_pca9535_2: pinctrl-pca9535-2{
-			rockchip,pins = <2 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
+			rockchip,pins = <2 RK_PC5 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 	};
 
