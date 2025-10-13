@@ -1969,6 +1969,40 @@ remove:
 	return -ENOMEM;
 }
 
+static int rk_pcie_init_try_again(struct rk_pcie *rk_pcie)
+{
+	int ret;
+
+	phy_power_off(rk_pcie->phy);
+	phy_exit(rk_pcie->phy);
+	rk_pcie_disable_power(rk_pcie);
+	msleep(20);
+
+    reset_control_assert(rk_pcie->rsts);
+    udelay(10);
+    reset_control_deassert(rk_pcie->rsts);
+
+	ret = rk_pcie_enable_power(rk_pcie);
+	if (ret) {
+		dev_err(rk_pcie->pci->dev, "retry: enable power failed\n");
+		return ret;
+	}
+
+	ret = rk_pcie_phy_init(rk_pcie);
+	if (ret) {
+		dev_err(rk_pcie->pci->dev, "retry: phy_init failed\n");
+		return ret;
+	}
+
+	ret = phy_calibrate(rk_pcie->phy);
+	if (ret) {
+		dev_err(rk_pcie->pci->dev, "retry: phy lock failed\n");
+		return ret;
+	}
+
+	return ret;
+}
+
 static int rk_pcie_really_probe(void *p)
 {
 	struct platform_device *pdev = p;
@@ -1982,7 +2016,8 @@ static int rk_pcie_really_probe(void *p)
 	struct device_node *np = pdev->dev.of_node;
 	u32 val = 0;
 	int irq;
-
+	int retry;
+	
 	match = of_match_device(rk_pcie_of_match, dev);
 	if (!match) {
 		ret = -EINVAL;
@@ -2076,8 +2111,18 @@ retry_regulator:
 
 	ret = phy_calibrate(rk_pcie->phy);
 	if (ret) {
-		dev_err(dev, "phy lock failed\n");
-		goto disable_phy;
+		for (retry = 0; retry < 5; retry++) {
+			ret = rk_pcie_init_try_again(rk_pcie);
+			if (!ret) {
+				dev_info(dev, "phy lock success after retry %d\n", retry + 1);
+				break;
+			}
+		}
+
+		if (ret) {
+			dev_err(dev, "phy lock failed after 5 retries\n");
+			goto disable_phy;
+		}
 	}
 
 	ret = rk_pcie_clk_init(rk_pcie);
