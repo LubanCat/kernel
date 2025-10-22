@@ -382,10 +382,6 @@
 	};
 };
 
-&dmc_opp_table {
-	/delete-node/ opp-2750000000;
-};
-
 &av1d {
 	status = "okay";
 };
