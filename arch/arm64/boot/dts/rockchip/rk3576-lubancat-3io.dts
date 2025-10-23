@@ -383,20 +383,6 @@
 	pinctrl-0 = <&i2c2m0_xfer>;
 	status = "okay";
 
-	/* bm8563 rtc chip use rtc-hym8563 driver */
-	hym8563: hym8563@51 {
-		compatible = "haoyu,hym8563"; 
-		reg = <0x51>;
-		#clock-cells = <0>;
-		clock-frequency = <32768>;
-		clock-output-names = "hym8563";
-		pinctrl-names = "default";
-		pinctrl-0 = <&hym8563_int>;
-		interrupt-parent = <&gpio0>;
-		interrupts = <RK_PA5 IRQ_TYPE_LEVEL_LOW>;
-		wakeup-source;
-	};
-
 	/* Typec Controller Fusb302 */
 	usbc0: fusb302@22 {
 		compatible = "fcs,fusb302";
@@ -469,6 +455,20 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c3m0_xfer>;
 	status = "okay";
+
+	/* bm8563 rtc chip use rtc-hym8563 driver */
+	hym8563: hym8563@51 {
+		compatible = "haoyu,hym8563"; 
+		reg = <0x51>;
+		#clock-cells = <0>;
+		clock-frequency = <32768>;
+		clock-output-names = "hym8563";
+		pinctrl-names = "default";
+		pinctrl-0 = <&hym8563_int>;
+		interrupt-parent = <&gpio0>;
+		interrupts = <RK_PA5 IRQ_TYPE_LEVEL_LOW>;
+		wakeup-source;
+	};
 
 	es8388: es8388@11 {
 		status = "okay";
