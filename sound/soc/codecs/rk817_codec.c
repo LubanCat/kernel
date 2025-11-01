@@ -254,16 +254,28 @@ static int rk817_codec_ctl_gpio(struct rk817_codec_priv *rk817,
 
 static int rk817_reset(struct snd_soc_component *component)
 {
+	struct rk817_codec_priv *rk817 = snd_soc_component_get_drvdata(component);
+
 	snd_soc_component_write(component, RK817_CODEC_DTOP_LPT_SRST, 0x40);
 	snd_soc_component_write(component, RK817_CODEC_DDAC_POPD_DACST, 0x02);
 	snd_soc_component_write(component, RK817_CODEC_DI2S_CKM, 0x00);
 	snd_soc_component_write(component, RK817_CODEC_DTOP_DIGEN_CLKE, 0xff);
-	snd_soc_component_write(component, RK817_CODEC_APLL_CFG0, 0x04);
 	snd_soc_component_write(component, RK817_CODEC_APLL_CFG1, 0x58);
 	snd_soc_component_write(component, RK817_CODEC_APLL_CFG2, 0x2d);
 	snd_soc_component_write(component, RK817_CODEC_APLL_CFG3, 0x0c);
-	snd_soc_component_write(component, RK817_CODEC_APLL_CFG4, 0xa5);
 	snd_soc_component_write(component, RK817_CODEC_APLL_CFG5, 0x00);
+	snd_soc_component_write(component, RK817_CODEC_DTOP_DIGEN_CLKE, 0x00);
+	if (rk817->chip_ver <= 0x4) {
+		DBG("%s (%d): 0x4 and previous versions\n",
+		    __func__, __LINE__);
+		snd_soc_component_write(component, RK817_CODEC_APLL_CFG0, 0x0c);
+		snd_soc_component_write(component, RK817_CODEC_APLL_CFG4, 0x95);
+	} else {
+		DBG("%s (%d): 0x4 version later\n",
+		    __func__, __LINE__);
+		snd_soc_component_write(component, RK817_CODEC_APLL_CFG0, 0x04);
+		snd_soc_component_write(component, RK817_CODEC_APLL_CFG4, 0xa5);
+	}
 	snd_soc_component_write(component, RK817_CODEC_DTOP_DIGEN_CLKE, 0x00);
 
 	return 0;
@@ -365,6 +377,14 @@ static int rk817_codec_power_up(struct snd_soc_component *component, int type)
 						playback_power_up_list[i].value);
 		}
 
+		/* Re-configure APLL CFG0/4 if (chip_ver <= 0x4) */
+		if (rk817->chip_ver <= 0x4) {
+			DBG("%s (%d): 0x4 and previous versions\n",
+			    __func__, __LINE__);
+			snd_soc_component_write(component, RK817_CODEC_APLL_CFG0, 0x0c);
+			snd_soc_component_write(component, RK817_CODEC_APLL_CFG4, 0x95);
+		}
+
 		snd_soc_component_update_bits(component, RK817_CODEC_DTOP_DIGEN_CLKE,
 					      DAC_DIG_CLK_MASK, DAC_DIG_CLK_DIS);
 		usleep_range(2000, 2500);
@@ -382,6 +402,14 @@ static int rk817_codec_power_up(struct snd_soc_component *component, int type)
 			snd_soc_component_write(component,
 						capture_power_up_list[i].reg,
 						capture_power_up_list[i].value);
+		}
+
+		/* Re-configure APLL CFG0/4 if (chip_ver <= 0x4) */
+		if (rk817->chip_ver <= 0x4) {
+			DBG("%s (%d): 0x4 and previous versions\n",
+			    __func__, __LINE__);
+			snd_soc_component_write(component, RK817_CODEC_APLL_CFG0, 0x0c);
+			snd_soc_component_write(component, RK817_CODEC_APLL_CFG4, 0x95);
 		}
 
 		snd_soc_component_update_bits(component, RK817_CODEC_DTOP_DIGEN_CLKE,
@@ -922,14 +950,22 @@ static int rk817_hw_params(struct snd_pcm_substream *substream,
 	 * is before playback/capture_path_put, therefore, we need to configure
 	 * APLL_CFG3/DTOP_DIGEN_CLKE/DDAC_SR_LMT0 for different sample rates.
 	 */
-	snd_soc_component_write(component, RK817_CODEC_APLL_CFG3, apll_cfg3_val);
-	/* The 0x00 contains ADC_DIG_CLK_DIS and DAC_DIG_CLK_DIS */
-	snd_soc_component_update_bits(component, RK817_CODEC_DTOP_DIGEN_CLKE,
-				      dtop_digen_clke, 0x00);
-	snd_soc_component_update_bits(component, RK817_CODEC_DDAC_SR_LMT0,
-				      DACSRT_MASK, dtop_digen_sr_lmt0);
-	snd_soc_component_update_bits(component, RK817_CODEC_DTOP_DIGEN_CLKE,
-				      dtop_digen_clke, dtop_digen_clke);
+	if (!((substream->stream == SNDRV_PCM_STREAM_CAPTURE) && rk817->pdmdata_out_enable)) {
+		snd_soc_component_write(component, RK817_CODEC_APLL_CFG3, apll_cfg3_val);
+		/* The 0x00 contains ADC_DIG_CLK_DIS and DAC_DIG_CLK_DIS */
+		snd_soc_component_update_bits(component, RK817_CODEC_DTOP_DIGEN_CLKE,
+					      dtop_digen_clke, 0x00);
+		snd_soc_component_update_bits(component, RK817_CODEC_DDAC_SR_LMT0,
+					      DACSRT_MASK, dtop_digen_sr_lmt0);
+		snd_soc_component_update_bits(component, RK817_CODEC_DTOP_DIGEN_CLKE,
+					      dtop_digen_clke, dtop_digen_clke);
+		snd_soc_component_update_bits(component, RK817_CODEC_APLL_CFG5,
+					      PLL_PW_DOWN, PLL_PW_DOWN);
+		usleep_range(50, 60);
+		snd_soc_component_update_bits(component, RK817_CODEC_APLL_CFG5,
+					      PLL_PW_DOWN, PLL_PW_UP);
+		usleep_range(500, 600);
+	}
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S16_LE:
@@ -1130,7 +1166,10 @@ static int rk817_probe(struct snd_soc_component *component)
 	rk817->chip_ver = (chip_ver & 0x0f);
 	dev_info(component->dev, "%s: chip_name:0x%x, chip_ver:0x%x\n", __func__, chip_name, chip_ver);
 
+	clk_prepare_enable(rk817->mclk);
 	rk817_reset(component);
+	clk_disable_unprepare(rk817->mclk);
+
 	snd_soc_add_component_controls(component, rk817_snd_path_controls,
 				       ARRAY_SIZE(rk817_snd_path_controls));
 	return 0;
