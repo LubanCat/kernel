@@ -1,0 +1,1 @@
+obj-$(CONFIG_EBF_DS18B20) := ds18b20.o

@@ -1,0 +1,24 @@
+DS18B20 温度传感器驱动
+=======================
+
+compatible: "fire,ds18b20"
+
+必选属性:
+- compatible: 必须是 "fire,ds18b20"
+- data-gpio: 连接 DS18B20 数据引脚的 GPIO
+
+可选属性:
+- status: "okay" 或 "disabled"
+
+设备树示例:
+    ds18b20: ds18b20@0 {
+        compatible = "fire,ds18b20";
+        data-gpio = <&gpio3 RK_PA6 GPIO_ACTIVE_LOW>;
+        status = "okay";
+    };
+
+驱动创建的节点:
+    /dev/ds18b20
+
+测试方法:
+    参考 ds18b20_app.c

@@ -8,6 +8,9 @@ if EBF_MODULE
 config EBF_DHT11
 	tristate "dht11"
 
+config EBF_DS18B20
+	tristate "ds18b20"
+
 endif # EBF_MODULE
 
 endmenu
