@@ -1,0 +1,135 @@
+#
+# Jadard Touchscreen driver configuration
+#
+
+config TOUCHSCREEN_JADARD_MODULE
+	tristate "Jadard chipset module fuction"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This switch whether to compile into a kernel module.
+
+config TOUCHSCREEN_JADARD_IC_JD9365TD
+	tristate "Jadard chipset of JD9365TD"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9365TD.
+
+config TOUCHSCREEN_JADARD_IC_JD9532TD
+	tristate "Jadard chipset of JD9532TD"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9532TD.
+
+config TOUCHSCREEN_JADARD_IC_JD9532P
+	tristate "Jadard chipset of JD9532P"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9532P.
+
+config TOUCHSCREEN_JADARD_IC_JD9365T
+	tristate "Jadard chipset of JD9365T"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9365T.
+
+config TOUCHSCREEN_JADARD_IC_JD9365TR
+	tristate "Jadard chipset of JD9365TR"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9365TR.
+
+config TOUCHSCREEN_JADARD_IC_JD9365TF
+	tristate "Jadard chipset of JD9365TF"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9365TF.
+
+config TOUCHSCREEN_JADARD_IC_JD9365TG
+	tristate "Jadard chipset of JD9365TG"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9365TG.
+
+config TOUCHSCREEN_JADARD_IC_JD9365TH
+	tristate "Jadard chipset of JD9365TH"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9365TH.
+
+config TOUCHSCREEN_JADARD_IC_JD9261T
+	tristate "Jadard chipset of JD9261T"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9261T.
+
+config TOUCHSCREEN_JADARD_IC_JD9366T
+	tristate "Jadard chipset of JD9366T"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9366T.
+
+config TOUCHSCREEN_JADARD_IC_JD9366TP
+	tristate "Jadard chipset of JD9366TP"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9366TP.
+
+config TOUCHSCREEN_JADARD_IC_JD9522T
+	tristate "Jadard chipset of JD9522T"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9522T.
+
+config TOUCHSCREEN_JADARD_IC_JD9522TS
+	tristate "Jadard chipset of JD9522TS"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9522TS.
+
+config TOUCHSCREEN_JADARD_IC_JD9532Q
+	tristate "Jadard chipset of JD9532Q"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9532Q.
+
+config TOUCHSCREEN_JADARD_IC_JD9365TN
+	tristate "Jadard chipset of JD9365TN"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9365TN.
+
+config TOUCHSCREEN_JADARD_IC_JD9365TL
+	tristate "Jadard chipset of JD9365TL"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9365TL.
+
+config TOUCHSCREEN_JADARD_IC_JD9365HS
+	tristate "Jadard chipset of JD9365HS"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9365HS
+
+config TOUCHSCREEN_JADARD_IC_JD9365TX
+	tristate "Jadard chipset of JD9365TX"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard chipset of JD9365TX
+
+config JD_DB
+	tristate "Jadard driver test over Dragon Board"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard driver test over Dragon Board.
+
+config JD_FB
+	tristate "Jadard driver suspend/resume event by system FB"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard driver suspend/resume event by system FB.
+
+config JD_HID
+	tristate "Jadard HID over I2C/SPI function"
+	depends on TOUCHSCREEN_JADARD_CHIPSET
+	help
+	  This enables support for Jadard HID over I2C/SPI.

@@ -1365,4 +1365,14 @@ config TOUCHSCREEN_ZINITIX
 	  To compile this driver as a module, choose M here: the
 	  module will be called zinitix.
 
+
+config TOUCHSCREEN_JADARD_CHIPSET
+	bool "Jadard touch chipset"
+	depends on SPI
+	help
+	Say Y here if you have a Jadard chipset touchscreen.
+	If unsure, say N.
+	
+source "drivers/input/touchscreen/jdchipset/Kconfig"
+
 endif
