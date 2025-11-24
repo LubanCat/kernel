@@ -205,27 +205,13 @@
 		status = "okay";
 	};
 
-	vdd_cpu: vdd-cpu {
+	vdd_arm: vdd-arm {
 		compatible = "pwm-regulator";
 		pwms = <&pwm1 0 5000 1>;
-		regulator-name = "vdd_cpu";
+		regulator-name = "vdd_arm";
 		regulator-min-microvolt = <746000>;
 		regulator-max-microvolt = <1201000>;
 		regulator-init-microvolt = <953000>;
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-settling-time-up-us = <250>;
-		pwm-supply = <&vcc5v0_sys>;
-		status = "okay";
-	};
-
-	vdd_gpu: vdd-gpu {
-		compatible = "pwm-regulator";
-		pwms = <&pwm0 0 5000 1>;
-		regulator-name = "vdd_gpu";
-		regulator-min-microvolt = <705000>;
-		regulator-max-microvolt = <1148000>;
-		regulator-init-microvolt = <900000>;
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-settling-time-up-us = <250>;
@@ -250,7 +236,7 @@
 		regulator-boot-on;
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
-		vin-supply = <&vcc5v0_sys>;
+		vin-supply = <&vcc_3v3_s3>;
 	};
 
 	vcc_3v3_s3: vcc-3v3-s3 {
@@ -281,37 +267,18 @@
 		vin-supply = <&vcc5v0_sys>;
 	};
 
-	pcie20_usb30_avdd0v9: pcie20-usb30-avdd0v9 {
-		compatible = "regulator-fixed";
-		regulator-name = "pcie20_usb30-avdd0v9";
-		regulator-boot-on;
-		regulator-always-on;
-		regulator-min-microvolt = <900000>;
-		regulator-max-microvolt = <900000>;
-		vin-supply = <&vdd_0v9_s3>;
-	};
-
-	pcie20_usb30_avdd1v8: pcie20-usb30-avdd1v8 {
-		compatible = "regulator-fixed";
-		regulator-name = "pcie20_usb30_avdd1v8";
-		regulator-boot-on;
-		regulator-always-on;
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		vin-supply = <&vdd_1v8_s3>;
-	};
-
-
 	pcie2_3v3: pcie2-3v3-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "pcie2_3v3";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		enable-active-high;
-		gpio = <&gpio4 RK_PB7 GPIO_ACTIVE_HIGH>;
-		startup-delay-us = <5000>;
-		vin-supply = <&vcc5v0_sys>;
 		regulator-always-on;
+		enable-active-high;
+		regulator-boot-on;
+		gpio = <&gpio4 RK_PB7 GPIO_ACTIVE_HIGH>;
+		vin-supply = <&vcc5v0_sys>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pcie2_3v3_en>;
 	};
 
 	/*wifi_usb: wifi-usb {
@@ -408,7 +375,7 @@
 };
 
 &cpu0 {
-	cpu-supply = <&vdd_cpu>;
+	cpu-supply = <&vdd_arm>;
 };
 
 &crypto {
@@ -433,7 +400,7 @@
 };
 
 &gpu {
-	mali-supply = <&vdd_gpu>;
+	mali-supply = <&vdd_logic>;
 	status = "okay";
 };
 
@@ -474,15 +441,7 @@
 	status = "okay";
 };
 
-&pwm0 {
-	status = "okay";
-};
-
 &pwm1 {
-	status = "okay";
-};
-
-&pwm2 {
 	status = "okay";
 };
 
@@ -691,6 +650,12 @@
 };
 
 &pinctrl {
+	pcie {
+		pcie2_3v3_en: pcie2-3v3-en {
+			rockchip,pins = <4 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
 	usb {
 		vcc5v0_host_en: vcc5v0-host-en {
 			rockchip,pins = <0 RK_PA1 RK_FUNC_GPIO &pcfg_pull_none>;
