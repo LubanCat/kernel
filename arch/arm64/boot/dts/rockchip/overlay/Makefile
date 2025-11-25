@@ -39,6 +39,7 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk356x-lubancat-i2c3-m0-rtc-overlay.dtbo \
 	rk356x-lubancat-i2c3-m1-rtc-overlay.dtbo \
 	rk356x-lubancat-i2c5-m0-rtc-overlay.dtbo \
+	rk356x-lubancat-i2c3-m0-40pin-test-tca9535-overlay.dtbo \
 	rk356x-lubancat-pcie2x1-disabled-overlay.dtbo \
 	rk356x-lubancat-pwm3-ir-overlay.dtbo \
 	rk356x-lubancat-pwm7-ir-overlay.dtbo \
