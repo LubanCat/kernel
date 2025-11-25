@@ -1,0 +1,34 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	fragment@0 {
+		target = <&i2c7>;
+
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&i2c7m1_xfer>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			tca9535_0: tca9535-0@26 {
+				compatible = "nxp,pca9535";
+				reg = <0x26>;
+				gpio-controller;
+				#gpio-cells = <2>;
+			};
+
+			tca9535_1: tca9535-1@27 {
+				compatible = "nxp,pca9535";
+				reg = <0x27>;
+				gpio-controller;
+				#gpio-cells = <2>;
+			};
+		};
+	};
+};

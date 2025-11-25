@@ -82,5 +82,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam4-gc2053-1920x1080-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam4-gc4653-2560x1440-30fps-overlay.dtbo
 
+# 扩展板
+#dtoverlay=/dtb/overlay/rk3576-lubancat-i2c7-m1-40pin-test-tca9535-overlay.dtbo
 
 #overlay_end
