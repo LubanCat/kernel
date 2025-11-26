@@ -36,6 +36,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3576-lubancat-uart7-m0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-uart8-m2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-uart10-m1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-usb20-overlay.dtbo
 
 # Display
 #vp0

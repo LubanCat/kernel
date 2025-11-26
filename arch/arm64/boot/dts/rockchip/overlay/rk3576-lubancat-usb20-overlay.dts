@@ -1,0 +1,31 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target = <&i2c2>;
+
+		__overlay__ {
+			usbc0: fusb302@22 {
+                status = "disabled";
+            };
+		};
+	};
+
+    fragment@1 {
+        target = <&usb_drd0_dwc3>;
+
+        __overlay__ {
+            extcon = <&u2phy0>;
+            maximum-speed = "high-speed";
+        };
+    };
+
+    fragment@2 {
+        target = <&u2phy0_otg>;
+
+        __overlay__ {
+            phy-supply = <&vbus5v0_typec>;
+        };
+    };
+};
