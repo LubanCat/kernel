@@ -295,7 +295,7 @@
 };
 
 &gmac0 {
-	status = "okay";
+	status = "disabled";
 };
 
 &gmac1 {
