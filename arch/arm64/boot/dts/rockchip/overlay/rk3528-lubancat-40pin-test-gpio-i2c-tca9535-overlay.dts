@@ -1,0 +1,53 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	fragment@0 {
+		target-path = "/";
+
+		__overlay__ {
+			i2c_gpio_1: i2c-gpio-1 {
+				compatible = "i2c-gpio";
+				gpios = <&gpio3 RK_PC3 GPIO_ACTIVE_HIGH /* sda */
+					    &gpio3 RK_PC1 GPIO_ACTIVE_HIGH >; /* scl */
+				i2c-gpio,delay-us = <2>;	/* ~100 kHz */
+				#address-cells = <1>;
+				#size-cells = <0>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&i2c_gpio1>;
+				status = "okay";
+
+				tca9535_0: tca9535-0@26 {
+					compatible = "nxp,pca9535";
+					reg = <0x26>;
+					gpio-controller;
+					#gpio-cells = <2>;
+				};
+
+				tca9535_1: tca9535-1@27 {
+					compatible = "nxp,pca9535";
+					reg = <0x27>;
+					gpio-controller;
+					#gpio-cells = <2>;
+				};
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&pinctrl>;
+		__overlay__ {
+		i2c-gpio {
+			i2c_gpio1:i2c-gpio1{
+				rockchip,pins =
+					<3 RK_PC3 RK_FUNC_GPIO &pcfg_pull_none_smt>,
+					<3 RK_PC1 RK_FUNC_GPIO &pcfg_pull_none_smt>;
+				};
+			};
+		};
+	};
+};

@@ -3,7 +3,7 @@ ifeq ($(CONFIG_ARCH_ROCKCHIP), y)
 
 dtbo-$(CONFIG_CPU_RK3528) += \
 	rk3528-lubancat-xl9535-overlay.dtbo \
-	rk3528-lubancat-i2c3-m1-40pin-test-tca9535-overlay.dtbo \
+	rk3528-lubancat-40pin-test-gpio-i2c-tca9535-overlay.dtbo \
 	rk3528-lubancat-i2c0-m1-overlay.dtbo \
 	rk3528-lubancat-i2c1-m0-overlay.dtbo \
 	rk3528-lubancat-i2c3-m1-overlay.dtbo \
