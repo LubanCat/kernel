@@ -1030,6 +1030,8 @@
 		interrupts = <RK_PA6 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&gpio3 RK_PA5 GPIO_ACTIVE_LOW>;
 		irq-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&tp1_irq>;
 		touchscreen-inverted-x = <1>;
 		touchscreen-swapped-x-y = <1>;
 	};
@@ -1428,6 +1430,7 @@
 		};
 	};
 
+
 	spi {
 		spi3_cs0: spi3-cs0 {
 			rockchip,pins = <4 RK_PC6 RK_FUNC_GPIO &pcfg_pull_up_drv_level_1>;
@@ -1470,4 +1473,11 @@
 			rockchip,pins = <0 RK_PC6 RK_FUNC_GPIO &pcfg_pull_down>;
 		};
 	};
+
+	dsi {
+		tp1_irq: tp1-irq {
+			rockchip,pins = <3 RK_PA6 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
 };
