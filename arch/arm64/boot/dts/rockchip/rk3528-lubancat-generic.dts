@@ -13,8 +13,8 @@
 
 / {
 
-	model = "Embedfire LubanCat-RK3528";
-	compatible = "rockchip,rk3528-lubancat", "rockchip,rk3528";
+	model = "LubanCat RK3528";
+	compatible = "rockchip,lubancat-rk3528", "rockchip,rk3528";
 
 	chosen: chosen {
 		bootargs = "earlycon=uart8250,mmio32,0xff9f0000 console=ttyFIQ0 root=PARTUUID=614e0000-0000 rw rootwait";
@@ -32,7 +32,6 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&sys_status_led_pin>;
 		};
-
 	};
 
 	acodec_sound: acodec-sound {
@@ -141,6 +140,7 @@
 		regulator-min-microvolt = <705000>;
 		regulator-max-microvolt = <1006000>;
 		regulator-init-microvolt = <900000>;
+		regulator-ramp-delay = <12500>;
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-settling-time-up-us = <250>;
@@ -155,6 +155,7 @@
 		regulator-min-microvolt = <746000>;
 		regulator-max-microvolt = <1201000>;
 		regulator-init-microvolt = <953000>;
+		regulator-ramp-delay = <12500>;
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-settling-time-up-us = <250>;
@@ -169,6 +170,7 @@
 		regulator-min-microvolt = <705000>;
 		regulator-max-microvolt = <1148000>;
 		regulator-init-microvolt = <900000>;
+		regulator-ramp-delay = <12500>;
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-settling-time-up-us = <250>;
@@ -223,10 +225,6 @@
 		regulator-max-microvolt = <1200000>;
 		vin-supply = <&vcc5v0_sys>;
 	};
-};
-
-&gmac0 {
-	status = "okay";
 };
 
 &uart2 {
