@@ -1,6 +1,6 @@
 uname_r=4.19.232
 size=0x1000000
-cmdline="earlyprintk console=ttyFIQ0 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
+cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
 
 enable_uboot_overlays=1
 #overlay_start
@@ -15,7 +15,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-in-vp0-1080p-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-in-vp0-rpi-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-in-vp0-generic-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1h-dsi1-in-vp0-generic-overlay.dtbo
 #edp-or-lvds-in-vp0
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1h-edp-in-vp0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1h-lvds-10.1-in-vp0-overlay.dtbo
@@ -39,3 +39,9 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3566-lubancat1h-csi1-sc530ai-overlay.dtbo
 
 #overlay_end
+
+#auto-load screen plugins
+enable_gsdt_auto_load=1
+eeprom_addr=0x51
+i2c_devs=1
+gsdt_plugin0=/dtb/overlay/rk3566-lubancat-1h-dsi1-in-vp0-generic-overlay.dtbo

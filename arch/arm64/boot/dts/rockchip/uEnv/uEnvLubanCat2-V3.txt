@@ -76,3 +76,10 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi1-sc530ai-overlay.dtbo
 
 #overlay_end
+
+#auto-load screen plugins
+enable_gsdt_auto_load=1
+eeprom_addr=0x51
+i2c_devs=1 5
+gsdt_plugin0=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-generic-overlay.dtbo
+gsdt_plugin1=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-generic-overlay.dtbo
