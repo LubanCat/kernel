@@ -133,6 +133,14 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 	};
 };
 
+&i2c1 {
+	status = "okay";
+};
+
+&i2c5 {
+	status = "okay";
+};
+
 &pwm3 {
 	status = "okay";
 

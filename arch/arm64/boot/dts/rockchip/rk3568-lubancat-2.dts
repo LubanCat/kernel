@@ -14,6 +14,10 @@
 	compatible = "embedfire,lubancat-2", "rockchip,rk3568";
 };
 
+&i2c1 {
+	status = "okay";
+};
+
 &pwm7 {
 	status = "okay";
 

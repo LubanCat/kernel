@@ -608,6 +608,10 @@
 	};
 };
 
+&i2c1 {
+	status = "okay";
+};
+
 &i2c5 {
 	status = "okay";
 };
