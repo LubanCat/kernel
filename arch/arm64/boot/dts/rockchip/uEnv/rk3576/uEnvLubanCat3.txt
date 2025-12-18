@@ -45,6 +45,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-dp-disabled-ovetlay.dtbo
 #vp2
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-1080x1920-5-5inch-ebf410125-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-1080x1920-5-5inch-ebf410125-v1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-1024x600-7inch-ebf410173-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-800x1280-10-1inch-ebf410177-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
