@@ -20,6 +20,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2h-dsi1-1024x600-7inch-ebf410173-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2h-dsi1-800x1280-10.1inch-ebf410177-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3568-lubancat-2h-dsi1-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-generic-overlay.dtbo
 
 # cam0(mipi-csi0)
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov5647-overlay.dtbo
