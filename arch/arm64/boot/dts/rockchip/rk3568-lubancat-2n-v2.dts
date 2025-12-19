@@ -870,6 +870,10 @@
 	irq-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
 };
 
+&i2c5 {
+	status = "okay";
+};
+
 &iep {
 	status = "okay";
 };

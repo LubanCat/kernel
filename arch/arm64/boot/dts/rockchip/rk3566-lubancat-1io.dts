@@ -586,18 +586,27 @@
 	};
 };
 
-&i2c2 {
-	status = "okay";
-	pinctrl-names = "default";
-	pinctrl-0 = <&i2c2m1_xfer>;
-};
-
 &i2c0 {
 	rx8010: rx8010@32 {
 		compatible = "epson,rx8010";
 		reg = <0x32>;
 		status = "okay";
 	};
+};
+
+&i2c1 {
+	status = "okay";
+};
+
+
+&i2c2 {
+    status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c2m1_xfer>;
+};
+
+&i2c5 {
+	status = "okay";
 };
 
 &rk809 {

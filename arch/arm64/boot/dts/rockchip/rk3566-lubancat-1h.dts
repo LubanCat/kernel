@@ -999,6 +999,10 @@
 	};
 };
 
+&i2c5 {
+	status = "okay";
+};
+
 //cam0-gpio-setting
 &ov5647 {
 	pwdn-gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_LOW>;
