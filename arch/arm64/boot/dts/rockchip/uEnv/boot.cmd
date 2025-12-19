@@ -28,6 +28,19 @@ if test -e ${devtype} ${devnum}:${distro_bootpart} /uEnv/uEnv.txt; then
     echo [boot.cmd] loading default rk-kernel.dtb
     load ${devtype} ${devnum}:${distro_bootpart} ${fdt_addr_r} /rk-kernel.dtb
 
+    echo [boot.cmd] check the I2C bus
+    i2c bus
+    if test $? -eq 0; then
+        setenv i2c_exist 1
+        if test "${enable_gsdt_auto_load}" = "1" && test -n "${i2c_devs}"; then
+            for dev in ${i2c_devs}; do
+                i2c dev ${dev}
+            done
+        fi
+    else
+        setenv i2c_exist 0
+    fi
+
     fdt addr  ${fdt_addr_r}
     fdt set /chosen bootargs
 
@@ -36,6 +49,33 @@ if test -e ${devtype} ${devnum}:${distro_bootpart} /uEnv/uEnv.txt; then
     if test "${enable_uboot_overlays}" = "1"; then
         echo [boot.cmd] dtoverlay from /uEnv/uEnv.txt
         dtfile ${fdt_addr_r} ${fdt_over_addr}  /uEnv/uEnv.txt ${env_addr_r}
+    fi
+
+    if test "${enable_gsdt_auto_load}" = "1" && test -n "${i2c_devs}" && test "${i2c_exist}" = "1"; then
+        setenv i2c_idx 0
+        echo [boot.cmd] screen eeprom reading test...
+        for dev in ${i2c_devs}; do
+            i2c dev ${dev}
+            i2c md "${eeprom_addr}" 0 1
+            if test $? -eq 0; then
+                if test "${i2c_idx}" = "0"; then
+                    setenv plugin_file "${gsdt_plugin0}"
+                elif test "${i2c_idx}" = "1"; then
+                    setenv plugin_file "${gsdt_plugin1}"
+                fi
+
+                if test -n "${plugin_file}"; then
+                    echo [boot.cmd] load the generic screen plugin:${plugin_file}
+                    load ${devtype} ${devnum}:${distro_bootpart} ${fdt_over_addr} ${plugin_file}
+                    if test $? -eq 0; then
+                        fdt apply ${fdt_over_addr}
+                    fi
+                fi
+            fi
+            if test "${i2c_idx}" = "0"; then
+                setenv i2c_idx 1
+            fi
+        done
     fi
 
     echo [boot.cmd] [${devtype} ${devnum}:${distro_bootpart}] ...
