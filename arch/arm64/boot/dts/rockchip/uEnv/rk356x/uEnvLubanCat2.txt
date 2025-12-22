@@ -61,3 +61,9 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-imx415-3840x2160-15fps-overlay.dtbo
 
 #overlay_end
+
+#auto-load screen plugins
+enable_gsdt_auto_load=1
+eeprom_addr=0x51
+i2c_devs=1
+gsdt_plugin0=/dtb/overlay/rk3568-lubancat-dsi0-generic-overlay.dtbo
