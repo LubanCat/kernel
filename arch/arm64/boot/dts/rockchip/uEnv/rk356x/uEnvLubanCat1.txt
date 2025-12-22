@@ -44,6 +44,7 @@ dtoverlay=/dtb/overlay/rk3566-lubancat-1-i2c0-rtc-bm8563-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-dsi0-1024x600-7inch-ebf410173-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-dsi0-800x1280-10.1inch-ebf410177-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-dsi0-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-dsi0-generic-overlay.dtbo
 # cam0(mipi-csi0)
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov8858-3264x2448-15fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov8858-1632x1224-30fps-overlay.dtbo
