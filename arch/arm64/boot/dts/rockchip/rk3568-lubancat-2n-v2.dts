@@ -540,6 +540,10 @@
 	};
 };
 
+&i2c5 {
+	status = "okay";
+};
+
 &pmu_io_domains {
 	status = "okay";
 	pmuio2-supply = <&vcc3v3_pmu>;

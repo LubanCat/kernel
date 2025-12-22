@@ -647,6 +647,10 @@
 	};
 };
 
+&i2c5 {
+	status = "okay";
+};
+
 //cam0-gpio-setting
 &ov8858 {
 	pwdn-gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
