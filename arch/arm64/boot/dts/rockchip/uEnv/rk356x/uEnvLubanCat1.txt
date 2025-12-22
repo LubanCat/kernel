@@ -29,6 +29,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk356x-lubancat-uart7-m1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-uart9-m1-overlay.dtbo
 # rtc modules
+dtoverlay=/dtb/overlay/rk3566-lubancat-1-i2c0-rtc-bm8563-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-i2c3-m0-rtc-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-i2c3-m1-rtc-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-i2c5-m0-rtc-overlay.dtbo

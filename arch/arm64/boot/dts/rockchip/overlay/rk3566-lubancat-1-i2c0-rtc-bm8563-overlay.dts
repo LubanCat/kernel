@@ -1,0 +1,40 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	compatible = "rockchip,rk3568";
+
+	fragment@0 {
+		target = <&i2c0>;
+
+		__overlay__ {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			hym8563: hym8563@51 {
+				compatible = "haoyu,hym8563";
+				status = "okay";
+				reg = <0x51>;
+				#clock-cells = <0>;
+				clock-frequency = <32768>;
+				clock-output-names = "hym8563";
+				rtc-irq-gpio = <&gpio0 RK_PC6 IRQ_TYPE_EDGE_FALLING>;
+			};
+		};
+	};
+	
+	fragment@1 {
+		target = <&rk809>;
+
+		__overlay__ {
+			rtc {
+				status = "disabled";
+			};
+		};
+	};
+};

@@ -223,13 +223,11 @@
 	vdd_cam_5v: vdd-cam-5v-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vdd_cam_5v";
+		regulator-always-on;
+		regulator-boot-on;
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio0 RK_PC6 GPIO_ACTIVE_HIGH>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&cam_pwr_en>;
-		enable-active-high;
-		regulator-always-on;
+		vin-supply = <&vcc5v0_sys>;
 	};
 	
 	cam_dovdd: cam-dovdd {
@@ -579,12 +577,6 @@
 	lcd {
 		mipi_dsi0_pwr_en: mipi-dsi0-pwr-en {
 			rockchip,pins = <0 RK_PC0 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-	};
-	
-	cam {
-		cam_pwr_en: cam-pwr-en {
-			rockchip,pins = <0 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 	
