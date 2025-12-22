@@ -9,7 +9,9 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-i2c2-m0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-i2c3-m1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-i2c5-m3-overlay.dtbo
+dtoverlay=/dtb/overlay/rk3588-lubancat-i2c5-m3-disable-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-i2c6-m3-overlay.dtbo
+dtoverlay=/dtb/overlay/rk3588-lubancat-i2c6-m3-disable-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-i2c8-m2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-pwm3-ir-m3-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-pwm10-m2-overlay.dtbo
@@ -90,3 +92,10 @@ dtoverlay=/dtb/overlay/rk3588s-lubancat-dp0-in-vp1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-i2c5-m3-40pin-test-tca9535-overlay.dtbo
 
 #overlay_end
+
+#auto-load screen plugins
+enable_gsdt_auto_load=1
+eeprom_addr=0x51
+i2c_devs=5 6
+gsdt_plugin0=/dtb/overlay/rk3588s-lubancat-4-v1-dsi0-generic-overlay.dtbo
+gsdt_plugin1=/dtb/overlay/rk3588s-lubancat-4-v1-dsi1-generic-overlay.dtbo
