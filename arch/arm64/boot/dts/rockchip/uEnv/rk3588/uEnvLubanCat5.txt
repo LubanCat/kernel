@@ -96,5 +96,6 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
 
 # 扩展板
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-xl9535-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-i2c3-m0-40pin-test-tca9535-overlay.dtbo
 
 #overlay_end
