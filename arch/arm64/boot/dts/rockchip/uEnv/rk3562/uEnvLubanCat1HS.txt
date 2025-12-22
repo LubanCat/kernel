@@ -56,3 +56,9 @@ dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-lvds-1280x800-10.1inch-bsdn10-overlay
 #dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-cam3-gc4653-2560x1440-30fps-overlay.dtbo
 
 #overlay_end
+
+#auto-load screen plugins
+enable_gsdt_auto_load=1
+eeprom_addr=0x51
+i2c_devs=1
+gsdt_plugin0=/dtb/overlay/rk3562-lubancat-1hs-mipi-generic-overlay.dtbo
