@@ -24,55 +24,55 @@
 		        #gpio-cells = <2>;
 				interrupt-parent = <&gpio0>;
 				interrupts = <8 IRQ_TYPE_LEVEL_LOW>;
-                #interrupt-cells = <2>;
+				#interrupt-cells = <2>;
 				interrupt-controller;
 			};
 		};
 	};
 
-    fragment@1 {
-        target-path = "/";
-        __overlay__ {
-            Keys {
-                    compatible = "gpio-keys";
-                    pinctrl-names = "default";
-                    #address-cells = <1>;
-                    #size-cells = <0>;
-                    status = "okay";
-                    //autorepeat;
-                    Key0{
-                        label = "KEY_0";
-                        linux,code=<KEY_0>;
-                        gpio-hog;
-                        gpios = <&xl9535 3 GPIO_ACTIVE_LOW>;
-                        interrupt-parent = <&xl9535>;
-                        interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
-                    };
+	fragment@1 {
+		target-path = "/";
+		__overlay__ {
+			Keys {
+					compatible = "gpio-keys";
+					pinctrl-names = "default";
+					#address-cells = <1>;
+					#size-cells = <0>;
+					status = "okay";
+					//autorepeat;
+					Key0{
+						label = "KEY_0";
+						linux,code=<KEY_0>;
+						gpio-hog;
+						gpios = <&xl9535 3 GPIO_ACTIVE_LOW>;
+						interrupt-parent = <&xl9535>;
+						interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
+					};
 
-                    Key1{
+					Key1{
 						label = "KEY_1";
 						linux,code=<KEY_1>;
 						gpio-hog;
-                        gpios = <&xl9535 4 GPIO_ACTIVE_LOW>;
-                        interrupt-parent = <&xl9535>;
-                        interrupts = <4 IRQ_TYPE_LEVEL_LOW>;
+						gpios = <&xl9535 4 GPIO_ACTIVE_LOW>;
+						interrupt-parent = <&xl9535>;
+						interrupts = <4 IRQ_TYPE_LEVEL_LOW>;
 				    };
 
-                    Key2{
+					Key2{
 						label = "KEY_2";
 						linux,code=<KEY_2>;
 						gpio-hog;
-                        gpios = <&xl9535 5 GPIO_ACTIVE_LOW>;
-                        interrupt-parent = <&xl9535>;
-                        interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
+						gpios = <&xl9535 5 GPIO_ACTIVE_LOW>;
+						interrupt-parent = <&xl9535>;
+						interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
 				    };
-                };
+				};
 
-            Coder_sw {
+			Coder_sw {
 				compatible = "gpio-keys";
 				status = "okay";
-                #address-cells = <1>;
-                #size-cells = <0>;
+				#address-cells = <1>;
+				#size-cells = <0>;
 				coder_sw{
 					label = "coder_sw";
 					linux,code=<KEY_3>;
@@ -86,11 +86,11 @@
 			Coder_A{
 				compatible = "gpio-keys";
 				status = "okay";
-                #address-cells = <1>;
-                #size-cells = <0>;
+				#address-cells = <1>;
+				#size-cells = <0>;
 				coder_A{
 					label = "coder_A";
-					linux,code=<250>; 
+					linux,code=<250>;
 					debounce-interval = <1>;
 					gpios = <&xl9535 12 GPIO_ACTIVE_HIGH>;
 					interrupt-parent = <&xl9535>;
@@ -101,11 +101,11 @@
 			Coder_B{
 				compatible = "gpio-keys";
 				status = "okay";
-                #address-cells = <1>;
-                #size-cells = <0>;
+				#address-cells = <1>;
+				#size-cells = <0>;
 				coder_B{
 					label = "coder_B";
-					linux,code=<251>; 
+					linux,code=<251>;
 					debounce-interval = <1>;
 					gpios = <&xl9535 13 GPIO_ACTIVE_HIGH>;
 					interrupt-parent = <&xl9535>;
@@ -115,27 +115,27 @@
 			Coder_C{
 				compatible = "gpio-keys";
 				status = "okay";
-                #address-cells = <1>;
-                #size-cells = <0>;
+				#address-cells = <1>;
+				#size-cells = <0>;
 				coder_C{
 					label = "coder_C";
-					linux,code=<252>; 
+					linux,code=<252>;
 					debounce-interval = <1>;
 					gpios = <&xl9535 14 GPIO_ACTIVE_HIGH>;
 					interrupt-parent = <&xl9535>;
 					interrupts = <14 IRQ_TYPE_EDGE_RISING>;
 					};
 				};
-            };
-        };
+			};
+		};
 
-    fragment@2 {
-        target-path = "/";
+	fragment@2 {
+		target-path = "/";
 		__overlay__ {
 		dht11{
 			#address-cells = <1>;
 			#size-cells = <1>;
-            compatible = "fire,temphum_dht11";
+			compatible = "fire,temphum_dht11";
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_dht11>;
 			linux,open-drain;
@@ -145,7 +145,7 @@
 		};
 	};
 
-    fragment@3 {
+	fragment@3 {
 		target = <&pinctrl>;
 		__overlay__ {
 		xl9535 {
@@ -154,7 +154,7 @@
 					<0 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up>;
 				};
 			};
-        dht11 {
+		dht11 {
 			pinctrl_dht11: pinctrl_dht11{
 				rockchip,pins =
 					<3 RK_PC5 RK_FUNC_GPIO &pcfg_pull_up>;
@@ -163,4 +163,3 @@
 		};
 	};
 };
-

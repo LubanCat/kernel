@@ -332,7 +332,7 @@
 				reset-gpios = <&gpio3 RK_PA2 GPIO_ACTIVE_LOW>;
 				irq-gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
 			};
-			
+
 		};
 	};
 

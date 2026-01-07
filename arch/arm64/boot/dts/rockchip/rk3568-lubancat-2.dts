@@ -20,7 +20,7 @@
 
 &pwm7 {
 	status = "okay";
-	
+
 	compatible = "rockchip,remotectl-pwm";
 	interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
 	remote_pwm_id = <3>;
@@ -28,7 +28,7 @@
 	remote_support_psci = <0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pwm7_pins>;
-	
+
 	ir_key_lubancat{
 		rockchip,usercode = <0x909>;
 		rockchip,key_table =
@@ -40,7 +40,7 @@
 		<0xef   KEY_UP>,
 		<0xee   KEY_DOWN>;
 	};
-	
+
 	ir_key1 {
 		rockchip,usercode = <0x4040>;
 		rockchip,key_table =
@@ -67,7 +67,7 @@
 		<0xf0	388>,
 		<0xbe	0x175>;
 	};
-	
+
 	ir_key2 {
 		rockchip,usercode = <0xff00>;
 		rockchip,key_table =
@@ -102,7 +102,7 @@
 		<0xb4	KEY_VOLUMEDOWN>,
 		<0xbe	KEY_SEARCH>;
 	};
-	
+
 	ir_key3 {
 		rockchip,usercode = <0x1dcc>;
 		rockchip,key_table =
@@ -144,20 +144,20 @@
 
 &imx415 {
 	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>; 
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
 };
 
 &gc08a8 {
 	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>; 
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
 };
 
 &gc2053 {
 	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_LOW>;
-	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>; 
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
 };
 
 &gc4653 {
 	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>; 
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
 };

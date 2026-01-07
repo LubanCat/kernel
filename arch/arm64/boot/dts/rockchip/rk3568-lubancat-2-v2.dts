@@ -28,7 +28,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 / {
 	model = "EmbedFire LubanCat-2";
 	compatible = "embedfire,lubancat-2-v2", "rockchip,rk3568";
-	
+
 	mipi_dsi0_power: mipi-dsi0-power-regulator {
 		compatible = "regulator-fixed";
 		enable-active-high;
@@ -38,7 +38,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		regulator-name = "mipi_dsi0_power";
 		regulator-always-on;
 	};
-	
+
 	mipi_dsi1_power: mipi-dsi1-power-regulator {
 		compatible = "regulator-fixed";
 		enable-active-high;
@@ -48,7 +48,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		regulator-name = "mipi_dsi1_power";
 		regulator-always-on;
 	};
-	
+
 	vdd_cam1_5v: vdd-cam1-5v-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vdd_cam1_5v";
@@ -60,7 +60,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		enable-active-high;
 		regulator-always-on;
 	};
-	
+
 	cam1_dovdd: cam1-dovdd {
 		compatible = "regulator-fixed";
 		regulator-name = "cam1_dovdd";
@@ -70,7 +70,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		regulator-max-microvolt = <1800000>;
 		vin-supply = <&vdd_cam1_5v>;
 	};
-	
+
 	cam1_avdd: cam1-avdd {
 		compatible = "regulator-fixed";
 		regulator-name = "cam1_avdd";
@@ -80,7 +80,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		regulator-max-microvolt = <2800000>;
 		vin-supply = <&vdd_cam1_5v>;
 	};
-	
+
 	cam1_dvdd: cam1-dvdd {
 		compatible = "regulator-fixed";
 		regulator-name = "cam1_dvdd";
@@ -90,7 +90,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		regulator-max-microvolt = <1200000>;
 		vin-supply = <&vdd_cam1_5v>;
 	};
-	
+
 	backlight1: backlight1 {
 		status = "okay";
 		compatible = "pwm-backlight";
@@ -143,7 +143,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 
 &pwm3 {
 	status = "okay";
-	
+
 	compatible = "rockchip,remotectl-pwm";
 	interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
 	remote_pwm_id = <3>;
@@ -151,7 +151,7 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 	remote_support_psci = <0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pwm3_pins>;
-	
+
 	ir_key_lubancat{
 		rockchip,usercode = <0xff00>;
 		rockchip,key_table =
@@ -214,22 +214,22 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 
 &imx415 {
 	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>; 
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
 };
 
 &gc08a8 {
 	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>; 
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
 };
 
 &gc2053 {
 	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_LOW>;
-	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>; 
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_LOW>;
 };
 
 &gc4653 {
 	pwdn-gpios = <&gpio0 RK_PC0 GPIO_ACTIVE_HIGH>;
-	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>; 
+	reset-gpios = <&gpio0 RK_PC1 GPIO_ACTIVE_HIGH>;
 };
 
 //cam1-gpio-setting
@@ -284,16 +284,16 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		mipi_dsi0_pwr_en: mipi-dsi0-pwr-en {
 			rockchip,pins = <3 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
-		
+
 		mipi_dsi1_pwr_en: mipi-dsi1-pwr-en {
 			rockchip,pins = <3 RK_PC7 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
-		
+
 		mipi_dsi1_irq: mipi-dsi1-irq {
 			rockchip,pins = <3 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 	};
-	
+
 	cam {
 		cam1_pwr_en: cam1_pwr_en {
 			rockchip,pins = <3 RK_PD1 RK_FUNC_GPIO &pcfg_pull_none>;

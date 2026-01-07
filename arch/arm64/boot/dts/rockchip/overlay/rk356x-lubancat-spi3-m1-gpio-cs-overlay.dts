@@ -12,7 +12,7 @@
 			status = "okay";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			// SPI gpio模拟多个cs信号 
+			// SPI gpio模拟多个cs信号
 			pinctrl-names = "default", "high_speed";
 			pinctrl-0 = <&spi3_cs0 &spi3_cs1 &spi3m1_pins>;
 			pinctrl-1 = <&spi3_cs0 &spi3_cs1 &spi3m1_pins_hs>;

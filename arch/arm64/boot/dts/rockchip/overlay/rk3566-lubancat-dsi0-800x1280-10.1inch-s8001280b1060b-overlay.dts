@@ -339,7 +339,7 @@
 				touchscreen-inverted-x;
 				touchscreen-swapped-x-y;
 			};
-			
+
 		};
 	};
 

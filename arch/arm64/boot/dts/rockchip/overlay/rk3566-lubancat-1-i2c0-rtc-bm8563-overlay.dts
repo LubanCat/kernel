@@ -15,7 +15,7 @@
 			status = "okay";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			
+
 			hym8563: hym8563@51 {
 				compatible = "haoyu,hym8563";
 				status = "okay";
@@ -27,7 +27,7 @@
 			};
 		};
 	};
-	
+
 	fragment@1 {
 		target = <&rk809>;
 

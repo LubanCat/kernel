@@ -82,7 +82,7 @@
 			#size-cells = <0>;
 			status = "okay";
 
-            eeprom1: eeprom@51 {
+			eeprom1: eeprom@51 {
 				compatible = "atmel,24c64";
 				reg = <0x51>;
 				label = "eeprom";
@@ -96,7 +96,7 @@
 		__overlay__ {
 			status = "okay";
 
-            nvmem = <&eeprom1>;
+			nvmem = <&eeprom1>;
 			nvmem-names = "eeprom";
 		};
 	};

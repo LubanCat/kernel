@@ -24,7 +24,7 @@
 		};
 	};
 
-	
+
 	fragment@3 {
 		target = <&mipi_csi2>;
 		__overlay__ {
@@ -60,5 +60,4 @@
 			status = "okay";
 		};
 	};
-
 };

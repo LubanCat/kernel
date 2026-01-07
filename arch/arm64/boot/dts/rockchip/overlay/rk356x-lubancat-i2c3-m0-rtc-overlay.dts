@@ -9,19 +9,19 @@
 			status = "okay";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			
+
 			pcf8563: pcf8563@51 {
 				compatible = "nxp,pcf8563";
 				reg = <0x51>;
 			};
-			
+
 			ds1307: ds1307@68 {
 				compatible = "dallas,ds1307";
 				reg = <0x68>;
 			};
 		};
 	};
-	
+
 	fragment@1 {
 		target = <&rk809>;
 

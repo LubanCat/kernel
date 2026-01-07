@@ -108,9 +108,9 @@
 		reg = <0x31>;
 		clocks = <&ext_cam_clk>;
 		clock-names = "xvclk";
-		dovdd-supply= <&cam_dovdd>; 
-		avdd-supply = <&cam_avdd>;  
-		dvdd-supply = <&cam_dvdd>; 
+		dovdd-supply= <&cam_dovdd>;
+		avdd-supply = <&cam_avdd>;
+		dvdd-supply = <&cam_dvdd>;
 
 		rockchip,camera-module-index = <0>;
 		rockchip,camera-module-facing = "back";
@@ -120,7 +120,7 @@
 		port {
 			gc08a8_out: endpoint {
 				remote-endpoint = <&dphy1_in_gc08a8>;
-				data-lanes = <1 2>;	
+				data-lanes = <1 2>;
 			};
 		};
 	};
@@ -131,8 +131,8 @@
 		reg = <0x37>;
 		clocks = <&ext_cam_clk>;
 		clock-names = "xvclk";
-		dovdd-supply= <&cam_dovdd>; 
-		avdd-supply = <&cam_avdd>;  
+		dovdd-supply= <&cam_dovdd>;
+		avdd-supply = <&cam_avdd>;
 		dvdd-supply = <&cam_dvdd>;
 
 		rockchip,camera-module-index = <0>;
@@ -154,9 +154,9 @@
 		reg = <0x29>;
 		clocks = <&ext_cam_clk>;
 		clock-names = "xvclk";
-		dovdd-supply= <&cam_dovdd>; 
-		avdd-supply = <&cam_avdd>;  
-		dvdd-supply = <&cam_dvdd>;  
+		dovdd-supply= <&cam_dovdd>;
+		avdd-supply = <&cam_avdd>;
+		dvdd-supply = <&cam_dvdd>;
 
 		rockchip,camera-module-index = <0>;
 		rockchip,camera-module-facing = "back";
@@ -416,4 +416,3 @@
 &rkcif {
 	status = "okay";
 };
-

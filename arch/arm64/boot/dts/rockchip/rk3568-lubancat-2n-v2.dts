@@ -25,28 +25,28 @@
 / {
 	model = "EmbedFire LubanCat-2N-V2";
 	compatible = "embedfire,lubancat-2n-v2", "rockchip,rk3568";
-	
+
 	aliases {
 		ethernet0 = &gmac0;
 		ethernet1 = &gmac1;
 		ethernet2 = &rtl8125_2;
 		ethernet3 = &rtl8125_1;
 	};
-	
+
 	adc_keys: adc-keys {
 		compatible = "adc-keys";
 		io-channels = <&saradc 0>;
 		io-channel-names = "buttons";
 		keyup-threshold-microvolt = <1800000>;
 		poll-interval = <100>;
-		
+
 		restart-key {
 			label = "restart";
 			linux,code = <KEY_RESTART>;
 			press-threshold-microvolt = <9>;
 		};
 	};
-	
+
 	dc_5v: dc-5v {
 		compatible = "regulator-fixed";
 		regulator-name = "dc_5v";
@@ -55,7 +55,7 @@
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
 	};
-	
+
 	vcc5v0_sys: vcc5v0-sys {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc5v0_sys";
@@ -65,7 +65,7 @@
 		regulator-max-microvolt = <5000000>;
 		vin-supply = <&dc_5v>;
 	};
-	
+
 	vcc3v3_sys: vcc3v3-sys {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc3v3_sys";
@@ -75,7 +75,7 @@
 		regulator-max-microvolt = <3300000>;
 		vin-supply = <&vcc5v0_sys>;
 	};
-	
+
 	vcc5v0_usb20_host: vcc5v0-usb20-host-regulator {
 		compatible = "regulator-fixed";
 		enable-active-high;
@@ -85,7 +85,7 @@
 		regulator-name = "vcc5v0_usb20_host";
 		regulator-always-on;
 	};
-	
+
 	vcc5v0_usb30_host: vcc5v0-usb30-host-regulator {
 		compatible = "regulator-fixed";
 		enable-active-high;
@@ -95,7 +95,7 @@
 		regulator-name = "vcc5v0_usb30_host";
 		regulator-always-on;
 	};
-	
+
 	vcc5v0_otg_vbus: vcc5v0-otg-vbus-regulator {
 		compatible = "regulator-fixed";
 		enable-active-high;
@@ -106,7 +106,7 @@
 		pinctrl-0 = <&vcc5v0_otg_vbus_en>;
 		regulator-name = "vcc5v0_otg_vbus";
 	};
-	
+
 	mini_pcie_3v3: mini-pcie-3v3-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "minipcie_3v3";
@@ -118,7 +118,7 @@
 		startup-delay-us = <5000>;
 		vin-supply = <&vcc5v0_sys>;
 	};
-	
+
 	vcc3v3_pcie: gpio-regulator {
 		compatible = "regulator-fixed";
 		regulator-always-on;
@@ -128,7 +128,7 @@
 		regulator-name = "vcc3v3_pcie";
 		vin-supply = <&vcc5v0_sys>;
 	};
-	
+
 	sata_power: sata-power-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "sata_power";
@@ -140,7 +140,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&sata_pwr_en>;
 	};
-	
+
 	mipi_dsi0_power: mipi-dsi0-power-regulator {
 		compatible = "regulator-fixed";
 		enable-active-high;
@@ -150,7 +150,7 @@
 		regulator-name = "mipi_dsi0_power";
 		regulator-always-on;
 	};
-	
+
 	mipi_dsi1_power: mipi-dsi1-power-regulator {
 		compatible = "regulator-fixed";
 		enable-active-high;
@@ -160,7 +160,7 @@
 		regulator-name = "mipi_dsi1_power";
 		regulator-always-on;
 	};
-	
+
 	vdd_cam_5v: vdd-cam-5v-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vdd_cam_5v";
@@ -172,7 +172,7 @@
 		enable-active-high;
 		regulator-always-on;
 	};
-	
+
 	cam_dovdd: cam-dovdd {
 		compatible = "regulator-fixed";
 		regulator-name = "cam_dovdd";
@@ -182,7 +182,7 @@
 		regulator-max-microvolt = <1800000>;
 		vin-supply = <&vdd_cam_5v>;
 	};
-	
+
 	cam_avdd: cam-avdd {
 		compatible = "regulator-fixed";
 		regulator-name = "cam_avdd";
@@ -192,7 +192,7 @@
 		regulator-max-microvolt = <2800000>;
 		vin-supply = <&vdd_cam_5v>;
 	};
-	
+
 	cam_dvdd: cam-dvdd {
 		compatible = "regulator-fixed";
 		regulator-name = "cam_dvdd";
@@ -202,7 +202,7 @@
 		regulator-max-microvolt = <1200000>;
 		vin-supply = <&vdd_cam_5v>;
 	};
-	
+
 	vdd_cam1_5v: vdd-cam1-5v-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vdd_cam1_5v";
@@ -214,7 +214,7 @@
 		enable-active-high;
 		regulator-always-on;
 	};
-	
+
 	cam1_dovdd: cam1-dovdd {
 		compatible = "regulator-fixed";
 		regulator-name = "cam1_dovdd";
@@ -224,7 +224,7 @@
 		regulator-max-microvolt = <1800000>;
 		vin-supply = <&vdd_cam1_5v>;
 	};
-	
+
 	cam1_avdd: cam1-avdd {
 		compatible = "regulator-fixed";
 		regulator-name = "cam1_avdd";
@@ -234,7 +234,7 @@
 		regulator-max-microvolt = <2800000>;
 		vin-supply = <&vdd_cam1_5v>;
 	};
-	
+
 	cam1_dvdd: cam1-dvdd {
 		compatible = "regulator-fixed";
 		regulator-name = "cam1_dvdd";
@@ -244,11 +244,11 @@
 		regulator-max-microvolt = <1200000>;
 		vin-supply = <&vdd_cam1_5v>;
 	};
-	
+
 	leds: leds {
 		status = "okay";
 		compatible = "gpio-leds";
-		
+
 		sys_led: sys-led {
 			label = "sys_led";
 			linux,default-trigger = "heartbeat";
@@ -258,7 +258,7 @@
 			pinctrl-0 = <&sys_led_pin>;
 		};
 	};
-	
+
 	fan_chassis: fan-chassis {
 		compatible = "pwm-fan";
 		#cooling-cells = <2>;
@@ -271,7 +271,7 @@
 		55000	4
 		>;
 	};
-	
+
 	fan_cpu: fan-cpu {
 		compatible = "pwm-fan";
 		#cooling-cells = <2>;
@@ -284,7 +284,7 @@
 		55000	4
 		>;
 	};
-	
+
 	rk809_sound: rk809-sound {
 		status = "okay";
 		compatible = "rockchip,multicodecs-card";
@@ -297,7 +297,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&hp_det>;
 	};
-	
+
 	backlight: backlight {
 		status = "okay";
 		compatible = "pwm-backlight";
@@ -338,7 +338,7 @@
 		>;
 		default-brightness-level = <200>;
 	};
-	
+
 	backlight1: backlight1 {
 		status = "okay";
 		compatible = "pwm-backlight";
@@ -379,14 +379,14 @@
 		>;
 		default-brightness-level = <200>;
 	};
-	
+
 	hdmi_sound: hdmi-sound {
 		compatible = "simple-audio-card";
 		simple-audio-card,format = "i2s";
 		simple-audio-card,mclk-fs = <128>;
 		simple-audio-card,name = "rockchip,hdmi";
 		status = "okay";
-		
+
 		simple-audio-card,cpu {
 			sound-dai = <&i2s0_8ch>;
 		};
@@ -442,14 +442,14 @@
 
 &pwm3 {
 	status = "okay";
-	
+
 	compatible = "rockchip,remotectl-pwm";
 	remote_pwm_id = <3>;
 	handle_cpu_id = <1>;
 	remote_support_psci = <0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pwm3_pins>;
-	
+
 	ir_key_lubancat{
 		rockchip,usercode = <0xff00>;
 		rockchip,key_table =
@@ -532,7 +532,7 @@
 &i2c1 {
 	status = "okay";
 	clock-frequency = <100000>;
-	
+
 	rockpi_ft5406: rockpi_ft5406@38 {
 		compatible = "rockpi_ft5406";
 		reg = <0x38>;
@@ -662,25 +662,25 @@
 &gmac0 {
 	phy-mode = "rgmii";
 	clock_in_out = "output";
-	
+
 	snps,reset-gpio = <&gpio2 RK_PD3 GPIO_ACTIVE_LOW>;
 	snps,reset-active-low;
 	/* Reset time is 20ms, 100ms for rtl8211f */
 	snps,reset-delays-us = <0 20000 100000>;
-	
+
 	assigned-clocks = <&cru SCLK_GMAC0_RX_TX>, <&cru SCLK_GMAC0>;
 	assigned-clock-parents = <&cru SCLK_GMAC0_RGMII_SPEED>, <&cru CLK_MAC0_2TOP>;
-	
+
 	pinctrl-names = "default";
 	pinctrl-0 = <&gmac0_miim
 	&gmac0_tx_bus2
 	&gmac0_rx_bus2
 	&gmac0_rgmii_clk
 	&gmac0_rgmii_bus>;
-	
+
 	tx_delay = <0x19>;
 	rx_delay = <0x0c>;
-	
+
 	phy-handle = <&rgmii_phy0>;
 	status = "okay";
 };
@@ -703,30 +703,30 @@
 &gmac1 {
 	phy-mode = "rgmii";
 	clock_in_out = "output";
-	
+
 	snps,reset-gpio = <&gpio3 RK_PA2 GPIO_ACTIVE_LOW>;
 	snps,reset-active-low;
 	/* Reset time is 20ms, 100ms for rtl8211f */
 	snps,reset-delays-us = <0 20000 100000>;
-	
+
 	assigned-clocks = <&cru SCLK_GMAC1_RX_TX>, <&cru SCLK_GMAC1>;
 	assigned-clock-parents = <&cru SCLK_GMAC1_RGMII_SPEED>, <&cru CLK_MAC1_2TOP>;
-	
+
 	pinctrl-names = "default";
 	pinctrl-0 = <&gmac1m1_miim
 	&gmac1m1_tx_bus2
 	&gmac1m1_rx_bus2
 	&gmac1m1_rgmii_clk
 	&gmac1m1_rgmii_bus>;
-	
+
 	/* RTL8211F  */
 	//	tx_delay = <0x1f>;
 	//	rx_delay = <0x0c>;
-	
+
 	/* JL2101 */
 	tx_delay = <0x1f>;
 	rx_delay = <0x05>;
-	
+
 	phy-handle = <&rgmii_phy1>;
 	status = "okay";
 };
@@ -755,16 +755,16 @@
 	reset-gpios = <&gpio2 RK_PD5 GPIO_ACTIVE_HIGH>;
 	vpcie3v3-supply = <&vcc3v3_pcie>;
 	status = "okay";
-	
+
 	pcie@0,0 {
 		reg = <0x00100000 0 0 0 0>;
 		#address-cells = <3>;
 		#size-cells = <2>;
-		
+
 		rtl8125_1: pcie-eth@0,0 {
 			compatible = "pci10ec,8125";
 			reg = <0x000000 0 0 0 0>;
-			
+
 			realtek,led-ledsel2 = <0x022b>;
 			realtek,led-ledsel3 = <0x002b>;
 		};
@@ -776,16 +776,16 @@
 	reset-gpios = <&gpio2 RK_PD4 GPIO_ACTIVE_HIGH>;
 	vpcie3v3-supply = <&vcc3v3_pcie>;
 	status = "okay";
-	
+
 	pcie@0,0 {
 		reg = <0x00200000 0 0 0 0>;
 		#address-cells = <3>;
 		#size-cells = <2>;
-		
+
 		rtl8125_2: pcie-eth@0,0 {
 			compatible = "pci10ec,8125";
 			reg = <0x000000 0 0 0 0>;
-			
+
 			realtek,led-ledsel2 = <0x022b>;
 			realtek,led-ledsel3 = <0x002b>;
 		};
@@ -859,37 +859,37 @@
 			rockchip,pins = <0 RK_PB0 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
-	
+
 	usb {
 		vcc5v0_usb20_host_en: vcc5v0-usb20-host-en {
 			rockchip,pins = <0 RK_PD5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
-		
+
 		vcc5v0_usb30_host_en: vcc5v0-usb30-host-en {
 			rockchip,pins = <0 RK_PD6 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
-		
+
 		vcc5v0_otg_vbus_en: vcc5v0-otg-vbus-en {
 			rockchip,pins = <0 RK_PA5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
-	
+
 	sata {
 		sata_pwr_en: sata-pwr-en {
 			rockchip,pins = <0 RK_PA6 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
-	
+
 	spi_pins {
 		spi3_cs0: spi3-cs0 {
 			rockchip,pins = <4 RK_PC6 RK_FUNC_GPIO &pcfg_pull_up_drv_level_1>;
 		};
-		
+
 		spi3_cs1: spi3-cs1 {
 			rockchip,pins = <4 RK_PC4 RK_FUNC_GPIO &pcfg_pull_up_drv_level_1>;
 		};
 	};
-	
+
 	lcd {
 		mipi_dsi0_pwr_en: mipi-dsi0-pwr-en {
 			rockchip,pins = <4 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
@@ -898,7 +898,7 @@
 			rockchip,pins = <4 RK_PB4 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
-	
+
 	cam {
 		cam_pwr_en: cam-pwr-en {
 			rockchip,pins = <4 RK_PB3 RK_FUNC_GPIO &pcfg_pull_none>;
@@ -907,7 +907,7 @@
 			rockchip,pins = <4 RK_PB5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
-	
+
 	leds {
 		sys_led_pin: sys-led-pin {
 			rockchip,pins = <0 RK_PC7 RK_FUNC_GPIO &pcfg_pull_none>;
