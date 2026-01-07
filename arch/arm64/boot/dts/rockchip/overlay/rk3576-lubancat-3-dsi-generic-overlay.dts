@@ -192,7 +192,7 @@
 				interrupts = <RK_PD0 IRQ_TYPE_LEVEL_LOW>;
 				reset-gpios = <&gpio0 RK_PD1 GPIO_ACTIVE_LOW>;
 				irq-gpios = <&gpio0 RK_PD0 GPIO_ACTIVE_HIGH>;
-				
+
 				nvmem = <&eeprom0>;
 				nvmem-names = "eeprom";
 			};

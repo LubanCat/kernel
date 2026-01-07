@@ -73,7 +73,7 @@
 		vin-supply = <&vdd_cam0_5v>;
 	};
 
-    ext_cam_37m_clk: external-camera-37m-clock {
+	ext_cam_37m_clk: external-camera-37m-clock {
 		compatible = "fixed-clock";
 		clock-frequency = <37125000>;
 		clock-output-names = "ext_cam_37m_clk";

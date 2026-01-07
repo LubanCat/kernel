@@ -303,7 +303,7 @@
 
 	/* bm8563 rtc chip use rtc-hym8563 driver */
 	hym8563: hym8563@51 {
-		compatible = "haoyu,hym8563"; 
+		compatible = "haoyu,hym8563";
 		reg = <0x51>;
 		#clock-cells = <0>;
 		clock-frequency = <32768>;

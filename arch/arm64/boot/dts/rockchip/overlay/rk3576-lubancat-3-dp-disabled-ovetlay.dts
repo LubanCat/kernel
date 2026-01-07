@@ -7,75 +7,75 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 
 / {
-    fragment@0 {
-        target = <&dp>;
+	fragment@0 {
+		target = <&dp>;
 
-        __overlay__ {
-            status = "disabled";
-        };
-    };
+		__overlay__ {
+			status = "disabled";
+		};
+	};
 
-    fragment@1 {
-        target = <&dp0>;
+	fragment@1 {
+		target = <&dp0>;
 
-        __overlay__ {
-            status = "disabled";
-        };
-    };
+		__overlay__ {
+			status = "disabled";
+		};
+	};
 
-    fragment@2 {
-        target = <&dp0_in_vp0>;
+	fragment@2 {
+		target = <&dp0_in_vp0>;
 
-        __overlay__ {
-            status = "disabled";
-        };
-    };
+		__overlay__ {
+			status = "disabled";
+		};
+	};
 
-    fragment@3 {
-        target = <&dp0_in_vp1>;
+	fragment@3 {
+		target = <&dp0_in_vp1>;
 
-        __overlay__ {
-            status = "disabled";
-        };
-    };
+		__overlay__ {
+			status = "disabled";
+		};
+	};
 
-    fragment@4 {
-        target = <&dp0_in_vp2>;
+	fragment@4 {
+		target = <&dp0_in_vp2>;
 
-        __overlay__ {
-            status = "disabled";
-        };
-    };
+		__overlay__ {
+			status = "disabled";
+		};
+	};
 
-    fragment@5 {
-        target = <&vp1>;
+	fragment@5 {
+		target = <&vp1>;
 
-        __overlay__ {
-            status = "disabled";
-        };
-    };
+		__overlay__ {
+			status = "disabled";
+		};
+	};
 
-    fragment@6 {
-        target = <&route_dp0>;
+	fragment@6 {
+		target = <&route_dp0>;
 
-        __overlay__ {
-            status = "disabled";
-        };
-    };
+		__overlay__ {
+			status = "disabled";
+		};
+	};
 
-    fragment@7 {
-        target = <&dp0_sound>;
+	fragment@7 {
+		target = <&dp0_sound>;
 
-        __overlay__ {
-            status = "disabled";
-        };
-    };
+		__overlay__ {
+			status = "disabled";
+		};
+	};
 
-    fragment@8 {
-        target = <&spdif_tx3>;
+	fragment@8 {
+		target = <&spdif_tx3>;
 
-        __overlay__ {
-            status = "disabled";
-        };
-    };
+		__overlay__ {
+			status = "disabled";
+		};
+	};
 };

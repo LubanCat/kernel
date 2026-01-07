@@ -11,122 +11,122 @@
 #include <dt-bindings/sensor-dev.h>
 
 / {
-    fragment@0 {
-        target = <&i2c5>;
-        __overlay__ {
-            status = "okay";
-        };
-    };
+	fragment@0 {
+		target = <&i2c5>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@1 {
-        target = <&dcphy2_imx415>;
-        __overlay__ {
-            status = "okay";
-            rockchip,imx415-capture-mode=<1>;
-        };
-    };
+	fragment@1 {
+		target = <&dcphy2_imx415>;
+		__overlay__ {
+			status = "okay";
+			rockchip,imx415-capture-mode=<1>;
+		};
+	};
 
-    fragment@2 {
-        target = <&csi2_dphy2>;
+	fragment@2 {
+		target = <&csi2_dphy2>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@3 {
-        target = <&mipi2_csi2>;
+	fragment@3 {
+		target = <&mipi2_csi2>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@4 {
-        target = <&rkcif>;
+	fragment@4 {
+		target = <&rkcif>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@5 {
-        target = <&rkcif_mipi_lvds2>;
+	fragment@5 {
+		target = <&rkcif_mipi_lvds2>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@6 {
-        target = <&rkcif_mipi_lvds2_sditf>;
+	fragment@6 {
+		target = <&rkcif_mipi_lvds2_sditf>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@7 {
-        target = <&rkcif_mmu>;
+	fragment@7 {
+		target = <&rkcif_mmu>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@8 {
-        target = <&rkisp>;
+	fragment@8 {
+		target = <&rkisp>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@9 {
-        target = <&rkisp_mmu>;
+	fragment@9 {
+		target = <&rkisp_mmu>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@10 {
-        target = <&rkisp_vir2>;
+	fragment@10 {
+		target = <&rkisp_vir2>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@11 {
-        target = <&rkisp_vir2_sditf>;
+	fragment@11 {
+		target = <&rkisp_vir2_sditf>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@12 {
-        target = <&rkvpss>;
+	fragment@12 {
+		target = <&rkvpss>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@13 {
-        target = <&rkvpss_mmu>;
+	fragment@13 {
+		target = <&rkvpss_mmu>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@14 {
-        target = <&rkvpss_vir2>;
+	fragment@14 {
+		target = <&rkvpss_vir2>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 };

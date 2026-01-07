@@ -93,7 +93,7 @@
 		compatible = "simple-panel-dsi";
 		reg = <0>;
 		backlight = <&backlight>;
-        power-supply = <&mipi_dsi_power>;
+		power-supply = <&mipi_dsi_power>;
 		reset-gpios = <&gpio1 RK_PC1 GPIO_ACTIVE_LOW>;
 
 		enable-delay-ms = <35>;
@@ -185,7 +185,7 @@
 };
 
 &i2c2 {
-    pinctrl-names = "default";
+	pinctrl-names = "default";
 	pinctrl-0 = <&i2c2m0_xfer>;
 	status = "okay";
 
