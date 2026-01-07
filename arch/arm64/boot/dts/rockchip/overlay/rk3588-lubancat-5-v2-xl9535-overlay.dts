@@ -23,14 +23,14 @@
 
 	fragment@1 {
 		target = <&i2c4>;
-		
+
 		__overlay__ {
 			status = "okay";
 			#address-cells = <1>;
 			#size-cells = <0>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c4m3_xfer>;
-			
+
 			xl9535: xl9535@21 {
 				compatible = "nxp,pca9535";
 				status = "okay";
@@ -46,17 +46,17 @@
 			};
 		};
 	};
-	
+
 	fragment@2 {
 		target = <&i2c5>;
-		
+
 		__overlay__ {
 			status = "okay";
 			#address-cells = <1>;
 			#size-cells = <0>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c5m2_xfer>;
-			
+
 			gpio7: gpio-expander@21 {
 				compatible = "nxp,pca9535";
 				status = "okay";
@@ -72,17 +72,17 @@
 			};
 		};
 	};
-	
+
 	fragment@3 {
 		target = <&i2c6>;
-		
+
 		__overlay__ {
 			status = "okay";
 			#address-cells = <1>;
 			#size-cells = <0>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c6m0_xfer>;
-			
+
 			gpio8: gpio-expander@21 {
 				compatible = "nxp,pca9535";
 				status = "okay";
@@ -98,23 +98,23 @@
 			};
 		};
 	};
-	
+
 	fragment@4 {
 		target-path = "/";
-		
+
 		__overlay__ {
 
 			leds: leds {
 				status = "okay";
 				compatible = "gpio-leds";
-				
+
 				abc_led: abc-led {
 					label = "abc_led";
 					linux,default-trigger = "heartbeat";
 					default-state = "on";
 					gpios = <&gpio7 0 GPIO_ACTIVE_HIGH>;
 				};
-				
+
 				def_led: def-led {
 					label = "def_led";
 					linux,default-trigger = "heartbeat";
@@ -124,10 +124,10 @@
 			};
 		};
 	};
-	
+
 	fragment@5 {
 		target-path = "/";
-		
+
 		__overlay__ {
 
 			Keys {
@@ -145,7 +145,7 @@
 					interrupt-parent = <&xl9535>;
 					interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
 				};
-				
+
 				Key1 {
 					label = "KEY_1";
 					linux,code=<KEY_1>;
@@ -154,7 +154,7 @@
 					interrupt-parent = <&xl9535>;
 					interrupts = <4 IRQ_TYPE_LEVEL_LOW>;
 				};
-				
+
 				Key2 {
 					label = "KEY_2";
 					linux,code=<KEY_2>;
@@ -164,7 +164,7 @@
 					interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
 				};
 			};
-			
+
 			Coder_sw {
 				compatible = "gpio-keys";
 				status = "okay";
@@ -179,7 +179,7 @@
 					interrupts = <7 IRQ_TYPE_LEVEL_LOW>;
 				};
 			};
-			
+
 			Coder_A {
 				compatible = "gpio-keys";
 				status = "okay";
@@ -194,7 +194,7 @@
 					interrupts = <12 IRQ_TYPE_EDGE_RISING>;
 				};
 			};
-			
+
 			Coder_B {
 				compatible = "gpio-keys";
 				status = "okay";
@@ -226,7 +226,7 @@
 			};
 		};
 	};
-	
+
 	/*
 	fragment@6 {
 		target-path = "/";
@@ -242,10 +242,10 @@
 		};
 	};
 	*/
-	
+
 	fragment@6 {
 		target = <&pinctrl>;
-		
+
 		__overlay__ {
 			xl9535 {
 				pinctrl_xl9535:pinctrl_xl9535 {
@@ -253,14 +253,14 @@
 					<0 RK_PC0 RK_FUNC_GPIO &pcfg_pull_up>;
 				};
 			};
-			
+
 			gpio7 {
 				pinctrl_gpio7:pinctrl_gpio7 {
 					rockchip,pins =
 					<2 RK_PC4 RK_FUNC_GPIO &pcfg_pull_up>;
 				};
 			};
-			
+
 			gpio8 {
 				pinctrl_gpio8:pinctrl_gpio8 {
 					rockchip,pins =
@@ -270,4 +270,3 @@
 		};
 	};
 };
-

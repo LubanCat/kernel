@@ -141,7 +141,7 @@
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
-		
+
 		reset-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <0>;
@@ -253,7 +253,7 @@
 		rockchip,vcm-rated-current = <100>;
 		rockchip,vcm-step-mode = <0xd>;
 		rockchip,vcm-dlc-enable = <0>;
-		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-mclk = <0>;
 		rockchip,vcm-t-src = <0>;
 		rockchip,camera-module-facing = "back";
 	};
@@ -360,7 +360,7 @@
 				data-lanes = <1 2>;
 			};
 		};
-    };
+	};
 
 	dcphy1_imx415: dcphy1-imx415@1a {
 		compatible = "sony,imx415";
@@ -372,7 +372,7 @@
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
-		
+
 		reset-gpios = <&gpio4 RK_PA6 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <1>;
@@ -479,7 +479,7 @@
 		rockchip,vcm-rated-current = <100>;
 		rockchip,vcm-step-mode = <0xd>;
 		rockchip,vcm-dlc-enable = <0>;
-		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-mclk = <0>;
 		rockchip,vcm-t-src = <0>;
 		rockchip,camera-module-facing = "back";
 	};
@@ -559,7 +559,7 @@
 		};
 	};
 
-    dphy0_ov13850: dphy0-ov13850@10 {
+	dphy0_ov13850: dphy0-ov13850@10 {
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
@@ -586,7 +586,7 @@
 				data-lanes = <1 2>;
 			};
 		};
-    };
+	};
 
 	dphy0_imx415: dphy0-imx415@1a {
 		compatible = "sony,imx415";
@@ -598,7 +598,7 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		
+
 		reset-gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <2>;
@@ -779,7 +779,7 @@
 
 &csi2_dcphy1 {
 	status = "disabled";
-	
+
 	ports {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -812,7 +812,7 @@
 				remote-endpoint = <&ov13850_dcphy1_out>;
 				data-lanes = <1 2>;
 			};
-			
+
 			dcphy1_in_imx415: endpoint@4 {
 				reg = <4>;
 				remote-endpoint = <&imx415_dcphy1_out>;
@@ -857,7 +857,7 @@
 
 &csi2_dphy0 {
 	status = "disabled";
-	
+
 	ports {
 		#address-cells = <1>;
 		#size-cells = <0>;

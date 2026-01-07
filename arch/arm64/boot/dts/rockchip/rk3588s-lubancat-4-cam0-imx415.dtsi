@@ -1,5 +1,5 @@
-/* Link path: 
- * sensor->csi2_dcphy0->mipi0_csi2->rkcif_mipi_lvds->rkcif_mipi_lvds_sditf->rkisp0_vir0 
+/* Link path:
+ * sensor->csi2_dcphy0->mipi0_csi2->rkcif_mipi_lvds->rkcif_mipi_lvds_sditf->rkisp0_vir0
  */
 
 &i2c1 {
@@ -49,4 +49,3 @@
 &rkisp0_vir0 {
 	status = "okay";
 };
-

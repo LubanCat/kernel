@@ -15,7 +15,7 @@
 			pinctrl-0 = <&i2c3m0_xfer>;
 			#address-cells = <1>;
 			#size-cells = <0>;
-			
+
 			tca9535_0: tca9535-0@26 {
 				compatible = "nxp,pca9535";
 				reg = <0x26>;

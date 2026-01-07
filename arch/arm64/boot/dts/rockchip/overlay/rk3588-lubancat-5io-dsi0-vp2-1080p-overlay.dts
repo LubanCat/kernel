@@ -213,5 +213,5 @@
 			pinctrl-0 = <&pwm0m2_pins>;
 			status = "okay";
 		};
-	};	
+	};
 };

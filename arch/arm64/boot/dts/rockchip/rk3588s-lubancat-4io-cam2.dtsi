@@ -1,4 +1,4 @@
-/* Link path: 
+/* Link path:
  * sensor->csi2_dphy1->mipi2_csi2->rkcif_mipi_lvds2->rkcif_mipi_lvds2_sditf->rkisp0_vir2
  */
 

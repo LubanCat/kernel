@@ -328,8 +328,8 @@
 			};
 		};
 	};
-    
-    fragment@5 {
+
+	fragment@5 {
 		target-path = "/";
 
 		__overlay__ {
