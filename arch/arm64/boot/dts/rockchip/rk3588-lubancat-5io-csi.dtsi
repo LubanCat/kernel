@@ -24,7 +24,7 @@
 		rockchip,vcm-rated-current = <100>;
 		rockchip,vcm-step-mode = <0xd>;
 		rockchip,vcm-dlc-enable = <0>;
-		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-mclk = <0>;
 		rockchip,vcm-t-src = <0>;
 		rockchip,camera-module-facing = "back";
 	};
@@ -131,7 +131,7 @@
 				data-lanes = <1 2>;
 			};
 		};
-    };
+	};
 
 	dcphy0_imx415: dcphy0-imx415@1a {
 		compatible = "sony,imx415";
@@ -254,7 +254,7 @@
 		rockchip,vcm-rated-current = <100>;
 		rockchip,vcm-step-mode = <0xd>;
 		rockchip,vcm-dlc-enable = <0>;
-		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-mclk = <0>;
 		rockchip,vcm-t-src = <0>;
 		rockchip,camera-module-facing = "back";
 	};
@@ -361,7 +361,7 @@
 				data-lanes = <1 2>;
 			};
 		};
-    };
+	};
 
 	dcphy1_imx415: dcphy1-imx415@1a {
 		compatible = "sony,imx415";
@@ -468,7 +468,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c2m4_xfer>;
 
-	
+
 	dphy1_dw9714: dphy1-dw9714@c {
 		status = "disabled";
 		compatible = "dongwoon,dw9714";
@@ -479,7 +479,7 @@
 		rockchip,vcm-rated-current = <100>;
 		rockchip,vcm-step-mode = <0xd>;
 		rockchip,vcm-dlc-enable = <0>;
-		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-mclk = <0>;
 		rockchip,vcm-t-src = <0>;
 		rockchip,camera-module-facing = "back";
 	};
@@ -559,7 +559,7 @@
 		};
 	};
 
-    dphy1_ov13850: dphy1-ov13850@10 {
+	dphy1_ov13850: dphy1-ov13850@10 {
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
@@ -586,7 +586,7 @@
 				data-lanes = <1 2>;
 			};
 		};
-    };
+	};
 
 	dphy1_imx415: dphy1-imx415@1a {
 		compatible = "sony,imx415";
@@ -665,7 +665,7 @@
 			};
 		};
 	};
-	
+
 	dphy1_gc4653: dphy1-gc4653@29 {
 		compatible = "galaxycore,gc4653";
 		status = "disabled";
@@ -709,7 +709,7 @@
 		rockchip,vcm-rated-current = <100>;
 		rockchip,vcm-step-mode = <0xd>;
 		rockchip,vcm-dlc-enable = <0>;
-		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-mclk = <0>;
 		rockchip,vcm-t-src = <0>;
 		rockchip,camera-module-facing = "back";
 	};
@@ -789,7 +789,7 @@
 		};
 	};
 
-    dphy2_ov13850: dphy2-ov13850@10 {
+	dphy2_ov13850: dphy2-ov13850@10 {
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
@@ -816,7 +816,7 @@
 				data-lanes = <1 2>;
 			};
 		};
-    };
+	};
 
 	dphy2_imx415: dphy2-imx415@1a {
 		compatible = "sony,imx415";
@@ -932,7 +932,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c7m0_xfer>;
 
-	
+
 	dphy4_dw9714: dphy4-dw9714@c {
 		status = "disabled";
 		compatible = "dongwoon,dw9714";
@@ -943,7 +943,7 @@
 		rockchip,vcm-rated-current = <100>;
 		rockchip,vcm-step-mode = <0xd>;
 		rockchip,vcm-dlc-enable = <0>;
-		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-mclk = <0>;
 		rockchip,vcm-t-src = <0>;
 		rockchip,camera-module-facing = "back";
 	};
@@ -1023,7 +1023,7 @@
 		};
 	};
 
-    dphy4_ov13850: dphy4-ov13850@10 {
+	dphy4_ov13850: dphy4-ov13850@10 {
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
@@ -1050,7 +1050,7 @@
 				data-lanes = <1 2>;
 			};
 		};
-    };
+	};
 
 	dphy4_imx415: dphy4-imx415@1a {
 		compatible = "sony,imx415";
@@ -1176,7 +1176,7 @@
 		rockchip,vcm-rated-current = <100>;
 		rockchip,vcm-step-mode = <0xd>;
 		rockchip,vcm-dlc-enable = <0>;
-		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-mclk = <0>;
 		rockchip,vcm-t-src = <0>;
 		rockchip,camera-module-facing = "back";
 	};
@@ -1256,7 +1256,7 @@
 		};
 	};
 
-    dphy5_ov13850: dphy5-ov13850@10 {
+	dphy5_ov13850: dphy5-ov13850@10 {
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
@@ -1283,7 +1283,7 @@
 				data-lanes = <1 2>;
 			};
 		};
-    };
+	};
 
 	dphy5_imx415: dphy5-imx415@1a {
 		compatible = "sony,imx415";
@@ -1399,7 +1399,7 @@
 
 &csi2_dcphy0 {
 	status = "disabled";
-	
+
 	ports {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -1509,7 +1509,7 @@
 
 &csi2_dcphy1 {
 	status = "disabled";
-	
+
 	ports {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -1542,7 +1542,7 @@
 				remote-endpoint = <&ov13850_dcphy1_out>;
 				data-lanes = <1 2>;
 			};
-			
+
 			dcphy1_in_imx415: endpoint@4 {
 				reg = <4>;
 				remote-endpoint = <&imx415_dcphy1_out>;
@@ -1618,7 +1618,7 @@
 
 &csi2_dphy1 {
 	status = "disabled";
-	
+
 	ports {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -1669,12 +1669,12 @@
 				remote-endpoint = <&gc2053_dphy1_out>;
 				data-lanes = <1 2>;
 			};
-					
+
 			dphy1_in_gc4653: endpoint@7 {
 				reg = <7>;
 				remote-endpoint = <&gc4653_dphy1_out>;
 				data-lanes = <1 2>;
-			};			
+			};
 		};
 
 		port@1 {
@@ -1723,7 +1723,7 @@
 
 &csi2_dphy2 {
 	status = "disabled";
-	
+
 	ports {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -1832,7 +1832,7 @@
 
 &csi2_dphy4 {
 	status = "disabled";
-	
+
 	ports {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -1937,7 +1937,7 @@
 
 &csi2_dphy5 {
 	status = "disabled";
-	
+
 	ports {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -2267,4 +2267,3 @@
 		};
 	};
 };
-

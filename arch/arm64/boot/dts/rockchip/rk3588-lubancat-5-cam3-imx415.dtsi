@@ -45,4 +45,3 @@
 &rkisp0_vir1 {
 	status = "okay";
 };
-

@@ -35,7 +35,7 @@
 		224 225 226 227 228 229 230 231
 		232 233 234 235 236 237 238 239
 		240 241 242 243 244 245 246 247
-		248 249 250 251 252 253 254 255	
+		248 249 250 251 252 253 254 255
 		>;
 		default-brightness-level = <200>;
 	};
@@ -98,7 +98,7 @@
 &dp1 {
 	// pinctrl-names = "default";
 	// pinctrl-0 = <&dp1m0_pins>;
-	force-hpd; 
+	force-hpd;
 	status = "okay";
 	ports {
 		port@1 {
@@ -121,7 +121,7 @@
 
 &route_dp1 {
 	status = "okay";
-	connect = <&vp2_out_dp1>;	
+	connect = <&vp2_out_dp1>;
 };
 
 &dp1_in_vp2 {

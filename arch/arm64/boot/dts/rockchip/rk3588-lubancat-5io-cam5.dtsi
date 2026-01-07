@@ -22,7 +22,7 @@
 		rockchip,vcm-rated-current = <100>;
 		rockchip,vcm-step-mode = <0xd>;
 		rockchip,vcm-dlc-enable = <0>;
-		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-mclk = <0>;
 		rockchip,vcm-t-src = <0>;
 		rockchip,camera-module-facing = "back";
 	};
@@ -102,7 +102,7 @@
 		};
 	};
 
-    dphy5_ov13850: ov13850@10 {
+	dphy5_ov13850: ov13850@10 {
 		compatible = "ovti,ov13850";
 		status = "disabled";
 		reg = <0x10>;
@@ -129,7 +129,7 @@
 				data-lanes = <1 2>;
 			};
 		};
-    };
+	};
 };
 
 &csi2_dphy1_hw {
@@ -138,7 +138,7 @@
 
 &csi2_dphy5 {
 	status = "okay";
-	
+
 	ports {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -266,4 +266,3 @@
 		};
 	};
 };
-

@@ -22,7 +22,7 @@
 		rockchip,vcm-rated-current = <100>;
 		rockchip,vcm-step-mode = <0xd>;
 		rockchip,vcm-dlc-enable = <0>;
-		rockchip,vcm-mclk = <0>;	
+		rockchip,vcm-mclk = <0>;
 		rockchip,vcm-t-src = <0>;
 		rockchip,camera-module-facing = "back";
 	};
@@ -129,7 +129,7 @@
 				data-lanes = <1 2>;
 			};
 		};
-    };
+	};
 
 	dcphy1_imx415: imx415@1a {
 		compatible = "sony,imx415";
@@ -163,7 +163,7 @@
 
 &csi2_dcphy1 {
 	status = "okay";
-	
+
 	ports {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -190,7 +190,7 @@
 				remote-endpoint = <&ov13850_dcphy1_out>;
 				data-lanes = <1 2>;
 			};
-			
+
 			dcphy1_in_ov5647: endpoint@4 {
 				reg = <4>;
 				remote-endpoint = <&ov5647_dcphy1_out>;
@@ -297,4 +297,3 @@
 		};
 	};
 };
-

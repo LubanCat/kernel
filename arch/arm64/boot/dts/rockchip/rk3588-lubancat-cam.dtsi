@@ -17,7 +17,7 @@
 		#clock-cells = <0>;
 		clock-frequency = <24000000>;
 		clock-output-names = "ext_cam_24m_clk";
-	}; 
+	};
 
 	ext_cam_27m_clk: external-camera-27m-clock {
 		compatible = "fixed-clock";
