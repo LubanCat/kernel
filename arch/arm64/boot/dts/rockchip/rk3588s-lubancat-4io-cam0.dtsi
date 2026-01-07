@@ -8,7 +8,7 @@
 
 /* 对焦马达 可选 */
 &dcphy0_dw9714 {
-	status = "okay";
+	status = "disabled";
 };
 
 /* 摄像头 只能开启一个 */

@@ -2,8 +2,40 @@
 	status = "okay";
 };
 
+&dphy5_dw9714 {
+	status = "disabled";
+};
+
+&dphy5_ov5647 {
+	status = "disabled";
+};
+
+&dphy5_ov5648 {
+	status = "disabled";
+};
+
+&dphy5_ov8858 {
+	status = "disabled";
+};
+
+&dphy5_ov13850 {
+	status = "disabled";
+};
+
 &dphy5_imx415 {
 	status = "okay";
+};
+
+&dphy5_gc08a8 {
+	status = "disabled";
+};
+
+&dphy5_gc2053 {
+	status = "disabled";
+};
+
+&dphy5_gc4653 {
+	status = "disabled";
 };
 
 &csi2_dphy1_hw {

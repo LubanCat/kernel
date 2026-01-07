@@ -2,8 +2,40 @@
 	status = "okay";
 };
 
+&dphy1_dw9714 {
+	status = "disabled";
+};
+
+&dphy1_ov5647 {
+	status = "disabled";
+};
+
+&dphy1_ov5648 {
+	status = "disabled";
+};
+
+&dphy1_ov8858 {
+	status = "disabled";
+};
+
+&dphy1_ov13850 {
+	status = "disabled";
+};
+
 &dphy1_imx415 {
 	status = "okay";
+};
+
+&dphy1_gc08a8 {
+	status = "disabled";
+};
+
+&dphy1_gc2053 {
+	status = "disabled";
+};
+
+&dphy1_gc4653 {
+	status = "disabled";
 };
 
 &csi2_dphy0_hw {
@@ -42,6 +74,6 @@
 	status = "okay";
 };
 
-&rkisp0_vir1 {
+&rkisp0_vir2 {
 	status = "okay";
 };

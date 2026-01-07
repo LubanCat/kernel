@@ -1,52 +1,56 @@
+/* Link path:
+ * sensor->csi2_dcphy1->mipi1_csi2->rkcif_mipi_lvds1->rkcif_mipi_lvds1_sditf->rkisp0_vir1
+ */
+
 &i2c5 {
 	status = "okay";
 };
 
-&dphy2_dw9714 {
+&dcphy1_dw9714 {
 	status = "disabled";
 };
 
-&dphy2_ov5647 {
+&dcphy1_ov5647 {
 	status = "disabled";
 };
 
-&dphy2_ov5648 {
+&dcphy1_ov5648 {
 	status = "disabled";
 };
 
-&dphy2_ov8858 {
+&dcphy1_ov8858 {
 	status = "disabled";
 };
 
-&dphy2_ov13850 {
+&dcphy1_ov13850 {
 	status = "disabled";
 };
 
-&dphy2_imx415 {
+&dcphy1_imx415 {
 	status = "okay";
 };
 
-&dphy2_gc08a8 {
+&dcphy1_gc08a8 {
 	status = "disabled";
 };
 
-&dphy2_gc2053 {
+&dcphy1_gc2053 {
 	status = "disabled";
 };
 
-&dphy2_gc4653 {
+&dcphy1_gc4653 {
 	status = "disabled";
 };
 
-&csi2_dphy0_hw {
+&csi2_dcphy1 {
 	status = "okay";
 };
 
-&csi2_dphy2 {
+&mipi1_csi2 {
 	status = "okay";
 };
 
-&mipi3_csi2 {
+&mipi_dcphy1 {
 	status = "okay";
 };
 
@@ -54,11 +58,11 @@
 	status = "okay";
 };
 
-&rkcif_mipi_lvds3 {
+&rkcif_mipi_lvds1 {
 	status = "okay";
 };
 
-&rkcif_mipi_lvds3_sditf {
+&rkcif_mipi_lvds1_sditf {
 	status = "okay";
 };
 
