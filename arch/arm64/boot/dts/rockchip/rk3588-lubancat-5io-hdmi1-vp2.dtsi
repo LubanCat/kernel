@@ -11,9 +11,13 @@
 	};
 };
 
+&i2s6_8ch {
+	status = "okay";
+};
+
 &route_hdmi1{
 	status = "okay";
-	connect = <&vp0_out_hdmi1>;
+	connect = <&vp2_out_hdmi1>;
 };
 
 &hdmi1 {
@@ -21,10 +25,6 @@
 	cec-enable = "true";
 	pinctrl-0 = <&hdmim0_tx1_cec &hdmim0_tx1_hpd &hdmim0_tx1_scl &hdmim0_tx1_sda>;
 	pinctrl-names = "default";
-	status = "okay";
-};
-
-&hdptxphy_hdmi1 {
 	status = "okay";
 };
 
@@ -40,6 +40,6 @@
 	status = "okay";
 };
 
-&i2s6_8ch {
+&hdptxphy_hdmi1 {
 	status = "okay";
 };

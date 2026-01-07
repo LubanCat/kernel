@@ -88,6 +88,10 @@
 	};
 };
 
+&spdif_tx5 {
+	status = "okay";
+};
+
 &pwm11 {
 	pinctrl-0 = <&pwm11m1_pins>;
 	status = "okay";

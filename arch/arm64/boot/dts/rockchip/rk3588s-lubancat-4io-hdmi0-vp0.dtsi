@@ -4,7 +4,22 @@
  * Copyright (c) 2023 EmbedFire <embedfire@embedfire.com>
  */
 
-/* hdmi0 display */
+/ {
+	hdmi0_sound: hdmi0-sound {
+		status = "okay";
+		compatible = "rockchip,hdmi";
+		rockchip,mclk-fs = <128>;
+		rockchip,card-name = "rockchip-hdmi0";
+		rockchip,cpu = <&i2s5_8ch>;
+		rockchip,codec = <&hdmi0>;
+		rockchip,jack-det;
+	};
+};
+
+&i2s5_8ch {
+	status = "okay";
+};
+
 &hdmi0 {
 	enable-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
 	cec-enable = "true";
