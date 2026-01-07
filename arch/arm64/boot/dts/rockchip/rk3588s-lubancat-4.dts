@@ -34,21 +34,21 @@
  */
 /***** vp0 *****/
 /* hdmi0 display */
-// #include "rk3588s-lubancat-4-hdmi0.dtsi"
+// #include "rk3588s-lubancat-4-hdmi0-vp0.dtsi"
 
 /***** vp1 *****/
 /* dp0 display */
-// #include "rk3588s-lubancat-4-dp0.dtsi"
+// #include "rk3588s-lubancat-4-dp0-vp1.dtsi"
 
 /***** vp2 *****/
-// #include "rk3588s-lubancat-4-dsi0-1080x1920-5.5inch-ebf410125.dtsi"
-// #include "rk3588s-lubancat-4-dsi0-1024x600-7inch-ebf410173.dtsi"
-// #include "rk3588s-lubancat-4-dsi0-800x1280-10.1inch-ebf410177.dtsi"
+// #include "rk3588s-lubancat-4-dsi0-vp2-1080x1920-5.5inch-ebf410125.dtsi"
+// #include "rk3588s-lubancat-4-dsi0-vp2-1024x600-7inch-ebf410173.dtsi"
+// #include "rk3588s-lubancat-4-dsi0-vp2-800x1280-10.1inch-ebf410177.dtsi"
 
 /***** vp3 *****/
-// #include "rk3588s-lubancat-4-dsi1-1080x1920-5.5inch-ebf410125.dtsi"
-// #include "rk3588s-lubancat-4-dsi1-1024x600-7inch-ebf410173.dtsi"
-// #include "rk3588s-lubancat-4-dsi1-800x1280-10.1inch-ebf410177.dtsi"
+// #include "rk3588s-lubancat-4-dsi1-vp3-1080x1920-5.5inch-ebf410125.dtsi"
+// #include "rk3588s-lubancat-4-dsi1-vp3-1024x600-7inch-ebf410173.dtsi"
+// #include "rk3588s-lubancat-4-dsi1-vp3-800x1280-10.1inch-ebf410177.dtsi"
 
 / {
 	model = "Embedfire LubanCat-4";
@@ -299,6 +299,7 @@
 	};
 
 	backlight_dsi0: backlight-dsi0 {
+		status = "okay";
 		compatible = "pwm-backlight";
 		pwms = <&pwm2 0 25000 0>;
 		brightness-levels = <
@@ -339,6 +340,7 @@
 	};
 
 	backlight_dsi1: backlight-dsi1 {
+		status = "okay";
 		compatible = "pwm-backlight";
 		pwms = <&pwm6 0 25000 0>;
 		brightness-levels = <
