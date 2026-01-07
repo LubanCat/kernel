@@ -86,7 +86,7 @@
 			65000	4
 		>;
 	};
-	
+
 	adc_keys: adc-keys {
 		status = "okay";
 		compatible = "adc-keys";
