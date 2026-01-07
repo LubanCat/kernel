@@ -510,6 +510,7 @@
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "CMK-OT2022-PX1";
 		rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
+		rockchip,imx415-data-lanes = <2>;
 		// NO_HDR:0 HDR_X2:5 HDR_X3:6
 		// rockchip,camera-hdr-mode = <0>;
 		port {
@@ -692,6 +693,7 @@
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "CMK-OT2022-PX1";
 		rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
+		rockchip,imx415-data-lanes = <2>;
 		// NO_HDR:0 HDR_X2:5 HDR_X3:6
 		// rockchip,camera-hdr-mode = <0>;
 		port {
