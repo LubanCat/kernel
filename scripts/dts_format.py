@@ -24,6 +24,9 @@ def convert_indent(line):
 
 for root, dirs, files in os.walk(ROOT):
     for name in files:
+        # 只处理包含 lubancat 的 dts / dtsi
+        if "lubancat" not in name:
+            continue
         if not name.endswith((".dts", ".dtsi")):
             continue
 
@@ -36,7 +39,7 @@ for root, dirs, files in os.walk(ROOT):
         # 1. 缩进 + 行尾空白处理
         new_lines = [convert_indent(line) for line in lines]
 
-        # 2. 删除文件末尾多余“空行内容”
+        # 2. 删除文件末尾多余空行
         while new_lines and new_lines[-1].strip() == "":
             new_lines.pop()
 
@@ -46,7 +49,7 @@ for root, dirs, files in os.walk(ROOT):
         else:
             new_lines[-1] = new_lines[-1].rstrip('\n') + '\n'
 
-        with open(path, "w", encoding="utf-8", newline='\n') as f:
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.writelines(new_lines)
 
 print("Done.")
