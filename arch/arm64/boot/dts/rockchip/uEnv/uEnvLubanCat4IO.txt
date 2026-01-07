@@ -34,13 +34,13 @@ dtoverlay=/dtb/overlay/rk3588s-lubancat-dp0-in-vp1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo
 
 # CAM0
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam0-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam0-imx415-3840x2160-30fps-overlay.dtbo
 # CAM1
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam1-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam1-imx415-3840x2160-30fps-overlay.dtbo
 # CAM2
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam2-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam2-imx415-3840x2160-15fps-overlay.dtbo
 # CAM3
-#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam3-imx415-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588s-lubancat-4io-cam3-imx415-3840x2160-15fps-overlay.dtbo
 
 # 开启sata0, mini pcie接口可接msata硬盘
 #dtoverlay=/dtb/overlay/rk3588s-lubancat-sata0-overlay.dtbo
