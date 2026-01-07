@@ -163,7 +163,7 @@
 			pinctrl-0 = <&sys_led_pin>;
 		};
 
-        buzzer: buzzer {
+		buzzer: buzzer {
 			label = "buzzer";
 			default-state = "on";
 			linux,default-trigger = "none";
@@ -187,7 +187,7 @@
 			"Microphone", "Mic Jack",
 			"Speaker", "Speaker",
 			"Headphone", "Headphones";
-			
+
 		simple-audio-card,cpu {
 			sound-dai = <&sai0>;
 		};
@@ -797,9 +797,9 @@
 			rockchip,pins = <3 RK_PA7 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 
-        buzzer_pin: buzzer-pin {
-            rockchip,pins = <0 RK_PA5 RK_FUNC_GPIO &pcfg_pull_none>;
-        };
+		buzzer_pin: buzzer-pin {
+			rockchip,pins = <0 RK_PA5 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
 	};
 
 	lcd {

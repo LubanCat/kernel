@@ -199,7 +199,7 @@
 			"Microphone", "Mic Jack",
 			"Speaker", "Speaker",
 			"Headphone", "Headphones";
-			
+
 		simple-audio-card,cpu {
 			sound-dai = <&sai0>;
 		};
@@ -354,9 +354,9 @@
 };
 
 &uart1 {
-    status = "okay";
-    pinctrl-names = "default";
-    pinctrl-0 = <&uart1m0_xfer &uart1m0_ctsn>;
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart1m0_xfer &uart1m0_ctsn>;
 };
 
 &uart2 {

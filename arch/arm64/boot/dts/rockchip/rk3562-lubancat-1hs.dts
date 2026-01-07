@@ -238,7 +238,7 @@
 			"Microphone", "Mic Jack",
 			"Speaker", "Speaker",
 			"Headphone", "Headphones";
-			
+
 		simple-audio-card,cpu {
 			sound-dai = <&sai0>;
 		};
@@ -489,9 +489,9 @@
 };
 
 &uart1 {
-    status = "okay";
-    pinctrl-names = "default";
-    pinctrl-0 = <&uart1m0_xfer &uart1m0_ctsn>;
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart1m0_xfer &uart1m0_ctsn>;
 };
 
 &uart2 {
@@ -530,26 +530,26 @@
 	ir_key_lubancat{
 	rockchip,usercode = <0xff00>;
 	rockchip,key_table =
-        <0xba   KEY_POWER>,   //电源按键
-        <0xb8   KEY_MENU>,     //菜单按键
-        <0xbc   KEY_BACK>,      //返回按键
-        <0xbb   KEY_HOME>,      //home键按键
-        <0xea   KEY_PLAY>,      //播放按键
-        <0xbf   KEY_VOLUMEUP>,  //音量加按键
-        <0xe6   KEY_VOLUMEDOWN>,   //音量键按键
-        <0xf6   KEY_FASTFORWARD>,  //快进按键
-        <0xf8   KEY_FASTREVERSE>,  //快退按键
-        <0xf2   KEY_BACKSPACE>,    //BaskSpace按键
-        <0xf3   KEY_1>,            //按键1
-        <0xe7   KEY_2>,
-        <0xa1   KEY_3>,
-        <0xf7   KEY_4>,
-        <0xe3   KEY_5>,
-        <0xa5   KEY_6>,
-        <0xbd   KEY_7>,
-        <0xad   KEY_8>,
-        <0xb5   KEY_9>,
-        <0xe9   KEY_0>;            //按键0
+		<0xba   KEY_POWER>,   //电源按键
+		<0xb8   KEY_MENU>,     //菜单按键
+		<0xbc   KEY_BACK>,      //返回按键
+		<0xbb   KEY_HOME>,      //home键按键
+		<0xea   KEY_PLAY>,      //播放按键
+		<0xbf   KEY_VOLUMEUP>,  //音量加按键
+		<0xe6   KEY_VOLUMEDOWN>,   //音量键按键
+		<0xf6   KEY_FASTFORWARD>,  //快进按键
+		<0xf8   KEY_FASTREVERSE>,  //快退按键
+		<0xf2   KEY_BACKSPACE>,    //BaskSpace按键
+		<0xf3   KEY_1>,            //按键1
+		<0xe7   KEY_2>,
+		<0xa1   KEY_3>,
+		<0xf7   KEY_4>,
+		<0xe3   KEY_5>,
+		<0xa5   KEY_6>,
+		<0xbd   KEY_7>,
+		<0xad   KEY_8>,
+		<0xb5   KEY_9>,
+		<0xe9   KEY_0>;            //按键0
 	};
 
 	ir_key2 {

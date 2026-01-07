@@ -111,13 +111,13 @@
 						hactive = <1280>;
 						vactive = <800>;
 
-						hsync-len   = <32>;  
+						hsync-len   = <32>;
 						hback-porch = <80>;
-						hfront-porch= <48>; 		
+						hfront-porch= <48>;
 
 						vsync-len    = <18>;
 						vback-porch  = <14>;
-						vfront-porch = <3>;  		
+						vfront-porch = <3>;
 
 						hsync-active = <0>;
 						vsync-active = <0>;

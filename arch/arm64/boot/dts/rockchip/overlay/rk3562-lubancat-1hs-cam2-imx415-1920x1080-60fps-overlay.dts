@@ -11,55 +11,55 @@
 #include <dt-bindings/sensor-dev.h>
 
 / {
-    fragment@0 {
-        target = <&i2c2>;
+	fragment@0 {
+		target = <&i2c2>;
 
-        __overlay__ {
-            status = "okay";
-        };
-    };
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@1 {
-        target = <&dphy4_imx415>;
-        __overlay__ {
-            status = "okay";
-            rockchip,imx415-capture-mode=<1>;
-            rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20-1080p";
-        };
-    };
+	fragment@1 {
+		target = <&dphy4_imx415>;
+		__overlay__ {
+			status = "okay";
+			rockchip,imx415-capture-mode=<1>;
+			rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20-1080p";
+		};
+	};
 
-    fragment@2 {
-        target = <&csi2_dphy4>;
-        __overlay__ {
-            status = "okay";
-        };
-    };
+	fragment@2 {
+		target = <&csi2_dphy4>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@3 {
-        target = <&mipi2_csi2>;
-        __overlay__ {
-            status = "okay";
-        };
-    };
+	fragment@3 {
+		target = <&mipi2_csi2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@4 {
-        target = <&rkcif_mipi_lvds2>;
-        __overlay__ {
-            status = "okay";
-        };
-    };
+	fragment@4 {
+		target = <&rkcif_mipi_lvds2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@5 {
-        target = <&rkcif_mipi_lvds2_sditf>;
-        __overlay__ {
-            status = "okay";
-        };
-    };
+	fragment@5 {
+		target = <&rkcif_mipi_lvds2_sditf>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
 
-    fragment@6 {
-        target = <&rkisp_vir2>;
-        __overlay__ {
-            status = "okay";
-        };
-    };
+	fragment@6 {
+		target = <&rkisp_vir2>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
 };
