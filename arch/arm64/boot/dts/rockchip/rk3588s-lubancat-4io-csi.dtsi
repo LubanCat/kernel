@@ -215,7 +215,7 @@
 		reg = <0x36>;
 		clocks = <&ext_cam_25m_clk>;
 		clock-names = "ext_cam_25m_clk";
-		pwdn-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_LOW>;
 		lens-focus = <&dcphy1_dw9714>;
 
 		port {
@@ -235,8 +235,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio1 RK_PA0 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA0 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <1>;
@@ -264,8 +264,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio1 RK_PA0 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA0 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <1>;
@@ -293,8 +293,8 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		pwdn-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio1 RK_PA0 GPIO_ACTIVE_HIGH>;
+		pwdn-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA0 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
 		rockchip,camera-module-index = <1>;
@@ -323,8 +323,8 @@
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
-		pwdn-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio1 RK_PA0 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA0 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <1>;
 		rockchip,camera-module-facing = "back";
@@ -349,8 +349,8 @@
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
-		pwdn-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio1 RK_PA0 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA0 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <0>;
 		rockchip,camera-module-facing = "front";
