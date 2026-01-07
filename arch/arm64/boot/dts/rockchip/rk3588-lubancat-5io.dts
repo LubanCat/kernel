@@ -20,17 +20,21 @@
 #include "rk3588-linux.dtsi"
 
 //vp0
+// #include "rk3588-lubancat-5io-hdmi0-vp0.dtsi"
 // #include "rk3588-lubancat-5io-hdmi1-vp0.dtsi"
-// #include "rk3588-lubancat-5io-hdmi0.dtsi"
 
-//vp1 dp0
+//vp1
+// #include "rk3588-lubancat-5-dp0-vp1.dtsi"
 
 //vp2 二选一
-// #include "rk3588-lubancat-5io-hdmi1.dtsi"
-// #include "rk3588-lubancat-5io-dsi0-ebf410125_1080p.dtsi"
+// #include "rk3588-lubancat-5io-hdmi1-vp2.dtsi"
+// #include "rk3588-lubancat-5io-dsi0-vp2-1080x1920-5.5inch-ebf410125.dtsi"
 
 //vp3
-// #include "rk3588-lubancat-5io-dsi1-ebf410125_1080p.dtsi"
+// #include "rk3588-lubancat-5io-dsi1-vp3-1080x1920-5.5inch-ebf410125.dtsi"
+
+/* HDMI-RX */
+// #include "rk3588-lubancat-5io-hdmirx.dtsi"
 
 /* Camera */
 #include "rk3588-lubancat-5io-csi.dtsi"
@@ -300,28 +304,6 @@
 		pinctrl-0 = <&mipi_dsi1_power_en>;
 	};
 
-	hdmiin_sound: hdmiin-sound {
-		compatible = "rockchip,hdmi";
-		rockchip,mclk-fs = <128>;
-		rockchip,format = "i2s";
-		rockchip,bitclock-master = <&hdmirx_ctrler>;
-		rockchip,frame-master = <&hdmirx_ctrler>;
-		rockchip,card-name = "rockchip-hdmiin";
-		rockchip,cpu = <&i2s7_8ch>;
-		rockchip,codec = <&hdmirx_ctrler 0>;
-		rockchip,jack-det;
-	};
-
-	dp0_sound: dp0-sound {
-		status = "okay";
-		compatible = "rockchip,hdmi";
-		rockchip,card-name = "rockchip-dp0";
-		rockchip,mclk-fs = <512>;
-		rockchip,cpu = <&spdif_tx2>;
-		rockchip,codec = <&dp0 1>;
-		rockchip,jack-det;
-	};
-
 	es8388_sound: es8388-sound {
 		status = "okay";
 		compatible = "rockchip,multicodecs-card";
@@ -491,18 +473,6 @@
 };
 
 &av1d_mmu {
-	status = "okay";
-};
-
-&spdif_tx2 {
-	status = "okay";
-};
-
-&i2s5_8ch {
-	status = "okay";
-};
-
-&i2s6_8ch {
 	status = "okay";
 };
 
@@ -1632,53 +1602,12 @@
 	status = "okay";
 };
 
-/* dp0 display */
-&dp0 {
-	status = "okay";
-};
-
-&route_dp0 {
-	status = "okay";
-	connect = <&vp1_out_dp0>;
-};
-
-&dp0_in_vp0 {
-	status = "disabled";
-};
-
-&dp0_in_vp1 {
-	status = "okay";
-};
-
-&dp0_in_vp2 {
-	status = "disabled";
-};
-
 &vop {
 	status = "okay";
 	// disable-win-move;
 };
 
 &vop_mmu {
-	status = "okay";
-};
-
-&hdmirx_ctrler {
-	status = "okay";
-	#sound-dai-cells = <1>;
-	/* Effective level used to trigger HPD: 0-low, 1-high */
-	hpd-trigger-level = <1>;
-	hdmirx-det-gpios = <&gpio1 RK_PD2 GPIO_ACTIVE_LOW>;
-	pinctrl-0 = <&hdmim1_rx_cec &hdmim1_rx_hpdin &hdmim1_rx_scl &hdmim1_rx_sda &hdmirx_det>;
-	pinctrl-names = "default";
-};
-
-/* HDMI IN Audio */
-&hdmiin_sound {
-	status = "okay";
-};
-
-&i2s7_8ch {
 	status = "okay";
 };
 

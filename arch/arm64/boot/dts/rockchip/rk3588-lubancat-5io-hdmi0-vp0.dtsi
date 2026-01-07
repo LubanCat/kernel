@@ -11,9 +11,7 @@
 	};
 };
 
-/* hdmi0 display */
-&hdmi0 {
-	enable-gpios = <&gpio1 RK_PC4 GPIO_ACTIVE_HIGH>;
+&i2s5_8ch {
 	status = "okay";
 };
 
@@ -22,8 +20,22 @@
 	connect = <&vp0_out_hdmi0>;
 };
 
+&hdmi0 {
+	enable-gpios = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
+	cec-enable = "true";
+	status = "okay";
+};
+
 &hdmi0_in_vp0 {
 	status = "okay";
+};
+
+&hdmi0_in_vp1 {
+	status = "disabled";
+};
+
+&hdmi0_in_vp2 {
+	status = "disabled";
 };
 
 &hdptxphy_hdmi0 {

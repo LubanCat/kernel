@@ -11,6 +11,10 @@
 	};
 };
 
+&i2s6_8ch {
+	status = "okay";
+};
+
 &route_hdmi1{
 	status = "okay";
 	connect = <&vp0_out_hdmi1>;

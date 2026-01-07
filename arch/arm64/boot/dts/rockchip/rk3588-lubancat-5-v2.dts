@@ -35,19 +35,3 @@
 		};
 	};
 };
-
-&backlight_dsi0 {
-	status = "disabled";
-};
-
-&backlight_dsi1 {
-	status = "disabled";
-};
-
-&pwm0 {
-	status = "disabled";
-};
-
-&pwm1 {
-	status = "disabled";
-};
