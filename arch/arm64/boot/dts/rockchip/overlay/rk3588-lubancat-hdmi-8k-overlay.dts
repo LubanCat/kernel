@@ -43,5 +43,5 @@
 			assigned-clocks;
 			assigned-clock-rates;
 		};
-	};	
+	};
 };

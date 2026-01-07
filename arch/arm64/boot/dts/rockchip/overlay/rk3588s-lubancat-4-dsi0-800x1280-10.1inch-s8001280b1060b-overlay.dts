@@ -49,7 +49,7 @@
 				power-supply = <&mipi_dsi0_power>;
 				reset-gpios = <&gpio0 RK_PB7 GPIO_ACTIVE_LOW>;
 				pinctrl-names = "default";
-                pinctrl-0 = <&dsi0_reset>;
+				pinctrl-0 = <&dsi0_reset>;
 
 				enable-delay-ms = <35>;
 				prepare-delay-ms = <6>;
@@ -341,5 +341,3 @@
 		};
 	};
 };
-
-

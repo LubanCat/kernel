@@ -98,7 +98,7 @@
 			status = "okay";
 		};
 	};
-	
+
 	fragment@12 {
 		target = <&dphy4_dw9714>;
 
@@ -107,4 +107,3 @@
 		};
 	};
 };
-

@@ -44,8 +44,7 @@
 		target = <&dp1>;
 
 		__overlay__ {
-			
-			force-hpd; 
+			force-hpd;
 			status = "okay";
 			ports {
 				#address-cells = <1>;
@@ -100,7 +99,7 @@
 				224 225 226 227 228 229 230 231
 				232 233 234 235 236 237 238 239
 				240 241 242 243 244 245 246 247
-				248 249 250 251 252 253 254 255	
+				248 249 250 251 252 253 254 255
 				>;
 				default-brightness-level = <200>;
 			};
@@ -124,7 +123,7 @@
 
 				prepare-delay-ms = <100>; //AUX通信前延时
 				enable-delay-ms = <100>;
-				
+
 				port {
 					panel_in_dp1: endpoint {
 						remote-endpoint = <&dp1_out_panel>;
@@ -143,4 +142,3 @@
 		};
 	};
 };
-
