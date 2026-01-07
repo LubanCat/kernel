@@ -8,8 +8,40 @@
 	status = "okay";
 };
 
+&dcphy0_dw9714 {
+	status = "disabled";
+};
+
+&dcphy0_ov5647 {
+	status = "disabled";
+};
+
+&dcphy0_ov5648 {
+	status = "disabled";
+};
+
+&dcphy0_ov8858 {
+	status = "disabled";
+};
+
+&dcphy0_ov13850 {
+	status = "disabled";
+};
+
 &dcphy0_imx415 {
 	status = "okay";
+};
+
+&dcphy0_gc08a8 {
+	status = "disabled";
+};
+
+&dcphy0_gc2053 {
+	status = "disabled";
+};
+
+&dcphy0_gc4653 {
+	status = "disabled";
 };
 
 &mipi_dcphy0 {

@@ -2,7 +2,43 @@
 	status = "okay";
 };
 
+&dphy2_dw9714 {
+	status = "disabled";
+};
+
+&dphy2_ov5647 {
+	status = "disabled";
+};
+
+&dphy2_ov5648 {
+	status = "disabled";
+};
+
+&dphy2_ov8858 {
+	status = "disabled";
+};
+
+&dphy2_ov13850 {
+	status = "disabled";
+};
+
 &dphy2_imx415 {
+	status = "okay";
+};
+
+&dphy2_gc08a8 {
+	status = "disabled";
+};
+
+&dphy2_gc2053 {
+	status = "disabled";
+};
+
+&dphy2_gc4653 {
+	status = "disabled";
+};
+
+&csi2_dphy0_hw {
 	status = "okay";
 };
 

@@ -1,13 +1,41 @@
-/* Link path:
- * sensor->csi2_dcphy1->mipi1_csi2->rkcif_mipi_lvds1->rkcif_mipi_lvds1_sditf->rkisp0_vir1
- */
-
 &i2c5 {
 	status = "okay";
 };
 
+&dcphy1_dw9714 {
+	status = "disabled";
+};
+
+&dcphy1_ov5647 {
+	status = "disabled";
+};
+
+&dcphy1_ov5648 {
+	status = "disabled";
+};
+
+&dcphy1_ov8858 {
+	status = "disabled";
+};
+
+&dcphy1_ov13850 {
+	status = "disabled";
+};
+
 &dcphy1_imx415 {
 	status = "okay";
+};
+
+&dcphy1_gc08a8 {
+	status = "disabled";
+};
+
+&dcphy1_gc2053 {
+	status = "disabled";
+};
+
+&dcphy1_gc4653 {
+	status = "disabled";
 };
 
 &csi2_dcphy1 {
@@ -38,14 +66,14 @@
 	status = "okay";
 };
 
-&rkisp0 {
+&rkisp1 {
 	status = "okay";
 };
 
-&isp0_mmu {
+&isp1_mmu {
 	status = "okay";
 };
 
-&rkisp0_vir1 {
+&rkisp1_vir0 {
 	status = "okay";
 };

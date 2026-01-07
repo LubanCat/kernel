@@ -22,9 +22,9 @@
 /* MIPI CSI 节点配置 */
 #include "rk3588s-lubancat-4-csi.dtsi"
 /* IMX415 示例, 开启链路节点 */
-// #include "rk3588s-lubancat-4-cam0-imx415.dtsi"
-// #include "rk3588s-lubancat-4-cam1-imx415.dtsi"
-// #include "rk3588s-lubancat-4-cam2-imx415.dtsi"
+// #include "rk3588s-lubancat-4-cam0.dtsi"
+// #include "rk3588s-lubancat-4-cam1.dtsi"
+// #include "rk3588s-lubancat-4-cam2.dtsi"
 
 
 /* 显示输出配置，

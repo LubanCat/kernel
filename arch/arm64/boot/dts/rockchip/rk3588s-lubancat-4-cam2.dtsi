@@ -2,12 +2,44 @@
  * sensor->csi2_dphy0->mipi2_csi2->rkcif_mipi_lvds2->rkcif_mipi_lvds2_sditf->rkisp1_vir0
  */
 
-&i2c3 {
+&i2c6 {
 	status = "okay";
+};
+
+&dphy0_dw9714 {
+	status = "disabled";
+};
+
+&dphy0_ov5647 {
+	status = "disabled";
+};
+
+&dphy0_ov5648 {
+	status = "disabled";
+};
+
+&dphy0_ov8858 {
+	status = "disabled";
+};
+
+&dphy0_ov13850 {
+	status = "disabled";
 };
 
 &dphy0_imx415 {
 	status = "okay";
+};
+
+&dphy0_gc08a8 {
+	status = "disabled";
+};
+
+&dphy0_gc2053 {
+	status = "disabled";
+};
+
+&dphy0_gc4653 {
+	status = "disabled";
 };
 
 &csi2_dphy0 {

@@ -1,40 +1,40 @@
-&i2c5 {
+&i2c3 {
 	status = "okay";
 };
 
-&dphy2_dw9714 {
+&dphy1_dw9714 {
 	status = "disabled";
 };
 
-&dphy2_ov5647 {
+&dphy1_ov5647 {
 	status = "disabled";
 };
 
-&dphy2_ov5648 {
+&dphy1_ov5648 {
 	status = "disabled";
 };
 
-&dphy2_ov8858 {
+&dphy1_ov8858 {
 	status = "disabled";
 };
 
-&dphy2_ov13850 {
+&dphy1_ov13850 {
 	status = "disabled";
 };
 
-&dphy2_imx415 {
+&dphy1_imx415 {
 	status = "okay";
 };
 
-&dphy2_gc08a8 {
+&dphy1_gc08a8 {
 	status = "disabled";
 };
 
-&dphy2_gc2053 {
+&dphy1_gc2053 {
 	status = "disabled";
 };
 
-&dphy2_gc4653 {
+&dphy1_gc4653 {
 	status = "disabled";
 };
 
@@ -42,11 +42,11 @@
 	status = "okay";
 };
 
-&csi2_dphy2 {
+&csi2_dphy1 {
 	status = "okay";
 };
 
-&mipi3_csi2 {
+&mipi2_csi2 {
 	status = "okay";
 };
 
@@ -54,11 +54,11 @@
 	status = "okay";
 };
 
-&rkcif_mipi_lvds3 {
+&rkcif_mipi_lvds2 {
 	status = "okay";
 };
 
-&rkcif_mipi_lvds3_sditf {
+&rkcif_mipi_lvds2_sditf {
 	status = "okay";
 };
 
@@ -74,6 +74,6 @@
 	status = "okay";
 };
 
-&rkisp0_vir1 {
+&rkisp0_vir2 {
 	status = "okay";
 };

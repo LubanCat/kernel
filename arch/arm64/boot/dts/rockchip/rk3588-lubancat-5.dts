@@ -39,7 +39,6 @@
 
 /* Camera */
 #include "rk3588-lubancat-5-csi.dtsi"
-// #include "rk3588-lubancat-5-cam-6x.dtsi"
 
 // #include "rk3588-lubancat-5-cam0.dtsi"
 // #include "rk3588-lubancat-5-cam1.dtsi"
@@ -47,13 +46,6 @@
 // #include "rk3588-lubancat-5-cam3.dtsi"
 // #include "rk3588-lubancat-5-cam4.dtsi"
 // #include "rk3588-lubancat-5-cam5.dtsi"
-
-// #include "rk3588-lubancat-5-cam0-imx415.dtsi"
-// #include "rk3588-lubancat-5-cam1-imx415.dtsi"
-// #include "rk3588-lubancat-5-cam2-imx415.dtsi"
-// #include "rk3588-lubancat-5-cam3-imx415.dtsi"
-// #include "rk3588-lubancat-5-cam4-imx415.dtsi"
-// #include "rk3588-lubancat-5-cam5-imx415.dtsi"
 
 / {
 	model = "Embedfire LubanCat-5";
