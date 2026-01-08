@@ -8,18 +8,14 @@
 
 / {
 	fragment@0 {
-		target-path = "/";
+		target = <&hdmi1>;
 
 		__overlay__ {
-			hdmi1_sound: hdmi1-sound {
-				status = "okay";
-				compatible = "rockchip,hdmi";
-				rockchip,mclk-fs = <128>;
-				rockchip,card-name = "rockchip-hdmi1";
-				rockchip,cpu = <&i2s6_8ch>;
-				rockchip,codec = <&hdmi1>;
-				rockchip,jack-det;
-			};
+			enable-gpios = <&gpio1 RK_PA7 GPIO_ACTIVE_HIGH>;
+			cec-enable = "true";
+			pinctrl-0 = <&hdmim0_tx1_cec &hdmim0_tx1_hpd &hdmim0_tx1_scl &hdmim0_tx1_sda>;
+			pinctrl-names = "default";
+			status = "okay";
 		};
 	};
 
@@ -33,13 +29,9 @@
 	};
 
 	fragment@2 {
-		target = <&hdmi1>;
+		target = <&hdmi1_in_vp0>;
 
 		__overlay__ {
-			enable-gpios = <&gpio1 RK_PA7 GPIO_ACTIVE_HIGH>;
-			cec-enable = "true";
-			pinctrl-0 = <&hdmim0_tx1_cec &hdmim0_tx1_hpd &hdmim0_tx1_scl &hdmim0_tx1_sda>;
-			pinctrl-names = "default";
 			status = "okay";
 		};
 	};
@@ -53,14 +45,6 @@
 	};
 
 	fragment@4 {
-		target = <&hdmi1_in_vp0>;
-
-		__overlay__ {
-			status = "okay";
-		};
-	};
-
-	fragment@5 {
 		target = <&hdmi1_in_vp1>;
 
 		__overlay__ {
@@ -68,11 +52,27 @@
 		};
 	};
 
-	fragment@6 {
+	fragment@5 {
 		target = <&hdmi1_in_vp2>;
 
 		__overlay__ {
 			status = "disabled";
+		};
+	};
+
+	fragment@6 {
+		target-path = "/";
+
+		__overlay__ {
+			hdmi1_sound: hdmi1-sound {
+				status = "okay";
+				compatible = "rockchip,hdmi";
+				rockchip,mclk-fs = <128>;
+				rockchip,card-name = "rockchip-hdmi1";
+				rockchip,cpu = <&i2s6_8ch>;
+				rockchip,codec = <&hdmi1>;
+				rockchip,jack-det;
+			};
 		};
 	};
 

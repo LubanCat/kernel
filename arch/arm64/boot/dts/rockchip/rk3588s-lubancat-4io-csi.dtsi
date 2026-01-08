@@ -8,7 +8,7 @@
 
 /* CAM0 */
 &i2c2 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c2m4_xfer>;
 
@@ -190,7 +190,7 @@
 
 /* CAM1 */
 &i2c5 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c5m3_xfer>;
 
@@ -370,7 +370,7 @@
 
 /* CAM2 */
 &i2c1 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1m2_xfer>;
 
@@ -553,7 +553,7 @@
 
 /* CAM3 */
 &i2c8 {
-	status = "okay";
+	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c8m2_xfer>;
 

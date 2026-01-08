@@ -13,6 +13,34 @@
 	compatible = "embedfire,rk3588-lubancat-5-v2", "rockchip,rk3588";
 };
 
+&backlight_dsi0 {
+	status = "disabled";
+	pwms = <&pwm2 0 25000 0>;
+};
+
+&backlight_dsi1 {
+	status = "disabled";
+	pwms = <&pwm5 0 25000 0>;
+};
+
+&pwm0 {
+	status = "disabled";
+};
+
+&pwm1 {
+	status = "disabled";
+};
+
+&pwm2 {
+	status = "disabled";
+	pinctrl-0 = <&pwm2m0_pins>;
+};
+
+&pwm5 {
+	status = "disabled";
+	pinctrl-0 = <&pwm5m1_pins>;
+};
+
 &usbc0 {
 	interrupts = <RK_PB2 IRQ_TYPE_LEVEL_LOW>;
 	pinctrl-0 = <&fusb302_int>;

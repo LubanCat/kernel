@@ -11,6 +11,10 @@
 	};
 };
 
+&i2s6_8ch {
+	status = "okay";
+};
+
 &route_hdmi1{
 	status = "okay";
 	connect = <&vp0_out_hdmi1>;
@@ -36,17 +40,6 @@
 	status = "disabled";
 };
 
-&i2s6_8ch {
+&hdptxphy_hdmi1 {
 	status = "okay";
-};
-
-&display_subsystem {
-	clocks;
-	clock-names;
-};
-
-&vop {
-	status = "okay";
-	assigned-clocks = <&cru ACLK_VOP>;
-	assigned-clock-rates = <800000000>;
 };

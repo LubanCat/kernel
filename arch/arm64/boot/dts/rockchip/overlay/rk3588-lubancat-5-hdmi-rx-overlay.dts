@@ -9,6 +9,25 @@
 
 / {
 	fragment@0 {
+		target-path = "/";
+
+		__overlay__ {
+			hdmiin_sound: hdmiin-sound {
+				compatible = "rockchip,hdmi";
+				rockchip,mclk-fs = <128>;
+				rockchip,format = "i2s";
+				rockchip,bitclock-master = <&hdmirx_ctrler>;
+				rockchip,frame-master = <&hdmirx_ctrler>;
+				rockchip,card-name = "rockchip-hdmiin";
+				rockchip,cpu = <&i2s7_8ch>;
+				rockchip,codec = <&hdmirx_ctrler 0>;
+				rockchip,jack-det;
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@1 {
 		target = <&hdmirx_ctrler>;
 
 		__overlay__ {
@@ -22,29 +41,11 @@
 		};
 	};
 
-	fragment@1 {
+	fragment@2 {
 		target = <&i2s7_8ch>;
 
 		__overlay__ {
 			status = "okay";
-		};
-	};
-
-	fragment@2 {
-		target-path = "/";
-
-		__overlay__ {
-			hdmiin-sound {
-				compatible = "rockchip,hdmi";
-				rockchip,mclk-fs = <128>;
-				rockchip,format = "i2s";
-				rockchip,bitclock-master = <&hdmirx_ctrler>;
-				rockchip,frame-master = <&hdmirx_ctrler>;
-				rockchip,card-name = "rockchip,hdmiin";
-				rockchip,cpu = <&i2s7_8ch>;
-				rockchip,codec = <&hdmirx_ctrler 0>;
-				rockchip,jack-det;
-			};
 		};
 	};
 };

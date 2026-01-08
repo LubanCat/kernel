@@ -5,6 +5,7 @@
 
 /* dp0 display */
 / {
+
 	fragment@0 {
 		target = <&display_subsystem>;
 
@@ -23,7 +24,7 @@
 			assigned-clock-rates = <800000000>;
 		};
 	};
-#if 0
+
 	fragment@2 {
 		target = <&vp0>;
 
@@ -43,5 +44,4 @@
 			assigned-clock-rates;
 		};
 	};
-#endif
 };

@@ -26,7 +26,6 @@
 // #include "rk3588s-lubancat-4-cam1.dtsi"
 // #include "rk3588s-lubancat-4-cam2.dtsi"
 
-
 /* 显示输出配置，
  * 同一个vp同时只能开启一个配置
  * 最多可以同时开启4个vp
@@ -64,7 +63,7 @@
 			default-state = "on";
 			gpios = <&gpio4 RK_PB5 GPIO_ACTIVE_LOW>;
 			pinctrl-names = "default";
-			pinctrl-0 = <&sys_status_led_pin>;
+			pinctrl-0 = <&sys_led_pin>;
 		};
 	};
 
@@ -1298,7 +1297,8 @@
 				 JL2XXX_LED2_LINK10   | \
 				 JL2XXX_LED2_LINK100  | \
 				 JL2XXX_LED2_LINK1000 | \
-				 JL2XXX_LED2_ACTIVITY )>;
+				 JL2XXX_LED2_ACTIVITY )>; //JL PHY
+		realtek,led-data = <0x6d60>;  //8211F phy
 	};
 };
 
@@ -1485,6 +1485,16 @@
 };
 
 &pinctrl {
+	dsi {
+		dsi0_reset: dsi0-reset {
+			rockchip,pins = <0 RK_PD7 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+
+		tp1_irq: tp1-irq {
+			rockchip,pins = <3 RK_PC4 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+
 	hym8563 {
 		hym8563_int: hym8563-int {
 			rockchip,pins = <0 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up>;
@@ -1518,7 +1528,7 @@
 	};
 
 	leds {
-		sys_status_led_pin: sys-status-led-pin {
+		sys_led_pin: sys-led-pin {
 			rockchip,pins = <4 RK_PB5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};

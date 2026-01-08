@@ -23,6 +23,7 @@ enable_uboot_overlays=1
 # 规则5.开启vp2和vp3设备树插件,搭配规则3,可实现8k+4k+2k三屏异显
 
 ## vp0
+#dtoverlay=/dtb/overlay/rk3588-lubancat-hdmi-8k-overlay.dtbo
 dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi0-vp0-overlay.dtbo
 ## vp1
 dtoverlay=/dtb/overlay/rk3588-lubancat-dp0-vp1-overlay.dtbo
@@ -30,6 +31,7 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-dp0-vp1-overlay.dtbo
 dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi1-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi0-vp2-1080x1920-5.5inch-ebf410125-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi0-vp2-800x1280-10.1inch-ebf410177-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi0-vp2-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi0-vp2-1024x600-7inch-ebf410173-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi0-vp2-generic-overlay.dtbo
 ## vp3

@@ -15,6 +15,7 @@
 #include <dt-bindings/display/drm_mipi_dsi.h>
 #include <dt-bindings/display/rockchip_vop.h>
 #include <dt-bindings/sensor-dev.h>
+#include <dt-bindings/phy/jlsemi-dt-phy.h>
 #include "rk3588.dtsi"
 #include "rk3588-linux.dtsi"
 
@@ -153,9 +154,9 @@
 		vin-supply = <&vcc_3v3_s3>;
 	};
 
-	vcc3v3_sd_s3: vcc3v3-sd-s3 {
+	vcc_3v3_sd_s3: vcc-3v3-sd-s3 {
 		compatible = "regulator-fixed";
-		regulator-name = "vcc3v3_sd_s3";
+		regulator-name = "vcc_3v3_sd_s3";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <3300000>;
@@ -288,10 +289,10 @@
 	mipi_dsi0_power: mipi-dsi0-power-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "mipi_dsi0_power";
-		regulator-always-on;
+		gpio = <&gpio1 RK_PC0 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 		regulator-boot-on;
-		gpio = <&gpio1 RK_PC0 GPIO_ACTIVE_HIGH>;
+		regulator-always-on;
 		vin-supply = <&vcc_5v0_s0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&mipi_dsi0_power_en>;
@@ -300,10 +301,10 @@
 	mipi_dsi1_power: mipi-dsi1-power-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "mipi_dsi1_power";
-		regulator-always-on;
+		gpio = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 		regulator-boot-on;
-		gpio = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
+		regulator-always-on;
 		vin-supply = <&vcc_5v0_s0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&mipi_dsi1_power_en>;
@@ -371,34 +372,101 @@
 		>;
 	};
 
+	backlight_dsi0: backlight-dsi0 {
+		status = "okay";
+		compatible = "pwm-backlight";
+		pwms = <&pwm0 0 25000 0>;
+		brightness-levels = <
+		0  20  20  21  21  22  22  23
+		23  24  24  25  25  26  26  27
+		27  28  28  29  29  30  30  31
+		31  32  32  33  33  34  34  35
+		35  36  36  37  37  38  38  39
+		40  41  42  43  44  45  46  47
+		48  49  50  51  52  53  54  55
+		56  57  58  59  60  61  62  63
+		64  65  66  67  68  69  70  71
+		72  73  74  75  76  77  78  79
+		80  81  82  83  84  85  86  87
+		88  89  90  91  92  93  94  95
+		96  97  98  99 100 101 102 103
+		104 105 106 107 108 109 110 111
+		112 113 114 115 116 117 118 119
+		120 121 122 123 124 125 126 127
+		128 129 130 131 132 133 134 135
+		136 137 138 139 140 141 142 143
+		144 145 146 147 148 149 150 151
+		152 153 154 155 156 157 158 159
+		160 161 162 163 164 165 166 167
+		168 169 170 171 172 173 174 175
+		176 177 178 179 180 181 182 183
+		184 185 186 187 188 189 190 191
+		192 193 194 195 196 197 198 199
+		200 201 202 203 204 205 206 207
+		208 209 210 211 212 213 214 215
+		216 217 218 219 220 221 222 223
+		224 225 226 227 228 229 230 231
+		232 233 234 235 236 237 238 239
+		240 241 242 243 244 245 246 247
+		248 249 250 251 252 253 254 255
+		>;
+		default-brightness-level = <200>;
+	};
+
+	backlight_dsi1: backlight-dsi1 {
+		status = "okay";
+		compatible = "pwm-backlight";
+		pwms = <&pwm1 0 25000 0>;
+		brightness-levels = <
+		0  20  20  21  21  22  22  23
+		23  24  24  25  25  26  26  27
+		27  28  28  29  29  30  30  31
+		31  32  32  33  33  34  34  35
+		35  36  36  37  37  38  38  39
+		40  41  42  43  44  45  46  47
+		48  49  50  51  52  53  54  55
+		56  57  58  59  60  61  62  63
+		64  65  66  67  68  69  70  71
+		72  73  74  75  76  77  78  79
+		80  81  82  83  84  85  86  87
+		88  89  90  91  92  93  94  95
+		96  97  98  99 100 101 102 103
+		104 105 106 107 108 109 110 111
+		112 113 114 115 116 117 118 119
+		120 121 122 123 124 125 126 127
+		128 129 130 131 132 133 134 135
+		136 137 138 139 140 141 142 143
+		144 145 146 147 148 149 150 151
+		152 153 154 155 156 157 158 159
+		160 161 162 163 164 165 166 167
+		168 169 170 171 172 173 174 175
+		176 177 178 179 180 181 182 183
+		184 185 186 187 188 189 190 191
+		192 193 194 195 196 197 198 199
+		200 201 202 203 204 205 206 207
+		208 209 210 211 212 213 214 215
+		216 217 218 219 220 221 222 223
+		224 225 226 227 228 229 230 231
+		232 233 234 235 236 237 238 239
+		240 241 242 243 244 245 246 247
+		248 249 250 251 252 253 254 255
+		>;
+		default-brightness-level = <200>;
+	};
+
 	test-power {
 		status = "okay";
 	};
 };
 
-&rockchip_suspend {
+&pwm0 {
+	pinctrl-0 = <&pwm0m2_pins>;
 	status = "okay";
-	rockchip,sleep-debug-en = <1>;
-	rockchip,sleep-mode-config = <
-		(0
-		| RKPM_SLP_ARMOFF_DDRPD
-		| RKPM_SLP_PMU_PMUALIVE_32K
-		| RKPM_SLP_PMU_DIS_OSC
-		| RKPM_SLP_32K_EXT
-		)
-	>;
-	rockchip,wakeup-config = <
-		(0
-		| RKPM_GPIO_WKUP_EN
-		| RKPM_CPU0_WKUP_EN
-		)
-	>;
 };
 
-&i2c2 {
+&pwm1 {
+	pinctrl-0 = <&pwm1m2_pins>;
 	status = "okay";
-	pinctrl-names = "default";
-	pinctrl-0 = <&i2c2m4_xfer>;
 };
 
 &pwm11 {
@@ -445,6 +513,25 @@
 	status = "okay";
 	center-supply = <&vdd_ddr_s0>;
 	mem-supply = <&vdd_log_s0>;
+};
+
+&rockchip_suspend {
+	status = "okay";
+	rockchip,sleep-debug-en = <1>;
+	rockchip,sleep-mode-config = <
+		(0
+		| RKPM_SLP_ARMOFF_DDRPD
+		| RKPM_SLP_PMU_PMUALIVE_32K
+		| RKPM_SLP_PMU_DIS_OSC
+		| RKPM_SLP_32K_EXT
+		)
+	>;
+	rockchip,wakeup-config = <
+		(0
+		| RKPM_GPIO_WKUP_EN
+		| RKPM_CPU0_WKUP_EN
+		)
+	>;
 };
 
 &i2c0 {
@@ -596,6 +683,12 @@
 			};
 		};
 	};
+};
+
+&i2c2 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c2m4_xfer>;
 };
 
 &i2c5 {
@@ -864,24 +957,24 @@
 				};
 			};
 
-			vcc_1v8_s0: PLDO_REG1 {
+			avcc_1v8_s0: PLDO_REG1 {
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <1800000>;
-				regulator-name = "vcc_1v8_s0";
+				regulator-name = "avcc_1v8_s0";
 				regulator-state-mem {
 					regulator-on-in-suspend;
 					regulator-suspend-microvolt = <1800000>;
 				};
 			};
 
-			avcc_1v8_s0: PLDO_REG2 {
+			vcc_1v8_s0: PLDO_REG2 {
 				regulator-always-on;
 				regulator-boot-on;
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <1800000>;
-				regulator-name = "avcc_1v8_s0";
+				regulator-name = "vcc_1v8_s0";
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -1039,7 +1132,7 @@
 	cap-sd-highspeed;
 	disable-wp;
 	sd-uhs-sdr104;
-	vmmc-supply = <&vcc3v3_sd_s3>;
+	vmmc-supply = <&vcc_3v3_sd_s3>;
 	vqmmc-supply = <&vccio_sd_s0>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&sdmmc_bus4 &sdmmc_clk &sdmmc_cmd &sdmmc_det>;
@@ -1272,7 +1365,7 @@
 			 &gmac1_rgmii_clk
 			 &gmac1_rgmii_bus>;
 
-	tx_delay = <0x18>;
+	tx_delay = <0x30>;
 	/* rx_delay = <0x4f>; */
 
 	phy-handle = <&rgmii_phy1>;
@@ -1283,6 +1376,14 @@
 	rgmii_phy0: phy@0 {
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x0>;
+		jl2xxx,led-enable = <(JL2XXX_LED_STATIC_OP_EN | JL1XXX_LED_MODE_EN)>;
+		jl2xxx,led-mode = <(JL2XXX_LED1_LINK10  | \
+				 JL2XXX_LED1_LINK100  | \
+				 JL2XXX_LED1_LINK1000 | \
+				 JL2XXX_LED2_LINK10   | \
+				 JL2XXX_LED2_LINK100  | \
+				 JL2XXX_LED2_LINK1000 | \
+				 JL2XXX_LED2_ACTIVITY )>; //JL PHY
 		realtek,led-data = <0x6d60>;  //8211F phy
 	};
 };
@@ -1291,6 +1392,14 @@
 	rgmii_phy1: phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x01>;
+		jl2xxx,led-enable = <(JL2XXX_LED_STATIC_OP_EN | JL1XXX_LED_MODE_EN)>;
+		jl2xxx,led-mode = <(JL2XXX_LED1_LINK10  | \
+				 JL2XXX_LED1_LINK100  | \
+				 JL2XXX_LED1_LINK1000 | \
+				 JL2XXX_LED2_LINK10   | \
+				 JL2XXX_LED2_LINK100  | \
+				 JL2XXX_LED2_LINK1000 | \
+				 JL2XXX_LED2_ACTIVITY )>; //JL PHY
 		realtek,led-data = <0x6d60>;  //8211F phy
 	};
 };
@@ -1590,6 +1699,18 @@
 		};
 	};
 
+	leds {
+		sys_led_pin: sys-led-pin {
+			rockchip,pins = <1 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	hdmirx {
+		hdmirx_det: hdmirx-det {
+			rockchip,pins = <1 RK_PD2 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+
 	mipi {
 		mipi_dsi0_power_en: mipi-dsi0-power-en {
 			rockchip,pins = <1 RK_PC0 RK_FUNC_GPIO &pcfg_pull_none>;
@@ -1603,12 +1724,6 @@
 	sata {
 		sata_power_en: sata-power-en {
 			rockchip,pins = <1 RK_PD3 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-	};
-
-	leds {
-		sys_led_pin: sys-led-pin {
-			rockchip,pins = <1 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 };
