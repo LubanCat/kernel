@@ -1,6 +1,6 @@
 echo [boot.cmd] run boot.cmd scripts ...;
 
-if test -e ${devtype} ${devnum}:${distro_bootpart} /uEnv/uEnv.txt; then 
+if test -e ${devtype} ${devnum}:${distro_bootpart} /uEnv/uEnv.txt; then
 
     echo [boot.cmd] load ${devtype} ${devnum}:${distro_bootpart} ${env_addr_r} /uEnv/uEnv.txt ...;
     load ${devtype} ${devnum}:${distro_bootpart} ${env_addr_r} /uEnv/uEnv.txt;

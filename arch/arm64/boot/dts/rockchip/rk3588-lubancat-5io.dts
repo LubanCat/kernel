@@ -47,7 +47,7 @@
 
 / {
 	model = "Embedfire LubanCat-5IO";
-	compatible = "rockchip,rk3588-lubancat-5io", "rockchip,rk3588";
+	compatible = "embedfire,rk3588-lubancat-5io", "rockchip,rk3588";
 
 	/* If hdmirx node is disabled, delete the reserved-memory node here. */
 	reserved-memory {
@@ -164,9 +164,9 @@
 		vin-supply = <&vcc_3v3_s3>;
 	};
 
-	vbus_typec: vbus-typec {
+	vbus5v0_typec: vbus5v0-typec {
 		compatible = "regulator-fixed";
-		regulator-name = "vbus_typec";
+		regulator-name = "vbus5v0_typec";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
 		enable-active-high;
@@ -625,7 +625,7 @@
 		interrupts = <RK_PD3 IRQ_TYPE_LEVEL_LOW>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&fusb302_int>;
-		vbus-supply = <&vbus_typec>;
+		vbus-supply = <&vbus5v0_typec>;
 		status = "okay";
 
 		ports {
@@ -1621,7 +1621,7 @@
 &vp0 {
 	rockchip,plane-mask = <(1 << ROCKCHIP_VOP2_CLUSTER0 | 1 << ROCKCHIP_VOP2_ESMART0)>;
 	rockchip,primary-plane = <ROCKCHIP_VOP2_ESMART0>;
-	// cursor-win-id = <ROCKCHIP_VOP2_CLUSTER0>;
+	cursor-win-id = <ROCKCHIP_VOP2_CLUSTER0>;
 };
 
 &vp1 {
@@ -1652,22 +1652,6 @@
 };
 
 &hdptxphy_hdmi_clk1 {
-	status = "okay";
-};
-
-&can1 {
-	assigned-clocks = <&cru CLK_CAN1>;
-	assigned-clock-rates = <150000000>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&can1m1_pins>;
-	status = "okay";
-};
-
-&can2 {
-	assigned-clocks = <&cru CLK_CAN2>;
-	assigned-clock-rates = <150000000>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&can2m0_pins>;
 	status = "okay";
 };
 

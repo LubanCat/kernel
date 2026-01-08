@@ -104,6 +104,7 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-5-hdmi0-vp0-overlay.dtbo \
 	rk3588-lubancat-5-hdmi1-vp0-overlay.dtbo \
 	rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo \
+	rk3588-lubancat-5-hdmi-rx-overlay.dtbo \
 	rk3588-lubancat-5-xl9535-overlay.dtbo \
 	rk3588-lubancat-5-v2-dsi0-vp2-800x1280-10.1inch-ebf410177-overlay.dtbo \
 	rk3588-lubancat-5-v2-dsi1-vp3-800x1280-10.1inch-ebf410177-overlay.dtbo \
@@ -131,6 +132,7 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-5io-dsi1-vp3-1024x600-7inch-ebf410173-overlay.dtbo \
 	rk3588-lubancat-5io-dsi1-vp3-800x1280-10.1inch-ebf410177-overlay.dtbo \
 	rk3588-lubancat-5io-dsi1-vp3-generic-overlay.dtbo \
+	rk3588-lubancat-5io-hdmi-rx-overlay.dtbo \
 	rk3588-lubancat-5io-cam0-ov8858-3264x2448-15fps-overlay.dtbo \
 	rk3588-lubancat-5io-cam1-ov8858-3264x2448-15fps-overlay.dtbo \
 	rk3588-lubancat-5io-cam2-ov8858-3264x2448-15fps-overlay.dtbo \
@@ -239,11 +241,10 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588s-lubancat-hdmi0-8k-overlay.dtbo \
 	rk3588s-lubancat-sata0-overlay.dtbo
 
-
 endif
 
 dtbotxt-$(CONFIG_ARCH_ROCKCHIP) += \
-	README.rockchip-overlays.md
+	README.md
 
 targets += $(dtbo-y) $(dtbotxt-y)
 
