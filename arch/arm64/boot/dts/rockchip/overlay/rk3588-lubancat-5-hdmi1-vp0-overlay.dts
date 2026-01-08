@@ -72,4 +72,12 @@
 			};
 		};
 	};
+
+	fragment@7 {
+		target = <&i2s6_8ch>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
 };

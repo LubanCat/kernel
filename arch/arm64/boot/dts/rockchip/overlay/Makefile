@@ -300,6 +300,7 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-canfd1-m1-overlay.dtbo \
 	rk3588-lubancat-canfd2-m0-overlay.dtbo \
 	rk3588-lubancat-msata-overlay.dtbo \
+	rk3588-lubancat-dp0-vp1-overlay.dtbo \
 	rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo \
 	rk3588-lubancat-5-xl9535-overlay.dtbo \
 	rk3588-lubancat-i2c3-m0-40pin-test-tca9535-overlay.dtbo \
@@ -369,7 +370,6 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-5-hdmi0-vp0-overlay.dtbo \
 	rk3588-lubancat-5-hdmi1-vp0-overlay.dtbo \
 	rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo \
-	rk3588-lubancat-5-dp0-vp1-disabled-overlay.dtbo \
 	rk3588-lubancat-5io-rs485-1-overlay.dtbo \
 	rk3588-lubancat-5io-rs485-2-overlay.dtbo \
 	rk3588-lubancat-5io-display-8k-overlay.dtbo \

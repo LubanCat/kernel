@@ -44,7 +44,6 @@
 		target = <&dp1>;
 
 		__overlay__ {
-
 			force-hpd;
 			status = "okay";
 			ports {
