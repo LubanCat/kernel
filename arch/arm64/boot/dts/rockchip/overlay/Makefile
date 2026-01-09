@@ -243,9 +243,6 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 
 endif
 
-dtbotxt-$(CONFIG_ARCH_ROCKCHIP) += \
-	README.md
-
 targets += $(dtbo-y) $(dtbotxt-y)
 
 always-y		:= $(dtbo-y) $(dtbotxt-y)
