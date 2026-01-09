@@ -32,8 +32,6 @@ enable_uboot_overlays=1
 
 #overlay_end
 
-#overlay_end
-
 #auto-load screen plugins
 enable_gsdt_auto_load=1
 eeprom_addr=0x51
