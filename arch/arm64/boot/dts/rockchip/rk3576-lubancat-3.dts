@@ -18,9 +18,9 @@
 #include "rk3576-linux.dtsi"
 #include "rk3576-rk806.dtsi"
 
-// #include "rk3576-lubancat-3-dsi-1080x1920-5-5inch-ebf410125.dtsi"
-// #include "rk3576-lubancat-3-dsi-1024x600-7inch-ebf410173.dtsi"
-// #include "rk3576-lubancat-3-dsi-800x1280-10-1inch-ebf410177.dtsi"
+// #include "rk3576-lubancat-3-dsi-vp2-1080x1920-5.5inch-ebf410125.dtsi"
+// #include "rk3576-lubancat-3-dsi-vp2-1024x600-7inch-ebf410173.dtsi"
+// #include "rk3576-lubancat-3-dsi-vp2-800x1280-10.1inch-ebf410177.dtsi"
 
 #include "rk3576-lubancat-3-csi.dtsi"
 
