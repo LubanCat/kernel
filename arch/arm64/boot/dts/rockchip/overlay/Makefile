@@ -183,8 +183,10 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 dtbo-$(CONFIG_CPU_RK3576) += \
 	rk3576-lubancat-can0-m2-overlay.dtbo \
 	rk3576-lubancat-can1-m3-overlay.dtbo \
+	rk3576-lubancat-dsi-vp2-virtual-screen-overlay.dtbo \
 	rk3576-lubancat-i2c0-m1-overlay.dtbo \
 	rk3576-lubancat-i2c4-m1-overlay.dtbo \
+	rk3576-lubancat-i2c7-m1-40pin-test-tca9535-overlay.dtbo \
 	rk3576-lubancat-i2c7-m1-overlay.dtbo \
 	rk3576-lubancat-i2c7-m2-overlay.dtbo \
 	rk3576-lubancat-i2c8-m2-overlay.dtbo \
@@ -208,22 +210,18 @@ dtbo-$(CONFIG_CPU_RK3576) += \
 	rk3576-lubancat-uart7-m0-overlay.dtbo \
 	rk3576-lubancat-uart8-m2-overlay.dtbo \
 	rk3576-lubancat-usb20-overlay.dtbo \
-	rk3576-lubancat-3io-rs485-1-overlay.dtbo \
-	rk3576-lubancat-3io-rs485-2-overlay.dtbo \
 	rk3576-lubancat-rgmii-gmac1-overlay.dtbo \
 	rk3576-lubancat-sata0-overlay.dtbo \
-	rk3576-lubancat-i2c7-m1-40pin-test-tca9535-overlay.dtbo \
-	rk3576-lubancat-3-xl9535-overlay.dtbo \
-	rk3576-lubancat-3-cam0-imx415-overlay.dtbo \
-	rk3576-lubancat-3-cam1-imx415-overlay.dtbo \
-	rk3576-lubancat-3-cam2-imx415-overlay.dtbo \
-	rk3576-lubancat-3-cam3-imx415-overlay.dtbo \
-	rk3576-lubancat-3-cam4-imx415-overlay.dtbo \
-	rk3576-lubancat-3-cam0-imx415-1080p-overlay.dtbo \
-	rk3576-lubancat-3-cam1-imx415-1080p-overlay.dtbo \
-	rk3576-lubancat-3-cam2-imx415-1080p-overlay.dtbo \
-	rk3576-lubancat-3-cam3-imx415-1080p-overlay.dtbo \
-	rk3576-lubancat-3-cam4-imx415-1080p-overlay.dtbo \
+	rk3576-lubancat-3-cam0-imx415-3840x2160-30fps-overlay.dtbo \
+	rk3576-lubancat-3-cam1-imx415-3840x2160-15fps-overlay.dtbo \
+	rk3576-lubancat-3-cam2-imx415-3840x2160-15fps-overlay.dtbo \
+	rk3576-lubancat-3-cam3-imx415-3840x2160-15fps-overlay.dtbo \
+	rk3576-lubancat-3-cam4-imx415-3840x2160-15fps-overlay.dtbo \
+	rk3576-lubancat-3-cam0-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3576-lubancat-3-cam1-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3576-lubancat-3-cam2-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3576-lubancat-3-cam3-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3576-lubancat-3-cam4-imx415-1920x1080-60fps-overlay.dtbo \
 	rk3576-lubancat-3-cam0-ov8858-3264x2448-15fps-overlay.dtbo \
 	rk3576-lubancat-3-cam0-ov8858-1632x1224-30fps-overlay.dtbo \
 	rk3576-lubancat-3-cam1-ov8858-3264x2448-15fps-overlay.dtbo \
@@ -251,12 +249,15 @@ dtbo-$(CONFIG_CPU_RK3576) += \
 	rk3576-lubancat-3-cam4-gc4653-2560x1440-30fps-overlay.dtbo \
 	rk3576-lubancat-3-hdmi-disabled-ovetlay.dtbo \
 	rk3576-lubancat-3-dp-disabled-ovetlay.dtbo \
-	rk3576-lubancat-3-dsi-800x1280-10-1inch-ebf410177-overlay.dtbo \
-	rk3576-lubancat-3-dsi-1024x600-7inch-ebf410173-overlay.dtbo \
-	rk3576-lubancat-3-dsi-800x1280-10.1inch-s8001280b1060b-overlay.dtbo \
-	rk3576-lubancat-3-dsi-1080x1920-5-5inch-ebf410125-overlay.dtbo \
-	rk3576-lubancat-3-dsi-1080x1920-5-5inch-ebf410125-v1-overlay.dtbo \
-	rk3576-lubancat-3-dsi-generic-overlay.dtbo
+	rk3576-lubancat-3-dsi-vp2-1024x600-7inch-ebf410173-overlay.dtbo \
+	rk3576-lubancat-3-dsi-vp2-1080x1920-5.5inch-ebf410125-overlay.dtbo \
+	rk3576-lubancat-3-dsi-vp2-1080x1920-5.5inch-ebf410125-v1-overlay.dtbo \
+	rk3576-lubancat-3-dsi-vp2-800x1280-10.1inch-ebf410177-overlay.dtbo \
+	rk3576-lubancat-3-dsi-vp2-800x1280-10.1inch-s8001280b1060b-overlay.dtbo \
+	rk3576-lubancat-3-dsi-vp2-generic-overlay.dtbo \
+	rk3576-lubancat-3-xl9535-overlay.dtbo \
+	rk3576-lubancat-3io-rs485-1-overlay.dtbo \
+	rk3576-lubancat-3io-rs485-2-overlay.dtbo
 
 dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-i2c2-m0-overlay.dtbo \

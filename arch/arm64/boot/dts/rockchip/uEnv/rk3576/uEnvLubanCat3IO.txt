@@ -35,47 +35,48 @@ enable_uboot_overlays=1
 #vp1
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-dp-disabled-ovetlay.dtbo
 #vp2
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-1080x1920-5-5inch-ebf410125-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-1024x600-7inch-ebf410173-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-800x1280-10-1inch-ebf410177-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-generic-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-1024x600-7inch-ebf410173-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-1080x1920-5.5inch-ebf410125-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-800x1280-10.1inch-ebf410177-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-generic-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-dsi-vp2-virtual-screen-overlay.dtbo
 
 # CAM0
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam0-imx415-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam0-imx415-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam0-imx415-3840x2160-30fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam0-imx415-1920x1080-60fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam0-ov8858-3264x2448-15fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam0-ov8858-1632x1224-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam0-gc08a8-3264x2448-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam0-gc2053-1920x1080-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam0-gc4653-2560x1440-30fps-overlay.dtbo
 # CAM1
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam1-imx415-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam1-imx415-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam1-imx415-3840x2160-15fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam1-imx415-1920x1080-60fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam1-ov8858-3264x2448-15fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam1-ov8858-1632x1224-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam1-gc08a8-3264x2448-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam1-gc2053-1920x1080-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam1-gc4653-2560x1440-30fps-overlay.dtbo
 # CAM2
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam2-imx415-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam2-imx415-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam2-imx415-3840x2160-15fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam2-imx415-1920x1080-60fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam2-ov8858-3264x2448-15fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam2-ov8858-1632x1224-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam2-gc08a8-3264x2448-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam2-gc2053-1920x1080-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam2-gc4653-2560x1440-30fps-overlay.dtbo
 # CAM3
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam3-imx415-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam3-imx415-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam3-imx415-3840x2160-15fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam3-imx415-1920x1080-60fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam3-ov8858-3264x2448-15fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam3-ov8858-1632x1224-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam3-gc08a8-3264x2448-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam3-gc2053-1920x1080-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam3-gc4653-2560x1440-30fps-overlay.dtbo
 # CAM4
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam4-imx415-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam4-imx415-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam4-imx415-3840x2160-15fps-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam4-imx415-1920x1080-60fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam4-ov8858-3264x2448-15fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam4-ov8858-1632x1224-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-3-cam4-gc08a8-3264x2448-30fps-overlay.dtbo
@@ -91,4 +92,4 @@ enable_uboot_overlays=1
 enable_gsdt_auto_load=1
 eeprom_addr=0x51
 i2c_devs=2
-gsdt_plugin0=/dtb/overlay/rk3576-lubancat-3-dsi-generic-overlay.dtbo
+gsdt_plugin0=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-generic-overlay.dtbo
