@@ -20,6 +20,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-pwm14-m2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-pwm15-ir-m3-overlay.dtbo
 
+# Display 显示输出配置
 # 每个vp对应一个显示接口，同一个vp同时只能开启一个屏幕
 # 规则1.默认在主设备树中开启hdmi0(vp0,4K)和dp0(vp1,4K)，可即插即用。
 # 规则2.开启vp2和vp3设备树插件，配合规则1,可实现4k+4k+4k+2k四屏异显
@@ -35,15 +36,15 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-dp0-vp1-overlay.dtbo
 ## vp2
 dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-1080x1920-5.5inch-ebf410125-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-1024x600-7inch-ebf410173-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-800x1280-10.1inch-ebf410177-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-1024x600-7inch-ebf410173-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-generic-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-edp-vp2-overlay.dtbo
 ## vp3
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-1080x1920-5.5inch-ebf410125-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-800x1280-10.1inch-ebf410177-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-1024x600-7inch-ebf410173-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-800x1280-10.1inch-ebf410177-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-generic-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo
@@ -110,5 +111,5 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5-hdmi1-vp2-overlay.dtbo
 enable_gsdt_auto_load=1
 eeprom_addr=0x51
 i2c_devs=1 5
-gsdt_plugin0=/dtb/overlay/rk3588-lubancat-5-dsi0-generic-overlay.dtbo
-gsdt_plugin1=/dtb/overlay/rk3588-lubancat-5-dsi1-generic-overlay.dtbo
+gsdt_plugin0=/dtb/overlay/rk3588-lubancat-5-dsi0-vp2-generic-overlay.dtbo
+gsdt_plugin1=/dtb/overlay/rk3588-lubancat-5-dsi1-vp3-generic-overlay.dtbo
