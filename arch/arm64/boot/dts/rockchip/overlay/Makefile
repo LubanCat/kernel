@@ -25,15 +25,6 @@ dtbo-$(CONFIG_CPU_RK3562) += \
 	rk3562-lubancat-can1-m1-overlay.dtbo \
 	rk3562-lubancat-canfd0-m2-overlay.dtbo \
 	rk3562-lubancat-canfd1-m1-overlay.dtbo \
-	rk3562-lubancat-1hs-rs485-1-overlay.dtbo \
-	rk3562-lubancat-1hs-rs485-2-overlay.dtbo \
-	rk3562-lubancat-1hs-lvds-10.1-800x1280-overlay.dtbo \
-	rk3562-lubancat-1hs-lvds-1280x800-10.1inch-bsdn10-overlay.dtbo \
-	rk3562-lubancat-1hs-mipi-1080x1920-5.5inch-ebf410125-overlay.dtbo \
-	rk3562-lubancat-1hs-mipi-1024x600-7inch-ebf410173-overlay.dtbo \
-	rk3562-lubancat-1hs-mipi-800x1280-10.1inch-ebf410177-overlay.dtbo \
-	rk3562-lubancat-1hs-mipi-800x1280-10.1inch-s8001280b1060b-overlay.dtbo \
-	rk3562-lubancat-1hs-mipi-generic-overlay.dtbo \
 	rk3562-lubancat-1hs-cam0-imx415-3840x2160-15fps-overlay.dtbo \
 	rk3562-lubancat-1hs-cam0-imx415-1920x1080-60fps-overlay.dtbo \
 	rk3562-lubancat-1hs-cam1-imx415-3840x2160-15fps-overlay.dtbo \
@@ -62,6 +53,14 @@ dtbo-$(CONFIG_CPU_RK3562) += \
 	rk3562-lubancat-1hs-cam1-gc4653-2560x1440-30fps-overlay.dtbo \
 	rk3562-lubancat-1hs-cam2-gc4653-2560x1440-30fps-overlay.dtbo \
 	rk3562-lubancat-1hs-cam3-gc4653-2560x1440-30fps-overlay.dtbo \
+	rk3562-lubancat-1hs-dsi-vp0-1080x1920-5.5inch-ebf410125-overlay.dtbo \
+	rk3562-lubancat-1hs-dsi-vp0-1024x600-7inch-ebf410173-overlay.dtbo \
+	rk3562-lubancat-1hs-dsi-vp0-800x1280-10.1inch-ebf410177-overlay.dtbo \
+	rk3562-lubancat-1hs-dsi-vp0-800x1280-10.1inch-s8001280b1060b-overlay.dtbo \
+	rk3562-lubancat-1hs-dsi-vp0-generic-overlay.dtbo \
+	rk3562-lubancat-1hs-gm8775c-lvds-1280x800-10.1inch-bsdn10-overlay.dtbo \
+	rk3562-lubancat-1hs-rs485-1-overlay.dtbo \
+	rk3562-lubancat-1hs-rs485-2-overlay.dtbo \
 	rk3562-lubancat-1hs-test-cam0-imx415-3840x2160-30fps-overlay.dtbo \
 	rk3562-lubancat-1hs-test-cam1-imx415-3840x2160-30fps-overlay.dtbo
 	

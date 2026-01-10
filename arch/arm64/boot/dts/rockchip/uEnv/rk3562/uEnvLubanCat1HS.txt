@@ -15,12 +15,12 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-rs485-2-overlay.dtbo
 
 # Display
-dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-lvds-1280x800-10.1inch-bsdn10-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-mipi-1080x1920-5.5inch-ebf410125-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-mipi-1024x600-7inch-ebf410173-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-mipi-800x1280-10.1inch-ebf410177-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-mipi-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-mipi-generic-overlay.dtbo
+dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-gm8775c-lvds-1280x800-10.1inch-bsdn10-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-dsi-vp0-1080x1920-5.5inch-ebf410125-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-dsi-vp0-1024x600-7inch-ebf410173-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-dsi-vp0-800x1280-10.1inch-ebf410177-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-dsi-vp0-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-dsi-vp0-generic-overlay.dtbo
 
 #CAM0
 #dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-cam0-imx415-3840x2160-15fps-overlay.dtbo
@@ -61,4 +61,4 @@ dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-lvds-1280x800-10.1inch-bsdn10-overlay
 enable_gsdt_auto_load=1
 eeprom_addr=0x51
 i2c_devs=1
-gsdt_plugin0=/dtb/overlay/rk3562-lubancat-1hs-mipi-generic-overlay.dtbo
+gsdt_plugin0=/dtb/overlay/rk3562-lubancat-1hs-dsi-vp0-generic-overlay.dtbo
