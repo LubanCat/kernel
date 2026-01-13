@@ -15,6 +15,7 @@
 #include <dt-bindings/display/drm_mipi_dsi.h>
 #include <dt-bindings/display/rockchip_vop.h>
 #include <dt-bindings/sensor-dev.h>
+#include <dt-bindings/phy/jlsemi-dt-phy.h>
 #include "rk3588s.dtsi"
 #include "rk3588-linux.dtsi"
 
