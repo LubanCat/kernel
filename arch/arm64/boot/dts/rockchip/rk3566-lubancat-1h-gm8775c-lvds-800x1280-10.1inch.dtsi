@@ -154,3 +154,7 @@
 		irq-gpios = <&gpio3 RK_PB7 GPIO_ACTIVE_HIGH>;
 	};
 };
+
+gm8775c-lvds-1280x800-10.1inch-bsdn10.dtsi
+rk3566-lubancat-1h-gm8775c-lvds-800x1280-10.1inch.dtsi
+rk3566-lubancat-1h-lvds0-vp1-800x1280-10.1inch.dtsi

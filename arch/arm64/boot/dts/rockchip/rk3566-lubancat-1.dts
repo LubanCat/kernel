@@ -21,9 +21,9 @@
 //MIPI摄像头配置
 #include "rk3566-lubancat-csi2-double.dtsi"
 
-// 屏幕设置，通用镜像使用设备树插件,默认开启hdmi
-#include "rk3566-lubancat-hdmi.dtsi"//HDMI输出
-// #include "rk3566-lubancat-dsi0-ebf410125_1080p.dtsi" //野火5.5寸 1080P
+// RK3566支持单屏显示，以下接口只可开启一个
+#include "rk3566-lubancat-hdmi-vp0.dtsi"
+// #include "rk3566-lubancat-dsi0-vp0-1080x1920-5.5inch-ebf410125.dtsi"
 
 / {
 	model = "EmbedFire LubanCat-1";

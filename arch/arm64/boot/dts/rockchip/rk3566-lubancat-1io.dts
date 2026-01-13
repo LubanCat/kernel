@@ -12,9 +12,9 @@
 // MIPI-DSI1屏幕
 #include "rk3566-lubancat-1io-dsi1.dtsi"
 //HDMI输出（与lvds二选一）
-#include "rk3566-lubancat-hdmi.dtsi"
+#include "rk3566-lubancat-hdmi-vp0.dtsi"
 // lvds屏幕（与HDMI二选一）
-// #include "rk3566-lubancat-1io-lvds.dtsi"
+// #include "rk3566-lubancat-1io-lvds0-vp1-800x1280-10.1inch.dtsi"
 
 //MIPI摄像头配置
 #include "rk3568-lubancat-csi2-double.dtsi"
