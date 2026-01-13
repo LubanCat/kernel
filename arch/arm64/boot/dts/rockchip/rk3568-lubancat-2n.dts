@@ -21,8 +21,8 @@
 //MIPI摄像头配置
 #include "rk3568-lubancat-csi2.dtsi"
 
-// MIPI屏幕设置
-// #include "rk3568-lubancat-dsi0-ebf410125_1080p.dtsi" //野火5.5寸 1080P
+// RK3568支持双屏显示，同一vp下接口只可开启一个
+// #include "rk3568-lubancat-dsi0-vp1-1080x1920-5.5inch-ebf410125.dtsi"
 
 
 / {

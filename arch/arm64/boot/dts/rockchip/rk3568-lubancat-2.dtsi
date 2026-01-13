@@ -13,11 +13,6 @@
 #include "rk3568.dtsi"
 #include "rk3568-lubancat.dtsi"
 
-// MIPI屏幕设置
-// #include "rk3568-lubancat-dsi0-ebf410125_1080p.dtsi" //野火5.5寸 1080P
-
-
-
 / {
 	model = "EmbedFire LubanCat-2";
 	compatible = "embedfire,lubancat-2", "rockchip,rk3568";

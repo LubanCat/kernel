@@ -15,9 +15,9 @@
 
 //MIPI摄像头配置
 #include "rk3568-lubancat-csi2-double.dtsi"
-// #include "rk3568-lubancat-2h-gm8775c-lvds-800x1280.dtsi"
-// #include "rk3568-lubancat-2h-edp-in-vp1.dtsi"
-#include "rk3568-lubancat-2h-dsi1-in-vp1.dtsi"
+// #include "rk3568-lubancat-2h-gm8775c-lvds-800x1280-10.1inch.dtsi"
+// #include "rk3568-lubancat-2h-edp-vp1.dtsi"
+#include "rk3568-lubancat-2h-dsi1-vp1.dtsi"
 
 / {
 	model = "EmbedFire LubanCat-2H";
