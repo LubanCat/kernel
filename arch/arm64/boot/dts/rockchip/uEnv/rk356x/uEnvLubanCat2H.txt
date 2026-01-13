@@ -8,17 +8,17 @@ enable_uboot_overlays=1
 # HDMI
 #dtoverlay=/dtb/overlay/rk3568-lubancat-hdmi-disabled-overlay.dtbo
 # lvds in vp0(开启该插件需要开启上面的hdmi关闭插件)
-#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-bsdn10-lvds-in-vp0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-gm8775c-lvds-1280x800-10.1inch-bsdn10-overlay.dtbo
 
 # edp in vp1
-#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-edp-in-vp1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-edp-vp1-overlay.dtbo
 
 # mipi-dsi1 in vp1
-#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-dsi1-1080x1920-5.5inch-ebf410125-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-dsi1-1024x600-7inch-ebf410173-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-dsi1-800x1280-10.1inch-ebf410177-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-dsi1-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-generic-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-dsi1-vp1-1080x1920-5.5inch-ebf410125-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-dsi1-vp1-1024x600-7inch-ebf410173-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-dsi1-vp1-800x1280-10.1inch-ebf410177-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-dsi1-vp1-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2h-dsi1-vp1-generic-overlay.dtbo
 
 # cam0(mipi-csi0)
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov8858-3264x2448-15fps-overlay.dtbo
@@ -37,4 +37,4 @@ enable_uboot_overlays=1
 enable_gsdt_auto_load=1
 eeprom_addr=0x51
 i2c_devs=5
-gsdt_plugin0=/dtb/overlay/rk3568-lubancat-2h-generic-overlay.dtbo
+gsdt_plugin0=/dtb/overlay/rk3568-lubancat-2h-dsi1-vp1-generic-overlay.dtbo

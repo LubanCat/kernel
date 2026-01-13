@@ -10,14 +10,14 @@ enable_uboot_overlays=1
 # mini-pcie 5G modules
 #dtoverlay=/dtb/overlay/rk356x-lubancat-pcie2x1-disabled-overlay.dtbo
 # dsi1-vp0
-#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-1080x1920-5.5inch-ebf410125-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-1024x600-7inch-ebf410173-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-800x1280-10.1inch-ebf410177-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3566-lubancat-1h-dsi1-in-vp0-generic-overlay.dtbo \
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-vp0-1080x1920-5.5inch-ebf410125-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-vp0-1024x600-7inch-ebf410173-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-vp0-800x1280-10.1inch-ebf410177-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1io-dsi1-vp0-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1h-dsi1-vp0-generic-overlay.dtbo \
 # edp-or-lvds-in-vp0
-#dtoverlay=/dtb/overlay/rk3566-lubancat-1h-edp-in-vp0-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3566-lubancat-1h-bsdn10-lvds-in-vp0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1h-edp-vp0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1h-gm8775c-lvds-1280x800-10.1inch-bsdn10-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3566-lubancat-1h-lvds-edp-touch-overlay.dtbo
 # cam0(mipi-csi0)
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-ov8858-3264x2448-15fps-overlay.dtbo
@@ -36,4 +36,4 @@ enable_uboot_overlays=1
 enable_gsdt_auto_load=1
 eeprom_addr=0x51
 i2c_devs=1
-gsdt_plugin0=/dtb/overlay/rk3566-lubancat-1h-dsi1-in-vp0-generic-overlay.dtbo
+gsdt_plugin0=/dtb/overlay/rk3566-lubancat-1h-dsi1-vp0-generic-overlay.dtbo
