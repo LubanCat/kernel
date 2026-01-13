@@ -6,7 +6,7 @@
 
 /dts-v1/;
 //核心板配置
-#include "rk3566-lubancat-1core-port.dtsi"
+#include "rk3566-lubancat-1core.dtsi"
 // MIPI-DSI0屏幕
 #include "rk3566-lubancat-1io-dsi0.dtsi"
 // MIPI-DSI1屏幕
