@@ -915,6 +915,12 @@
 	};
 };
 
+&i2c1 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c1m1_xfer>;
+};
+
 &sdhci {
 	bus-width = <8>;
 	no-sdio;
