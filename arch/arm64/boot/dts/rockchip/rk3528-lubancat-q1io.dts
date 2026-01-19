@@ -281,7 +281,7 @@
 		pinctrl-0 = <&pcie2_3v3_en>;
 	};
 
-	/*wifi_usb: wifi-usb {
+	wifi_usb: wifi-usb {
 		compatible = "regulator-fixed";
 		regulator-name = "wifi_usb";
 		regulator-min-microvolt = <3300000>;
@@ -291,7 +291,7 @@
 		regulator-always-on;
 		enable-active-low;
 		gpio = <&gpio4 RK_PC0 GPIO_ACTIVE_LOW>;
-	};*/
+	};
 };
 
 &gmac0 {
