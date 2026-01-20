@@ -230,9 +230,33 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588s-lubancat-4io-dsi1-vp3-1024x600-7inch-ebf410173-overlay.dtbo \
 	rk3588s-lubancat-4io-dsi1-vp3-1080x1920-5.5inch-ebf410125-overlay.dtbo \
 	rk3588s-lubancat-4io-cam0-imx415-3840x2160-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam0-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam0-ov8858-3264x2448-15fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam0-ov8858-1632x1224-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam0-gc08a8-3264x2448-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam0-gc2053-1920x1080-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam0-gc4653-2560x1440-30fps-overlay.dtbo \
 	rk3588s-lubancat-4io-cam1-imx415-3840x2160-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam1-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam1-ov8858-3264x2448-15fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam1-ov8858-1632x1224-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam1-gc08a8-3264x2448-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam1-gc2053-1920x1080-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam1-gc4653-2560x1440-30fps-overlay.dtbo \
 	rk3588s-lubancat-4io-cam2-imx415-3840x2160-15fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam2-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam2-ov8858-3264x2448-15fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam2-ov8858-1632x1224-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam2-gc08a8-3264x2448-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam2-gc2053-1920x1080-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam2-gc4653-2560x1440-30fps-overlay.dtbo \
 	rk3588s-lubancat-4io-cam3-imx415-3840x2160-15fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam3-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam3-ov8858-3264x2448-15fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam3-ov8858-1632x1224-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam3-gc08a8-3264x2448-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam3-gc2053-1920x1080-30fps-overlay.dtbo \
+	rk3588s-lubancat-4io-cam3-gc4653-2560x1440-30fps-overlay.dtbo \
 	rk3588s-lubancat-4io-hdmi0-vp0-overlay.dtbo \
 	rk3588s-lubancat-i2c5-m3-40pin-test-tca9535-overlay.dtbo \
 	rk3588s-lubancat-dp0-vp1-overlay.dtbo \

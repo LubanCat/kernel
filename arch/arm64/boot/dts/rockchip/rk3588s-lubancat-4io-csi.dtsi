@@ -115,7 +115,7 @@
 		reset-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
-		rockchip,camera-module-index = <2>;
+		rockchip,camera-module-index = <0>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "ZC-OV13850R2A-V1";
 		rockchip,camera-module-lens-name = "Largan-50064B31";
@@ -148,6 +148,7 @@
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "CMK-OT2022-PX1";
 		rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
+		rockchip,imx415-data-lanes = <4>;
 		// NO_HDR:0 HDR_X2:5 HDR_X3:6
 		// rockchip,camera-hdr-mode = <0>;
 		port {
@@ -158,14 +159,13 @@
 		};
 	};
 
-	dcphy0_gc2093: dcphy0-gc2093@37 {
-		compatible = "galaxycore,gc2093";
+	dcphy0_gc08a8: dcphy0-gc08a8@31 {
+		compatible = "galaxycore,gc08a8";
 		status = "disabled";
-		reg = <0x37>;
+		reg = <0x31>;
 		clocks = <&ext_cam_24m_clk>;
 		clock-names = "xvclk";
-		//power-domains = <&power RK3588_PD_VI>;
-
+		power-domains = <&power RK3588_PD_VI>;
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
@@ -173,16 +173,66 @@
 		reset-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_LOW>;
 
 		rockchip,camera-module-index = <0>;
-		rockchip,camera-module-facing = "front";
-		rockchip,camera-module-name = "SIDA209300461";
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "YT10120";
+		rockchip,camera-module-lens-name = "30IRC-4M-F20";
+
+		port {
+			gc08a8_dcphy0_out: endpoint {
+				remote-endpoint = <&dcphy0_in_gc08a8>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	dcphy0_gc2053: dcphy0-gc2053@37 {
+		compatible = "galaxycore,gc2053";
+		status = "disabled";
+		reg = <0x37>;
+		clocks = <&ext_cam_24m_clk>;
+		clock-names = "xvclk";
+		power-domains = <&power RK3588_PD_VI>;
+		avdd-supply = <&cam_avdd>;
+		dovdd-supply = <&cam_dovdd>;
+		dvdd-supply = <&cam_dvdd>;
+		pwdn-gpios = <&gpio4 RK_PA6 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_LOW>;
+
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "SIDA205300461";
 		rockchip,camera-module-lens-name = "60IRC-F20";
 
-		// NO_HDR:0 HDR_X2:5 HDR_X3:6
-		// rockchip,camera-hdr-mode = <0>;
 		port {
-			gc2093_dcphy0_out: endpoint {
-				remote-endpoint = <&dcphy0_in_gc2093>;
-				data-lanes = <1 2 3 4>;
+			gc2053_dcphy0_out: endpoint {
+				remote-endpoint = <&dcphy0_in_gc2053>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	dcphy0_gc4653: dcphy0-gc4653@29 {
+		compatible = "galaxycore,gc4653";
+		status = "disabled";
+		reg = <0x29>;
+		clocks = <&ext_cam_24m_clk>;
+		clock-names = "xvclk";
+		power-domains = <&power RK3588_PD_VI>;
+		avdd-supply = <&cam_avdd>;
+		dovdd-supply = <&cam_dovdd>;
+		dvdd-supply = <&cam_dvdd>;
+		pwdn-gpios = <&gpio4 RK_PA6 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA7 GPIO_ACTIVE_HIGH>;
+
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "YT10120";
+		rockchip,camera-module-lens-name = "30IRC-4M-F20";
+
+		port {
+			gc4653_dcphy0_out: endpoint {
+				remote-endpoint = <&dcphy0_in_gc4653>;
+				data-lanes = <1 2>;
 			};
 		};
 	};
@@ -330,6 +380,7 @@
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "CMK-OT2022-PX1";
 		rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
+		rockchip,imx415-data-lanes = <4>;
 		port {
 			imx415_dcphy1_out: endpoint {
 				remote-endpoint = <&dcphy1_in_imx415>;
@@ -338,31 +389,77 @@
 		};
 	};
 
-	dcphy1_gc2093: dcphy1-gc2093@37 {
-		compatible = "galaxycore,gc2093";
+	dcphy1_gc08a8: dcphy1-gc08a8@31 {
+		compatible = "galaxycore,gc08a8";
+		status = "disabled";
+		reg = <0x31>;
+		clocks = <&ext_cam_24m_clk>;
+		clock-names = "xvclk";
+		dovdd-supply= <&cam_dovdd>; /* 1.8v */
+		avdd-supply = <&cam_avdd>;  /* 2.8v */
+		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
+		pwdn-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA0 GPIO_ACTIVE_LOW>;
+
+		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "YT10120";
+		rockchip,camera-module-lens-name = "30IRC-4M-F20";
+
+		port {
+			gc08a8_dcphy1_out: endpoint {
+				remote-endpoint = <&dcphy1_in_gc08a8>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	dcphy1_gc2053: dcphy1-gc2053@37 {
+		compatible = "galaxycore,gc2053";
 		status = "disabled";
 		reg = <0x37>;
 		clocks = <&ext_cam_24m_clk>;
 		clock-names = "xvclk";
-		//power-domains = <&power RK3588_PD_VI>;
-
-		avdd-supply = <&cam_avdd>;
-		dovdd-supply = <&cam_dovdd>;
-		dvdd-supply = <&cam_dvdd>;
-		pwdn-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
+		dovdd-supply= <&cam_dovdd>; /* 1.8v */
+		avdd-supply = <&cam_avdd>;  /* 2.8v */
+		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
+		pwdn-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_LOW>;
 		reset-gpios = <&gpio4 RK_PA0 GPIO_ACTIVE_LOW>;
 
-		rockchip,camera-module-index = <0>;
-		rockchip,camera-module-facing = "front";
-		rockchip,camera-module-name = "SIDA209300461";
+		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "SIDA205300461";
 		rockchip,camera-module-lens-name = "60IRC-F20";
 
-		// NO_HDR:0 HDR_X2:5 HDR_X3:6
-		// rockchip,camera-hdr-mode = <0>;
 		port {
-			gc2093_dcphy1_out: endpoint {
-				remote-endpoint = <&dcphy1_in_gc2093>;
-				data-lanes = <1 2 3 4>;
+			gc2053_dcphy1_out: endpoint {
+				remote-endpoint = <&dcphy1_in_gc2053>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	dcphy1_gc4653: dcphy1-gc4653@29 {
+		compatible = "galaxycore,gc4653";
+		status = "disabled";
+		reg = <0x29>;
+		clocks = <&ext_cam_24m_clk>;
+		clock-names = "xvclk";
+		dovdd-supply= <&cam_dovdd>; /* 1.8v */
+		avdd-supply = <&cam_avdd>;  /* 2.8v */
+		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
+		pwdn-gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA0 GPIO_ACTIVE_HIGH>;
+
+		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "YT10120";
+		rockchip,camera-module-lens-name = "30IRC-4M-F20";
+
+		port {
+			gc4653_dcphy1_out: endpoint {
+				remote-endpoint = <&dcphy1_in_gc4653>;
+				data-lanes = <1 2>;
 			};
 		};
 	};
@@ -506,7 +603,7 @@
 		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_LOW>;
 
-		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-index = <2>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "CMK-OT2022-PX1";
 		rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
@@ -521,30 +618,79 @@
 		};
 	};
 
-	dphy1_gc2093: dphy1-gc2093@37 {
-		compatible = "galaxycore,gc2093";
+	dphy1_gc08a8: dphy1-gc08a8@31 {
+		compatible = "galaxycore,gc08a8";
 		status = "disabled";
-		reg = <0x37>;
+		reg = <0x31>;
 		clocks = <&ext_cam_24m_clk>;
 		clock-names = "xvclk";
-		//power-domains = <&power RK3588_PD_VI>;
-
+		power-domains = <&power RK3588_PD_VI>;
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
 		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_LOW>;
 
-		rockchip,camera-module-index = <0>;
-		rockchip,camera-module-facing = "front";
-		rockchip,camera-module-name = "SIDA209300461";
+		rockchip,camera-module-index = <2>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "YT10120";
+		rockchip,camera-module-lens-name = "30IRC-4M-F20";
+
+		port {
+			gc08a8_dphy1_out: endpoint {
+				remote-endpoint = <&dphy1_in_gc08a8>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	dphy1_gc2053: dphy1-gc2053@37 {
+		compatible = "galaxycore,gc2053";
+		status = "disabled";
+		reg = <0x37>;
+		clocks = <&ext_cam_24m_clk>;
+		clock-names = "xvclk";
+		power-domains = <&power RK3588_PD_VI>;
+		avdd-supply = <&cam_avdd>;
+		dovdd-supply = <&cam_dovdd>;
+		dvdd-supply = <&cam_dvdd>;
+		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_LOW>;
+
+		rockchip,camera-module-index = <2>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "SIDA205300461";
 		rockchip,camera-module-lens-name = "60IRC-F20";
 
-		// NO_HDR:0 HDR_X2:5 HDR_X3:6
-		// rockchip,camera-hdr-mode = <0>;
 		port {
-			gc2093_dphy1_out: endpoint {
-				remote-endpoint = <&dphy1_in_gc2093>;
+			gc2053_dphy1_out: endpoint {
+				remote-endpoint = <&dphy1_in_gc2053>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	dphy1_gc4653: dphy1-gc4653@29 {
+		compatible = "galaxycore,gc4653";
+		status = "disabled";
+		reg = <0x29>;
+		clocks = <&ext_cam_24m_clk>;
+		clock-names = "xvclk";
+		power-domains = <&power RK3588_PD_VI>;
+		avdd-supply = <&cam_avdd>;
+		dovdd-supply = <&cam_dovdd>;
+		dvdd-supply = <&cam_dvdd>;
+		pwdn-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_HIGH>;
+
+		rockchip,camera-module-index = <2>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "YT10120";
+		rockchip,camera-module-lens-name = "30IRC-4M-F20";
+
+		port {
+			gc4653_dphy1_out: endpoint {
+				remote-endpoint = <&dphy1_in_gc4653>;
 				data-lanes = <1 2>;
 			};
 		};
@@ -561,7 +707,7 @@
 		status = "disabled";
 		compatible = "dongwoon,dw9714";
 		reg = <0xc>;
-		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-index = <3>;
 		rockchip,vcm-max-current = <100>;
 		rockchip,vcm-start-current = <0>;
 		rockchip,vcm-rated-current = <100>;
@@ -602,7 +748,7 @@
 		reset-gpios = <&gpio4 RK_PB5 GPIO_ACTIVE_LOW>;
 		rotation = <180>;
 
-		rockchip,camera-module-index = <2>;
+		rockchip,camera-module-index = <3>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "THDS11073";
 		rockchip,camera-module-lens-name = "Largan-40122a1";
@@ -631,7 +777,7 @@
 		reset-gpios = <&gpio4 RK_PB5 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
-		rockchip,camera-module-index = <2>;
+		rockchip,camera-module-index = <3>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "HS5885-BNSM1018-V01";
 		rockchip,camera-module-lens-name = "default";
@@ -660,7 +806,7 @@
 		reset-gpios = <&gpio4 RK_PB5 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
-		rockchip,camera-module-index = <2>;
+		rockchip,camera-module-index = <3>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "ZC-OV13850R2A-V1";
 		rockchip,camera-module-lens-name = "Largan-50064B31";
@@ -689,7 +835,7 @@
 		pwdn-gpios = <&gpio4 RK_PB4 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio4 RK_PB5 GPIO_ACTIVE_LOW>;
 
-		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-index = <3>;
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "CMK-OT2022-PX1";
 		rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20";
@@ -704,36 +850,84 @@
 		};
 	};
 
-	dphy2_gc2093: dphy2-gc2093@37 {
-		compatible = "galaxycore,gc2093";
+	dphy2_gc08a8: dphy2-gc08a8@31 {
+		compatible = "galaxycore,gc08a8";
 		status = "disabled";
-		reg = <0x37>;
+		reg = <0x31>;
 		clocks = <&ext_cam_24m_clk>;
 		clock-names = "xvclk";
-		//power-domains = <&power RK3588_PD_VI>;
-
+		power-domains = <&power RK3588_PD_VI>;
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&cam_dovdd>;
 		dvdd-supply = <&cam_dvdd>;
 		pwdn-gpios = <&gpio4 RK_PB4 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&gpio4 RK_PB5 GPIO_ACTIVE_LOW>;
 
-		rockchip,camera-module-index = <0>;
-		rockchip,camera-module-facing = "front";
-		rockchip,camera-module-name = "SIDA209300461";
+		rockchip,camera-module-index = <3>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "YT10120";
+		rockchip,camera-module-lens-name = "30IRC-4M-F20";
+
+		port {
+			gc08a8_dphy2_out: endpoint {
+				remote-endpoint = <&dphy2_in_gc08a8>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	dphy2_gc2053: dphy2-gc2053@37 {
+		compatible = "galaxycore,gc2053";
+		status = "disabled";
+		reg = <0x37>;
+		clocks = <&ext_cam_24m_clk>;
+		clock-names = "xvclk";
+		power-domains = <&power RK3588_PD_VI>;
+		avdd-supply = <&cam_avdd>;
+		dovdd-supply = <&cam_dovdd>;
+		dvdd-supply = <&cam_dvdd>;
+		pwdn-gpios = <&gpio4 RK_PB4 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio4 RK_PB5 GPIO_ACTIVE_LOW>;
+
+		rockchip,camera-module-index = <3>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "SIDA205300461";
 		rockchip,camera-module-lens-name = "60IRC-F20";
 
-		// NO_HDR:0 HDR_X2:5 HDR_X3:6
-		// rockchip,camera-hdr-mode = <0>;
 		port {
-			gc2093_dphy2_out: endpoint {
-				remote-endpoint = <&dphy2_in_gc2093>;
+			gc2053_dphy2_out: endpoint {
+				remote-endpoint = <&dphy2_in_gc2053>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+
+	dphy2_gc4653: dphy2-gc6453@29 {
+		compatible = "galaxycore,gc4653";
+		status = "disabled";
+		reg = <0x29>;
+		clocks = <&ext_cam_24m_clk>;
+		clock-names = "xvclk";
+		power-domains = <&power RK3588_PD_VI>;
+		avdd-supply = <&cam_avdd>;
+		dovdd-supply = <&cam_dovdd>;
+		dvdd-supply = <&cam_dvdd>;
+		pwdn-gpios = <&gpio4 RK_PB4 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio4 RK_PB5 GPIO_ACTIVE_HIGH>;
+
+		rockchip,camera-module-index = <3>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "YT10120";
+		rockchip,camera-module-lens-name = "30IRC-4M-F20";
+
+		port {
+			gc4653_dphy2_out: endpoint {
+				remote-endpoint = <&dphy2_in_gc4653>;
 				data-lanes = <1 2>;
 			};
 		};
 	};
 };
-
 
 &mipi_dcphy0 {
 	status = "disabled";
@@ -781,10 +975,22 @@
 				data-lanes = <1 2 3 4>;
 			};
 
-			dcphy0_in_gc2093: endpoint@5 {
+			dcphy0_in_gc08a8: endpoint@5 {
 				reg = <5>;
-				remote-endpoint = <&gc2093_dcphy0_out>;
-				data-lanes = <1 2 3 4>;
+				remote-endpoint = <&gc08a8_dcphy0_out>;
+				data-lanes = <1 2>;
+			};
+
+			dcphy0_in_gc2053: endpoint@6 {
+				reg = <6>;
+				remote-endpoint = <&gc2053_dcphy0_out>;
+				data-lanes = <1 2>;
+			};
+
+			dcphy0_in_gc4653: endpoint@7 {
+				reg = <7>;
+				remote-endpoint = <&gc4653_dcphy0_out>;
+				data-lanes = <1 2>;
 			};
 		};
 
@@ -847,10 +1053,22 @@
 				data-lanes = <1 2 3 4>;
 			};
 
-			dcphy1_in_gc2093: endpoint@5 {
+			dcphy1_in_gc08a8: endpoint@5 {
 				reg = <5>;
-				remote-endpoint = <&gc2093_dcphy1_out>;
-				data-lanes = <1 2 3 4>;
+				remote-endpoint = <&gc08a8_dcphy1_out>;
+				data-lanes = <1 2>;
+			};
+
+			dcphy1_in_gc2053: endpoint@6 {
+				reg = <6>;
+				remote-endpoint = <&gc2053_dcphy1_out>;
+				data-lanes = <1 2>;
+			};
+
+			dcphy1_in_gc4653: endpoint@7 {
+				reg = <7>;
+				remote-endpoint = <&gc4653_dcphy1_out>;
+				data-lanes = <1 2>;
 			};
 		};
 
@@ -913,9 +1131,21 @@
 				data-lanes = <1 2>;
 			};
 
-			dphy1_in_gc2093: endpoint@5 {
+			dphy1_in_gc08a8: endpoint@5 {
 				reg = <5>;
-				remote-endpoint = <&gc2093_dphy1_out>;
+				remote-endpoint = <&gc08a8_dphy1_out>;
+				data-lanes = <1 2>;
+			};
+
+			dphy1_in_gc2053: endpoint@6 {
+				reg = <6>;
+				remote-endpoint = <&gc2053_dphy1_out>;
+				data-lanes = <1 2>;
+			};
+
+			dphy1_in_gc4653: endpoint@7 {
+				reg = <7>;
+				remote-endpoint = <&gc4653_dphy1_out>;
 				data-lanes = <1 2>;
 			};
 		};
@@ -975,9 +1205,21 @@
 				data-lanes = <1 2>;
 			};
 
-			dphy2_in_gc2093: endpoint@5 {
+			dphy2_in_gc08a8: endpoint@5 {
 				reg = <5>;
-				remote-endpoint = <&gc2093_dphy2_out>;
+				remote-endpoint = <&gc08a8_dphy2_out>;
+				data-lanes = <1 2>;
+			};
+
+			dphy2_in_gc2053: endpoint@6 {
+				reg = <6>;
+				remote-endpoint = <&gc2053_dphy2_out>;
+				data-lanes = <1 2>;
+			};
+
+			dphy2_in_gc4653: endpoint@7 {
+				reg = <7>;
+				remote-endpoint = <&gc4653_dphy2_out>;
 				data-lanes = <1 2>;
 			};
 		};
