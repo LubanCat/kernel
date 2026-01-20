@@ -778,17 +778,19 @@
 		 dev_err(dev, "Failed to enable regulators\n");
 		 goto disable_clk;
 	 }
-
-	 if (!IS_ERR(gc2053->pwdn_gpio)) {
-		 gpiod_set_value_cansleep(gc2053->pwdn_gpio, 1);
+	 #if 0
+	 if (!IS_ERR(gc2053->power_gpio)) {
+		 gpiod_set_value_cansleep(gc2053->power_gpio, 1);
 		 usleep_range(100, 200);
 	 }
-
+	# endif
 	 if (!IS_ERR(gc2053->reset_gpio)) {
 		 gpiod_set_value_cansleep(gc2053->reset_gpio, 1);
 		 usleep_range(100, 200);
 	 }
-
+	 if (!IS_ERR(gc2053->pwdn_gpio))
+		 gpiod_set_value_cansleep(gc2053->pwdn_gpio, 0);
+ 
 	 if (!IS_ERR(gc2053->reset_gpio))
 		 gpiod_set_value_cansleep(gc2053->reset_gpio, 0);
 	 usleep_range(3000, 6000);
