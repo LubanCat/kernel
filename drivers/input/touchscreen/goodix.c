@@ -1306,7 +1306,7 @@ static int touchscreen_parse_properties_from_firmware(struct input_dev *input, b
 		absinfo->minimum = 0;
 	}
 
-	prop->invert_y = touch_prop->invert_x;
+	prop->invert_y = touch_prop->invert_y;
 	if (prop->invert_y) {
 		absinfo = &input->absinfo[axis_y];
 		absinfo->maximum -= absinfo->minimum;
