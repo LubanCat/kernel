@@ -593,6 +593,8 @@
 	interrupts = <RK_PA0 IRQ_TYPE_LEVEL_LOW>;
 	reset-gpios = <&gpio0 RK_PA5 GPIO_ACTIVE_LOW>;
 	irq-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&tp0_irq>;
 };
 
 &gt928_dsi0 {
@@ -600,6 +602,8 @@
 	interrupts = <RK_PA0 IRQ_TYPE_LEVEL_LOW>;
 	reset-gpios = <&gpio0 RK_PA5 GPIO_ACTIVE_LOW>;
 	irq-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&tp0_irq>;
 };
 
 // mipi dsi1 gpio set
@@ -612,6 +616,8 @@
 	interrupts = <RK_PA1 IRQ_TYPE_LEVEL_LOW>;
 	reset-gpios = <&gpio3 RK_PB0 GPIO_ACTIVE_LOW>;
 	irq-gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&tp1_irq>;
 };
 
 &gt928_dsi1 {
@@ -619,6 +625,8 @@
 	interrupts = <RK_PA1 IRQ_TYPE_LEVEL_LOW>;
 	reset-gpios = <&gpio3 RK_PB0 GPIO_ACTIVE_LOW>;
 	irq-gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&tp1_irq>;
 };
 
 &i2c0 {
@@ -864,6 +872,16 @@
 	pcie {
 		pcie_disable_gpio: pcie-disable-gpio {
 			rockchip,pins = <3 RK_PC2 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+
+	dsi {
+		tp0_irq: tp0-irq {
+			rockchip,pins = <0 RK_PA0 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		tp1_irq: tp1-irq {
+			rockchip,pins = <3 RK_PA1 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 };
