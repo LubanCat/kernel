@@ -8,7 +8,7 @@
 
 / {
 	fragment@0 {
-		target = <&mipi_dcphy0>;
+		target = <&mipi_dcphy1>;
 
 		__overlay__ {
 			status = "okay";
@@ -16,43 +16,42 @@
 	};
 
 	fragment@1 {
-		target = <&route_dsi0>;
+		target = <&route_dsi1>;
 
 		__overlay__ {
 			status = "okay";
-			connect = <&vp2_out_dsi0>;
+			connect = <&vp3_out_dsi1>;
 		};
 	};
 
 	fragment@2 {
-		target = <&dsi0_in_vp2>;
+		target = <&dsi1_in_vp3>;
 
 		__overlay__ {
 			status = "okay";
 		};
 	};
 
-
 	fragment@3 {
-		target = <&dsi0>;
+		target = <&dsi1>;
 
 		__overlay__ {
 			status = "okay";
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			dsi0_panel: panel@0 {
+			dsi1_panel: panel@0 {
 				status = "okay";
 				compatible = "simple-panel-dsi";
 				reg = <0>;
-				backlight = <&backlight_dsi0>;
-				power-supply = <&mipi_dsi0_power>;
-				reset-gpios = <&gpio6 13 GPIO_ACTIVE_LOW>;
+				backlight = <&backlight_dsi1>;
+				power-supply = <&mipi_dsi1_power>;
+				reset-gpios = <&gpio6 15 GPIO_ACTIVE_LOW>;
 
 				enable-delay-ms = <35>;
 				prepare-delay-ms = <6>;
-				reset-delay-ms = <20>;
-				init-delay-ms = <120>;
+				reset-delay-ms = <10>;
+				init-delay-ms = <50>;
 				unprepare-delay-ms = <0>;
 				disable-delay-ms = <20>;
 
@@ -270,9 +269,9 @@
 					05 00 01 10
 				];
 
-				disp0_timings0: display-timings {
-					native-mode = <&dsi0_timing0>;
-					dsi0_timing0: timing0 {
+				disp1_timings0: display-timings {
+					native-mode = <&dsi1_timing0>;
+					dsi1_timing0: timing0 {
 						clock-frequency = <69801600>;
 						hactive = <800>;
 						vactive = <1280>;
@@ -297,8 +296,8 @@
 					#size-cells = <0>;
 					port@0 {
 						reg = <0>;
-						panel_in_dsi0: endpoint {
-							remote-endpoint = <&dsi0_out_panel>;
+						panel_in_dsi1: endpoint {
+							remote-endpoint = <&dsi1_out_panel>;
 						};
 					};
 				};
@@ -310,8 +309,8 @@
 
 				port@1 {
 					reg = <1>;
-					dsi0_out_panel: endpoint {
-						remote-endpoint = <&panel_in_dsi0>;
+					dsi1_out_panel: endpoint {
+						remote-endpoint = <&panel_in_dsi1>;
 					};
 				};
 			};
@@ -319,25 +318,25 @@
 	};
 
 	fragment@4 {
-		target = <&i2c2>;
+		target = <&i2c5>;
 
 		__overlay__ {
 			status = "okay";
 			#address-cells = <1>;
 			#size-cells = <0>;
 			pinctrl-names = "default";
-			pinctrl-0 = <&i2c2m4_xfer>;
+			pinctrl-0 = <&i2c5m3_xfer>;
 
 			gt911_dsi0: gt911@5d {
 				status = "okay";
 				compatible = "goodix,gt911";
 				reg = <0x5d>;
 				interrupt-parent = <&gpio3>;
-				interrupts = <RK_PB2 IRQ_TYPE_LEVEL_LOW>;
-				reset-gpios = <&gpio6 12 GPIO_ACTIVE_LOW>;
-				irq-gpios = <&gpio3 RK_PB2 GPIO_ACTIVE_HIGH>;
+				interrupts = <RK_PB7 IRQ_TYPE_LEVEL_LOW>;
+				reset-gpios = <&gpio6 14 GPIO_ACTIVE_LOW>;
+				irq-gpios = <&gpio3 RK_PB7 GPIO_ACTIVE_HIGH>;
 				pinctrl-names = "default";
-				pinctrl-0 = <&tp0_irq>;
+				pinctrl-0 = <&tp1_irq>;
 				touchscreen-inverted-x = <1>;
 				//touchscreen-inverted-y = <1>;
 				touchscreen-swapped-x-y = <1>;
@@ -349,8 +348,8 @@
 		target = <&pinctrl>;
 		__overlay__ {
 			dsi {
-				tp0_irq: tp0-irq {
-					rockchip,pins = <3 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
+				tp1_irq: tp1-irq {
+					rockchip,pins = <3 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
 				};
 			};
 		};
