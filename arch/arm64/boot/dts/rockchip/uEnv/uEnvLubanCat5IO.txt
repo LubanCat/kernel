@@ -38,6 +38,7 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi1-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-1080x1920-5.5inch-ebf410125-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-1024x600-7inch-ebf410173-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-800x1280-10.1inch-ebf410177-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-dsi1-vp3-generic-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo
 
