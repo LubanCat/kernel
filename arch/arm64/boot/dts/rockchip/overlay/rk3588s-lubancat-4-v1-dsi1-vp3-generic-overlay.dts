@@ -110,6 +110,8 @@
 				interrupts = <RK_PA1 IRQ_TYPE_LEVEL_LOW>;
 				reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_LOW>;
 				irq-gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_HIGH>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&tp1_irq>;
 
 				nvmem = <&eeprom1>;
 				nvmem-names = "eeprom";

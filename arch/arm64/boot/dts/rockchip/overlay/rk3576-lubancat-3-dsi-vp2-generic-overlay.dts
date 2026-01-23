@@ -192,6 +192,8 @@
 				interrupts = <RK_PD0 IRQ_TYPE_LEVEL_LOW>;
 				reset-gpios = <&gpio0 RK_PD1 GPIO_ACTIVE_LOW>;
 				irq-gpios = <&gpio0 RK_PD0 GPIO_ACTIVE_HIGH>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&tp0_irq>;
 
 				nvmem = <&eeprom0>;
 				nvmem-names = "eeprom";
@@ -201,6 +203,18 @@
 				compatible = "atmel,24c64";
 				reg = <0x51>;
 				label = "eeprom";
+			};
+		};
+	};
+
+	fragment@10 {
+		target =<&pinctrl>;
+
+		__overlay__ {
+			dsi {
+				tp0_irq: tp0-irq {
+					rockchip,pins = <0 RK_PD0 RK_FUNC_GPIO &pcfg_pull_none>;
+				};
 			};
 		};
 	};
