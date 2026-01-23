@@ -384,6 +384,8 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 	interrupts = <RK_PB0 IRQ_TYPE_LEVEL_LOW>;
 	reset-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_LOW>;
 	irq-gpios = <&gpio3 RK_PB0 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&tp1_irq>;
 };
 
 &gt911_dsi1_1 {

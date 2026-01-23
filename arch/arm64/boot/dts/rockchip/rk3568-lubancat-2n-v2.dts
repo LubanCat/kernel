@@ -907,6 +907,8 @@
 	interrupts = <RK_PA3 IRQ_TYPE_LEVEL_LOW>;
 	reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_LOW>;
 	irq-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&tp1_irq>;
 };
 
 &gt911_dsi1_1 {
@@ -923,6 +925,8 @@
 	interrupts = <RK_PA3 IRQ_TYPE_LEVEL_LOW>;
 	reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_LOW>;
 	irq-gpios = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&tp1_irq>;
 };
 
 

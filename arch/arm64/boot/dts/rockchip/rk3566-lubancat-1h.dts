@@ -1018,6 +1018,8 @@
 		interrupts = <RK_PA6 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&gpio3 RK_PA5 GPIO_ACTIVE_LOW>;
 		irq-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&tp1_irq>;
 		touchscreen-inverted-x = <1>;
 		touchscreen-inverted-y = <1>;
 	};
@@ -1044,6 +1046,8 @@
 		interrupts = <RK_PA6 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&gpio3 RK_PA5 GPIO_ACTIVE_LOW>;
 		irq-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&tp1_irq>;
 	};
 
 	rockpi_mcu_1: rockpi-mcu-1@45 {
