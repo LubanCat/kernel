@@ -827,7 +827,6 @@ config FRONTSWAP
 config CMA
 	bool "Contiguous Memory Allocator"
 	depends on MMU
-	select MIGRATION
 	select MEMORY_ISOLATION
 	help
 	  This enables the Contiguous Memory Allocator which allows other
