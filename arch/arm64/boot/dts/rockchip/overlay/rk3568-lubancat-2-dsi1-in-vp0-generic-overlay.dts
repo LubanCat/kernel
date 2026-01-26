@@ -79,6 +79,8 @@
 
 		__overlay__ {
 			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
 
             eeprom1: eeprom@51 {
 				compatible = "atmel,24c64";
