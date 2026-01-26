@@ -166,9 +166,6 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3568-lubancat-can1-m0-overlay.dtbo \
 	rk3568-lubancat-can1-m1-overlay.dtbo \
 	rk3568-lubancat-can2-m0-overlay.dtbo \
-	rk3568-lubancat-canfd1-m0-overlay.dtbo \
-	rk3568-lubancat-canfd1-m1-overlay.dtbo \
-	rk3568-lubancat-canfd2-m0-overlay.dtbo \
 	rk3568-lubancat-dsi0-vp1-1024x600-7inch-ebf410173-overlay.dtbo \
 	rk3568-lubancat-dsi0-vp1-1080x1920-5.5inch-ebf410125-overlay.dtbo \
 	rk3568-lubancat-dsi0-vp1-800x1280-10.1inch-ebf410177-overlay.dtbo \
@@ -297,9 +294,6 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-can0-m0-overlay.dtbo \
 	rk3588-lubancat-can1-m1-overlay.dtbo \
 	rk3588-lubancat-can2-m0-overlay.dtbo \
-	rk3588-lubancat-canfd0-m0-overlay.dtbo \
-	rk3588-lubancat-canfd1-m1-overlay.dtbo \
-	rk3588-lubancat-canfd2-m0-overlay.dtbo \
 	rk3588-lubancat-msata-overlay.dtbo \
 	rk3588-lubancat-dp0-vp1-overlay.dtbo \
 	rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo \
