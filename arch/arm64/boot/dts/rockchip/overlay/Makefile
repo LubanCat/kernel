@@ -40,9 +40,6 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-can0-m0-overlay.dtbo \
 	rk3588-lubancat-can1-m1-overlay.dtbo \
 	rk3588-lubancat-can2-m0-overlay.dtbo \
-	rk3588-lubancat-canfd0-m0-overlay.dtbo \
-	rk3588-lubancat-canfd1-m1-overlay.dtbo \
-	rk3588-lubancat-canfd2-m0-overlay.dtbo \
 	rk3588-lubancat-msata-overlay.dtbo \
 	rk3588-lubancat-dp0-vp1-overlay.dtbo \
 	rk3588-lubancat-dsi1-vp3-virtual-screen-overlay.dtbo \
