@@ -128,9 +128,6 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3568-lubancat-can1-m0-overlay.dtbo \
 	rk3568-lubancat-can1-m1-overlay.dtbo \
 	rk3568-lubancat-can2-m0-overlay.dtbo \
-	rk3568-lubancat-canfd1-m0-overlay.dtbo \
-	rk3568-lubancat-canfd1-m1-overlay.dtbo \
-	rk3568-lubancat-canfd2-m0-overlay.dtbo \
 	rk3568-lubancat-dsi0-7.0-1024x600-overlay.dtbo \
 	rk3568-lubancat-dsi0-10.1-800x1280-overlay.dtbo \
 	rk3568-lubancat-dsi0-720p-overlay.dtbo \
