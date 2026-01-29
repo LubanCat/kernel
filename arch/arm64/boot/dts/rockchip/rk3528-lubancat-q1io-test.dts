@@ -181,6 +181,20 @@
 		vin-supply = <&vcc5v0_sys>;
 	};
 
+	vdd_3v3: vdd-3v3-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "vdd_3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+		enable-active-high;
+		regulator-boot-on;
+		gpio = <&gpio0 RK_PA1 GPIO_ACTIVE_HIGH>;
+		vin-supply = <&vcc5v0_sys>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vdd_3v3_en>;
+	};
+
 	pcie2_3v3: pcie2-3v3-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "pcie2_3v3";
@@ -489,9 +503,13 @@
 };
 
 &pinctrl {
-	pcie {
+	power {
 		pcie2_3v3_en: pcie2-3v3-en {
 			rockchip,pins = <4 RK_PB7 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		vdd_3v3_en: vdd-3v3-en {
+			rockchip,pins = <0 RK_PA1 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
