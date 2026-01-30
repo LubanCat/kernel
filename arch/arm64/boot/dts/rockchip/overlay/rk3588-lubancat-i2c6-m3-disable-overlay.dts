@@ -1,14 +1,39 @@
 /dts-v1/;
 /plugin/;
 
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+
 / {
 	fragment@0 {
 		target = <&i2c6>;
 
 		__overlay__ {
 			status = "disabled";
-			pinctrl-names = "default";
-			pinctrl-0 = <&i2c6m3_xfer>;
+		};
+	};
+
+	fragment@1 {
+		target-path = "/";
+		__overlay__ {
+			i2c6_m3_gpio_init: i2c6-m3-gpio-init {
+				compatible = "regulator-fixed";
+				pinctrl-names = "default";
+				pinctrl-0 = <&i2c6_m3_gpio_pin>;
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&pinctrl>;
+		__overlay__ {
+			i2c-gpio-init {
+				i2c6_m3_gpio_pin: i2c6-m3-gpio_pin {
+					rockchip,pins =
+						<4 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>,
+						<4 RK_PB0 RK_FUNC_GPIO &pcfg_pull_none>;
+				};
+			};
 		};
 	};
 };
