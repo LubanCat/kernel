@@ -1,6 +1,9 @@
 /dts-v1/;
 /plugin/;
 
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+
 / {
 	compatible = "rockchip,rk3568";
 
@@ -11,5 +14,28 @@
 			status = "disabled";
 		};
 	};
-};
 
+	fragment@1 {
+		target-path = "/";
+		__overlay__ {
+			i2c5_m0_gpio_init: i2c5-m0-gpio-init {
+				compatible = "regulator-fixed";
+				pinctrl-names = "default";
+				pinctrl-0 = <&i2c5_m0_gpio_pin>;
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&pinctrl>;
+		__overlay__ {
+			i2c-gpio-init {
+				i2c5_m0_gpio_pin: i2c5-m0-gpio_pin {
+					rockchip,pins =
+						<3 RK_PB3 RK_FUNC_GPIO &pcfg_pull_none>,
+						<3 RK_PB4 RK_FUNC_GPIO &pcfg_pull_none>;
+				};
+			};
+		};
+	};
+};
