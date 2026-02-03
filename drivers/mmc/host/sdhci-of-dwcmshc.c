@@ -516,11 +516,11 @@ static const struct dwcmshc_driver_data rk3588_drvdata = {
 static const struct dwcmshc_driver_data rk3528_drvdata = {
 	.pdata = &sdhci_dwcmshc_rk35xx_pdata,
 	.flags = RK_PLATFROM | RK_DLL_CMD_OUT | RK_TAP_VALUE_SEL,
-	.hs200_tx_tap = 12,
-	.hs400_tx_tap = 6,
-	.hs400_cmd_tap = 6,
-	.hs400_strbin_tap = 3,
-	.ddr50_strbin_delay_num = 10,
+	.hs200_tx_tap = 16,
+	.hs400_tx_tap = 8,
+	.hs400_cmd_tap = 8,
+	.hs400_strbin_tap = 4,
+	.ddr50_strbin_delay_num = 16,
 };
 
 static const struct dwcmshc_driver_data rk3562_drvdata = {
