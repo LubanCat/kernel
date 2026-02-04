@@ -202,21 +202,6 @@
 		status = "okay";
 	};
 
-	vdd_gpu: vdd-gpu {
-		compatible = "pwm-regulator";
-		pwms = <&pwm0 0 5000 1>;
-		regulator-name = "vdd_gpu";
-		regulator-min-microvolt = <705000>;
-		regulator-max-microvolt = <1148000>;
-		regulator-init-microvolt = <900000>;
-		regulator-ramp-delay = <12500>;
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-settling-time-up-us = <250>;
-		pwm-supply = <&vcc5v0_sys>;
-		status = "okay";
-	};
-
 	vdd_0v9_s3: vdd-0v9-s3 {
 		compatible = "regulator-fixed";
 		regulator-name = "vdd_0v9_s3";
@@ -263,6 +248,12 @@
 		regulator-min-microvolt = <1200000>;
 		regulator-max-microvolt = <1200000>;
 		vin-supply = <&vcc5v0_sys>;
+	};
+
+	gpio_init: gpio-init {
+		compatible = "regulator-fixed";
+		pinctrl-names = "default";
+		pinctrl-0 = <&gpio_init_pin>;
 	};
 };
 
@@ -363,7 +354,7 @@
 };
 
 &gpu {
-	mali-supply = <&vdd_gpu>;
+	mali-supply = <&vdd_logic>;
 	status = "okay";
 };
 
@@ -401,10 +392,6 @@
 };
 
 &mpp_srv {
-	status = "okay";
-};
-
-&pwm0 {
 	status = "okay";
 };
 
@@ -620,6 +607,13 @@
 	wireless-wlan {
 		wifi_host_wake_irq: wifi-host-wake-irq {
 			rockchip,pins = <1 RK_PA7 RK_FUNC_GPIO &pcfg_pull_down>;
+		};
+	};
+
+	gpio-init {
+		gpio_init_pin: gpio-init-pin {
+			rockchip,pins =
+				<4 RK_PC3 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 };
