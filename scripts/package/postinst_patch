@@ -26,6 +26,11 @@ board_info() {
 				BOARD_DTB='rk3528-lubancat-q1io.dtb'
 				BOARD_uEnv='uEnvLubanCatQ1IO.txt'
 				;;
+			0007)
+				BOARD_NAME='LubanCat-Q1IO-test'
+				BOARD_DTB='rk3528-lubancat-q1io-test.dtb'
+				BOARD_uEnv='uEnvLubanCatQ1IO-test.txt'
+				;;
 			*)
 				echo "Device ID Error !!!"
 				BOARD_NAME='LubanCat-RK3528'
