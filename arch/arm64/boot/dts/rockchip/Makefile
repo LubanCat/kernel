@@ -27,6 +27,7 @@ dtb-$(CONFIG_CPU_RK3568) += rk3566-lubancat-cm4.dtb
 
 dtb-$(CONFIG_CPU_RK3576) += rk3576-lubancat-generic.dtb
 dtb-$(CONFIG_CPU_RK3576) += rk3576-lubancat-3.dtb
+dtb-$(CONFIG_CPU_RK3576) += rk3576-lubancat-3-v2.dtb
 dtb-$(CONFIG_CPU_RK3576) += rk3576-lubancat-3io.dtb
 
 dtb-$(CONFIG_CPU_RK3588) += rk3588-lubancat-generic.dtb
