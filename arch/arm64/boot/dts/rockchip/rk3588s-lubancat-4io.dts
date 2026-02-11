@@ -79,6 +79,20 @@
 		};
 	};
 
+	adc_rec_keys: adc-rec-keys {
+		compatible = "adc-keys";
+		io-channels = <&saradc 1>;
+		io-channel-names = "buttons";
+		keyup-threshold-microvolt = <1800000>;
+		poll-interval = <100>;
+		
+		adc-rec-key {
+			label = "adc_rec_key";
+			linux,code = <250>;
+			press-threshold-microvolt = <1750>;
+		};
+	};
+
 	adc4-keys {
 		compatible = "adc-keys";
 		io-channels = <&saradc 4>;
