@@ -11,14 +11,14 @@
 
 // MIPI-DSI屏幕
 // MIPI-DSI0
-#include "rk3568-lubancat-2-v2-dsi0-vp1-1024x600-7inch-ebf410173.dtsi"
-#include "rk3568-lubancat-2-v2-dsi0-vp1-800x1280-10.1inch-ebf410177.dtsi"
-#include "rk3568-lubancat-2-v2-dsi0-vp1-1080x1920-5.5inch-ebf410125.dtsi"
+//#include "rk3568-lubancat-2-v2-dsi0-vp1-1024x600-7inch-ebf410173.dtsi"
+//#include "rk3568-lubancat-2-v2-dsi0-vp1-800x1280-10.1inch-ebf410177.dtsi"
+//#include "rk3568-lubancat-2-v2-dsi0-vp1-1080x1920-5.5inch-ebf410125.dtsi"
 
 // MIPI-DSI1
-#include "rk3568-lubancat-2-v2-dsi0-vp1-1024x600-7inch-ebf410173.dtsi"
-#include "rk3568-lubancat-2-v2-dsi0-vp1-800x1280-10.1inch-ebf410177.dtsi"
-#include "rk3568-lubancat-2-v2-dsi0-vp1-1080x1920-5.5inch-ebf410125.dtsi"
+//#include "rk3568-lubancat-2-v2-dsi0-vp1-1024x600-7inch-ebf410173.dtsi"
+//#include "rk3568-lubancat-2-v2-dsi0-vp1-800x1280-10.1inch-ebf410177.dtsi"
+//#include "rk3568-lubancat-2-v2-dsi0-vp1-1080x1920-5.5inch-ebf410125.dtsi"
 /* 注意：
 V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 如果需要MIPI-DSI+HDMI显示，
