@@ -9,7 +9,6 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3588-lubancat-i2c2-m0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-i2c3-m0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-i2c4-m3-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-i2c7-m3-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-i2c8-m2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-uart3-m0-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-uart1-m1-overlay.dtbo
