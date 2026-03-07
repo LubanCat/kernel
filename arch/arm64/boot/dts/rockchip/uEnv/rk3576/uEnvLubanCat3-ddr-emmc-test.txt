@@ -1,0 +1,28 @@
+uname_r=
+size=0x1000000
+cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
+
+enable_uboot_overlays=1
+#overlay_start
+
+# Display
+#vp0
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-hdmi-disabled-ovetlay.dtbo
+#vp1
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dp-disabled-ovetlay.dtbo
+#vp2
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-1024x600-7inch-ebf410173-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-1080x1920-5.5inch-ebf410125-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-1080x1920-5.5inch-ebf410125-v1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-800x1280-10.1inch-ebf410177-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-generic-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-dsi-vp2-virtual-screen-overlay.dtbo
+
+#overlay_end
+
+#auto-load screen plugins
+enable_gsdt_auto_load=1
+eeprom_addr=0x51
+i2c_devs=2
+gsdt_plugin0=/dtb/overlay/rk3576-lubancat-3-dsi-vp2-generic-overlay.dtbo
