@@ -160,6 +160,11 @@ board_info() {
 				BOARD_DTB='rk3576-lubancat-3-v2.dtb'
 				BOARD_uEnv='uEnvLubanCat3-V2.txt'
 				;;
+			0707)
+				BOARD_NAME='LubanCat-3-ddr-emmc-test'
+				BOARD_DTB='rk3576-lubancat-3-ddr-emmc-test.dtb'
+				BOARD_uEnv='uEnvLubanCat3-ddr-emmc-test.txt'
+				;;
 			*)
 				echo "Device ID Error !!!"
 				BOARD_NAME='LubanCat-RK3576'
