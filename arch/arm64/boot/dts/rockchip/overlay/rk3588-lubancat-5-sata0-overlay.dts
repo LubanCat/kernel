@@ -15,7 +15,6 @@
 
 		__overlay__ {
 			status = "okay";
-			vpcie3v3-supply = <&vcc3v3_pcie20>;
 		};
 	};
 };

@@ -92,6 +92,9 @@ dtoverlay=/dtb/overlay/rk3588-lubancat-5io-hdmi1-vp2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam5-gc2053-1920x1080-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-cam5-gc4653-2560x1440-30fps-overlay.dtbo
 
+# 开启sata2, mini pcie接口可接msata硬盘
+#dtoverlay=/dtb/overlay/rk3588-lubancat-5io-sata2-overlay.dtbo
+
 #overlay_end
 
 #auto-load screen plugins
