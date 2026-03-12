@@ -252,9 +252,9 @@
 		pinctrl-0 = <&usb20_host_pwr_en>;
 	};
 
-	minipcie_3v3: minipcie-3v3{
+	vcc3v3_pcie20: vcc3v3-pcie20 {
 		compatible = "regulator-fixed";
-		regulator-name = "minipcie_3v3";
+		regulator-name = "vcc3v3_pcie20";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		enable-active-high;
@@ -1446,7 +1446,7 @@
 &pcie2x1l2 {
 	reset-gpios = <&gpio3 RK_PD1 GPIO_ACTIVE_HIGH>;
 	disable-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>;
-	vpcie3v3-supply = <&minipcie_3v3>;
+	vpcie3v3-supply = <&vcc3v3_pcie20>;
 	status = "okay";
 };
 
