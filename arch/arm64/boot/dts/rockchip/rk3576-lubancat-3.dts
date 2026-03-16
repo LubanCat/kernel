@@ -629,6 +629,8 @@
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x0>;
 		clocks = <&cru REFCLKO25M_GMAC0_OUT>;
+
+		realtek,led-data = <0x6d60>;  //8211F phy
 	};
 };
 
@@ -637,6 +639,8 @@
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x0>;
 		clocks = <&cru REFCLKO25M_GMAC1_OUT>;
+
+		realtek,led-data = <0x6d60>;  //8211F phy
 	};
 };
 
