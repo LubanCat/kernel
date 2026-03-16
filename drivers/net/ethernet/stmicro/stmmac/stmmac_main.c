@@ -50,6 +50,8 @@
 #include "dwxgmac2.h"
 #include "hwif.h"
 
+#define RTL_8211F_PHY_ID  0x001cc916
+
 /* As long as the interface is active, we keep the timestamping counter enabled
  * with fine resolution and binary rollover. This avoid non-monotonic behavior
  * (clock jumps) when changing timestamping settings at runtime.
@@ -4085,6 +4087,43 @@ static void stmmac_flush_tx_descriptors(struct stmmac_priv *priv, int queue)
 	stmmac_set_tx_tail_ptr(priv, priv->ioaddr, tx_q->tx_tail_addr, queue);
 }
 
+static int phy_rtl8211f_led_fixup(struct phy_device *phydev)
+{
+	int value;
+	struct device_node *np = NULL;
+	u32 led_data = 0x6d60;
+	struct device_node *mdio_np = phydev->mdio.bus->dev.of_node;
+	struct device_node *child;
+	u32 addr;
+
+	for_each_available_child_of_node(mdio_np, child) {
+		if (!of_property_read_u32(child, "reg", &addr)) {
+			if (addr == phydev->mdio.addr) {
+				np = child;
+				break;
+			}
+		}
+	}
+
+	if (np){
+		of_property_read_u32(np, "realtek,led-data", &led_data);
+	}
+
+	value = phy_read(phydev, 31);
+	phy_write(phydev, 31, 0xd04);
+
+	mdelay(10);
+	value = phy_read(phydev, 16);
+	value =led_data;
+	phy_write(phydev, 16, value);
+
+	mdelay(10);
+	phy_read(phydev, 31);
+	phy_write(phydev, 31, 0x00);
+
+	return 0;
+}
+
 /**
  *  stmmac_tso_xmit - Tx entry point of the driver for oversized frames (TSO)
  *  @skb : the socket buffer
@@ -7345,6 +7384,11 @@ int stmmac_dvr_probe(struct device *device,
 	if (ret) {
 		netdev_err(ndev, "failed to setup phy (%d)\n", ret);
 		goto error_phy_setup;
+	}
+
+	ret = phy_register_fixup_for_uid(RTL_8211F_PHY_ID, 0xffffffff, phy_rtl8211f_led_fixup);
+	if (ret) {
+		pr_warn("Cannot register 8211f PHY board fixup.\n");
 	}
 
 	ret = register_netdev(ndev);
