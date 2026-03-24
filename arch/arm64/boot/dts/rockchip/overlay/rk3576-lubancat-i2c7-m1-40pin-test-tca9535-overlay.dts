@@ -12,7 +12,7 @@
 		__overlay__ {
 			status = "okay";
 			pinctrl-names = "default";
-			pinctrl-0 = <&i2c7m1_xfer>;
+			pinctrl-0 = <&i2c7m1_xfer_drv_level_2>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 
@@ -28,6 +28,22 @@
 				reg = <0x27>;
 				gpio-controller;
 				#gpio-cells = <2>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&pinctrl>;
+
+		__overlay__ {
+		i2c7-drv-level-2 {
+			i2c7m1_xfer_drv_level_2: i2c7m1-xfer-drv-level_2 {
+				rockchip,pins =
+					/* i2c7_scl_m1 */
+					<3 RK_PA0 11 &pcfg_pull_none_drv_level_2_smt>,
+					/* i2c7_sda_m1 */
+					<3 RK_PA1 11 &pcfg_pull_none_drv_level_2_smt>;
+				};
 			};
 		};
 	};
