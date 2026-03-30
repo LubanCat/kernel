@@ -84,6 +84,21 @@ deploy_kernel_headers () {
 	tar -c -f - -T debian/hdrobjfiles | tar -xf - -C $destdir
 	rm -f debian/hdrsrcfiles debian/hdrobjfiles
 
+	if is_enabled CONFIG_ARCH_ROCKCHIP; then
+		host_arch=$(uname -m)
+
+		case "$host_arch" in
+			x86_64) host_arch=amd64 ;;
+			aarch64) host_arch=arm64 ;;
+		esac
+
+		if [ "$host_arch" != "$ARCH" ]; then
+			if [ -d "$srctree/linux-kbuild/$ARCH" ]; then
+				tar -c -f - -C "$srctree/linux-kbuild/$ARCH" . | tar -xf - -C "$destdir"
+			fi
+		fi
+	fi
+
 	# copy .config manually to be where it's expected to be
 	cp $KCONFIG_CONFIG $destdir/.config
 
