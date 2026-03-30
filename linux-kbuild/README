@@ -1,0 +1,9 @@
+Rockchip prebuilt kbuild (static linked) and scripts
+
+Debian package files come from specific tag in:
+https://salsa.debian.org/kernel-team/linux
+
+Prebuilt in Debian bullseye armhf/aarch64 rootfs.
+
+Glibc's libc.a is patched with upstream fix:
+ce1e5b1122 arm: Guard ucontext _rtld_global_ro access by SHARED, not PIC macro
