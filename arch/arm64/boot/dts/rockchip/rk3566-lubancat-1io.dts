@@ -307,7 +307,7 @@
 		regulator-always-on;
 	};
 
-	adc_key_1: adc-key-1 {
+	adc_rec_keys: adc-rec-keys {
 		compatible = "adc-keys";
 		io-channels = <&saradc 0>;
 		io-channel-names = "buttons";
@@ -315,9 +315,9 @@
 		poll-interval = <100>;
 
 		up-key {
-			label = "up";
-			linux,code = <KEY_UP>;
-			press-threshold-microvolt = <9>;
+			label = "adc_rec_key";
+			linux,code = <250>;
+			press-threshold-microvolt = <1750>;
 		};
 	};
 

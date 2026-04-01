@@ -316,7 +316,7 @@
 		>;
 	};
 
-	adc_keys: adc-keys {
+	adc_rec_keys: adc-rec-keys {
 		compatible = "adc-keys";
 		io-channels = <&saradc 0>;
 		io-channel-names = "buttons";
@@ -324,9 +324,9 @@
 		poll-interval = <100>;
 
 		restart-key {
-			label = "restart";
-			linux,code = <KEY_RESTART>;
-			press-threshold-microvolt = <9>;
+			label = "adc_rec_key";
+			linux,code = <250>;
+			press-threshold-microvolt = <1750>;
 		};
 	};
 
