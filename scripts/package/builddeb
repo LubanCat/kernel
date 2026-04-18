@@ -147,11 +147,6 @@ if grep -q '^CONFIG_BLK_DEV_INITRD=y' $KCONFIG_CONFIG; then
 else
 	want_initrd=No
 fi
-
-if grep -q "^CONFIG_ARCH_ROCKCHIP=y" $KCONFIG_CONFIG ; then
-	want_initrd=No
-fi
-
 for script in postinst postrm preinst prerm ; do
 	mkdir -p "$tmpdir$debhookdir/$script.d"
 	cat <<EOF > "$tmpdir/DEBIAN/$script"
