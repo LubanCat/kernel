@@ -199,6 +199,7 @@ if is_enabled CONFIG_ARCH_ROCKCHIP; then
 	main_version=$(echo "${version}" | cut -d'.' -f1,2)
 	sed -i "s/^uname_r=.*/uname_r=${version}/" $tmpdir/boot/uEnv/uEnv*.txt
 	sed -i "/^uname_r=.*/a initrd=initrd-${main_version}" $tmpdir/boot/uEnv/uEnv*.txt
+	ln -sf Image-$version $tmpdir/boot/Image
 fi
 
 if is_enabled CONFIG_MODULES; then
