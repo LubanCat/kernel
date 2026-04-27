@@ -7,11 +7,4 @@
 /dts-v1/;
 
 
-#include "rk3588-lubancat-5io.dts"
-// #include "rk3588j.dtsi"
-
-/ {
-	/* RK3588 LubanCat-5IO Industrial */
-	model = "Embedfire LubanCat-5IOI";
-	compatible = "rockchip,rk3588-lubancat-5ioi", "rockchip,rk3588";
-};
+#include "rk3588-lubancat-5iobi.dts"
