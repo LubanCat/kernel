@@ -206,18 +206,23 @@ board_info() {
 				;;
 			0501)
 				BOARD_NAME='LubanCat-5IOF'
-				BOARD_DTB='rk3588-lubancat-5io.dtb'
-				BOARD_uEnv='uEnvLubanCat5IO.txt'
+				BOARD_DTB='rk3588-lubancat-5iof.dtb'
+				BOARD_uEnv='uEnvLubanCat5IOF.txt'
 				;;
 			0601)
 				BOARD_NAME='LubanCat-5IOB'
-				BOARD_DTB='rk3588-lubancat-5io.dtb'
-				BOARD_uEnv='uEnvLubanCat5IO.txt'
+				BOARD_DTB='rk3588-lubancat-5iob.dtb'
+				BOARD_uEnv='uEnvLubanCat5IOB.txt'
 				;;
 			0701)
 				BOARD_NAME='LubanCat-5IOBI'
-				BOARD_DTB='rk3588-lubancat-5ioi.dtb'
-				BOARD_uEnv='uEnvLubanCat5IO.txt'
+				BOARD_DTB='rk3588-lubancat-5iobi.dtb'
+				BOARD_uEnv='uEnvLubanCat5IOB.txt'
+				;;
+			0001)
+				BOARD_NAME='LubanCat-5IOFI'
+				BOARD_DTB='rk3588-lubancat-5iofi.dtb'
+				BOARD_uEnv='uEnvLubanCat5IOF.txt'
 				;;
 			*)
 				echo "Device ID Error !!!"
