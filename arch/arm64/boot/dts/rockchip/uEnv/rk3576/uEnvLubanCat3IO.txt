@@ -16,7 +16,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3576-lubancat-pwm2-ch3-m3-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-pwm2-ch6-m3-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-pwm2-ch7-m3-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3576-lubancat-spi1-m0-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3576-lubancat-3io-spi1-m0-overlay.dtbo
 #RS485
 #dtoverlay=/dtb/overlay/rk3576-lubancat-uart3-m1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3576-lubancat-uart5-m0-overlay.dtbo

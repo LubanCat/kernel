@@ -252,6 +252,7 @@ dtbo-$(CONFIG_CPU_RK3576) += \
 	rk3576-lubancat-3-dsi-vp2-800x1280-10.1inch-s8001280b1060b-overlay.dtbo \
 	rk3576-lubancat-3-dsi-vp2-generic-overlay.dtbo \
 	rk3576-lubancat-3-xl9535-overlay.dtbo \
+	rk3576-lubancat-3io-spi1-m0-overlay.dtbo \
 	rk3576-lubancat-3io-rs485-1-overlay.dtbo \
 	rk3576-lubancat-3io-rs485-2-overlay.dtbo
 
