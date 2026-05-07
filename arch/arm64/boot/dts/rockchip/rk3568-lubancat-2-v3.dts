@@ -34,13 +34,25 @@
 };
 
 &gmac0 {
-	tx_delay = <0x42>;
-	rx_delay = <0x34>;
+	tx_delay = <0x25>;
+	rx_delay = <0x01>;
+
+	jl2xxx,tx-delay = <0x08>;
+	jl2xxx,rx-delay = <0x01>;
+
+	rtl8211f,tx-delay = <0x25>;
+	rtl8211f,rx-delay = <0x01>;
 };
 
 &gmac1 {
-	tx_delay = <0x4a>;
-	rx_delay = <0x31>;
+	tx_delay = <0x25>;
+	rx_delay = <0x01>;
+
+	jl2xxx,tx-delay = <0x08>;
+	jl2xxx,rx-delay = <0x01>;
+
+	rtl8211f,tx-delay = <0x25>;
+	rtl8211f,rx-delay = <0x01>;
 };
 
 &sys_led {

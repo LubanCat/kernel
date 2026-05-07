@@ -518,11 +518,14 @@
 	&gmac1m1_rgmii_clk_level2
 	&gmac1m1_rgmii_bus_level3>;
 
-	// tx_delay = <0x1a>;
-	// rx_delay = <0x0c>;
-
-	tx_delay = <0x20>;
+	tx_delay = <0x25>;
 	rx_delay = <0x01>;
+
+	jl2xxx,tx-delay = <0x08>;
+	jl2xxx,rx-delay = <0x01>;
+
+	rtl8211f,tx-delay = <0x25>;
+	rtl8211f,rx-delay = <0x01>;
 
 	phy-handle = <&rgmii_phy1>;
 	status = "okay";
