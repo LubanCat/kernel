@@ -29,6 +29,10 @@
 #include "stmmac_platform.h"
 #include "dwmac-rk-tool.h"
 
+#define JL2XXX_PHY_ID		0x937c4032
+#define RTL8211F_PHY_ID		0x001cc916
+#define PHY_ID_DELAY_ENABLE	1
+
 #define MAX_ETH		2
 
 struct rk_priv_data;
@@ -2974,6 +2978,79 @@ static void rk_fix_speed(void *priv, unsigned int speed)
 {
 	struct rk_priv_data *bsp_priv = priv;
 	struct device *dev = &bsp_priv->pdev->dev;
+
+/* Obtain delay based on PHY ID */
+#if PHY_ID_DELAY_ENABLE
+	struct net_device *ndev = dev_get_drvdata(dev);
+	struct phy_device *phydev = ndev->phydev;
+	u32 value;
+	int ret;
+	bool has_delay_prop = false;
+	int old_tx_delay = bsp_priv->tx_delay;
+	int old_rx_delay = bsp_priv->rx_delay;
+	u32 phy_id;
+	const char *phy_name = NULL;
+
+	if (phydev) {
+		phy_id = phydev->phy_id;
+		dev_info(dev, "Detected PHY ID: 0x%08x\n", phy_id);
+
+		switch (phy_id) {
+		case JL2XXX_PHY_ID:
+			phy_name = "JL2XXX";
+			ret = of_property_read_u32(dev->of_node, "jl2xxx,tx-delay", &value);
+			if (!ret) {
+				bsp_priv->tx_delay = value;
+				has_delay_prop = true;
+			} else {
+				bsp_priv->tx_delay = -1;
+			}
+
+			ret = of_property_read_u32(dev->of_node, "jl2xxx,rx-delay", &value);
+			if (!ret) {
+				bsp_priv->rx_delay = value;
+				has_delay_prop = true;
+			} else {
+				bsp_priv->rx_delay = -1;
+			}
+			break;
+
+		case RTL8211F_PHY_ID:
+			phy_name = "RTL8211F";
+			ret = of_property_read_u32(dev->of_node, "rtl8211f,tx-delay", &value);
+			if (!ret) {
+				bsp_priv->tx_delay = value;
+				has_delay_prop = true;
+			} else {
+				bsp_priv->tx_delay = -1;
+			}
+
+			ret = of_property_read_u32(dev->of_node, "rtl8211f,rx-delay", &value);
+			if (!ret) {
+				bsp_priv->rx_delay = value;
+				has_delay_prop = true;
+			} else {
+				bsp_priv->rx_delay = -1;
+			}
+			break;
+
+		default:
+			bsp_priv->tx_delay = old_tx_delay;
+			bsp_priv->rx_delay = old_rx_delay;
+			has_delay_prop = false;
+			break;
+		}
+
+		if (bsp_priv->ops && bsp_priv->ops->set_to_rgmii && has_delay_prop && phy_name) {
+			dev_info(dev, "%s TX delay(0x%x).\n", phy_name, bsp_priv->tx_delay);
+			dev_info(dev, "%s RX delay(0x%x).\n", phy_name, bsp_priv->rx_delay);
+			bsp_priv->ops->set_to_rgmii(bsp_priv, bsp_priv->tx_delay, bsp_priv->rx_delay);
+		} else {
+			bsp_priv->tx_delay = old_tx_delay;
+			bsp_priv->rx_delay = old_rx_delay;
+		}
+	}
+#endif
 
 	switch (bsp_priv->phy_iface) {
 	case PHY_INTERFACE_MODE_RGMII:
