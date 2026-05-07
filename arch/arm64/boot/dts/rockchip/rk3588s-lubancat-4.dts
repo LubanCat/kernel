@@ -1292,6 +1292,13 @@
 	tx_delay = <0x1b>;
 	/* rx_delay = <0x00>; */
 
+	jl2xxx,tx-delay = <0x01>;
+	jl2xxx,rx-delay = <0x01>;
+
+	rtl8211f,tx-delay = <0x1b>;
+	/* rtl8211f,rx-delay = <0x01>; */
+
+
 	phy-handle = <&rgmii_phy1>;
 	status = "okay";
 };

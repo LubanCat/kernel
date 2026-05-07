@@ -1354,6 +1354,12 @@
 	tx_delay = <0x26>;
 	/* rx_delay = <0x4f>; */
 
+	jl2xxx,tx-delay = <0x01>;
+	jl2xxx,rx-delay = <0x01>;
+
+	rtl8211f,tx-delay = <0x26>;
+	/* rtl8211f,rx-delay = <0x4f>; */
+
 	phy-handle = <&rgmii_phy0>;
 	status = "okay";
 };
@@ -1377,6 +1383,12 @@
 
 	tx_delay = <0x30>;
 	/* rx_delay = <0x4f>; */
+
+	jl2xxx,tx-delay = <0x01>;
+	jl2xxx,rx-delay = <0x01>;
+
+	rtl8211f,tx-delay = <0x30>;
+	/* rtl8211f,rx-delay = <0x4f>; */
 
 	phy-handle = <&rgmii_phy1>;
 	status = "okay";
