@@ -1340,13 +1340,14 @@
 			 &gmac1m1_rgmii_clk
 			 &gmac1m1_rgmii_bus>;
 
-	/* RTL8211F */	
-	// tx_delay = <0x1c>;
-	// rx_delay = <0x0c>;
-
-	/* JL2101 */
 	tx_delay = <0x22>;
 	rx_delay = <0x07>;
+
+	jl2xxx,tx-delay = <0x01>;
+	jl2xxx,rx-delay = <0x01>;
+
+	rtl8211f,tx-delay = <0x22>;
+	rtl8211f,rx-delay = <0x07>;
 
 	phy-handle = <&rgmii_phy1>;
 	status = "okay";

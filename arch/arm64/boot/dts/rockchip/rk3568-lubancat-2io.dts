@@ -775,6 +775,13 @@
 	snps,reset-gpio = <&gpio1 RK_PA1 GPIO_ACTIVE_LOW>;
 	tx_delay = <0x04>;
 	rx_delay = <0x03>;
+
+	jl2xxx,tx-delay = <0x01>;
+	// jl2xxx,rx-delay = <0x01>;
+
+	rtl8211f,tx-delay = <0x20>;
+	rtl8211f,rx-delay = <0x01>;
+
 	status = "okay";
 };
 
@@ -782,6 +789,13 @@
 	snps,reset-gpio = <&gpio0 RK_PC7 GPIO_ACTIVE_LOW>;
 	tx_delay = <0x15>;
 	rx_delay = <0x00>;
+
+	jl2xxx,tx-delay = <0x01>;
+	// jl2xxx,rx-delay = <0x01>;
+
+	rtl8211f,tx-delay = <0x20>;
+	rtl8211f,rx-delay = <0x01>;
+
 	status = "okay";
 };
 
