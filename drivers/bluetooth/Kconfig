@@ -234,7 +234,7 @@ config BT_AICBTUSB
 config BT_RTKBTUSB
     tristate "RTK HCI USB driver" 
     depends on USB
-    default y
+    default n
     help
       RTK Bluetooth HCI USB driver
 
