@@ -215,9 +215,7 @@
 		regulator-name = "vcc3v3_m2_pcie";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		regulator-always-on;
 		enable-active-high;
-		regulator-boot-on;
 		gpio = <&gpio7 6 GPIO_ACTIVE_HIGH>;
 		vin-supply = <&vcc12v_dcin>;
 	};
@@ -227,9 +225,7 @@
 		regulator-name = "vcc3v3_pciex4";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		regulator-always-on;
 		enable-active-high;
-		regulator-boot-on;
 		gpio = <&gpio7 7 GPIO_ACTIVE_HIGH>;
 		vin-supply = <&vcc12v_dcin>;
 	};
@@ -251,9 +247,7 @@
 		regulator-name = "vcc3v3_ekey_pcie";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		regulator-always-on;
 		enable-active-high;
-		regulator-boot-on;
 		gpio = <&gpio0 RK_PB7 GPIO_ACTIVE_HIGH>;
 		vin-supply = <&vcc12v_dcin>;
 		pinctrl-names = "default";
