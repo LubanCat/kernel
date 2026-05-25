@@ -266,7 +266,7 @@
 		regulator-always-on;
 		enable-active-high;
 		regulator-boot-on;
-		gpio = <&gpio4 8 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio7 8 GPIO_ACTIVE_HIGH>;
 		vin-supply = <&vcc12v_dcin>;
 	};
 
