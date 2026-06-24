@@ -1,0 +1,35 @@
+uname_r=4.19.232
+size=0x1000000
+cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 rootwait rw rootfstype=ext4"
+
+enable_uboot_overlays=1
+#overlay_start
+
+#display
+#dtoverlay=/dtb/overlay/rk3568-lubancat-hdmi-disabled-overlay.dtbo
+#dsi0-vp1
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-rpi-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-7.0-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-10.1-800x1280-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-generic-overlay.dtbo
+#dsi1-vp0
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-1080p-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-rpi-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-7.0-1024x600-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-10.1-800x1280-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-800x1280-10.1inch-s8001280b1060b-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-generic-overlay.dtbo
+#edp
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2io-edp-in-vp1-overlay.dtbo
+#cam(mipi-csi)
+#dtoverlay=/dtb/overlay/rk3568-lubancat2io-test-csi-imx415-overlay.dtbo
+#overlay_end
+
+#auto-load screen plugins
+enable_gsdt_auto_load=1
+eeprom_addr=0x51
+i2c_devs=1 5
+gsdt_plugin0=/dtb/overlay/rk3568-lubancat-2-dsi0-in-vp1-generic-overlay.dtbo
+gsdt_plugin1=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-generic-overlay.dtbo

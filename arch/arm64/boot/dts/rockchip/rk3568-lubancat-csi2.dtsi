@@ -27,6 +27,33 @@
 	};
 };
 
+&i2c0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	imx415_test: imx415-test@1a {
+		status = "disabled";
+		compatible = "sony,imx415";
+		reg = <0x1a>;
+		clocks = <&ext_cam_37m_clk>;
+		clock-names = "xvclk";
+		pwdn-gpios = <&gpio2 RK_PD2 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_LOW>;
+		power-domains = <&power RK3568_PD_VI>;
+		rockchip,camera-module-index = <0>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "CMK-OT1522-FG3";
+		rockchip,camera-module-lens-name = "CS-P1150-IRC-8M-FAU";
+		port {
+			imx415_out1: endpoint {
+				remote-endpoint = <&dphy0_in_imx415_test>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
+};
+
 &i2c1 {
 	status = "disabled";
 	// ov5648 Camare
@@ -348,6 +375,12 @@
 			dphy0_in_gc4653: endpoint@a {
 				reg = <0xa>;
 				remote-endpoint = <&gc4653_out>;
+				data-lanes = <1 2>;
+			};
+
+			dphy0_in_imx415_test: endpoint@b {
+				reg = <0xb>;
+				remote-endpoint = <&imx415_out1>;
 				data-lanes = <1 2>;
 			};
 		};
