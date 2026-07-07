@@ -147,10 +147,20 @@ board_info() {
 				BOARD_DTB='rk3588-lubancat-5iob.dtb'
 				BOARD_uEnv='uEnvLubanCat5IOB.txt'
 				;;
+			0607)
+				BOARD_NAME='LubanCat-5IOB-test'
+				BOARD_DTB='rk3588-lubancat-5iob-test.dtb'
+				BOARD_uEnv='uEnvLubanCat5IOB-test.txt'
+				;;
 			0701)
 				BOARD_NAME='LubanCat-5IOBI'
 				BOARD_DTB='rk3588-lubancat-5iobi.dtb'
 				BOARD_uEnv='uEnvLubanCat5IOB.txt'
+				;;
+			0707)
+				BOARD_NAME='LubanCat-5IOB-test'
+				BOARD_DTB='rk3588-lubancat-5iob-test.dtb'
+				BOARD_uEnv='uEnvLubanCat5IOB-test.txt'
 				;;
 			0001)
 				BOARD_NAME='LubanCat-5IOFI'
