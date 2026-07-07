@@ -175,6 +175,44 @@ dtbo-$(CONFIG_CPU_RK3588) += \
 	rk3588-lubancat-5io-cam3-imx415-1920x1080-60fps-overlay.dtbo \
 	rk3588-lubancat-5io-cam4-imx415-1920x1080-60fps-overlay.dtbo \
 	rk3588-lubancat-5io-cam5-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-dsi0-vp2-1080x1920-5.5inch-ebf410125-overlay.dtbo \
+	rk3588-lubancat-5io-test-dsi0-vp2-1024x600-7inch-ebf410173-overlay.dtbo \
+	rk3588-lubancat-5io-test-dsi0-vp2-800x1280-10.1inch-ebf410177-overlay.dtbo \
+	rk3588-lubancat-5io-test-dsi0-vp2-800x1280-10.1inch-s8001280b1060b-overlay.dtbo \
+	rk3588-lubancat-5io-test-dsi0-vp2-generic-overlay.dtbo \
+	rk3588-lubancat-5io-test-dsi1-vp3-1080x1920-5.5inch-ebf410125-overlay.dtbo \
+	rk3588-lubancat-5io-test-dsi1-vp3-1024x600-7inch-ebf410173-overlay.dtbo \
+	rk3588-lubancat-5io-test-dsi1-vp3-800x1280-10.1inch-ebf410177-overlay.dtbo \
+	rk3588-lubancat-5io-test-dsi1-vp3-800x1280-10.1inch-s8001280b1060b-overlay.dtbo \
+	rk3588-lubancat-5io-test-dsi1-vp3-generic-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam0-imx415-3840x2160-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam0-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam0-ov8858-3264x2448-15fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam0-ov8858-1632x1224-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam0-gc08a8-3264x2448-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam0-gc2053-1920x1080-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam0-gc4653-2560x1440-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam1-imx415-3840x2160-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam1-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam1-ov8858-3264x2448-15fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam1-ov8858-1632x1224-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam1-gc08a8-3264x2448-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam1-gc2053-1920x1080-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam1-gc4653-2560x1440-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam2-imx415-3840x2160-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam2-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam2-ov8858-3264x2448-15fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam2-ov8858-1632x1224-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam2-gc08a8-3264x2448-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam2-gc2053-1920x1080-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam2-gc4653-2560x1440-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam3-imx415-3840x2160-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam3-imx415-1920x1080-60fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam3-ov8858-3264x2448-15fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam3-ov8858-1632x1224-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam3-gc08a8-3264x2448-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam3-gc2053-1920x1080-30fps-overlay.dtbo \
+	rk3588-lubancat-5io-test-cam3-gc4653-2560x1440-30fps-overlay.dtbo \
 	rk3588s-lubancat-4-dsi0-vp2-800x1280-10.1inch-ebf410177-overlay.dtbo \
 	rk3588s-lubancat-4-dsi0-vp2-800x1280-10.1inch-s8001280b1060b-overlay.dtbo \
 	rk3588s-lubancat-4-dsi0-vp2-1024x600-7inch-ebf410173-overlay.dtbo \
