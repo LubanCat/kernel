@@ -3304,7 +3304,7 @@ static int imx415_probe(struct i2c_client *client,
 	ret = of_property_read_u32(node, DATA_LANES, &lanes);
 	if (ret) {
 		lanes = 2;
-		dev_warn(dev, " Get data lanes failed! 4 lanes default\n");
+		dev_warn(dev, " Get data lanes failed! 2 lanes default\n");
 	}
 	imx415->lanes = lanes;
 	if (imx415->lanes == IMX415_4LANES) {
