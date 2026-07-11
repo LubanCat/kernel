@@ -1,0 +1,102 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&imx415>;
+		__overlay__ {
+			status = "okay";
+            rockchip,imx415-data-lanes= <4>;
+		};
+	};
+
+	fragment@2 {
+		target = <&imx415_out>;
+		__overlay__ {
+			remote-endpoint = <&dphy0_in_imx415>;
+			data-lanes = <1 2 3 4>;
+		};
+	};
+
+	fragment@3 {
+		target = <&csi2_dphy0>;
+		__overlay__ {
+			status = "okay"; 
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@0 {
+					reg = <0>;
+					#address-cells = <1>;
+					#size-cells = <0>;
+
+					dphy0_in_imx415: endpoint@6 {
+						reg = <6>;
+						remote-endpoint = <&imx415_out>;
+						data-lanes = <1 2 3 4>;
+					};
+				};
+
+				port@1 {
+					reg = <1>;
+					#address-cells = <1>;
+					#size-cells = <0>;
+
+					dphy0_out: endpoint@1 {
+						reg = <1>;
+						remote-endpoint = <&isp0_in>;
+					};
+				};
+			};
+		};
+	};
+
+	fragment@4 {
+		target = <&csi2_dphy1>;
+		__overlay__ {
+			status = "disabled"; 
+		};
+	};
+
+	fragment@5 {
+		target = <&csi2_dphy2>;
+		__overlay__ {
+			status = "disabled"; 
+		};
+	};
+
+	fragment@6 {
+		target = <&rkisp>;
+		__overlay__ {
+			status = "okay"; 
+			/delete-property/ max-input;
+		};
+	};
+
+	fragment@7 {
+		target = <&rkisp_vir0>;
+		__overlay__ {
+			status = "okay"; 
+
+			port {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				isp0_in: endpoint@0 {
+					reg = <0>;
+					// csi2 dphy端的 port名
+					remote-endpoint = <&dphy0_out>;
+				};
+			};
+		};
+	};
+};

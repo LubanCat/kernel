@@ -93,6 +93,7 @@ dtbo-$(CONFIG_CPU_RK3568) += \
 	rk3566-lubancat-1io-test-csi0-imx415-overlay.dtbo \
 	rk3566-lubancat-1io-csi0-sc530ai-overlay.dtbo \
 	rk3566-lubancat-1io-csi1-sc530ai-overlay.dtbo \
+	rk3566-lubancat-1io-csi0-imx415-4lane-overlay.dtbo \
 	rk3566-lubancat-dsi0-7.0-1024x600-overlay.dtbo \
 	rk3566-lubancat-dsi0-10.1-800x1280-overlay.dtbo \
 	rk3566-lubancat-dsi0-720p-overlay.dtbo \
