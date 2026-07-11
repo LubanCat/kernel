@@ -58,7 +58,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-gc2053-1920x1080-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-gc4653-2560x1440-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-imx415-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3568-lubancat2-csi0-sc530ai-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3568-lubancat-2-csi0-sc530ai-overlay.dtbo
 
 #overlay_end
 

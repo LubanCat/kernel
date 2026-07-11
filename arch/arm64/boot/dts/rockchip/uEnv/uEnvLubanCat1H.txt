@@ -31,12 +31,12 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-gc2053-1920x1080-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-gc4653-2560x1440-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-imx415-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3566-lubancat1h-csi0-sc530ai-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1h-csi0-sc530ai-overlay.dtbo
 #cam1(mipi-csi1)
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi1-ov5647-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi1-ov8858-3264x2448-15fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi1-ov8858-1632x1224-30fps-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3566-lubancat1h-csi1-sc530ai-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-1h-csi1-sc530ai-overlay.dtbo
 
 #overlay_end
 

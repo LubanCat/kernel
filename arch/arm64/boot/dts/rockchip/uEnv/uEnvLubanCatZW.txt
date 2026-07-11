@@ -49,7 +49,7 @@ dtoverlay=/dtb/overlay/rk356x-lubancat-gmac1-disabled-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-gc2053-1920x1080-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-gc4653-2560x1440-30fps-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk356x-lubancat-csi0-imx415-4lane-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3566-lubancat0-csi0-sc530ai-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3566-lubancat-0-csi0-sc530ai-overlay.dtbo
 
 #overlay_end
 
