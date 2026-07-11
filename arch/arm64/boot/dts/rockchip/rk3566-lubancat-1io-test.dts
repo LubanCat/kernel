@@ -557,8 +557,15 @@
 
 &gmac1 {
 	snps,reset-gpio = <&gpio0 RK_PA6 GPIO_ACTIVE_LOW>;
-    tx_delay = <0x15>;
+    tx_delay = <0x01>;
     rx_delay = <0x01>;
+
+	jl2xxx,tx-delay = <0x01>;
+	jl2xxx,rx-delay = <0x01>;
+
+	rtl8211f,tx-delay = <0x20>;
+	rtl8211f,rx-delay = <0x01>;
+
 	status = "okay";
 };
 
