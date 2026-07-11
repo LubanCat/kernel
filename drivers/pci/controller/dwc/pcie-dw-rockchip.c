@@ -118,8 +118,6 @@
 	((ltssm & PORT_LOGIC_LTSSM_STATE_MASK) == 0x15)
 #define RK_PCIE_ENUM_HW_RETRYIES	2
 
-#define	PORT_LOGIC_LTSSM_L2
-
 struct rk_pcie {
 	struct dw_pcie			*pci;
 	void __iomem			*dbi_base;
@@ -575,13 +573,16 @@ static int rk_pcie_init_dma_trx(struct rk_pcie *rk_pcie)
 	if (!rk_pcie_udma_enabled(rk_pcie))
 		return 0;
 
-	rk_pcie->dma_obj = pcie_dw_dmatest_register(rk_pcie->pci->dev, true);
-	if (IS_ERR(rk_pcie->dma_obj)) {
-		dev_err(rk_pcie->pci->dev, "failed to prepare dmatest\n");
-		return -EINVAL;
-	} else if (!rk_pcie->dma_obj) { /* !CONFIG_ROCKCHIP_PCIE_DMA_OBJ */
-		return 0;
+	if (IS_ENABLED(CONFIG_PCIE_DW_ROCKCHIP_RC_DMATEST)) {
+		rk_pcie->dma_obj = pcie_dw_dmatest_register(rk_pcie->pci->dev, true);
+		if (IS_ERR(rk_pcie->dma_obj)) {
+			dev_err(rk_pcie->pci->dev, "failed to prepare dmatest\n");
+			return -EINVAL;
+		}
 	}
+
+	if (!rk_pcie->dma_obj)
+		return 0;
 
 	/* Enable client write and read interrupt */
 	rk_pcie_writel_apb(rk_pcie, PCIE_CLIENT_INTR_MASK, 0xc000000);
@@ -932,14 +933,21 @@ static const struct dw_pcie_ops dw_pcie_ops = {
 	.link_up = rk_pcie_link_up,
 };
 
-static void rk_pcie_fast_link_setup(struct rk_pcie *rk_pcie)
+static void rk_pcie_fast_link_setup(struct rk_pcie *rk_pcie, bool enable_dly2_en)
 {
 	u32 val;
 
 	/* LTSSM EN ctrl mode */
 	val = rk_pcie_readl_apb(rk_pcie, PCIE_CLIENT_HOT_RESET_CTRL);
-	val |= (PCIE_LTSSM_ENABLE_ENHANCE | PCIE_LTSSM_APP_DLY2_EN)
-		| ((PCIE_LTSSM_APP_DLY2_EN | PCIE_LTSSM_ENABLE_ENHANCE) << 16);
+	val |= PCIE_LTSSM_ENABLE_ENHANCE | (PCIE_LTSSM_ENABLE_ENHANCE << 16);
+
+	if (enable_dly2_en) {
+		val |= PCIE_LTSSM_APP_DLY2_EN | (PCIE_LTSSM_APP_DLY2_EN << 16);
+	} else {
+		val &= ~PCIE_LTSSM_APP_DLY2_EN;
+		val |= PCIE_LTSSM_APP_DLY2_EN << 16;
+	}
+
 	rk_pcie_writel_apb(rk_pcie, PCIE_CLIENT_HOT_RESET_CTRL, val);
 }
 
@@ -1341,7 +1349,7 @@ static int rk_pcie_slot_enable(struct gpio_hotplug_slot *slot)
 	dev_info(rk_pcie->pci->dev, "%s\n", __func__);
 	rk_pcie->hp_no_link = true;
 	rk_pcie_enable_power(rk_pcie);
-	rk_pcie_fast_link_setup(rk_pcie);
+	rk_pcie_fast_link_setup(rk_pcie, true);
 	ret = rk_pcie_establish_link(rk_pcie->pci);
 	if (ret)
 		dev_err(rk_pcie->pci->dev, "fail to enable slot\n");
@@ -1496,6 +1504,7 @@ static int rk_pcie_hardware_io_config(struct rk_pcie *rk_pcie)
 
 	phy_power_on(rk_pcie->phy);
 
+	/* Release resets after PHY is working */
 	reset_control_deassert(rk_pcie->rsts);
 
 	ret = phy_calibrate(rk_pcie->phy);
@@ -1520,14 +1529,26 @@ disable_vpcie3v3:
 
 static int rk_pcie_hardware_io_unconfig(struct rk_pcie *rk_pcie)
 {
+	/*
+	 * PCI Express Card Electromechanical Specification Revision 3.0
+	 * 2.2.3. Power Down
+	 * 3.3V/12V    _________________________________
+	 *                                              \__________
+	 * PERST#      ______________
+	 *                           \_____________________________
+	 * REFCLK      _________________________
+	 *                                      \__________________
+	 * LINK        ______
+	 *                   \_____________________________________
+	 */
+	if (rk_pcie_check_keep_power_in_suspend(rk_pcie))
+		gpiod_set_value_cansleep(rk_pcie->rst_gpio, 0);
 	phy_power_off(rk_pcie->phy);
 	phy_exit(rk_pcie->phy);
 	clk_bulk_disable_unprepare(rk_pcie->clk_cnt, rk_pcie->clks);
 	reset_control_assert(rk_pcie->rsts);
-	if (rk_pcie_check_keep_power_in_suspend(rk_pcie)) {
+	if (rk_pcie_check_keep_power_in_suspend(rk_pcie))
 		rk_pcie_disable_power(rk_pcie);
-		gpiod_set_value_cansleep(rk_pcie->rst_gpio, 1);
-	}
 
 	return 0;
 }
@@ -1568,12 +1589,21 @@ static int rk_pcie_host_config(struct rk_pcie *rk_pcie)
 
 	/* Enable L0s capability */
 	if (rk_pcie->linkcap_off) {
+		pci->n_fts[0] = 255; /* Gen1 */
+		pci->n_fts[1] = 255; /* Gen2+ */
 		val = dw_pcie_readl_dbi(rk_pcie->pci, rk_pcie->linkcap_off);
 		val |= PCI_EXP_LNKCAP_ASPM_L0S;
 		dw_pcie_writel_dbi(rk_pcie->pci, rk_pcie->linkcap_off, val);
 	}
 
-	rk_pcie_fast_link_setup(rk_pcie);
+	/*
+	 * S2R is in noirq phase which couldn't ack hot reset or link down event.
+	 * But we need to deal with dly2_en enable case, otherwise the ltssm will
+	 * be stuck waiting for dlye_done. We could set dly2_done in advance,
+	 * however, it's slef-clear. So the only option here is to disable dly2_en
+	 * when resuming.
+	 */
+	rk_pcie_fast_link_setup(rk_pcie, !rk_pcie->in_suspend);
 
 	rk_pcie_set_power_limit(rk_pcie);
 
@@ -1670,7 +1700,7 @@ static int rk_pcie_really_probe(void *p)
 	if (ret && !rk_pcie->slot_pluggable)
 		goto deinit_irq_and_wq;
 
-	if (rk_pcie->slot_pluggable) {
+	if (IS_BUILTIN(CONFIG_PCIE_DW_ROCKCHIP) && rk_pcie->slot_pluggable) {
 		rk_pcie->hp_slot.plat_ops = &rk_pcie_gpio_hp_plat_ops;
 		rk_pcie->hp_slot.np = rk_pcie->pci->dev->of_node;
 		rk_pcie->hp_slot.slot_nr = rk_pcie->pci->pp.bridge->busnr;
@@ -1762,7 +1792,8 @@ static int rk_pcie_remove(struct platform_device *pdev)
 		 * Timeout should not happen as it's longer than regular probe actually.
 		 * But probe maybe fail, so need to double check bridge bus.
 		 */
-		if (!rk_pcie || !rk_pcie->finish_probe || !rk_pcie->pci->pp.bridge->bus) {
+		if (!rk_pcie || !rk_pcie->pci || !rk_pcie->pci->pp.bridge ||
+		    !rk_pcie->pci->pp.bridge->bus) {
 			dev_dbg(dev, "%s return early due to failure in threaded init\n", __func__);
 			return 0;
 		}
@@ -1771,7 +1802,8 @@ static int rk_pcie_remove(struct platform_device *pdev)
 	dw_pcie_host_deinit(&rk_pcie->pci->pp);
 	rk_pcie_writel_apb(rk_pcie, PCIE_CLIENT_INTR_MASK, 0xffffffff);
 	destroy_workqueue(rk_pcie->hot_rst_wq);
-	pcie_dw_dmatest_unregister(rk_pcie->dma_obj);
+	if (IS_ENABLED(CONFIG_PCIE_DW_ROCKCHIP_RC_DMATEST))
+		pcie_dw_dmatest_unregister(rk_pcie->dma_obj);
 	rockchip_pcie_debugfs_exit(rk_pcie);
 	if (rk_pcie->irq_domain) {
 		int virq, j;
@@ -1785,6 +1817,9 @@ static int rk_pcie_remove(struct platform_device *pdev)
 		irq_domain_remove(rk_pcie->irq_domain);
 	}
 
+	if (IS_BUILTIN(CONFIG_PCIE_DW_ROCKCHIP) && rk_pcie->slot_pluggable)
+		unregister_gpio_hotplug_slot(&rk_pcie->hp_slot);
+
 	device_init_wakeup(dev, false);
 
 	rk_pcie_host_unconfig(rk_pcie);
@@ -1796,28 +1831,12 @@ static int rk_pcie_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static int rk_pcie_dev_set_current_state(struct pci_dev *dev, void *data)
-{
-	pci_power_t state = *(pci_power_t *)data;
-
-	dev->current_state = state;
-	return 0;
-}
-
-static void rk_pcie_bus_set_current_state(struct pci_bus *bus, pci_power_t state)
-{
-	if (bus)
-		pci_walk_bus(bus, rk_pcie_dev_set_current_state, &state);
-}
-
 static void rk_pcie_shutdown(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct rk_pcie *rk_pcie = dev_get_drvdata(dev);
 
 	dev_dbg(rk_pcie->pci->dev, "shutdown...\n");
-	/* Prevent any configure space access by claiming we're in D3cold */
-	rk_pcie_bus_set_current_state(rk_pcie->pci->pp.bridge->bus, PCI_D3cold);
 	rk_pcie_disable_ltssm(rk_pcie);
 	rk_pcie_writel_apb(rk_pcie, PCIE_CLIENT_INTR_MASK, 0xffffffff);
 }
@@ -2038,6 +2057,7 @@ static int __maybe_unused rockchip_dw_pcie_resume(struct device *dev)
 
 	dw_pcie_dbi_ro_wr_dis(pci);
 	rk_pcie->in_suspend = false;
+	rk_pcie_fast_link_setup(rk_pcie, true);
 
 	return 0;
 
@@ -2054,6 +2074,7 @@ int rockchip_dw_pcie_pm_ctrl_for_user(struct pci_dev *dev, enum rockchip_pcie_pm
 	struct dw_pcie_rp *pp;
 	struct dw_pcie *pci;
 	struct rk_pcie *rk_pcie;
+	u32 intr_mask;
 
 	if (!dev || !dev->bus || !dev->bus->sysdata) {
 		pr_err("%s input invalid\n", __func__);
@@ -2066,8 +2087,16 @@ int rockchip_dw_pcie_pm_ctrl_for_user(struct pci_dev *dev, enum rockchip_pcie_pm
 
 	switch (flag) {
 	case ROCKCHIP_PCIE_PM_CTRL_RESET:
+		/*
+		 * suspend and resume should be called in noirq context, masking and
+		 * unmasking local irq to prevent hunging for accessing died controller
+		 * if serving irq, for instance, hot reset case.
+		 */
+		intr_mask = rk_pcie_readl_apb(rk_pcie, PCIE_CLIENT_INTR_MASK);
+		rk_pcie_writel_apb(rk_pcie, PCIE_CLIENT_INTR_MASK, 0xffffffff);
 		rockchip_dw_pcie_suspend(rk_pcie->pci->dev);
 		rockchip_dw_pcie_resume(rk_pcie->pci->dev);
+		rk_pcie_writel_apb(rk_pcie, PCIE_CLIENT_INTR_MASK, intr_mask | 0xffff0000);
 		break;
 	case ROCKCHIP_PCIE_PM_RETRAIN_LINK:
 		rk_pcie_retrain(pci);
