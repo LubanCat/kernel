@@ -8,6 +8,11 @@ srctree := $(patsubst %/,%,$(dir $(CURDIR)))
 srctree := $(patsubst %/,%,$(dir $(srctree)))
 endif
 
+include $(srctree)/.config
+ifdef CONFIG_NO_GKI
+override CFLAGS += -DCONFIG_NO_GKI
+endif
+
 # Do not use make's built-in rules
 # (this improves performance and avoids hard-to-debug behaviour);
 MAKEFLAGS += -r

@@ -33,6 +33,7 @@
 #define ST_LSM6DSOP_DEV_NAME	"lsm6dsop"
 #define ST_ASM330LHHX_DEV_NAME	"asm330lhhx"
 #define ST_LSM6DSTX_DEV_NAME	"lsm6dstx"
+#define ST_LSM6DSOW_DEV_NAME	"lsm6dsow"
 
 enum st_lsm6dsx_hw_id {
 	ST_LSM6DS3_ID,
@@ -53,6 +54,7 @@ enum st_lsm6dsx_hw_id {
 	ST_LSM6DSOP_ID,
 	ST_ASM330LHHX_ID,
 	ST_LSM6DSTX_ID,
+	ST_LSM6DSOW_ID,
 	ST_LSM6DSX_MAX_ID,
 };
 
@@ -222,6 +224,50 @@ struct st_lsm6dsx_shub_settings {
 	u8 pause;
 };
 
+/**
+ * struct st_lsm6dsx_tap_settings - ST IMU single/double tap settings
+ * @tap_en: per-axis tap detection enable register info (addr + mask).
+ * @ths_x_reg: X-axis tap threshold register info (addr + mask).
+ * @ths_y_reg: Y-axis tap threshold register info (addr + mask).
+ * @ths_z_reg: Z-axis tap threshold register info (addr + mask).
+ * @ths: default tap threshold value (applied to all axes).
+ * @dur_reg: double-tap duration (gap) register info (addr + mask).
+ * @dur: default duration value.
+ * @quiet_reg: quiet time register info (addr + mask).
+ * @quiet: default quiet value.
+ * @shock_reg: shock time register info (addr + mask).
+ * @shock: default shock value.
+ * @dtap_en: single/double tap mode enable register info (addr + mask).
+ * @irq1_stap_mask: INT1 routing mask for single-tap.
+ * @irq1_dtap_mask: INT1 routing mask for double-tap.
+ * @irq2_stap_mask: INT2 routing mask for single-tap.
+ * @irq2_dtap_mask: INT2 routing mask for double-tap.
+ * @src_reg: tap source status register address.
+ * @src_stap_mask: single-tap detection mask in source register.
+ * @src_dtap_mask: double-tap detection mask in source register.
+ */
+struct st_lsm6dsx_tap_settings {
+	struct st_lsm6dsx_reg tap_en;
+	struct st_lsm6dsx_reg ths_x_reg;
+	struct st_lsm6dsx_reg ths_y_reg;
+	struct st_lsm6dsx_reg ths_z_reg;
+	u8 ths;
+	struct st_lsm6dsx_reg dur_reg;
+	u8 dur;
+	struct st_lsm6dsx_reg quiet_reg;
+	u8 quiet;
+	struct st_lsm6dsx_reg shock_reg;
+	u8 shock;
+	struct st_lsm6dsx_reg dtap_en;
+	u8 irq1_stap_mask;
+	u8 irq1_dtap_mask;
+	u8 irq2_stap_mask;
+	u8 irq2_dtap_mask;
+	u8 src_reg;
+	u8 src_stap_mask;
+	u8 src_dtap_mask;
+};
+
 struct st_lsm6dsx_event_settings {
 	struct st_lsm6dsx_reg enable_reg;
 	struct st_lsm6dsx_reg wakeup_reg;
@@ -230,6 +276,7 @@ struct st_lsm6dsx_event_settings {
 	u8 wakeup_src_z_mask;
 	u8 wakeup_src_y_mask;
 	u8 wakeup_src_x_mask;
+	struct st_lsm6dsx_tap_settings tap;
 };
 
 enum st_lsm6dsx_ext_sensor_id {
@@ -388,7 +435,9 @@ struct st_lsm6dsx_sensor {
  * @buff: Device read buffer.
  * @irq_routing: pointer to interrupt routing configuration.
  * @event_threshold: wakeup event threshold.
- * @enable_event: enabled event bitmask.
+ * @enable_event: enabled wakeup (motion) event bitmask.
+ * @tap_en: single-tap gesture event enabled.
+ * @dtap_en: double-tap gesture event enabled.
  * @iio_devs: Pointers to acc/gyro iio_dev instances.
  * @settings: Pointer to the specific sensor settings in use.
  * @orientation: sensor chip orientation relative to main hardware.
@@ -414,6 +463,8 @@ struct st_lsm6dsx_hw {
 	const struct st_lsm6dsx_reg *irq_routing;
 	u8 event_threshold;
 	u8 enable_event;
+	bool tap_en;
+	bool dtap_en;
 
 	u8 *buff;
 
@@ -435,6 +486,29 @@ static __maybe_unused const struct iio_event_spec st_lsm6dsx_event = {
 	.mask_separate = BIT(IIO_EV_INFO_VALUE) |
 			 BIT(IIO_EV_INFO_ENABLE)
 };
+
+#if IS_ENABLED(CONFIG_NO_GKI)
+static __maybe_unused const struct iio_event_spec st_lsm6dsx_tap_event = {
+	.type = IIO_EV_TYPE_GESTURE,
+	.dir = IIO_EV_DIR_SINGLETAP,
+	.mask_separate = BIT(IIO_EV_INFO_ENABLE),
+};
+
+static __maybe_unused const struct iio_event_spec st_lsm6dsx_dtap_event = {
+	.type = IIO_EV_TYPE_GESTURE,
+	.dir = IIO_EV_DIR_DOUBLETAP,
+	.mask_separate = BIT(IIO_EV_INFO_ENABLE),
+};
+
+/* single/double tap gesture channels (event-only, not buffered) */
+#define ST_LSM6DSX_TAP_CHANNEL(chan_type, ev_spec)			\
+{									\
+	.type = chan_type,						\
+	.scan_index = -1,						\
+	.event_spec = ev_spec,						\
+	.num_event_specs = 1,						\
+}
+#endif /* CONFIG_NO_GKI */
 
 static __maybe_unused const unsigned long st_lsm6dsx_available_scan_masks[] = {
 	0x7, 0x0,

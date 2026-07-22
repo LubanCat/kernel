@@ -190,6 +190,10 @@ static bool event_is_known(struct iio_event_data *event)
 	case IIO_POSITIONRELATIVE:
 	case IIO_PHASE:
 	case IIO_MASSCONCENTRATION:
+	#ifdef CONFIG_NO_GKI
+	case IIO_TAP:
+	case IIO_TAP_TAP:
+#endif
 		break;
 	default:
 		return false;

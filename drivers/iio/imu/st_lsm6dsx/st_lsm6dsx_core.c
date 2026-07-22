@@ -76,6 +76,21 @@ static const struct iio_chan_spec st_lsm6dsx_acc_channels[] = {
 	IIO_CHAN_SOFT_TIMESTAMP(3),
 };
 
+/*
+ * Accelerometer channel set with single/double tap gesture events, used by
+ * devices that support the embedded tap-detection function (LSM6DSO family).
+ */
+static const struct iio_chan_spec st_lsm6dsx_acc_tap_channels[] = {
+	ST_LSM6DSX_CHANNEL_ACC(IIO_ACCEL, 0x28, IIO_MOD_X, 0),
+	ST_LSM6DSX_CHANNEL_ACC(IIO_ACCEL, 0x2a, IIO_MOD_Y, 1),
+	ST_LSM6DSX_CHANNEL_ACC(IIO_ACCEL, 0x2c, IIO_MOD_Z, 2),
+	IIO_CHAN_SOFT_TIMESTAMP(3),
+#if IS_ENABLED(CONFIG_NO_GKI)
+	ST_LSM6DSX_TAP_CHANNEL(IIO_TAP, &st_lsm6dsx_tap_event),
+	ST_LSM6DSX_TAP_CHANNEL(IIO_TAP_TAP, &st_lsm6dsx_dtap_event),
+#endif
+};
+
 static const struct iio_chan_spec st_lsm6dsx_gyro_channels[] = {
 	ST_LSM6DSX_CHANNEL(IIO_ANGL_VEL, 0x22, IIO_MOD_X, 0),
 	ST_LSM6DSX_CHANNEL(IIO_ANGL_VEL, 0x24, IIO_MOD_Y, 1),
@@ -796,12 +811,16 @@ static const struct st_lsm6dsx_settings st_lsm6dsx_sensor_settings[] = {
 				.hw_id = ST_LSM6DSTX_ID,
 				.name = ST_LSM6DSTX_DEV_NAME,
 				.wai = 0x6d,
+			}, {
+				.hw_id = ST_LSM6DSOW_ID,
+				.name = ST_LSM6DSOW_DEV_NAME,
+				.wai = 0x6c,
 			},
 		},
 		.channels = {
 			[ST_LSM6DSX_ID_ACC] = {
-				.chan = st_lsm6dsx_acc_channels,
-				.len = ARRAY_SIZE(st_lsm6dsx_acc_channels),
+				.chan = st_lsm6dsx_acc_tap_channels,
+				.len = ARRAY_SIZE(st_lsm6dsx_acc_tap_channels),
 			},
 			[ST_LSM6DSX_ID_GYRO] = {
 				.chan = st_lsm6dsx_gyro_channels,
@@ -981,6 +1000,61 @@ static const struct st_lsm6dsx_settings st_lsm6dsx_sensor_settings[] = {
 			.wakeup_src_z_mask = BIT(0),
 			.wakeup_src_y_mask = BIT(1),
 			.wakeup_src_x_mask = BIT(2),
+			.tap = {
+				/* TAP_CFG0: enable tap detection on X/Y/Z */
+				.tap_en = {
+					.addr = 0x56,
+					.mask = GENMASK(3, 1),
+				},
+				/* TAP_CFG1: X-axis threshold */
+				.ths_x_reg = {
+					.addr = 0x57,
+					.mask = GENMASK(4, 0),
+				},
+				/* TAP_CFG2: Y-axis threshold */
+				.ths_y_reg = {
+					.addr = 0x58,
+					.mask = GENMASK(4, 0),
+				},
+				/* TAP_THS_6D: Z-axis threshold */
+				.ths_z_reg = {
+					.addr = 0x59,
+					.mask = GENMASK(4, 0),
+				},
+				.ths = 0x09,
+				/* WAKE_UP_DUR/INT_DUR2: double-tap gap */
+				.dur_reg = {
+					.addr = 0x5a,
+					.mask = GENMASK(7, 4),
+				},
+				.dur = 0x07,
+				/* INT_DUR2: quiet time */
+				.quiet_reg = {
+					.addr = 0x5a,
+					.mask = GENMASK(3, 2),
+				},
+				.quiet = 0x03,
+				/* INT_DUR2: shock time */
+				.shock_reg = {
+					.addr = 0x5a,
+					.mask = GENMASK(1, 0),
+				},
+				.shock = 0x03,
+				/* WAKE_UP_THS: SINGLE_DOUBLE_TAP mode */
+				.dtap_en = {
+					.addr = 0x5b,
+					.mask = BIT(7),
+				},
+				/* MD1_CFG / MD2_CFG routing masks */
+				.irq1_stap_mask = BIT(6),
+				.irq1_dtap_mask = BIT(3),
+				.irq2_stap_mask = BIT(6),
+				.irq2_dtap_mask = BIT(3),
+				/* TAP_SRC status register */
+				.src_reg = 0x1c,
+				.src_stap_mask = BIT(5),
+				.src_dtap_mask = BIT(4),
+			},
 		},
 	},
 	{
@@ -1353,6 +1427,12 @@ __st_lsm6dsx_sensor_set_enable(struct st_lsm6dsx_sensor *sensor,
 	return 0;
 }
 
+/* true if any hw event (motion wakeup or single/double tap) is enabled */
+static bool st_lsm6dsx_events_enabled(struct st_lsm6dsx_hw *hw)
+{
+	return hw->enable_event || hw->tap_en || hw->dtap_en;
+}
+
 static int
 st_lsm6dsx_check_events(struct st_lsm6dsx_sensor *sensor, bool enable)
 {
@@ -1361,7 +1441,7 @@ st_lsm6dsx_check_events(struct st_lsm6dsx_sensor *sensor, bool enable)
 	if (sensor->id == ST_LSM6DSX_ID_GYRO || enable)
 		return 0;
 
-	return hw->enable_event;
+	return st_lsm6dsx_events_enabled(hw);
 }
 
 int st_lsm6dsx_sensor_set_enable(struct st_lsm6dsx_sensor *sensor,
@@ -1395,7 +1475,7 @@ static int st_lsm6dsx_read_oneshot(struct st_lsm6dsx_sensor *sensor,
 	if (err < 0)
 		return err;
 
-	if (!hw->enable_event) {
+	if (!st_lsm6dsx_events_enabled(hw)) {
 		err = st_lsm6dsx_sensor_set_enable(sensor, false);
 		if (err < 0)
 			return err;
@@ -1476,28 +1556,88 @@ static int st_lsm6dsx_write_raw(struct iio_dev *iio_dev,
 	return err;
 }
 
-static int st_lsm6dsx_event_setup(struct st_lsm6dsx_hw *hw, int state)
+/*
+ * Toggle the global INTERRUPTS_ENABLE bit and keep the accelerometer powered
+ * while any hw event (motion wakeup or single/double tap) is enabled. Must be
+ * called only when the aggregate event state crosses the 0 <-> non-0 boundary.
+ */
+static int st_lsm6dsx_event_global(struct st_lsm6dsx_sensor *sensor, bool enable)
 {
+	struct st_lsm6dsx_hw *hw = sensor->hw;
 	const struct st_lsm6dsx_reg *reg;
 	unsigned int data;
 	int err;
 
-	if (!hw->settings->irq_config.irq1_func.addr)
-		return -ENOTSUPP;
-
 	reg = &hw->settings->event_settings.enable_reg;
 	if (reg->addr) {
-		data = ST_LSM6DSX_SHIFT_VAL(state, reg->mask);
+		data = ST_LSM6DSX_SHIFT_VAL(enable, reg->mask);
 		err = st_lsm6dsx_update_bits_locked(hw, reg->addr,
 						    reg->mask, data);
 		if (err < 0)
 			return err;
 	}
 
-	/* Enable wakeup interrupt */
-	data = ST_LSM6DSX_SHIFT_VAL(state, hw->irq_routing->mask);
-	return st_lsm6dsx_update_bits_locked(hw, hw->irq_routing->addr,
-					     hw->irq_routing->mask, data);
+	mutex_lock(&hw->conf_lock);
+	if (enable || !(hw->fifo_mask & BIT(sensor->id)))
+		err = __st_lsm6dsx_sensor_set_enable(sensor, enable);
+	else
+		err = 0;
+	mutex_unlock(&hw->conf_lock);
+
+	return err;
+}
+
+/* program tap threshold/timing tuning registers (run once on first enable) */
+static int st_lsm6dsx_tap_setup(struct st_lsm6dsx_hw *hw)
+{
+	const struct st_lsm6dsx_tap_settings *tap;
+	unsigned int data;
+	int err;
+
+	tap = &hw->settings->event_settings.tap;
+
+	/* enable tap detection on the X/Y/Z axes */
+	data = ST_LSM6DSX_SHIFT_VAL(0x7, tap->tap_en.mask);
+	err = st_lsm6dsx_update_bits_locked(hw, tap->tap_en.addr,
+					    tap->tap_en.mask, data);
+	if (err < 0)
+		return err;
+
+	/* per-axis tap thresholds */
+	data = ST_LSM6DSX_SHIFT_VAL(tap->ths, tap->ths_x_reg.mask);
+	err = st_lsm6dsx_update_bits_locked(hw, tap->ths_x_reg.addr,
+					    tap->ths_x_reg.mask, data);
+	if (err < 0)
+		return err;
+
+	data = ST_LSM6DSX_SHIFT_VAL(tap->ths, tap->ths_y_reg.mask);
+	err = st_lsm6dsx_update_bits_locked(hw, tap->ths_y_reg.addr,
+					    tap->ths_y_reg.mask, data);
+	if (err < 0)
+		return err;
+
+	data = ST_LSM6DSX_SHIFT_VAL(tap->ths, tap->ths_z_reg.mask);
+	err = st_lsm6dsx_update_bits_locked(hw, tap->ths_z_reg.addr,
+					    tap->ths_z_reg.mask, data);
+	if (err < 0)
+		return err;
+
+	/* double-tap gap / quiet / shock timing */
+	data = ST_LSM6DSX_SHIFT_VAL(tap->dur, tap->dur_reg.mask);
+	err = st_lsm6dsx_update_bits_locked(hw, tap->dur_reg.addr,
+					    tap->dur_reg.mask, data);
+	if (err < 0)
+		return err;
+
+	data = ST_LSM6DSX_SHIFT_VAL(tap->quiet, tap->quiet_reg.mask);
+	err = st_lsm6dsx_update_bits_locked(hw, tap->quiet_reg.addr,
+					    tap->quiet_reg.mask, data);
+	if (err < 0)
+		return err;
+
+	data = ST_LSM6DSX_SHIFT_VAL(tap->shock, tap->shock_reg.mask);
+	return st_lsm6dsx_update_bits_locked(hw, tap->shock_reg.addr,
+					     tap->shock_reg.mask, data);
 }
 
 static int st_lsm6dsx_read_event(struct iio_dev *iio_dev,
@@ -1560,10 +1700,108 @@ st_lsm6dsx_read_event_config(struct iio_dev *iio_dev,
 	struct st_lsm6dsx_sensor *sensor = iio_priv(iio_dev);
 	struct st_lsm6dsx_hw *hw = sensor->hw;
 
-	if (type != IIO_EV_TYPE_THRESH)
+	switch (type) {
+	case IIO_EV_TYPE_THRESH:
+		return !!(hw->enable_event & BIT(chan->channel2));
+	case IIO_EV_TYPE_GESTURE:
+		if (dir == IIO_EV_DIR_SINGLETAP)
+			return hw->tap_en;
+		if (dir == IIO_EV_DIR_DOUBLETAP)
+			return hw->dtap_en;
 		return -EINVAL;
+	default:
+		return -EINVAL;
+	}
+}
 
-	return !!(hw->enable_event & BIT(chan->channel2));
+/*
+ * Enable/disable single or double tap gesture detection. The global
+ * INTERRUPTS_ENABLE bit and accel power are reference-counted against the
+ * aggregate event state so tap and motion wakeup can coexist.
+ */
+static int
+st_lsm6dsx_write_tap_event_config(struct st_lsm6dsx_sensor *sensor,
+				  enum iio_event_direction dir, int state)
+{
+	struct st_lsm6dsx_hw *hw = sensor->hw;
+	const struct st_lsm6dsx_tap_settings *tap;
+	bool old_active, new_active;
+	const struct st_lsm6dsx_reg *route;
+	u8 route_mask, stap_mask, dtap_mask;
+	unsigned int data;
+	bool new_tap = hw->tap_en, new_dtap = hw->dtap_en;
+	int err;
+
+	if (!hw->settings->irq_config.irq1_func.addr ||
+	    !hw->settings->event_settings.tap.tap_en.addr)
+		return -ENOTSUPP;
+
+	tap = &hw->settings->event_settings.tap;
+	route = hw->irq_routing;
+
+	/* pick routing masks for the interrupt pin in use */
+	if (route == &hw->settings->irq_config.irq2_func) {
+		stap_mask = tap->irq2_stap_mask;
+		dtap_mask = tap->irq2_dtap_mask;
+	} else {
+		stap_mask = tap->irq1_stap_mask;
+		dtap_mask = tap->irq1_dtap_mask;
+	}
+
+	switch (dir) {
+	case IIO_EV_DIR_SINGLETAP:
+		new_tap = !!state;
+		route_mask = stap_mask;
+		break;
+	case IIO_EV_DIR_DOUBLETAP:
+		new_dtap = !!state;
+		route_mask = dtap_mask;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	/* no change */
+	if (new_tap == hw->tap_en && new_dtap == hw->dtap_en)
+		return 0;
+
+	old_active = st_lsm6dsx_events_enabled(hw);
+
+	/* bring up global enable + tap tuning on the very first tap enable */
+	if (state && !hw->tap_en && !hw->dtap_en) {
+		err = st_lsm6dsx_tap_setup(hw);
+		if (err < 0)
+			return err;
+	}
+
+	/* route (or unroute) this specific tap interrupt */
+	data = ST_LSM6DSX_SHIFT_VAL(state, route_mask);
+	err = st_lsm6dsx_update_bits_locked(hw, route->addr, route_mask, data);
+	if (err < 0)
+		return err;
+
+	/*
+	 * SINGLE_DOUBLE_TAP mode bit: set when double-tap detection is
+	 * requested, cleared otherwise (single-tap only).
+	 */
+	data = ST_LSM6DSX_SHIFT_VAL(new_dtap, tap->dtap_en.mask);
+	err = st_lsm6dsx_update_bits_locked(hw, tap->dtap_en.addr,
+					    tap->dtap_en.mask, data);
+	if (err < 0)
+		return err;
+
+	hw->tap_en = new_tap;
+	hw->dtap_en = new_dtap;
+	new_active = st_lsm6dsx_events_enabled(hw);
+
+	/* toggle global enable/accel only on aggregate 0 <-> non-0 crossing */
+	if (old_active != new_active) {
+		err = st_lsm6dsx_event_global(sensor, new_active);
+		if (err < 0)
+			return err;
+	}
+
+	return 0;
 }
 
 static int
@@ -1574,43 +1812,54 @@ st_lsm6dsx_write_event_config(struct iio_dev *iio_dev,
 {
 	struct st_lsm6dsx_sensor *sensor = iio_priv(iio_dev);
 	struct st_lsm6dsx_hw *hw = sensor->hw;
+	bool old_active, new_active;
+	unsigned int data;
 	u8 enable_event;
 	int err;
+
+	if (type == IIO_EV_TYPE_GESTURE)
+		return st_lsm6dsx_write_tap_event_config(sensor, dir, state);
 
 	if (type != IIO_EV_TYPE_THRESH)
 		return -EINVAL;
 
-	if (state) {
+	if (!hw->settings->irq_config.irq1_func.addr)
+		return -ENOTSUPP;
+
+	if (state)
 		enable_event = hw->enable_event | BIT(chan->channel2);
-
-		/* do not enable events if they are already enabled */
-		if (hw->enable_event)
-			goto out;
-	} else {
+	else
 		enable_event = hw->enable_event & ~BIT(chan->channel2);
-
-		/* only turn off sensor if no events is enabled */
-		if (enable_event)
-			goto out;
-	}
 
 	/* stop here if no changes have been made */
 	if (hw->enable_event == enable_event)
 		return 0;
 
-	err = st_lsm6dsx_event_setup(hw, state);
-	if (err < 0)
-		return err;
+	old_active = st_lsm6dsx_events_enabled(hw);
 
-	mutex_lock(&hw->conf_lock);
-	if (enable_event || !(hw->fifo_mask & BIT(sensor->id)))
-		err = __st_lsm6dsx_sensor_set_enable(sensor, state);
-	mutex_unlock(&hw->conf_lock);
-	if (err < 0)
-		return err;
+	/* route (or unroute) the wakeup interrupt on first/last motion event */
+	if (!hw->enable_event != !enable_event) {
+		data = ST_LSM6DSX_SHIFT_VAL(!!enable_event,
+					    hw->irq_routing->mask);
+		err = st_lsm6dsx_update_bits_locked(hw, hw->irq_routing->addr,
+						    hw->irq_routing->mask, data);
+		if (err < 0)
+			return err;
+	}
 
-out:
 	hw->enable_event = enable_event;
+	new_active = st_lsm6dsx_events_enabled(hw);
+
+	/* toggle global enable/accel only on aggregate 0 <-> non-0 crossing */
+	if (old_active != new_active) {
+		err = st_lsm6dsx_event_global(sensor, new_active);
+		if (err < 0) {
+			hw->enable_event = state ?
+				hw->enable_event & ~BIT(chan->channel2) :
+				hw->enable_event | BIT(chan->channel2);
+			return err;
+		}
+	}
 
 	return 0;
 }
@@ -2083,6 +2332,48 @@ st_lsm6dsx_report_motion_event(struct st_lsm6dsx_hw *hw)
 	return data & event_settings->wakeup_src_status_mask;
 }
 
+static bool
+st_lsm6dsx_report_tap_event(struct st_lsm6dsx_hw *hw)
+{
+	const struct st_lsm6dsx_tap_settings *tap;
+	s64 timestamp;
+	int err, data;
+	bool handled = false;
+
+	if (!hw->tap_en && !hw->dtap_en)
+		return false;
+
+	tap = &hw->settings->event_settings.tap;
+	if (!tap->src_reg)
+		return false;
+
+	err = st_lsm6dsx_read_locked(hw, tap->src_reg, &data, sizeof(data));
+	if (err < 0)
+		return false;
+
+	timestamp = iio_get_time_ns(hw->iio_devs[ST_LSM6DSX_ID_ACC]);
+
+#if IS_ENABLED(CONFIG_NO_GKI)
+	if (hw->dtap_en && (data & tap->src_dtap_mask)) {
+		iio_push_event(hw->iio_devs[ST_LSM6DSX_ID_ACC],
+			       IIO_UNMOD_EVENT_CODE(IIO_TAP_TAP, 0,
+						    IIO_EV_TYPE_GESTURE,
+						    IIO_EV_DIR_DOUBLETAP),
+			       timestamp);
+		handled = true;
+	} else if (hw->tap_en && (data & tap->src_stap_mask)) {
+		iio_push_event(hw->iio_devs[ST_LSM6DSX_ID_ACC],
+			       IIO_UNMOD_EVENT_CODE(IIO_TAP, 0,
+						    IIO_EV_TYPE_GESTURE,
+						    IIO_EV_DIR_SINGLETAP),
+			       timestamp);
+		handled = true;
+	}
+#endif
+
+	return handled;
+}
+
 static irqreturn_t st_lsm6dsx_handler_thread(int irq, void *private)
 {
 	struct st_lsm6dsx_hw *hw = private;
@@ -2090,6 +2381,7 @@ static irqreturn_t st_lsm6dsx_handler_thread(int irq, void *private)
 	bool event;
 
 	event = st_lsm6dsx_report_motion_event(hw);
+	event |= st_lsm6dsx_report_tap_event(hw);
 
 	if (!hw->settings->fifo_ops.read_fifo)
 		return event ? IRQ_HANDLED : IRQ_NONE;
@@ -2311,7 +2603,8 @@ static int st_lsm6dsx_suspend(struct device *dev)
 			continue;
 
 		if (device_may_wakeup(dev) &&
-		    sensor->id == ST_LSM6DSX_ID_ACC && hw->enable_event) {
+		    sensor->id == ST_LSM6DSX_ID_ACC &&
+		    st_lsm6dsx_events_enabled(hw)) {
 			/* Enable wake from IRQ */
 			enable_irq_wake(hw->irq);
 			continue;
@@ -2347,7 +2640,8 @@ static int st_lsm6dsx_resume(struct device *dev)
 
 		sensor = iio_priv(hw->iio_devs[i]);
 		if (device_may_wakeup(dev) &&
-		    sensor->id == ST_LSM6DSX_ID_ACC && hw->enable_event)
+		    sensor->id == ST_LSM6DSX_ID_ACC &&
+		    st_lsm6dsx_events_enabled(hw))
 			disable_irq_wake(hw->irq);
 
 		if (!(hw->suspend_mask & BIT(sensor->id)))
