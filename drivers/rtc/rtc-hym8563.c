@@ -57,6 +57,8 @@
 /* Each alarm check can be disabled by setting this bit in the register */
 #define HYM8563_ALM_BIT_DISABLE	BIT(7)
 
+/* Default to disabling the clock output */
+#define HYM8563_CLKOUT_DEFAULT_ON	0
 #define HYM8563_CLKOUT		0x0d
 #define HYM8563_CLKOUT_ENABLE	BIT(7)
 #define HYM8563_CLKOUT_32768	0
@@ -291,7 +293,25 @@ static const struct rtc_class_ops hym8563_rtc_ops = {
  * Handling of the clkout
  */
 
+static int hym8563_clkout_set_enable(struct i2c_client *client, bool enable)
+{
+	int ret;
+
+	ret = i2c_smbus_read_byte_data(client, HYM8563_CLKOUT);
+	if (ret < 0)
+		return ret;
+
+	if (enable)
+		ret |= HYM8563_CLKOUT_ENABLE;
+	else
+		ret &= ~HYM8563_CLKOUT_ENABLE;
+
+	return i2c_smbus_write_byte_data(client, HYM8563_CLKOUT, ret);
+}
+
+
 #ifdef CONFIG_COMMON_CLK
+#if HYM8563_CLKOUT_DEFAULT_ON
 #define clkout_hw_to_hym8563(_hw) container_of(_hw, struct hym8563, clkout_hw)
 
 static int clkout_rates[] = {
@@ -422,7 +442,8 @@ static struct clk *hym8563_clkout_register_clk(struct hym8563 *hym8563)
 
 	return clk;
 }
-#endif
+#endif /* HYM8563_CLKOUT_DEFAULT_ON */
+#endif /* CONFIG_COMMON_CLK */
 
 /*
  * The alarm interrupt is implemented as a level-low interrupt in the
@@ -607,7 +628,17 @@ static int hym8563_probe(struct i2c_client *client)
 	clear_bit(RTC_FEATURE_UPDATE_INTERRUPT, hym8563->rtc->features);
 
 #ifdef CONFIG_COMMON_CLK
+#if HYM8563_CLKOUT_DEFAULT_ON
 	hym8563_clkout_register_clk(hym8563);
+	
+	ret = hym8563_clkout_set_enable(client, true);
+	if (ret < 0)
+		dev_warn(&client->dev, "Failed to enable hym8563 clkout\n");
+#else
+	ret = hym8563_clkout_set_enable(client, false);
+	if (ret < 0)
+		dev_warn(&client->dev, "Failed to disable hym8563 clkout\n");
+#endif
 #endif
 
 	return devm_rtc_register_device(hym8563->rtc);
