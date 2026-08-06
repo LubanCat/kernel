@@ -7,7 +7,7 @@
 #include "rk3568-lubancat-2.dtsi"
 
 //MIPI摄像头配置
-#include "rk3568-lubancat-csi2.dtsi"
+#include "rk3568-lubancat-csi2-double.dtsi"
 
 / {
 	model = "EmbedFire LubanCat-2";

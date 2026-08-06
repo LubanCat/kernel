@@ -49,48 +49,6 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		regulator-always-on;
 	};
 
-	vdd_cam1_5v: vdd-cam1-5v-regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "vdd_cam1_5v";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio3 RK_PD1 GPIO_ACTIVE_HIGH>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&cam1_pwr_en>;
-		enable-active-high;
-		regulator-always-on;
-	};
-
-	cam1_dovdd: cam1-dovdd {
-		compatible = "regulator-fixed";
-		regulator-name = "cam1_dovdd";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		vin-supply = <&vdd_cam1_5v>;
-	};
-
-	cam1_avdd: cam1-avdd {
-		compatible = "regulator-fixed";
-		regulator-name = "cam1_avdd";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <2800000>;
-		regulator-max-microvolt = <2800000>;
-		vin-supply = <&vdd_cam1_5v>;
-	};
-
-	cam1_dvdd: cam1-dvdd {
-		compatible = "regulator-fixed";
-		regulator-name = "cam1_dvdd";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <1200000>;
-		regulator-max-microvolt = <1200000>;
-		vin-supply = <&vdd_cam1_5v>;
-	};
-
 	backlight1: backlight1 {
 		status = "okay";
 		compatible = "pwm-backlight";
@@ -308,9 +266,4 @@ V2版仅支持双屏，启用MIPI-DSI1时，HDMI会默认禁掉。
 		};
 	};
 
-	cam {
-		cam1_pwr_en: cam1_pwr_en {
-			rockchip,pins = <3 RK_PD1 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-	};
 };
