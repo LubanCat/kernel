@@ -24,6 +24,7 @@
 		__overlay__ {
 			status = "okay";
 			rockchip,imx415-capture-mode=<1>;
+			rockchip,camera-module-lens-name = "IR0147-50IRC-8M-F20-1080p";
 		};
 	};
 
