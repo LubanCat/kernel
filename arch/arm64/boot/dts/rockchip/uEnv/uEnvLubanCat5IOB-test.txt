@@ -80,3 +80,7 @@ eeprom_addr=0x51
 i2c_devs=2 5
 gsdt_plugin0=/dtb/overlay/rk3588-lubancat-5io-test-dsi0-vp2-generic-overlay.dtbo
 gsdt_plugin1=/dtb/overlay/rk3588-lubancat-5io-test-dsi1-vp3-generic-overlay.dtbo
+
+#Enable DDR testing during the U-Boot stage
+stressapptest_enable=0
+stressapptest_time=60

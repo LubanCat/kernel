@@ -11,7 +11,20 @@ if test -e ${devtype} ${devnum}:${distro_bootpart} /uEnv/uEnv.txt; then
     echo [boot.cmd] Importing environment from ${devtype} ...
     env import -t ${env_addr_r} 0x8000
 
+    if test "${stressapptest_enable}" = "1"; then
+        echo [boot.cmd] Start the stressapptest test. Test duration: "${stressapptest_time}"s
+        if stressapptest "${stressapptest_time}"; then
+            setenv stressapptest_result "pass"
+        else
+            setenv stressapptest_result "fail"
+        fi
+        echo [boot.cmd] StressAppTest Result: "${stressapptest_result}"
+    fi
+
     setenv bootargs ${bootargs} root=/dev/mmcblk${devnum}p3 boot_part=${distro_bootpart} ${cmdline}
+    if test -n "${stressapptest_result}"; then
+        setenv bootargs ${bootargs} stressapptest_result=${stressapptest_result}
+    fi
     printenv bootargs
 
     echo "[boot.cmd] try load ${devtype} ${devnum}:${distro_bootpart} ${ramdisk_addr_r} /initrd ..."
