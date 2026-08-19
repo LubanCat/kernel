@@ -26,3 +26,7 @@ enable_uboot_overlays=1
 #dtoverlay=/dtb/overlay/rk3528-lubancat-peripheral-overlay.dtbo
 
 #overlay_end
+
+#Enable DDR testing during the U-Boot stage
+stressapptest_enable=0
+stressapptest_time=60

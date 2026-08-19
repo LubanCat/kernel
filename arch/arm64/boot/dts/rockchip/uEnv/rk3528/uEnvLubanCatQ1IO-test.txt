@@ -5,3 +5,7 @@ cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 root
 enable_uboot_overlays=1
 #overlay_start
 #overlay_end
+
+#Enable DDR testing during the U-Boot stage
+stressapptest_enable=0
+stressapptest_time=60
