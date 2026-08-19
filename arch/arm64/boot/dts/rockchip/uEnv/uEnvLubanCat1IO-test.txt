@@ -27,3 +27,7 @@ enable_uboot_overlays=1
 dtoverlay=/dtb/overlay/rk3566-lubancat-1io-test-csi0-imx415-overlay.dtbo
 
 #overlay_end
+
+#Enable DDR testing during the U-Boot stage
+stressapptest_enable=0
+stressapptest_time=60
