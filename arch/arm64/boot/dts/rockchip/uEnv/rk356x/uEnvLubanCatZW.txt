@@ -52,3 +52,7 @@ enable_gsdt_auto_load=1
 eeprom_addr=0x51
 i2c_devs=1
 gsdt_plugin0=/dtb/overlay/rk3566-lubancat-dsi0-vp0-generic-overlay.dtbo
+
+#Enable DDR testing during the U-Boot stage
+stressapptest_enable=0
+stressapptest_time=60
