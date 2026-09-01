@@ -1,0 +1,5 @@
+config RTL8851BE
+	tristate "Realtek 8851B PCIE WiFi"
+	depends on PCI
+	help
+	  Help message of RTL8851BE
