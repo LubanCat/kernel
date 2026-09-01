@@ -1,0 +1,237 @@
+/******************************************************************************
+ *
+ * Copyright(c) 2019 Realtek Corporation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ ******************************************************************************/
+
+#include "../mac_priv.h"
+#include "../../include/mac_top.h"
+#include "init_8851b.h"
+#include "pwr_seq_func_8851b.h"
+#include "cmac_tx_8851b.h"
+#include "fwcmd_8851b.h"
+#include "rrsr_8851b.h"
+#include "coex_8851b.h"
+#include "phy_rpt_8851b.h"
+#include "tblupd_8851b.h"
+#include "../tblupd.h"
+#include "dbgpkg_8851b.h"
+#include "efuse_8851b.h"
+#include "hci_fc_8851b.h"
+#include "dle_8851b.h"
+#include "wowlan_8851b.h"
+#include "dbg_cmd_8851b.h"
+#include "ser_8851b.h"
+#include "../err_flag.h"
+#include "../sta_sch.h"
+
+#if MAC_AX_PCIE_SUPPORT
+#include "_pcie_8851b.h"
+#endif
+#if MAC_AX_USB_SUPPORT
+#include "_usb_8851b.h"
+#endif
+#if MAC_AX_SDIO_SUPPORT
+#include "_sdio_8851b.h"
+#endif
+
+#if MAC_AX_8851B_SUPPORT
+
+static struct mac_ax_priv_ops mac8851b_priv_ops = {
+	NULL, /* pwr_off */
+	NULL, /* pwr_on */
+	NULL, /* intf_pwr_switch */
+	dmac_func_en_8851b, /* dmac_func_en */
+	dmac_func_pre_en_8851b, /* dmac_func_pre_en */
+	dle_dfi_ctrl_8851b, /* dle_dfi_ctrl */
+	dle_is_txq_empty_8851b, /* dle_is_txq_empty */
+	dle_is_rxq_empty_8851b, /* dle_is_rxq_empty */
+	preload_cfg_set_8851b, /* preload_cfg_set */
+	preload_init_set_8851b, /* preload_init_set */
+	dle_func_en_8851b, /* dle_func_en */
+	dle_clk_en_8851b, /* dle_clk_en */
+	dle_mix_cfg_8851b, /* dle_mix_cfg */
+	wde_quota_cfg_8851b, /* wde_quota_cfg */
+	ple_quota_cfg_8851b, /* ple_quota_cfg */
+	chk_dle_rdy_8851b, /* chk_dle_rdy */
+	mac_init_cctl_info_8851b, /* init cmac table */
+	cmac_init, /*cmac module init*/
+	cmac_func_en,/* cmac_func_en */
+	macid_idle_ck_8851b, /* macid_idle_ck */
+	stop_sch_tx_8851b, /* stop_sch_tx */
+	switch_efuse_bank_8851b, /* switch_efuse_bank */
+	enable_efuse_sw_pwr_cut_8851b, /* enable_efuse_sw_pwr_cut */
+	disable_efuse_sw_pwr_cut_8851b, /* disable_efuse_sw_pwr_cut */
+	efuse_info_init_8851b, /* efuse_info_init */
+	get_h2creg_offset_8851b, /* get_h2creg_offset */
+	get_c2hreg_offset_8851b, /* get_c2hreg_offset */
+#if MAC_FEAT_COEX
+	mac_cfg_gnt_8851b, /* cfg_ctrl_path*/
+	mac_cfg_ctrl_path_8851b, /* cfg_ctrl_path */
+	mac_get_gnt_8851b, /* get_gnt */
+	mac_get_ctrl_path_8851b, /* get_ctrl_path */
+#else
+	coex_mac_init_8851b, /* coex_mac_init */
+#endif /* MAC_FEAT_COEX */
+	ser_imr_config_8851b, /*ser_imr_config */
+	ser_imr_config_patch_8851b, /*ser_imr_config patch */
+	disconnect_flush_key, /* disconnect_flush_key */
+	sec_info_tbl_init, /* sec_info_tbl_init */
+	free_sec_info_tbl, /* free_sec_info_tbl */
+	mac_wowlan_secinfo, /* mac_wowlan_secinfo */
+	mac_get_rrsr_cfg_8851b, /*get RRSR related config*/
+	mac_set_rrsr_cfg_8851b, /*set RRSR related config*/
+	mac_get_cts_rrsr_cfg_8851b, /*get CTS RRSR related config*/
+	mac_set_cts_rrsr_cfg_8851b, /*set CTS RRSR related config*/
+	/*DMAC*/
+#if MAC_FEAT_PHY_RPT
+	get_bbrpt_dle_cfg_8851b, /*get_bbrpt_dle_cfg*/
+#endif
+	set_fc_page_ctrl_reg_8851b, /* set_fc_page_ctrl_reg */
+	get_fc_page_info_8851b, /* get_fc_page_info */
+	set_fc_pubpg_8851b, /* set_fc_pubpg */
+	get_fc_mix_info_8851b, /* get_fc_mix_info */
+	set_fc_h2c_8851b, /* set_fc_h2c */
+	set_fc_mix_cfg_8851b, /* set_fc_mix_cfg */
+	set_fc_func_en_8851b, /* set_fc_func_en */
+	mac_ss_stat_chk, /*for mac station scheduler check*/
+	mac_bacam_init, /* bacam init */
+	/* Debug Dump*/
+#if MAC_AX_FEATURE_DBGPKG
+	dmac_dbg_dump_8851b, /*for dmac debug dump*/
+	cmac_dbg_dump_8851b, /*for cmac debug dump*/
+	crit_dbg_dump_8851b, /*for system critical debug dump*/
+	tx_dbg_dump_8851b, /*for tx flow debug dump*/
+	is_dbg_port_not_valid_8851b, /* is_dbg_port_not_valid */
+	dbg_port_sel_rst_8851b, /* dbg_port_sel_rst */
+	dle_dfi_sel_8851b, /* dle_dfi_sel */
+	get_check_reg_8851b, /* get_check_reg */
+	dbg_port_sel_8851b, /*for mac debug port*/
+	tx_flow_ptcl_dbg_port_8851b, /*for mac tx flow ptcl dbg*/
+	tx_flow_sch_dbg_port_8851b, /*for mac tx schdueler ptcl dbg*/
+#endif /* MAC_AX_FEATURE_DBGPKG */
+	/* ERROR FLAG CHECKER */
+#if MAC_AX_FEATURE_ERR_FLAG
+	err_flag_cmac_8851b,
+	err_flag_dmac_8851b,
+	err_flag_rst_cmac_8851b,
+	err_flag_rst_dmac_8851b,
+	err_flag_chk,
+#endif /* MAC_AX_FEATURE_ERR_FLAG */
+#if MAC_SELF_DIAG_INFO
+	get_ser_freq, /* get ser frequency*/
+#endif /* #if MAC_SELF_DIAG_INFO */
+#if MAC_AX_PCIE_SUPPORT
+	get_pcie_info_def_8851b, /* get_pcie_info_def */
+	get_bdram_tbl_pcie_8851b, /* get_bdram_tbl_pcie */
+	mio_w32_pcie_8851b, /* mio_w32_pcie */
+	mio_r32_pcie_8851b, /* mio_r32_pcie */
+	get_txbd_reg_pcie_8851b, /* get_txbd_reg_pcie */
+	set_txbd_reg_pcie_8851b, /* set_txbd_reg_pcie */
+	get_rxbd_reg_pcie_8851b, /* get_rxbd_reg_pcie */
+	set_rxbd_reg_pcie_8851b, /* set_rxbd_reg_pcie */
+	ltr_sw_trigger_8851b, /* ltr_sw_trigger */
+	ltr_dyn_ctrl_8851b, /* ltr_dyn_ctrl */
+	pcie_cfgspc_write_8851b, /* pcie_cfgspc_write */
+	pcie_cfgspc_read_8851b, /* pcie_cfgspc_read */
+	pcie_ltr_write_8851b, /* pcie_ltr_write */
+	pcie_ltr_read_8851b, /* pcie_ltr_read */
+	ctrl_hci_dma_en_pcie_8851b, /* ctrl_hci_dma_en_pcie */
+	ctrl_trxdma_pcie_8851b, /* ctrl_trxdma_pcie */
+	ctrl_wpdma_pcie_8851b, /* ctrl_wpdma_pcie */
+	poll_io_idle_pcie_8851b, /* poll_io_idle_pcie */
+	poll_dma_all_idle_pcie_8851b, /* poll_dma_all_idle_pcie */
+	clr_idx_ch_pcie_8851b, /* clr_idx_ch_pcie */
+	rst_bdram_pcie_8851b, /* rst_bdram_pcie */
+	trx_mit_pcie_8851b, /* trx_mit_pcie */
+	mode_op_pcie_8851b, /* mode_op_pcie */
+	get_err_flag_pcie_8851b, /* get_err_flag_pcie */
+	mac_auto_refclk_cal_pcie_8851b, /* mac_auto_refclk_cal_pcie */
+	sync_trx_bd_idx_pcie, /* sync_trx_bd_idx */
+	mac_read_pcie_cfg_spc, /* read_pcie_cfg_spc */
+	pcie_aspm_frontdoor_set_8851b, /* pcie_aspm_frontdoor_set */
+#if MAC_AX_FEATURE_DBGPKG
+	NULL, /* pcie_mon */
+#endif
+#ifdef RTW_WKARD_GET_PROCESSOR_ID
+	chk_proc_long_ldy, /* chk_proc_long_ldy_pcie */
+#endif
+	get_pcie_support_width_8851b, /* get_pcie_support_width */
+	get_pcie_link_width_8851b, /* get_pcie_link_width */
+	set_pcie_link_width_8851b, /* set_pcie_link_width */
+	pcie_set_oobs_8851b, /* pcie_set_oob */
+	dump_pcie_ser_info_8851b, /* dump_pcie_ser_info */
+#endif
+#if MAC_AX_SDIO_SUPPORT
+	r_indir_cmd52_sdio_8851b, /* r_indir_cmd52_sdio */
+	_r_indir_cmd52_sdio_8851b, /* _r_indir_cmd52_sdio */
+	_r_indir_cmd53_sdio_8851b, /* _r_indir_cmd53_sdio */
+	r16_indir_sdio_8851b, /* r16_indir_sdio */
+	r32_indir_sdio_8851b, /* r32_indir_sdio */
+	w_indir_cmd52_sdio_8851b, /* w_indir_cmd52_sdio */
+	w_indir_cmd53_sdio_8851b, /* w_indir_cmd53_sdio */
+	ud_fs_8851b, /* ud_fs */
+	sdio_pre_init_8851b, /* sdio_pre_init */
+	tx_mode_cfg_sdio_8851b, /* tx_mode_cfg_sdio */
+	leave_suspend_sdio_8851b, /* leave_suspend_sdio */
+	get_int_latency_sdio_8851b, /* get_int_latency_sdio */
+	get_clk_cnt_sdio_8851b, /* get_clk_cnt_sdio */
+	set_wt_cfg_sdio_8851b, /* set_wt_cfg_sdio */
+	set_clk_mon_sdio_8851b, /* set_clk_mon_sdio */
+	sdio_pwr_switch_8851b, /* sdio_pwr_switch */
+	rx_agg_cfg_sdio_8851b, /* rx_agg_cfg_sdio */
+	aval_page_cfg_sdio_8851b, /* aval_page_cfg_sdio */
+	get_sdio_rx_req_len_8851b, /* get_sdio_rx_req_len */
+	read_sdio_cccr_8851b, /* read_sdio_cccr */
+#endif
+#if MAC_AX_USB_SUPPORT
+	usb_ep_cfg_8851b, /* USB endpoint pause release */
+	read_usb2phy_para_8851b, /* read_usb2phy_para */
+	write_usb2phy_para_8851b, /* write_usb2phy_para */
+	read_usb3phy_para_8851b, /* read_usb3phy_para */
+	write_usb3phy_para_8851b, /* write_usb3phy_para */
+#endif
+	/* WOWLAN */
+	get_wake_reason_8851b, /* get_wake_reason */
+};
+
+struct mac_ax_priv_ops *get_mac_8851b_priv_ops(enum mac_ax_intf intf)
+{
+	switch (intf) {
+#if MAC_AX_SDIO_SUPPORT
+	case MAC_AX_INTF_SDIO:
+		mac8851b_priv_ops.pwr_on = mac_pwr_on_sdio_8851b;
+		mac8851b_priv_ops.pwr_off = mac_pwr_off_sdio_8851b;
+		mac8851b_priv_ops.intf_pwr_switch = sdio_pwr_switch_8851b;
+		break;
+#endif
+#if MAC_AX_USB_SUPPORT
+	case MAC_AX_INTF_USB:
+		mac8851b_priv_ops.pwr_on = mac_pwr_on_usb_8851b;
+		mac8851b_priv_ops.pwr_off = mac_pwr_off_usb_8851b;
+		mac8851b_priv_ops.intf_pwr_switch = usb_pwr_switch_8851b;
+		break;
+#endif
+#if MAC_AX_PCIE_SUPPORT
+	case MAC_AX_INTF_PCIE:
+		mac8851b_priv_ops.pwr_on = mac_pwr_on_pcie_8851b;
+		mac8851b_priv_ops.pwr_off = mac_pwr_off_pcie_8851b;
+		mac8851b_priv_ops.intf_pwr_switch = pcie_pwr_switch;
+		break;
+#endif
+	default:
+		return NULL;
+	}
+
+	return &mac8851b_priv_ops;
+}
+#endif /* #if MAC_AX_8851B_SUPPORT */
