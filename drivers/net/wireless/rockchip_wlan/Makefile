@@ -5,3 +5,4 @@ obj-$(CONFIG_AIC_WLAN_USB_SUPPORT)	+= aic8800_usb/
 obj-$(CONFIG_RTL8189FS)	+= rtl8189fs/
 obj-$(CONFIG_RTL8821CU)	+= rtl8821cu/
 obj-$(CONFIG_RTL8851BE)	+= rtl8851be/
+obj-$(CONFIG_RTL8852BE)	+= rtl8852be/
