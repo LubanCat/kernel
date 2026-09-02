@@ -5,8 +5,8 @@ cmdline="earlyprintk console=ttyFIQ0 console=tty1 consoleblank=0 loglevel=7 root
 enable_uboot_overlays=1
 #overlay_start
 
-#dtoverlay=/dtb/overlay/rk3588-lubancat-uart4-m2-overlay.dtbo
-#dtoverlay=/dtb/overlay/rk3588-lubancat-uart7-m2-overlay.dtbo
+#dtoverlay=/dtb/overlay//rk3588-lubancat-uart5-m1-overlay.dtbo
+#dtoverlay=/dtb/overlay/rk3588-lubancat-uart6-m1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-rs485-1-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-5io-rs485-2-overlay.dtbo
 #dtoverlay=/dtb/overlay/rk3588-lubancat-can1-m1-overlay.dtbo
