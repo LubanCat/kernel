@@ -24,3 +24,4 @@ dtoverlay=/dtb/overlay/rk3562-lubancat-1hs-test-cam1-imx415-3840x2160-30fps-over
 #Enable DDR testing during the U-Boot stage
 stressapptest_enable=0
 stressapptest_time=60
+intensity=4
