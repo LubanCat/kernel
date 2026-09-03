@@ -85,3 +85,4 @@ gsdt_plugin1=/dtb/overlay/rk3568-lubancat-2-dsi1-in-vp0-generic-overlay.dtbo
 #Enable DDR testing during the U-Boot stage
 stressapptest_enable=0
 stressapptest_time=60
+intensity=4
