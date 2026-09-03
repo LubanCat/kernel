@@ -22,3 +22,4 @@ enable_uboot_overlays=1
 #Enable DDR testing during the U-Boot stage
 stressapptest_enable=0
 stressapptest_time=60
+intensity=4
