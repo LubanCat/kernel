@@ -25,22 +25,20 @@ enum security_type {
 	_WEP104_	= 0x05,
 	_SMS4_		= 0x06,
 	_GCMP_		= 0x07,
+#ifdef CONFIG_IEEE80211W
+	_BIP_CMAC_128_	= 0x08,
+	_BIP_GMAC_128_	= 0x09,
+#endif
 	_SEC_TYPE_MAX_,
 
 	/* EXT_SECTYPE=1 */
 	_SEC_TYPE_256_	= 0x10,
 	_CCMP_256_	= (_AES_ | _SEC_TYPE_256_),
 	_GCMP_256_	= (_GCMP_ | _SEC_TYPE_256_),
-
 #ifdef CONFIG_IEEE80211W
-	/* EXT_SECTYPE=0, MGNT=1, GK=0/1, KEYID=00/01 */
-	_SEC_TYPE_BIT_	= 0x20,
-	_BIP_CMAC_128_	= (_SEC_TYPE_BIT_),
-	_BIP_GMAC_128_	= (_SEC_TYPE_BIT_ + 1),
-	_BIP_GMAC_256_	= (_SEC_TYPE_BIT_ + 2),
 	/* EXT_SECTYPE=1, MGNT=1, GK=1, KEYID=00/01 */
-	_BIP_CMAC_256_	= (_SEC_TYPE_BIT_ + 3),
-	_BIP_MAX_,
+	_BIP_CMAC_256_	= (_BIP_CMAC_128_ | _SEC_TYPE_256_),
+	_BIP_GMAC_256_	= (_BIP_GMAC_128_ | _SEC_TYPE_256_),
 #endif
 };
 
@@ -182,6 +180,9 @@ struct security_priv {
 	u8 owe_ie[MAX_OWE_IE_LEN];/* added in assoc req */
 	int owe_ie_len;
 
+	u8 rsnx_ie[MAX_RSNX_IE_LEN];
+	int rsnx_ie_len;
+
 	u8	binstallGrpkey;
 #ifdef CONFIG_GTK_OL
 	u8	binstallKCK_KEK;
@@ -213,7 +214,6 @@ struct security_priv {
 	u8 assoc_info[600];
 	u8 szofcapability[256]; /* for wpa2 usage */
 	u8 oidassociation[512]; /* for wpa/wpa2 usage */
-	u8 authenticator_ie[256];  /* store ap security information element */
 	u8 supplicant_ie[256];  /* store sta security information element */
 
 
@@ -293,7 +293,7 @@ struct security_priv {
 		} \
 	} while (0)
 
-#define _AES_IV_LEN_ 8
+#define IV_LENGTH 8
 
 #define SET_ICE_IV_LEN(iv_len, icv_len, encrypt)\
 	do {\
@@ -416,6 +416,12 @@ u16 rtw_calc_crc(u8  *pdata, int length);
 #define rtw_sec_chk_auth_type(a, s) \
 	((a)->securitypriv.auth_type == (s))
 
+#define IV_FMT "0x%02x%02x%02x%02x%02x%02x%02x%02x"
+#define IV_ARG(iv) iv[7], iv[6], iv[5], iv[4], iv[3], iv[2], iv[1], iv[0]
+#define PN_FMT "0x%02x%02x%02x%02x%02x%02x"
+#define PN_ARG(pn) pn[5], pn[4], pn[3], pn[2], pn[1], pn[0]
+u8 rtw_iv_to_pn(u8 *iv, u8 *pn, u8 *key_id, u32 enc_algo);
+u8 rtw_pn_to_iv(u8 *pn, u8 *iv, u8 key_id, u32 enc_algo);
 #endif /* __RTL871X_SECURITY_H_ */
 
 u32 rtw_calc_crc32(u8 *data, size_t len);

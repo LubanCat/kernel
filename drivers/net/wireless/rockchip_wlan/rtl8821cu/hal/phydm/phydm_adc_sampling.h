@@ -45,7 +45,8 @@
 #define PHYDM_LA_STORE_IN_IMEM_IC (ODM_RTL8197F | ODM_RTL8198F | ODM_RTL8197G)
 
 #define FULL_BUFF_MODE_SUPPORT (ODM_RTL8821C | ODM_RTL8195B | ODM_RTL8822C |\
-				ODM_RTL8812F | ODM_RTL8814B)
+				ODM_RTL8812F | ODM_RTL8814B | ODM_RTL8814C |\
+				ODM_RTL8735B | ODM_RTL8822E)
 
 /* @ ============================================================
  *  enumrate

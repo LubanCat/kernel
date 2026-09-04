@@ -45,14 +45,15 @@
 	(_rtw_memcmp((a)->mlmepriv.nb_info.roam_target_addr,\
 		(c)->network.MacAddress, ETH_ALEN)))
 
-#define rtw_wnm_set_ext_cap_btm(_pEleStart, _val) \
-	SET_BITS_TO_LE_1BYTE(((u8 *)(_pEleStart))+2, 3, 1, _val)
+#define rtw_wnm_add_btm_ext_cap(d, l)	rtw_add_ext_cap_info(d, l, BSS_TRANSITION)
 
 #define wnm_btm_bss_term_inc(p) (*((u8 *)((p)+3)) & BSS_TERMINATION_INCLUDED)
 
 #define wnm_btm_ess_disassoc_im(p) (*((u8 *)((p)+3)) & ESS_DISASSOC_IMMINENT)
 
 #define wnm_btm_dialog_token(p) (*((u8 *)((p)+2)))
+
+#define wnm_btm_query_reason(p) (*((u8 *)((p)+3)))
 
 #define wnm_btm_req_mode(p) (*((u8 *)((p)+3)))
 
@@ -176,7 +177,14 @@ void rtw_wnm_disassoc_chk_hdl(void *ctx);
 
 u8 rtw_wnm_try_btm_roam_imnt(_adapter *padapter);
 
-void rtw_wnm_process_btm_req(_adapter *padapter,  u8* pframe, u32 frame_len);
+void rtw_wnm_process_btm_query(_adapter *padapter,
+	u8* pframe, u32 frame_len);
+
+void rtw_wnm_process_btm_req(_adapter *padapter,
+	u8* pframe, u32 frame_len);
+
+void rtw_wnm_process_notification_req(
+	_adapter *padapter, u8* pframe, u32 frame_len);
 
 void rtw_wnm_reset_btm_candidate(struct roam_nb_info *pnb);
 

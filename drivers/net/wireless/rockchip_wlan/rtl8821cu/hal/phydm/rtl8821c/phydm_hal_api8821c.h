@@ -71,6 +71,9 @@ boolean
 config_phydm_switch_channel_8821c(struct dm_struct *dm, u8 central_ch);
 
 boolean
+config_phydm_switch_channel_cn_8821c(struct dm_struct *dm, u8 central_ch, enum channel_width bandwidth);
+
+boolean
 config_phydm_switch_bandwidth_8821c(struct dm_struct *dm, u8 primary_ch_idx,
 				    enum channel_width bandwidth);
 
@@ -78,6 +81,11 @@ boolean
 config_phydm_switch_channel_bw_8821c(struct dm_struct *dm, u8 central_ch,
 				     u8 primary_ch_idx,
 				     enum channel_width bandwidth);
+					 
+boolean
+config_phydm_switch_channel_bw_cn_8821c(struct dm_struct *dm, u8 central_ch,
+				     u8 primary_ch_idx,
+				     enum channel_width bandwidth);					 
 
 boolean
 config_phydm_trx_mode_8821c(struct dm_struct *dm, enum bb_path tx_path,

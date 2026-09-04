@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2019 Realtek Corporation.
+ * Copyright(c) 2007 - 2022 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -47,6 +47,8 @@ typedef struct sdio_data {
 	unsigned int clock;
 	unsigned int timing;
 	u8	sd3_bus_mode;
+	/* MAX size for cmd53 byte mode */
+	u16 max_byte_size;
 #endif
 
 #ifdef DBG_SDIO

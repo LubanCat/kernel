@@ -282,11 +282,18 @@ void sreset_reset(_adapter *padapter)
 	systime start = rtw_get_current_time();
 	struct dvobj_priv *psdpriv = padapter->dvobj;
 	struct debug_priv *pdbgpriv = &psdpriv->drv_dbg;
+	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+	u8 ips_mode_bk;
+	u8 ips_changed = _FALSE;
 
 	RTW_INFO("%s\n", __FUNCTION__);
 
 	psrtpriv->Wifi_Error_Status = WIFI_STATUS_SUCCESS;
 
+	if (!rtw_is_hw_init_completed(padapter)){
+                RTW_INFO("hardware init not yet done\n");
+                return;
+        }
 
 #ifdef CONFIG_LPS
 	rtw_set_ps_mode(padapter, PS_MODE_ACTIVE, 0, 0, "SRESET");
@@ -298,9 +305,34 @@ void sreset_reset(_adapter *padapter)
 	pwrpriv->change_rfpwrstate = rf_off;
 
 	rtw_mi_sreset_adapter_hdl(padapter, _FALSE);/*sreset_stop_adapter*/
+
 #ifdef CONFIG_IPS
+	/* 1. If driver state is in ips, leaving ips at first */
+	if (pwrpriv->rf_pwrstate == rf_off || pwrpriv->bips_processing == _TRUE) {
+		if (ATOMIC_READ(&(pcmdpriv->cmdthd_running)) == _TRUE) {
+			if (rtw_ips_ctrl_wk_cmd(padapter, IPS_CTRL_LEAVE_SRESET, -1,
+			    RTW_CMDF_DIRECTLY) != _SUCCESS) {
+				RTW_ERR(FUNC_ADPT_FMT" Fail to leave IPS (current mode=%d).\n"
+					, FUNC_ADPT_ARG(padapter), pwrpriv->ips_mode_req);
+			}
+		}
+	}
+
+	/* 2. If current ips mode is NOT IPS_NORMAL, replacing it to IPS_NORMAL */
+	/*    in order to use card disable to execute sreset. */
+	if (pwrpriv->ips_mode_req != IPS_NORMAL) {
+		ips_mode_bk = pwrpriv->ips_mode_req;
+		pwrpriv->ips_mode_req = IPS_NORMAL;
+		ips_changed = _TRUE;
+	}
+
+	/* 3. Do card disable/enable to achieve sreset. */
 	_ips_enter(padapter);
 	_ips_leave(padapter);
+
+	/* 4. Restore the original ips mode setting. */
+	if (ips_changed)
+		pwrpriv->ips_mode_req = ips_mode_bk;
 #endif
 #if defined(CONFIG_AP_MODE) && defined(CONFIG_CONCURRENT_MODE)
 	rtw_mi_ap_info_restore(padapter);

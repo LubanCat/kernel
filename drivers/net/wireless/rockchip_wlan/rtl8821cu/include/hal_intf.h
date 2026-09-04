@@ -43,6 +43,7 @@ enum _CHIP_TYPE {
 	RTL8822C,
 	RTL8814B,
 	RTL8723F,
+	RTL8822E,
 	MAX_CHIP_TYPE
 };
 
@@ -158,7 +159,6 @@ typedef enum _HW_VARIABLES {
 	HW_VAR_CHK_MGQ_CPU_EMPTY,
 	HW_VAR_DL_BCN_SEL,
 	HW_VAR_AMPDU_MAX_TIME,
-	HW_VAR_WIRELESS_MODE,
 	HW_VAR_USB_MODE,
 	HW_VAR_PORT_SWITCH,
 	HW_VAR_PORT_CFG,
@@ -220,6 +220,9 @@ typedef enum _HW_VARIABLES {
 #ifdef CONFIG_WOWLAN
 	HW_VAR_VENDOR_WOW_MODE,
 #endif /* CONFIG_WOWLAN */
+#ifdef CONFIG_WAKE_ON_BT
+	HW_VAR_WAKE_ON_BT_GPIO_SWITCH,
+#endif
 } HW_VARIABLES;
 
 typedef enum _HAL_DEF_VARIABLE {
@@ -264,7 +267,6 @@ typedef enum _HAL_ODM_VARIABLE {
 	HAL_ODM_STA_INFO,
 	HAL_ODM_P2P_STATE,
 	HAL_ODM_WIFI_DISPLAY_STATE,
-	HAL_ODM_REGULATION,
 	HAL_ODM_INITIAL_GAIN,
 	HAL_ODM_RX_INFO_DUMP,
 	HAL_ODM_RX_Dframe_INFO,
@@ -307,6 +309,9 @@ struct hal_ops {
 	s32(*hal_mgmt_xmitframe_enqueue)(_adapter *padapter, struct xmit_frame *pxmitframe);
 #endif
 	s32(*hal_xmitframe_enqueue)(_adapter *padapter, struct xmit_frame *pxmitframe);
+	#if defined (CONFIG_CONCURRENT_MODE)  && defined (CONFIG_TSF_SYNC)
+	void(*tsf_sync)(_adapter *Adapter);
+	#endif
 #ifdef CONFIG_XMIT_THREAD_MODE
 	s32(*xmit_thread_handler)(_adapter *padapter);
 #endif
@@ -458,6 +463,7 @@ struct hal_ops {
 #ifdef CONFIG_PCI_TX_POLLING
 	void (*tx_poll_handler)(_adapter *adapter);
 #endif
+	void (*hci_flush)(_adapter *adapter, u32 queue);
 };
 
 typedef	enum _RT_EEPROM_TYPE {
@@ -526,6 +532,9 @@ typedef enum _HARDWARE_TYPE {
 	HARDWARE_TYPE_RTL8814BS,
 	HARDWARE_TYPE_RTL8723FU,
 	HARDWARE_TYPE_RTL8723FS,
+	HARDWARE_TYPE_RTL8822EE,
+	HARDWARE_TYPE_RTL8822EU,
+	HARDWARE_TYPE_RTL8822ES,
 	HARDWARE_TYPE_MAX,
 } HARDWARE_TYPE;
 
@@ -663,6 +672,12 @@ typedef enum _HARDWARE_TYPE {
 #define IS_HARDWARE_TYPE_8723F(_Adapter)		\
 		(IS_HARDWARE_TYPE_8723FU(_Adapter) || IS_HARDWARE_TYPE_8723FS(_Adapter))
 
+#define IS_HARDWARE_TYPE_8822EE(_Adapter)		(rtw_get_hw_type(_Adapter) == HARDWARE_TYPE_RTL8822EE)
+#define IS_HARDWARE_TYPE_8822EU(_Adapter)		(rtw_get_hw_type(_Adapter) == HARDWARE_TYPE_RTL8822EU)
+#define IS_HARDWARE_TYPE_8822ES(_Adapter)		(rtw_get_hw_type(_Adapter) == HARDWARE_TYPE_RTL8822ES)
+#define IS_HARDWARE_TYPE_8822E(_Adapter)		\
+	(IS_HARDWARE_TYPE_8822EE(_Adapter) || IS_HARDWARE_TYPE_8822EU(_Adapter) || IS_HARDWARE_TYPE_8822ES(_Adapter))
+
 #define IS_HARDWARE_TYPE_JAGUAR2(_Adapter)		\
 	(IS_HARDWARE_TYPE_8814A(_Adapter) || IS_HARDWARE_TYPE_8821B(_Adapter) || IS_HARDWARE_TYPE_8822B(_Adapter) || IS_HARDWARE_TYPE_8821C(_Adapter))
 
@@ -670,7 +685,7 @@ typedef enum _HARDWARE_TYPE {
 	(IS_HARDWARE_TYPE_JAGUAR(_Adapter) || IS_HARDWARE_TYPE_JAGUAR2(_Adapter))
 
 #define IS_HARDWARE_TYPE_JAGUAR3(_Adapter)		\
-	(IS_HARDWARE_TYPE_8814B(_Adapter) || IS_HARDWARE_TYPE_8822C(_Adapter))
+	(IS_HARDWARE_TYPE_8814B(_Adapter) || IS_HARDWARE_TYPE_8822C(_Adapter) || IS_HARDWARE_TYPE_8822E(_Adapter))
 
 #define IS_HARDWARE_TYPE_JAGUAR3_11N(_Adapter)	IS_HARDWARE_TYPE_8723F(_Adapter)
 
@@ -720,6 +735,7 @@ u8 rtw_hal_rfpath_init(_adapter *adapter);
 u8 rtw_hal_trxnss_init(_adapter *adapter);
 
 uint rtw_hal_deinit(_adapter *padapter);
+bool rtw_hw_is_init_completed(struct dvobj_priv *dvobj);
 void rtw_hal_stop(_adapter *padapter);
 u8 rtw_hal_set_hwreg(PADAPTER padapter, u8 variable, u8 *val);
 void rtw_hal_get_hwreg(PADAPTER padapter, u8 variable, u8 *val);
@@ -853,8 +869,6 @@ s32 rtw_hal_c2h_handler(_adapter *adapter, u8 id, u8 seq, u8 plen, u8 *payload);
 s32 rtw_hal_c2h_id_handle_directly(_adapter *adapter, u8 id, u8 seq, u8 plen, u8 *payload);
 #endif
 
-s32 rtw_hal_is_disable_sw_channel_plan(PADAPTER padapter);
-
 s32 rtw_hal_macid_sleep(_adapter *adapter, u8 macid);
 s32 rtw_hal_macid_wakeup(_adapter *adapter, u8 macid);
 s32 rtw_hal_macid_sleep_all_used(_adapter *adapter);
@@ -882,8 +896,8 @@ s32 rtw_hal_fw_dl(_adapter *padapter, u8 wowlan);
 	void rtw_hal_clear_interrupt(_adapter *padapter);
 #endif
 
+bool rtw_txpwr_hal_get_pwr_lmt_en(struct dvobj_priv *dvobj);
 void rtw_hal_set_tx_power_level(_adapter *adapter, u8 channel);
-void rtw_hal_update_txpwr_level(_adapter *adapter);
 void rtw_hal_set_txpwr_done(_adapter *adapter);
 void rtw_hal_set_tx_power_index(_adapter *adapter, u32 powerindex
 	, enum rf_path rfpath, u8 rate);
@@ -893,6 +907,20 @@ u8 rtw_hal_get_tx_power_index(_adapter *adapter, enum rf_path rfpath
 	, struct txpwr_idx_comp *tic);
 s8 rtw_hal_get_txpwr_target_extra_bias(_adapter *adapter, enum rf_path rfpath
 	, RATE_SECTION rs, enum MGN_RATE rate, enum channel_width bw, BAND_TYPE band, u8 cch);
+
+enum tx_pause_rson {
+	PAUSE_RSON_DFS_CSA, /* allow beacon only */
+	PAUSE_RSON_DFS_CSA_MG, /* allow beacon and mgnt frame */
+	PAUSE_RSON_DFS_CAC,
+	PAUSE_RSON_TOKEN_BASED_XMIT,
+	PAUSE_RSON_SCAN, /* scan */
+	PAUSE_RSON_JOIN, /* join */
+	PAUSE_RSON_CORRECT_TSF, /* correct TSF */
+	PAUSE_RSON_OTHER_BCN_CTRL, /* CTRL_TX_BCN_BY_OTHERS */
+	PAUSE_RSON_MAX
+};
+
+int rtw_hal_tx_pause(_adapter *adapter, enum tx_pause_rson rson, bool tx_pause);
 
 u8 rtw_hal_ops_check(_adapter *padapter);
 

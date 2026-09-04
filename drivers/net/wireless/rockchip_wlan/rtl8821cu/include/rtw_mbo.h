@@ -16,10 +16,17 @@
 #ifndef __RTW_MBO_H_
 #define __RTW_MBO_H_
 
-#define rtw_mbo_wifi_logo_test(a)	((a->registrypriv.wifi_spec) == 1)
+#define rtw_mbo_wifi_logo_test(a)	\
+	(((a)->registrypriv.wifi_spec) == 1)
 
-#define rtw_mbo_set_ext_cap_internw(_pEleStart, _val) \
-	SET_BITS_TO_LE_1BYTE(((u8 *)(_pEleStart))+3, 7, 1, _val)
+#define rtw_mbo_wifi_spec_test(a)	\
+	(((a)->mlmepriv.mbo_attr.mbo_spec_test) == 1)
+
+#define rtw_mbo_ap_assoc_disallow(a)	\
+	(((a)->mlmepriv.mbo_attr.assoc_disallow) > 0)
+
+#define rtw_mbo_add_internw_ext_cap(d, l)	\
+	rtw_add_ext_cap_info(d, l, INTERWORKING)
 
 #define rtw_mbo_wnm_notification_req(c, a) \
 	(((c) == RTW_WLAN_CATEGORY_WNM) &&	\
@@ -34,6 +41,8 @@
 #define RTW_MBO_OUI		0x506F9A
 #define RTW_MBO_OUI_TYPE	0x16
 
+/* MBO AP Capability Indication */
+#define RTW_MBO_ATTR_AP_CAP_ID			0x1
 /* Non-preferred Channel Report */
 #define RTW_MBO_ATTR_NPREF_CH_RPT_ID	0x2
 /* Cellular Data Capabilities */
@@ -45,11 +54,33 @@
 /* Transition Rejection Reason Code */
 #define RTW_MBO_ATTR_TRANS_REJ_ID		0x7
 /* Association Retry Delay */
-#define RTW_MBO_ATTR_TASSOC_RETRY_ID	0x8
+#define RTW_MBO_ATTR_ASSOC_RETRY_DELAY_ID	0x8
 
 #define RTW_MBO_MAX_CH_LIST_NUM MAX_CHANNEL_NUM
 
 #define RTW_MBO_MAX_CH_RPT_NUM 32
+
+#define RTW_MBO_TEST_CMD_REST		0x00
+#define RTW_MBO_TEST_CMD_BTM_REQ_SEND	0xfd
+#define RTW_MBO_TEST_CMD_BTM_REQ_SET	0xfe
+#define RTW_MBO_TEST_CMD_NB_BSS_ADD	0xff
+
+struct mbo_user_btm_req_pkt {
+	struct btm_req_hdr hdr;
+	u32 candidate_cnt;
+	struct wnm_btm_cant btm_cants[RTW_MAX_NB_RPT_NUM];
+	u8 append_mbo_ie;
+};
+
+struct mbo_attr_info {
+	u8 mbo_spec_test;
+	u8 ap_cap_ind;
+	u8 assoc_disallow;
+	u8 cell_data_cap;
+	u8 reason;
+	u16 delay;
+	struct mbo_user_btm_req_pkt user_raw;
+};
 
 struct npref_ch {
 	u8 op_class;
@@ -81,11 +112,11 @@ void rtw_mbo_build_trans_reject_reason_attr(
 
 u8 rtw_mbo_disallowed_network(struct wlan_network *pnetwork);
 
-void rtw_mbo_build_exented_cap(
+void rtw_mbo_build_extended_cap(
 	_adapter *padapter, u8 **pframe, struct pkt_attrib *pattrib);
 
 ssize_t rtw_mbo_proc_non_pref_chans_set(
-	struct file *pfile, const char __user *buffer, 
+	struct file *pfile, const char __user *buffer,
 	size_t count, loff_t *pos, void *pdata);
 
 int rtw_mbo_proc_non_pref_chans_get(
@@ -98,6 +129,13 @@ ssize_t rtw_mbo_proc_cell_data_set(
 int rtw_mbo_proc_cell_data_get(
 	struct seq_file *m, void *v);
 
+ssize_t rtw_mbo_proc_attr_set(
+	struct file *pfile, const char __user *buffer,
+	size_t count, loff_t *pos, void *pdata);
+
+int rtw_mbo_proc_attr_get(
+	struct seq_file *m, void *v);
+
 void rtw_mbo_wnm_notification_parsing(
 	_adapter *padapter, const u8 *pdata, size_t data_len);
 
@@ -108,6 +146,23 @@ void rtw_mbo_build_probe_req_ies(
 	_adapter *padapter, u8 **pframe, struct pkt_attrib *pattrib);
 
 void rtw_mbo_build_assoc_req_ies(
+	_adapter *padapter, u8 **pframe, struct pkt_attrib *pattrib);
+
+void rtw_mbo_attr_info_init(_adapter *padapter);
+
+void rtw_mbo_process_assoc_req(
+        _adapter *padapter, u8 *pie, int ie_len);
+
+void rtw_mbo_build_beacon_ies(
+	_adapter *padapter, u8 **pframe, struct pkt_attrib *pattrib);
+
+void rtw_mbo_build_probe_rsp_ies(
+	_adapter *padapter, u8 **pframe, struct pkt_attrib *pattrib);
+
+void rtw_mbo_build_assoc_rsp_ies(
+	_adapter *padapter, u8 **pframe, struct pkt_attrib *pattrib);
+
+void rtw_mbo_build_wnm_btmreq_reason_ies(
 	_adapter *padapter, u8 **pframe, struct pkt_attrib *pattrib);
 
 #endif /* __RTW_MBO_H_ */

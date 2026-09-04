@@ -170,7 +170,9 @@ enum rt_spinlock_type {
 		PW_LMT_REGU_CHILE = 7,
 		PW_LMT_REGU_UKRAINE = 8,
 		PW_LMT_REGU_MEXICO = 9,
-		PW_LMT_REGU_CN = 10
+		PW_LMT_REGU_CN = 10,
+		PW_LMT_REGU_QATAR = 11,
+		PW_LMT_REGU_UK = 12
 	};
 
 	enum odm_pw_lmt_band_type {
@@ -305,7 +307,9 @@ enum rt_spinlock_type {
 		PW_LMT_REGU_CHILE = 7,
 		PW_LMT_REGU_UKRAINE = 8,
 		PW_LMT_REGU_MEXICO = 9,
-		PW_LMT_REGU_CN = 10
+		PW_LMT_REGU_CN = 10,
+		PW_LMT_REGU_QATAR = 11,
+		PW_LMT_REGU_UK = 12
 	};
 
 	enum odm_pw_lmt_band_type {
@@ -341,40 +345,45 @@ enum rt_spinlock_type {
 
 	// for power limit table
 	enum odm_pw_lmt_regulation_type {
-		PW_LMT_REGU_NULL = 0,
-		PW_LMT_REGU_FCC = 1,
-		PW_LMT_REGU_ETSI = 2,
-		PW_LMT_REGU_MKK = 3,
-		PW_LMT_REGU_WW13 = 4
+		PW_LMT_REGU_FCC = 0,
+		PW_LMT_REGU_ETSI = 1,
+		PW_LMT_REGU_MKK = 2,
+		PW_LMT_REGU_WW13 = 3,
+		PW_LMT_REGU_IC = 4,
+		PW_LMT_REGU_KCC = 5,
+		PW_LMT_REGU_ACMA = 6,
+		PW_LMT_REGU_CHILE = 7,
+		PW_LMT_REGU_UKRAINE = 8,
+		PW_LMT_REGU_MEXICO = 9,
+		PW_LMT_REGU_CN = 10,
+		PW_LMT_REGU_QATAR = 11,
+		PW_LMT_REGU_UK = 12,
+		PW_LMT_REGU_MAX_NUM = 13
 	};
 
 	enum odm_pw_lmt_band_type {
-		PW_LMT_BAND_NULL = 0,
-		PW_LMT_BAND_2_4G = 1,
-		PW_LMT_BAND_5G = 2
+		PW_LMT_BAND_2_4G = 0,
+		PW_LMT_BAND_5G = 1
 	};
 
 	enum odm_pw_lmt_bandwidth_type {
-		PW_LMT_BW_NULL = 0,
-		PW_LMT_BW_20M = 1,
-		PW_LMT_BW_40M = 2,
-		PW_LMT_BW_80M = 3
+		PW_LMT_BW_20M = 0,
+		PW_LMT_BW_40M = 1,
+		PW_LMT_BW_80M = 2
 	};
 
 	enum odm_pw_lmt_ratesection_type {
-		PW_LMT_RS_NULL = 0,
-		PW_LMT_RS_CCK = 1,
-		PW_LMT_RS_OFDM = 2,
-		PW_LMT_RS_HT = 3,
-		PW_LMT_RS_VHT = 4
+		PW_LMT_RS_CCK = 0,
+		PW_LMT_RS_OFDM = 1,
+		PW_LMT_RS_HT = 2,
+		PW_LMT_RS_VHT = 3
 	};
 
 	enum odm_pw_lmt_rfpath_type {
-		PW_LMT_PH_NULL = 0,
-		PW_LMT_PH_1T = 1,
-		PW_LMT_PH_2T = 2,
-		PW_LMT_PH_3T = 3,
-		PW_LMT_PH_4T = 4
+		PW_LMT_PH_1T = 0,
+		PW_LMT_PH_2T = 1,
+		PW_LMT_PH_3T = 2,
+		PW_LMT_PH_4T = 3
 	};
 
 	#define	phydm_timer_list	timer_list

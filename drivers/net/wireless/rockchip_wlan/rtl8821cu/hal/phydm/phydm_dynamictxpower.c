@@ -226,8 +226,8 @@ void phydm_dtp_init_2nd(void *dm_void)
 	if (!(dm->support_ability & ODM_BB_DYNAMIC_TXPWR))
 		return;
 
-	#if (RTL8822C_SUPPORT || RTL8812F_SUPPORT)
-	if (dm->support_ic_type & (ODM_RTL8822C | ODM_RTL8812F)) {
+	#if (RTL8822C_SUPPORT || RTL8812F_SUPPORT || RTL8822E_SUPPORT)
+	if (dm->support_ic_type & (ODM_RTL8822C | ODM_RTL8812F | ODM_RTL8822E)) {
 		phydm_rst_ram_pwr(dm);
 		/* rsp tx use type 0*/
 		odm_set_mac_reg(dm, R_0x6d8, BIT(19) | BIT(18), RAM_PWR_OFST0);
@@ -243,7 +243,7 @@ phydm_check_rates(void *dm_void, u8 rate_idx)
 	u32 check_rate_bitmap0 = 0x08080808; /* @check CCK11M, OFDM54M, MCS7, MCS15*/
 	u32 check_rate_bitmap1 = 0x80200808; /* @check MCS23, MCS31, VHT1SS M9, VHT2SS M9*/
 	u32 check_rate_bitmap2 = 0x00080200; /* @check VHT3SS M9, VHT4SS M9*/
-	u32 bitmap_result;
+	u32 bitmap_result = 0;
 
 #if (RTL8822B_SUPPORT)
 	if (dm->support_ic_type & ODM_RTL8822B) {
@@ -291,7 +291,7 @@ phydm_check_rates(void *dm_void, u8 rate_idx)
 		bitmap_result = BIT(rate_idx - 64) & check_rate_bitmap2;
 	else if (rate_idx >= 32)
 		bitmap_result = BIT(rate_idx - 32) & check_rate_bitmap1;
-	else if (rate_idx <= 31)
+	else // if (rate_idx <= 31)
 		bitmap_result = BIT(rate_idx) & check_rate_bitmap0;
 
 	if (bitmap_result != 0)
@@ -359,7 +359,7 @@ u8 phydm_search_min_power_index(void *dm_void)
 
 				if (gain_index == 0xff) {
 					min_gain_index = 0x20;
-					PHYDM_DBG(dm, DBG_DYN_TXPWR, 
+					PHYDM_DBG(dm, DBG_DYN_TXPWR,
 						  "Error Gain idx!! Rewite to: ((%d))\n",
 						  min_gain_index);
 					break;
@@ -524,6 +524,7 @@ void phydm_dtp_per_sta(void *dm_void)
 	struct phydm_bb_ram_ctrl *bb_ctrl = &dm->p_bb_ram_ctrl;
 	u8 sta_cnt = 0;
 	u8 i = 0;
+	u8 macid = 0;
 	u8 curr_pwr_lv = 0;
 	u8 last_pwr_lv = 0;
 	u8 mac_id_cnt = 0;
@@ -536,9 +537,14 @@ void phydm_dtp_per_sta(void *dm_void)
 		if (is_sta_active(sta)) {
 			sta_cnt++;
 
+			if (sta->mac_id > 63)
+				macid = 63;
+			else
+				macid = sta->mac_id;
+
 			dtp = &sta->dtp_stat;
 			rssi = &sta->rssi_stat;
-			macid_mask = (u64)BIT(sta->mac_id);
+			macid_mask = (u64)BIT(macid);
 			if (!(bb_ctrl->macid_is_linked & macid_mask))
 				dtp->sta_last_dtp_lvl = tx_high_pwr_level_normal;
 
@@ -653,9 +659,7 @@ void phydm_dtp_debug(void *dm_void, char input[][16], u32 *_used, char *output,
 		#endif
 	} else {
 		for (i = 0; i < 7; i++) {
-			if (input[i + 1])
-				PHYDM_SSCANF(input[i + 1], DCMD_DECIMAL,
-					     &var1[i]);
+			PHYDM_SSCANF(input[i + 1], DCMD_DECIMAL, &var1[i]);
 		}
 		switch (var1[0]) {
 		case 1:

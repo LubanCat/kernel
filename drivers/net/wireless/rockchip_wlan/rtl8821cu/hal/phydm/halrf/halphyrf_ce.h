@@ -83,6 +83,7 @@ struct txpwrtrack_cfg {
 	u8 swing_table_size_ofdm;
 	u8 threshold_iqk;
 	u8 threshold_dpk;
+	u8 threshold_lck;
 	u8 average_thermal_num;
 	u8 rf_path_count;
 	u32 thermal_reg_addr;
@@ -108,7 +109,7 @@ void odm_txpowertracking_callback_thermal_meter(void *dm);
 void odm_txpowertracking_callback_thermal_meter(void *adapter);
 #endif
 
-#if (RTL8822C_SUPPORT == 1 || RTL8814B_SUPPORT == 1)
+#if (RTL8822C_SUPPORT == 1 || RTL8814B_SUPPORT == 1 || RTL8822E_SUPPORT == 1)
 void odm_txpowertracking_new_callback_thermal_meter(void *dm_void);
 #endif
 

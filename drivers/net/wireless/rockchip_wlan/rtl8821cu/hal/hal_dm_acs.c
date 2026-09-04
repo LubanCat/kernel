@@ -61,13 +61,11 @@ static void _rtw_bss_nums_count(_adapter *adapter, u8 *pbss_nums)
 
 u8 rtw_get_ch_num_by_idx(_adapter *adapter, u8 idx)
 {
-	struct rf_ctl_t *rfctl = adapter_to_rfctl(adapter);
-	RT_CHANNEL_INFO *pch_set = rfctl->channel_set;
-	u8 max_chan_nums = rfctl->max_chan_nums;
+	struct rtw_chset *chset = adapter_to_chset(adapter);
 
-	if (idx >= max_chan_nums)
+	if (idx >= chset->chs_len)
 		return 0;
-	return pch_set[idx].ChannelNum;
+	return chset->chs[idx].ChannelNum;
 }
 #endif /*defined(CONFIG_RTW_ACS) || defined(CONFIG_BACKGROUND_NOISE_MONITOR)*/
 
@@ -144,20 +142,21 @@ void rtw_acs_trigger(_adapter *adapter, u16 scan_time_ms, u8 scan_chan, enum NHM
 	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
 	struct dm_struct *phydm = adapter_to_phydm(adapter);
 #if (RTK_ACS_VERSION == 3)
-	struct clm_para_info clm_para;
-	struct nhm_para_info nhm_para;
-	struct env_trig_rpt trig_rpt;
+	struct clm_para_info clm_para = {0};
+	struct nhm_para_info nhm_para = {0};
+	struct env_trig_rpt trig_rpt = {0};
+	bool en_1db_mode = _FALSE;
 
 	scan_time_ms -= 10;
 
 	init_acs_clm(clm_para, scan_time_ms);
 
 	if (pid == NHM_PID_IEEE_11K_HIGH)
-		init_11K_high_nhm(nhm_para, scan_time_ms);
+		init_11K_high_nhm(nhm_para, scan_time_ms, en_1db_mode);
 	else if (pid == NHM_PID_IEEE_11K_LOW)
-		init_11K_low_nhm(nhm_para, scan_time_ms);
+		init_11K_low_nhm(nhm_para, scan_time_ms, en_1db_mode);
 	else
-		init_acs_nhm(nhm_para, scan_time_ms);
+		init_acs_nhm(nhm_para, scan_time_ms, en_1db_mode);
 
 	hal_data->acs.trig_rst = phydm_env_mntr_trigger(phydm, &nhm_para, &clm_para, &trig_rpt);
 	if (hal_data->acs.trig_rst == (NHM_SUCCESS | CLM_SUCCESS)) {
@@ -245,7 +244,7 @@ void rtw_acs_get_rst(_adapter *adapter)
 void _rtw_phydm_acs_select_best_chan(_adapter *adapter)
 {
 	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
-	struct rf_ctl_t *rfctl = adapter_to_rfctl(adapter);
+	struct rtw_chset *chset = adapter_to_chset(adapter);
 	u8 ch_idx;
 	u8 ch_idx_24g = 0xFF, ch_idx_5g = 0xFF;
 	u8 min_itf_24g = 0xFF,  min_itf_5g = 0xFF;
@@ -253,9 +252,10 @@ void _rtw_phydm_acs_select_best_chan(_adapter *adapter)
 	u8 *pclm_ratio = hal_data->acs.clm_ratio;
 	u8 *pnhm_ratio = hal_data->acs.nhm_ratio;
 	u8 *pinterference_time = hal_data->acs.interference_time;
-	u8 max_chan_nums = rfctl->max_chan_nums;
 
-	for (ch_idx = 0; ch_idx < max_chan_nums; ch_idx++) {
+	for (ch_idx = 0; ch_idx < chset->chs_len; ch_idx++) {
+		if (chset->chs[ch_idx].flags & RTW_CHF_DIS)
+			continue;
 		if (pbss_nums[ch_idx])
 			pinterference_time[ch_idx] = (pclm_ratio[ch_idx] / 2) + (pnhm_ratio[ch_idx] / 2);
 		else
@@ -285,8 +285,7 @@ void _rtw_phydm_acs_select_best_chan(_adapter *adapter)
 void rtw_acs_info_dump(void *sel, _adapter *adapter)
 {
 	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
-	struct rf_ctl_t *rfctl = adapter_to_rfctl(adapter);
-	u8 max_chan_nums = rfctl->max_chan_nums;
+	struct rtw_chset *chset = adapter_to_chset(adapter);
 	u8 ch_idx, ch_num;
 
 	_RTW_PRINT_SEL(sel, "========== ACS (VER-%d) ==========\n", RTK_ACS_VERSION);
@@ -301,7 +300,9 @@ void rtw_acs_info_dump(void *sel, _adapter *adapter)
 	_RTW_PRINT_SEL(sel, "%5s  %3s  %3s  %3s(%%)  %3s(%%)  %3s\n",
 						"Index", "CH", "BSS", "CLM", "NHM", "ITF");
 
-	for (ch_idx = 0; ch_idx < max_chan_nums; ch_idx++) {
+	for (ch_idx = 0; ch_idx < chset->chs_len; ch_idx++) {
+		if (chset->chs[ch_idx].flags & RTW_CHF_DIS)
+			continue;
 		ch_num = rtw_get_ch_num_by_idx(adapter, ch_idx);
 		_RTW_PRINT_SEL(sel, "%5d  %3d  %3d  %6d  %6d  %3d\n",
 						ch_idx, ch_num, hal_data->acs.bss_nums[ch_idx],
@@ -395,8 +396,7 @@ u8 rtw_acs_get_num_ratio_by_ch_idx(_adapter *adapter, u8 ch_idx)
 void rtw_acs_chan_info_dump(void *sel, _adapter *adapter)
 {
 	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
-	struct rf_ctl_t *rfctl = adapter_to_rfctl(adapter);
-	u8 max_chan_nums = rfctl->max_chan_nums;
+	struct rtw_chset *chset = adapter_to_chset(adapter);
 	u8 ch_idx, ch_num;
 	u8 utilization;
 
@@ -405,7 +405,9 @@ void rtw_acs_chan_info_dump(void *sel, _adapter *adapter)
 						"Index", "CH", "Quality", "Availability", "Utilization",
 						"WIFI Util", "Interference Util");
 
-	for (ch_idx = 0; ch_idx < max_chan_nums; ch_idx++) {
+	for (ch_idx = 0; ch_idx < chset->chs_len; ch_idx++) {
+		if (chset->chs[ch_idx].flags & RTW_CHF_DIS)
+			continue;
 		ch_num = rtw_get_ch_num_by_idx(adapter, ch_idx);
 		utilization = hal_data->acs.clm_ratio[ch_idx] + hal_data->acs.nhm_ratio[ch_idx];
 		_RTW_PRINT_SEL(sel, "%5d  %3d  %7d   %12d   %12d   %12d   %12d\n",
@@ -452,6 +454,36 @@ void rtw_acs_update_current_info(_adapter *adapter)
 	rtw_acs_current_info_dump(RTW_DBGDUMP, adapter);
 	#endif
 }
+/*
+rsni
+para1:rcpi=>RSSI in dbm
+para2:anpi=>nhm in dbm
+range:0~255
+255: is not available (defined by 802.11k spec)
+
+*/
+u8 rtw_acs_get_rsni(_adapter *adapter, s8 rcpi, u8 ch)
+{
+	struct dm_struct *phydm = adapter_to_phydm(adapter);
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
+	u8 rsni = 255;
+	s8 anpi = 0;
+	int chan_idx = -1;
+
+	if(ch == 0)
+		goto exit;
+
+	chan_idx = rtw_chset_search_ch(adapter_to_chset(adapter), ch);
+	if(chan_idx == -1)
+		goto exit;
+
+	anpi = rtw_acs_get_nhm_noise_pwr_by_ch_idx(adapter, chan_idx);
+	if((rcpi != 0) && (anpi != 0))
+	 	rsni = phydm_env_mntr_get_802_11_k_rsni(phydm, rcpi, anpi);
+	RTW_DBG("[ACS][RSNI]ch=%d chan_idx=%d RSNI=%u RSSI=%d NHM=%d\n", ch, chan_idx, rsni,rcpi, anpi);
+exit:
+	return rsni;
+}
 #endif /*CONFIG_RTW_ACS*/
 
 #ifdef CONFIG_BACKGROUND_NOISE_MONITOR
@@ -470,8 +502,7 @@ void rtw_nm_disable(_adapter *adapter)
 void rtw_noise_info_dump(void *sel, _adapter *adapter)
 {
 	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
-	struct rf_ctl_t *rfctl = adapter_to_rfctl(adapter);
-	u8 max_chan_nums = rfctl->max_chan_nums;
+	struct rtw_chset *chset = adapter_to_chset(adapter);
 	u8 ch_idx, ch_num;
 
 	_RTW_PRINT_SEL(sel, "========== NM (VER-%d) ==========\n", RTK_NOISE_MONITOR_VERSION);
@@ -480,7 +511,9 @@ void rtw_noise_info_dump(void *sel, _adapter *adapter)
 
 	_rtw_bss_nums_count(adapter, hal_data->nm.bss_nums);
 
-	for (ch_idx = 0; ch_idx < max_chan_nums; ch_idx++) {
+	for (ch_idx = 0; ch_idx < chset->chs_len; ch_idx++) {
+		if (chset->chs[ch_idx].flags & RTW_CHF_DIS)
+			continue;
 		ch_num = rtw_get_ch_num_by_idx(adapter, ch_idx);
 		_RTW_PRINT_SEL(sel, "%5d  %3d  %3d  %10d\n",
 						ch_idx, ch_num, hal_data->nm.bss_nums[ch_idx],

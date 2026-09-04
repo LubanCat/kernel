@@ -88,3 +88,8 @@ void platform_wifi_power_off(void)
 #endif /* CONFIG_RTL8188E */
 #endif /* CONFIG_MMC_SUNXI_POWER_CONTROL */
 }
+
+void platform_wifi_mac_addr(u8 *mac_addr)
+{
+
+}

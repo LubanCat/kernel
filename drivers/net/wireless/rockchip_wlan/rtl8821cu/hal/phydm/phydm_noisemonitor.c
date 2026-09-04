@@ -247,7 +247,7 @@ s16 phydm_idle_noise_measure_ac(struct dm_struct *dm, u8 pause_dig,
 		odm_pause_dig(dm, PHYDM_RESUME, PHYDM_PAUSE_LEVEL_1, igi);
 	func_end = odm_get_progressing_time(dm, func_start);
 
-	PHYDM_DBG(dm, DBG_ENV_MNTR, "end\n");
+	PHYDM_DBG(dm, DBG_ENV_MNTR, "end, func_end=%lld\n", func_end);
 	return dm->noise_level.noise_all;
 }
 
@@ -378,7 +378,7 @@ s16 odm_inband_noise_monitor_ac(struct dm_struct *dm, u8 pause_dig, u8 igi,
 
 	func_end = odm_get_progressing_time(dm, func_start);
 
-	PHYDM_DBG(dm, DBG_ENV_MNTR, "%s <==\n", __func__);
+	PHYDM_DBG(dm, DBG_ENV_MNTR, "%s <==, func_end=%lld\n", __func__, func_end);
 
 	return dm->noise_level.noise_all;
 }

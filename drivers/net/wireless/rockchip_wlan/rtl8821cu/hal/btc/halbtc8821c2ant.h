@@ -90,6 +90,8 @@ enum bt_info_src_8821c_2ant {
 	BT_8821C_2ANT_INFO_SRC_WIFI_FW		= 0x0,
 	BT_8821C_2ANT_INFO_SRC_BT_RSP		= 0x1,
 	BT_8821C_2ANT_INFO_SRC_BT_ACT		= 0x2,
+	BT_8821C_2ANT_INFO_SRC_BT_SLOT1		= 0x7,
+	BT_8821C_2ANT_INFO_SRC_BT_SLOT2		= 0x8,
 	BT_8821C_2ANT_INFO_SRC_MAX
 };
 
@@ -163,7 +165,7 @@ enum bt_8821c_2ant_scoreboard {
 	BT_8821C_2ANT_SCBD_SCAN			= BIT(2),
 	BT_8821C_2ANT_SCBD_UNDERTEST		= BIT(3),
 	BT_8821C_2ANT_SCBD_RXGAIN		= BIT(4),
-	BT_8821C_2ANT_SCBD_WLBUSY		= BIT(6),
+	BT_8821C_2ANT_SCBD_WLBUSY		= BIT(7),
 	BT_8821C_2ANT_SCBD_TDMA			= BIT(9),
 	BT_8821C_2ANT_SCBD_BTCQDDR		= BIT(10),
 	BT_8821C_2ANT_SCBD_ALL			= 0xffff
@@ -216,6 +218,8 @@ struct coex_dm_8821c_2ant {
 	boolean		reset_tdma_adjust;
 	boolean		cur_ps_tdma_on;
 	boolean		cur_bt_auto_report;
+	u32		bt_slot_length1[10];
+	u32		bt_slot_length2[10];
 
 	/* sw mechanism */
 	boolean		cur_low_penalty_ra;
@@ -252,6 +256,7 @@ struct coex_sta_8821c_2ant {
 	boolean bt_a2dp_active;
 
 	boolean	under_lps;
+	boolean wl_in_lps_enter;
 	boolean	under_ips;
 	u32	high_priority_tx;
 	u32	high_priority_rx;
@@ -347,6 +352,8 @@ struct coex_sta_8821c_2ant {
 
 	u16	bt_reg_vendor_ac;
 	u16	bt_reg_vendor_ae;
+	u16	bt_reg_le_2e;
+	u16	bt_reg_le_52;
 
 	boolean	is_setup_link;
 	u8	wl_noisy_level;

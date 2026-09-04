@@ -18,7 +18,8 @@
 #include "halmac_common_88xx.h"
 #include "halmac_init_88xx.h"
 
-#if HALMAC_88XX_SUPPORT
+#if (HALMAC_8821C_SUPPORT || HALMAC_8822B_SUPPORT || \
+     HALMAC_8822C_SUPPORT || HALMAC_8812F_SUPPORT)
 
 #define RSVD_EFUSE_SIZE		16
 #define RSVD_CS_EFUSE_SIZE	24
@@ -431,26 +432,6 @@ read_efuse_bt_88xx(struct halmac_adapter *adapter, u32 offset, u8 *value,
 }
 
 /**
- * cfg_efuse_auto_check_88xx() - check efuse after writing it
- * @adapter : the adapter of halmac
- * @enable : 1, enable efuse auto check. others, disable
- * Author : Soar
- * Return : enum halmac_ret_status
- * More details of status code can be found in prototype document
- */
-enum halmac_ret_status
-cfg_efuse_auto_check_88xx(struct halmac_adapter *adapter, u8 enable)
-{
-	PLTFM_MSG_TRACE("[TRACE]%s ===>\n", __func__);
-
-	adapter->efuse_auto_check_en = enable;
-
-	PLTFM_MSG_TRACE("[TRACE]%s <===\n", __func__);
-
-	return HALMAC_RET_SUCCESS;
-}
-
-/**
  * get_efuse_available_size_88xx() - get efuse available size
  * @adapter : the adapter of halmac
  * @size : physical efuse available size
@@ -472,46 +453,6 @@ get_efuse_available_size_88xx(struct halmac_adapter *adapter, u32 *size)
 
 	*size = adapter->hw_cfg_info.efuse_size -
 		adapter->hw_cfg_info.prtct_efuse_size -	adapter->efuse_end;
-
-	PLTFM_MSG_TRACE("[TRACE]%s <===\n", __func__);
-
-	return HALMAC_RET_SUCCESS;
-}
-
-/**
- * get_efuse_size_88xx() - get "physical" efuse size
- * @adapter : the adapter of halmac
- * @size : physical efuse size
- * Author : Ivan Lin/KaiYuan Chang
- * Return : enum halmac_ret_status
- * More details of status code can be found in prototype document
- */
-enum halmac_ret_status
-get_efuse_size_88xx(struct halmac_adapter *adapter, u32 *size)
-{
-	PLTFM_MSG_TRACE("[TRACE]%s ===>\n", __func__);
-
-	*size = adapter->hw_cfg_info.efuse_size;
-
-	PLTFM_MSG_TRACE("[TRACE]%s <===\n", __func__);
-
-	return HALMAC_RET_SUCCESS;
-}
-
-/**
- * get_log_efuse_size_88xx() - get "logical" efuse size
- * @adapter : the adapter of halmac
- * @size : logical efuse size
- * Author : Ivan Lin/KaiYuan Chang
- * Return : enum halmac_ret_status
- * More details of status code can be found in prototype document
- */
-enum halmac_ret_status
-get_log_efuse_size_88xx(struct halmac_adapter *adapter, u32 *size)
-{
-	PLTFM_MSG_TRACE("[TRACE]%s ===>\n", __func__);
-
-	*size = adapter->hw_cfg_info.eeprom_size;
 
 	PLTFM_MSG_TRACE("[TRACE]%s <===\n", __func__);
 
@@ -1917,6 +1858,8 @@ check_efuse_enough_88xx(struct halmac_adapter *adapter,
 	u8 super_usb;
 	enum halmac_ret_status status = HALMAC_RET_SUCCESS;
 
+	PLTFM_MSG_TRACE("[TRACE]%s ===>\n", __func__);
+
 	status = super_usb_chk_88xx(adapter, &super_usb);
 	if (status != HALMAC_RET_SUCCESS) {
 		PLTFM_MSG_ERR("[ERR]super_usb_chk\n");
@@ -1926,10 +1869,13 @@ check_efuse_enough_88xx(struct halmac_adapter *adapter,
 	for (i = 0; i < info->efuse_map_size; i = i + 8) {
 		eeprom_offset = i;
 
-		if ((eeprom_offset & 7) > 0)
+		if (((eeprom_offset >> 3) & 1) > 0)
 			pre_word_en = (*(updated_mask + (i >> 4)) & 0x0F);
 		else
 			pre_word_en = (*(updated_mask + (i >> 4)) >> 4);
+		
+		PLTFM_MSG_TRACE("[TRACE]eeprom_offset = 0x%x, pre_word_en = 0x%x, updated_mask = 0x%x\n", 
+			eeprom_offset, pre_word_en, *(updated_mask + (i >> 4)));
 
 		if (pre_word_en > 0) {
 			if (super_usb &&
@@ -1955,10 +1901,15 @@ check_efuse_enough_88xx(struct halmac_adapter *adapter,
 		}
 	}
 
+	PLTFM_MSG_TRACE("[TRACE]pg_num = 0x%x, efuse_end = 0x%x\n", pg_num, adapter->efuse_end);
+	PLTFM_MSG_TRACE("[TRACE]prtct_efuse_size = 0x%x, efuse_size = 0x%x\n", adapter->hw_cfg_info.prtct_efuse_size, adapter->hw_cfg_info.efuse_size);
+
 	if (adapter->hw_cfg_info.efuse_size <=
 	    (pg_num + adapter->hw_cfg_info.prtct_efuse_size +
 	    adapter->efuse_end))
 		return HALMAC_RET_EFUSE_NOT_ENOUGH;
+
+	PLTFM_MSG_TRACE("[TRACE]%s <===\n", __func__);
 
 	return HALMAC_RET_SUCCESS;
 }
@@ -2167,6 +2118,7 @@ program_efuse_88xx(struct halmac_adapter *adapter,
 								 word_en,
 								 pre_word_en,
 								 eeprom_offset);
+				PLTFM_MSG_TRACE("[TRACE]pg_super_usb => efuse_end = 0x%x\n", adapter->efuse_end);
 				if (status != HALMAC_RET_SUCCESS) {
 					PLTFM_MSG_ERR("[ERR]super usb efuse\n");
 					return status;
@@ -2176,6 +2128,7 @@ program_efuse_88xx(struct halmac_adapter *adapter,
 							      word_en,
 							      pre_word_en,
 							      eeprom_offset);
+				PLTFM_MSG_TRACE("[TRACE]pg_extend => efuse_end = 0x%x\n", adapter->efuse_end);
 				if (status != HALMAC_RET_SUCCESS) {
 					PLTFM_MSG_ERR("[ERR]extend efuse\n");
 					return status;
@@ -2185,6 +2138,7 @@ program_efuse_88xx(struct halmac_adapter *adapter,
 							    word_en,
 							    pre_word_en,
 							    eeprom_offset);
+				PLTFM_MSG_TRACE("[TRACE]proc_pg => efuse_end = 0x%x\n", adapter->efuse_end);
 				if (status != HALMAC_RET_SUCCESS) {
 					PLTFM_MSG_ERR("[ERR]extend efuse");
 					return status;
@@ -2515,12 +2469,6 @@ get_h2c_ack_phy_efuse_88xx(struct halmac_adapter *adapter, u8 *buf, u32 size)
 	state->fw_rc = fw_rc;
 
 	return HALMAC_RET_SUCCESS;
-}
-
-u32
-get_rsvd_efuse_size_88xx(struct halmac_adapter *adapter)
-{
-	return adapter->hw_cfg_info.prtct_efuse_size;
 }
 
 /**
@@ -3070,4 +3018,74 @@ super_usb_re_pg_chk_88xx(struct halmac_adapter *adapter, u8 *phy_map, u8 *re_pg)
 
 	return status;
 }
+#endif
+
+#if HALMAC_88XX_SUPPORT
+
+/**
+ * cfg_efuse_auto_check_88xx() - check efuse after writing it
+ * @adapter : the adapter of halmac
+ * @enable : 1, enable efuse auto check. others, disable
+ * Author : Soar
+ * Return : enum halmac_ret_status
+ * More details of status code can be found in prototype document
+ */
+enum halmac_ret_status
+cfg_efuse_auto_check_88xx(struct halmac_adapter *adapter, u8 enable)
+{
+	PLTFM_MSG_TRACE("[TRACE]%s ===>\n", __func__);
+
+	adapter->efuse_auto_check_en = enable;
+
+	PLTFM_MSG_TRACE("[TRACE]%s <===\n", __func__);
+
+	return HALMAC_RET_SUCCESS;
+}
+
+/**
+ * get_efuse_size_88xx() - get "physical" efuse size
+ * @adapter : the adapter of halmac
+ * @size : physical efuse size
+ * Author : Ivan Lin/KaiYuan Chang
+ * Return : enum halmac_ret_status
+ * More details of status code can be found in prototype document
+ */
+enum halmac_ret_status
+get_efuse_size_88xx(struct halmac_adapter *adapter, u32 *size)
+{
+	PLTFM_MSG_TRACE("[TRACE]%s ===>\n", __func__);
+
+	*size = adapter->hw_cfg_info.efuse_size;
+
+	PLTFM_MSG_TRACE("[TRACE]%s <===\n", __func__);
+
+	return HALMAC_RET_SUCCESS;
+}
+
+/**
+ * get_log_efuse_size_88xx() - get "logical" efuse size
+ * @adapter : the adapter of halmac
+ * @size : logical efuse size
+ * Author : Ivan Lin/KaiYuan Chang
+ * Return : enum halmac_ret_status
+ * More details of status code can be found in prototype document
+ */
+enum halmac_ret_status
+get_log_efuse_size_88xx(struct halmac_adapter *adapter, u32 *size)
+{
+	PLTFM_MSG_TRACE("[TRACE]%s ===>\n", __func__);
+
+	*size = adapter->hw_cfg_info.eeprom_size;
+
+	PLTFM_MSG_TRACE("[TRACE]%s <===\n", __func__);
+
+	return HALMAC_RET_SUCCESS;
+}
+
+u32
+get_rsvd_efuse_size_88xx(struct halmac_adapter *adapter)
+{
+	return adapter->hw_cfg_info.prtct_efuse_size;
+}
+
 #endif /* HALMAC_88XX_SUPPORT */

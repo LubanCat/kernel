@@ -969,6 +969,208 @@ config_phydm_switch_channel_8821c(struct dm_struct *dm, u8 central_ch)
 
 __iram_odm_func__
 boolean
+config_phydm_switch_channel_cn_8821c(struct dm_struct *dm, u8 central_ch, enum channel_width bandwidth)
+{
+	struct phydm_dig_struct *dig_t = &dm->dm_dig_table;
+	u32 rf_reg18, rf_reg_b8 = 0;
+	boolean rf_reg_status = true;
+
+	PHYDM_DBG(dm, ODM_PHY_CONFIG, "[%s]====================>\n", __func__);
+
+	if (dm->is_disable_phy_api) {
+		PHYDM_DBG(dm, ODM_PHY_CONFIG,
+			  "[%s]: disable PHY API for debug!!\n", __func__);
+		return true;
+	}
+
+	central_ch_8821c = central_ch;
+	rf_reg18 = config_phydm_read_rf_reg_8821c(dm, RF_PATH_A, 0x18, RFREGOFFSETMASK);
+	rf_reg_status = rf_reg_status & config_phydm_read_rf_check_8821c(rf_reg18);
+
+	if (dm->cut_version == ODM_CUT_A) {
+		rf_reg_b8 = config_phydm_read_rf_reg_8821c(dm, RF_PATH_A, 0xb8, RFREGOFFSETMASK);
+		rf_reg_status = rf_reg_status & config_phydm_read_rf_check_8821c(rf_reg_b8);
+	}
+
+	/* Switch band and channel */
+	if (central_ch <= 14) {
+		/* 2.4G */
+
+		/* 1. RF band and channel*/
+		rf_reg18 = (rf_reg18 & (~(BIT(18) | BIT(17) | MASKBYTE0)));
+		rf_reg18 = (rf_reg18 | central_ch);
+
+		/* 2. AGC table selection */
+		odm_set_bb_reg(dm, R_0xc1c, 0x00000F00, 0x0);
+		dig_t->agc_table_idx = 0x0;
+
+		/* 3. Set central frequency for clock offset tracking */
+		odm_set_bb_reg(dm, R_0x860, 0x1ffe0000, 0x96a);
+
+		/* Fix A-cut LCK fail issue @ 5285MHz~5375MHz, 0xb8[19]=0x0 */
+		if (dm->cut_version == ODM_CUT_A)
+			rf_reg_b8 = rf_reg_b8 | BIT(19);
+
+		/* CCK TX filter parameters */
+		if (central_ch == 14) {
+			odm_set_bb_reg(dm, R_0xa20, MASKHWORD, 0xe82c);
+			odm_set_bb_reg(dm, R_0xa24, MASKDWORD, 0x0000b81c);
+			odm_set_bb_reg(dm, R_0xa28, MASKLWORD, 0x0000);
+			odm_set_bb_reg(dm, R_0xaac, MASKDWORD, 0x00003667);
+			/*odm_set_rf_reg(dm, RF_PATH_A, 0xDE, BIT(1), 0);*/
+			/*odm_set_rf_reg(dm, RF_PATH_A, 0x1D, 0x3F, 0);*/
+			odm_set_rf_reg(dm, RF_PATH_A, 0xEE, 0xFFFFF, 0x00002);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x33, 0xFFFFF, 0x0001e);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x3F, 0xFFFFF, 0x00000);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x33, 0xFFFFF, 0x0001c);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x3F, 0xFFFFF, 0x00000);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x33, 0xFFFFF, 0x0000e);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x3F, 0xFFFFF, 0x00000);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x33, 0xFFFFF, 0x0000c);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x3F, 0xFFFFF, 0x00000);
+			odm_set_rf_reg(dm, RF_PATH_A, 0xEE, 0xFFFFF, 0x00000);
+		} else if ((central_ch == 13) || (central_ch == 11 && bandwidth == CHANNEL_WIDTH_40)) {
+			odm_set_bb_reg(dm, R_0xa20, MASKHWORD, 0xf8fe);
+			odm_set_bb_reg(dm, R_0xa24, MASKDWORD, 0x64b80c1c);
+			odm_set_bb_reg(dm, R_0xa28, MASKLWORD, 0x8810);
+			odm_set_bb_reg(dm, R_0xaac, MASKDWORD, 0x01235667);
+			/*odm_set_rf_reg(dm, RF_PATH_A, 0xDE, BIT(1), 0x1);*/
+			/*odm_set_rf_reg(dm, RF_PATH_A, 0x1D, 0x3F, 0x27);*/
+			odm_set_rf_reg(dm, RF_PATH_A, 0xEE, 0xFFFFF, 0x00002);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x33, 0xFFFFF, 0x0001e);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x3F, 0xFFFFF, 0x00027);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x33, 0xFFFFF, 0x0001c);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x3F, 0xFFFFF, 0x00027);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x33, 0xFFFFF, 0x0000e);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x3F, 0xFFFFF, 0x00029);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x33, 0xFFFFF, 0x0000c);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x3F, 0xFFFFF, 0x00026);
+			odm_set_rf_reg(dm, RF_PATH_A, 0xEE, 0xFFFFF, 0x00000);
+		} else {
+			odm_set_bb_reg(dm, R_0xa20, MASKHWORD, 0xe82c);
+			odm_set_bb_reg(dm, R_0xa24, MASKDWORD, rega24_8821c);
+			odm_set_bb_reg(dm, R_0xa28, MASKLWORD, (rega28_8821c & MASKLWORD));
+			odm_set_bb_reg(dm, R_0xaac, MASKDWORD, regaac_8821c);
+			/*odm_set_rf_reg(dm, RF_PATH_A, 0xDE, BIT(1), 0);*/
+			/*odm_set_rf_reg(dm, RF_PATH_A, 0x1D, 0x3F, 0);*/
+			odm_set_rf_reg(dm, RF_PATH_A, 0xEE, 0xFFFFF, 0x00002);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x33, 0xFFFFF, 0x0001e);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x3F, 0xFFFFF, 0x00000);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x33, 0xFFFFF, 0x0001c);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x3F, 0xFFFFF, 0x00000);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x33, 0xFFFFF, 0x0000e);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x3F, 0xFFFFF, 0x00000);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x33, 0xFFFFF, 0x0000c);
+			odm_set_rf_reg(dm, RF_PATH_A, 0x3F, 0xFFFFF, 0x00000);
+			odm_set_rf_reg(dm, RF_PATH_A, 0xEE, 0xFFFFF, 0x00000);
+		}
+	} else if (central_ch > 35) {
+		/* 5G */
+
+		/* 1. RF band and channel*/
+		rf_reg18 = (rf_reg18 & (~(BIT(18) | BIT(17) | MASKBYTE0)));
+		rf_reg18 = (rf_reg18 | central_ch);
+
+		if (central_ch >= 36 && central_ch <= 64) {
+			;
+		} else if ((central_ch >= 100) && (central_ch <= 140)) {
+			rf_reg18 = (rf_reg18 | BIT(17));
+		} else if (central_ch > 140) {
+			rf_reg18 = (rf_reg18 | BIT(18));
+		} else {
+			PHYDM_DBG(dm, ODM_PHY_CONFIG,
+				  "[%s]: Fail to switch channel (RF18) (ch: %d)\n",
+				  __func__, central_ch);
+			return false;
+		}
+
+		/* 2. AGC table selection */
+		if (central_ch >= 36 && central_ch <= 64) {
+			odm_set_bb_reg(dm, R_0xc1c, 0x00000F00, 0x1);
+			dig_t->agc_table_idx = 0x1;
+		} else if ((central_ch >= 100) && (central_ch <= 144)) {
+			odm_set_bb_reg(dm, R_0xc1c, 0x00000F00, 0x2);
+			dig_t->agc_table_idx = 0x2;
+		} else if (central_ch >= 149) {
+			odm_set_bb_reg(dm, R_0xc1c, 0x00000F00, 0x3);
+			dig_t->agc_table_idx = 0x3;
+		} else {
+			PHYDM_DBG(dm, ODM_PHY_CONFIG,
+				  "[%s]: Fail to switch channel (AGC) (ch: %d)\n",
+				  __func__, central_ch);
+			return false;
+		}
+
+		/* 3. Set central frequency for clock offset tracking */
+		if (central_ch >= 36 && central_ch <= 48) {
+			odm_set_bb_reg(dm, R_0x860, 0x1ffe0000, 0x494);
+		} else if ((central_ch >= 52) && (central_ch <= 64)) {
+			odm_set_bb_reg(dm, R_0x860, 0x1ffe0000, 0x453);
+		} else if ((central_ch >= 100) && (central_ch <= 116)) {
+			odm_set_bb_reg(dm, R_0x860, 0x1ffe0000, 0x452);
+		} else if ((central_ch >= 118) && (central_ch <= 177)) {
+			odm_set_bb_reg(dm, R_0x860, 0x1ffe0000, 0x412);
+		} else {
+			PHYDM_DBG(dm, ODM_PHY_CONFIG,
+				  "[%s]: Fail to switch channel (fc_area) (ch: %d)\n",
+				  __func__, central_ch);
+			return false;
+		}
+
+		/* Fix A-cut LCK fail issue @ 5285MHz~5375MHz, 0xb8[19]=0x0 */
+		if (dm->cut_version == ODM_CUT_A) {
+			if (central_ch >= 57 && central_ch <= 75)
+				rf_reg_b8 = rf_reg_b8 & (~BIT(19));
+			else
+				rf_reg_b8 = rf_reg_b8 | BIT(19);
+		}
+
+#if (PHYDM_FW_API_FUNC_ENABLE_8821C == 1)
+		/*notch 5760 spur by CSI_MASK*/
+		if (central_ch == 153)
+			phydm_csi_mask_setting(dm, FUNC_ENABLE, (u32)central_ch, 20, 5760, PHYDM_DONT_CARE);
+		else if (central_ch == 151)
+			phydm_csi_mask_setting(dm, FUNC_ENABLE, (u32)central_ch, 40, 5760, PHYDM_DONT_CARE);
+		else if (central_ch == 155)
+			phydm_csi_mask_setting(dm, FUNC_ENABLE, (u32)central_ch, 80, 5760, PHYDM_DONT_CARE);
+		else
+			phydm_csi_mask_setting(dm, FUNC_DISABLE, (u32)central_ch, 80, 5760, PHYDM_DONT_CARE);
+#endif
+
+	} else {
+		PHYDM_DBG(dm, ODM_PHY_CONFIG,
+			  "[%s]: Fail to switch band (ch: %d)\n", __func__,
+			  central_ch);
+		return false;
+	}
+
+	phydm_stop_ic_trx(dm, PHYDM_SET);
+	odm_set_rf_reg(dm, RF_PATH_A, RF_0x18, RFREGOFFSETMASK, rf_reg18);
+	phydm_stop_ic_trx(dm, PHYDM_REVERT);
+
+	if (dm->cut_version == ODM_CUT_A)
+		odm_set_rf_reg(dm, RF_PATH_A, RF_0xb8, RFREGOFFSETMASK, rf_reg_b8);
+
+	if (!rf_reg_status) {
+		PHYDM_DBG(dm, ODM_PHY_CONFIG,
+			  "[%s]: Fail to switch channel (ch: %d), because writing RF register is fail\n",
+			  __func__, central_ch);
+		return false;
+	}
+
+	/* Dynamic spur detection by PSD and NBI mask */
+	if (*dm->mp_mode)
+		phydm_dynamic_spur_det_eliminate_8821c(dm);
+
+	phydm_ccapar_8821c(dm);
+	PHYDM_DBG(dm, ODM_PHY_CONFIG,
+		  "[%s]: Success to switch channel (ch: %d)\n", __func__,
+		  central_ch);
+	return true;
+}
+
+__iram_odm_func__
+boolean
 config_phydm_switch_bandwidth_8821c(struct dm_struct *dm, u8 primary_ch_idx,
 				    enum channel_width bandwidth)
 {
@@ -1199,6 +1401,27 @@ config_phydm_switch_channel_bw_8821c(struct dm_struct *dm, u8 central_ch,
 
 	/* Switch channel */
 	if (config_phydm_switch_channel_8821c(dm, central_ch) == false)
+		return false;
+
+	/* Switch bandwidth */
+	if (config_phydm_switch_bandwidth_8821c(dm, primary_ch_idx, bandwidth) == false)
+		return false;
+
+	return true;
+}
+
+__iram_odm_func__
+boolean
+config_phydm_switch_channel_bw_cn_8821c(struct dm_struct *dm, u8 central_ch,
+				     u8 primary_ch_idx,
+				     enum channel_width bandwidth)
+{
+	/* Switch band */
+	if (config_phydm_switch_band_8821c(dm, central_ch) == false)
+		return false;
+
+	/* Switch channel */
+	if (config_phydm_switch_channel_cn_8821c(dm, central_ch, bandwidth) == false)	
 		return false;
 
 	/* Switch bandwidth */
@@ -1476,11 +1699,12 @@ u8 query_phydm_current_ant_num_8821c(struct dm_struct *dm)
 	if (dm->current_rf_set_8821c == SWITCH_TO_BTG || dm->current_rf_set_8821c == SWITCH_TO_WLA || dm->current_rf_set_8821c == SWITCH_TO_BT) {
 		if (regval_0xcb4 == 1)
 			dm->current_ant_num_8821c = SWITCH_TO_ANT1;
-		else if (regval_0xcb4 == 2)
+		else
 			dm->current_ant_num_8821c = SWITCH_TO_ANT2;
-		else if (regval_0xcb4 == 1)
+	} else {
+		if (regval_0xcb4 == 1)
 			dm->current_ant_num_8821c = SWITCH_TO_ANT2;
-		else if (regval_0xcb4 == 2)
+		else
 			dm->current_ant_num_8821c = SWITCH_TO_ANT1;
 	}
 

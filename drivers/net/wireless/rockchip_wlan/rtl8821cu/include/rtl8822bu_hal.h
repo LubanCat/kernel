@@ -37,11 +37,14 @@
 		#ifndef CONFIG_MINIMAL_MEMORY_USAGE
 			#ifdef CONFIG_PLATFORM_NOVATEK_NT72668
 				#define MAX_RECVBUF_SZ (15360) /* 15k */
-				#elif defined(CONFIG_PLATFORM_HISILICON)
-				/* use 16k to workaround for HISILICON platform */
+			#elif defined(CONFIG_PLATFORM_HISILICON) || defined(CONFIG_PLATFORM_ARM_RTD299X)
+				/* use 16k to workaround for HISILICON and RTK TV platform */
 				#define MAX_RECVBUF_SZ (16384)
-			#else
+			#elif defined(CONFIG_PLATFORM_I386_PC)
 				#define MAX_RECVBUF_SZ (32768)
+			#else
+				/* Avoid the Synopsys USB host receive buffer size limit */
+				#define MAX_RECVBUF_SZ (20480)
 			#endif
 		#else
 			#define MAX_RECVBUF_SZ (4000)

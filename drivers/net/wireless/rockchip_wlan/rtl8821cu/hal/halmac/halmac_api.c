@@ -38,6 +38,10 @@
 #include "halmac_88xx/halmac_init_win8812f.h"
 #endif
 
+#if HALMAC_8822E_SUPPORT
+#include "halmac_88xx/halmac_init_win8822e.h"
+#endif
+
 #else
 
 #if HALMAC_88XX_SUPPORT
@@ -71,6 +75,7 @@ enum chip_id_hw_def {
 	CHIP_ID_HW_DEF_8814B = 0x11,
 	CHIP_ID_HW_DEF_8822C = 0x13,
 	CHIP_ID_HW_DEF_8812F = 0x14,
+	CHIP_ID_HW_DEF_8822E = 0x17,
 	CHIP_ID_HW_DEF_UNDEFINE = 0x7F,
 	CHIP_ID_HW_DEF_PS = 0xEA,
 };
@@ -179,7 +184,8 @@ halmac_init_adapter(void *drv_adapter, struct halmac_platform_api *pltfm_api,
 	if (adapter->chip_id == HALMAC_CHIP_ID_8822B ||
 	    adapter->chip_id == HALMAC_CHIP_ID_8821C ||
 	    adapter->chip_id == HALMAC_CHIP_ID_8822C ||
-	    adapter->chip_id == HALMAC_CHIP_ID_8812F) {
+	    adapter->chip_id == HALMAC_CHIP_ID_8812F ||
+	    adapter->chip_id == HALMAC_CHIP_ID_8822E) {
 		init_adapter_param_88xx(adapter);
 		status = mount_api_88xx(adapter);
 	}
@@ -232,6 +238,13 @@ halmac_init_adapter(void *drv_adapter, struct halmac_platform_api *pltfm_api,
 	if (adapter->chip_id == HALMAC_CHIP_ID_8812F) {
 		init_adapter_param_win8812f(adapter);
 		status = mount_api_win8812f(adapter);
+	}
+#endif
+
+#if HALMAC_8822E_SUPPORT
+	if (adapter->chip_id == HALMAC_CHIP_ID_8822E) {
+		init_adapter_param_win8822e(adapter);
+		status = mount_api_win8822e(adapter);
 	}
 #endif
 
@@ -473,7 +486,7 @@ chk_pltfm_api(void *drv_adapter, enum halmac_interface intf,
 
 /**
  * halmac_get_version() - get HALMAC version
- * @version : return version of major, prototype and minor information
+ * @version : return version of major, prototype, minor and patch information
  * Author : KaiYuan Chang / Ivan Lin
  * Return : enum halmac_ret_status
  * More details of status code can be found in prototype document
@@ -484,6 +497,7 @@ halmac_get_version(struct halmac_ver *version)
 	version->major_ver = (u8)HALMAC_MAJOR_VER;
 	version->prototype_ver = (u8)HALMAC_PROTOTYPE_VER;
 	version->minor_ver = (u8)HALMAC_MINOR_VER;
+	version->patch_ver = (u8)HALMAC_PATCH_VER;
 
 	return HALMAC_RET_SUCCESS;
 }
@@ -534,6 +548,8 @@ get_chip_info(void *drv_adapter, struct halmac_platform_api *pltfm_api,
 		adapter->chip_id = HALMAC_CHIP_ID_8822C;
 	} else if (chip_id == CHIP_ID_HW_DEF_8812F) {
 		adapter->chip_id = HALMAC_CHIP_ID_8812F;
+	} else if (chip_id == CHIP_ID_HW_DEF_8822E) {
+		adapter->chip_id = HALMAC_CHIP_ID_8822E;
 	} else {
 		adapter->chip_id = HALMAC_CHIP_ID_UNDEFINE;
 		PLTFM_MSG_ERR("[ERR]Chip id is undefined\n");

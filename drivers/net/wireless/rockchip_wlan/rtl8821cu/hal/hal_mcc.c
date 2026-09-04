@@ -500,7 +500,6 @@ static void mcc_cfg_phdym_offload(_adapter *adapter, u8 enable)
 	struct sta_priv *stapriv = NULL;
 	struct sta_info *sta = NULL;
 	struct wlan_network *cur_network = NULL;
-	_irqL irqL;
 	_list	*head = NULL, *list = NULL;
 	u8 i = 0;
 
@@ -527,7 +526,7 @@ static void mcc_cfg_phdym_offload(_adapter *adapter, u8 enable)
 				break;
 			case MCC_ROLE_AP:
 			case MCC_ROLE_GO:
-				_enter_critical_bh(&stapriv->asoc_list_lock, &irqL);
+				rtw_stapriv_asoc_list_lock(stapriv);
 
 				head = &stapriv->asoc_list;
 				list = get_next(head);
@@ -538,7 +537,7 @@ static void mcc_cfg_phdym_offload(_adapter *adapter, u8 enable)
 					mcc_cfg_phdym_update_macid(iface, _TRUE, sta->cmn.mac_id);
 				}
 
-				_exit_critical_bh(&stapriv->asoc_list_lock, &irqL);
+				rtw_stapriv_asoc_list_unlock(stapriv);
 				break;
 			default:
 				RTW_INFO("Unknown role\n");
@@ -595,7 +594,6 @@ static void rtw_hal_config_mcc_role_setting(PADAPTER padapter, u8 order)
 	struct sta_priv *pstapriv = &padapter->stapriv;
 	struct sta_info *psta = NULL;
 	struct registry_priv *preg = &padapter->registrypriv;
-	_irqL irqL;
 	_list	*phead =NULL, *plist = NULL;
 	u8 policy_index = 0;
 	u8 mcc_duration = 0;
@@ -670,7 +668,7 @@ static void rtw_hal_config_mcc_role_setting(PADAPTER padapter, u8 order)
 
 			rtw_hal_mcc_assign_tx_threshold(padapter);
 
-			_enter_critical_bh(&pstapriv->asoc_list_lock, &irqL);
+			rtw_stapriv_asoc_list_lock(pstapriv);
 
 			phead = &pstapriv->asoc_list;
 			plist = get_next(phead);
@@ -685,7 +683,7 @@ static void rtw_hal_config_mcc_role_setting(PADAPTER padapter, u8 order)
 				#endif
 			}
 
-			_exit_critical_bh(&pstapriv->asoc_list_lock, &irqL);
+			rtw_stapriv_asoc_list_unlock(pstapriv);
 
 			psta = rtw_get_bcmc_stainfo(padapter);
 
@@ -1273,7 +1271,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 	struct hal_com_data *hal = GET_HAL_DATA(adapter);
 	struct hal_spec_t *hal_spec = GET_HAL_SPEC(adapter);
 	struct mcc_adapter_priv *mccadapriv = NULL;
-#if defined(CONFIG_RTL8822C)
+#if defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E)
 	struct dm_struct *phydm = adapter_to_phydm(adapter);
 	struct txagc_table_8822c tab;
 	u8 agc_buff[2][NUM_RATE_AC_2SS]; /* tatol 0x40 rate index for PATH A/B */
@@ -1327,7 +1325,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 			CurtPktPageNum = (u8)PageNum(tx_desc + len, page_size);
 			*total_page_num += CurtPktPageNum;
 			*index += (CurtPktPageNum * page_size);
-			RSVD_PAGE_CFG("LocNull", CurtPktPageNum, *total_page_num, *index);
+			RSVD_PAGE_CFG("LocNull", CurtPktPageNum, *total_page_num);
 			break;
 		case MCC_ROLE_AP:
 			/* Bulid CTS */
@@ -1342,7 +1340,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 			CurtPktPageNum = (u8)PageNum(tx_desc + len, page_size);
 			*total_page_num += CurtPktPageNum;
 			*index += (CurtPktPageNum * page_size);
-			RSVD_PAGE_CFG("LocCTS", CurtPktPageNum, *total_page_num, *index);
+			RSVD_PAGE_CFG("LocCTS", CurtPktPageNum, *total_page_num);
 			break;
 		case MCC_ROLE_GO:
 		/* To DO */
@@ -1383,7 +1381,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 			i, pmccobjpriv->mcc_pwr_idx_rsvd_page[i]);
 
 		total_rate_offset = start;
-#if !defined(CONFIG_RTL8822C)			
+#if !defined(CONFIG_RTL8822C) && !defined(CONFIG_RTL8822E)
 		for (path = RF_PATH_A; path < hal_spec->rf_reg_path_num; ++path) {
 			total_rate = 0;
 			/* PATH A for 0~63 byte, PATH B for 64~127 byte*/
@@ -1644,7 +1642,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 			CurtPktPageNum = 1;
 			*total_page_num += CurtPktPageNum;
 			*index += (CurtPktPageNum * page_size);
-			RSVD_PAGE_CFG("mcc_pwr_idx_rsvd_page", CurtPktPageNum, *total_page_num, *index);
+			RSVD_PAGE_CFG("mcc_pwr_idx_rsvd_page", CurtPktPageNum, *total_page_num);
 #else /* 8822C */
 			for (path = RF_PATH_A; path < hal_spec->rf_reg_path_num; ++path) {
 				/* CCK */
@@ -1712,7 +1710,7 @@ u8 rtw_hal_dl_mcc_fw_rsvd_page(_adapter *adapter, u8 *pframe, u16 *index,
 			CurtPktPageNum = 1;
 			*total_page_num += CurtPktPageNum;
 			*index += (CurtPktPageNum * page_size);
-			RSVD_PAGE_CFG("mcc_pwr_idx_rsvd_page", CurtPktPageNum, *total_page_num, *index);
+			RSVD_PAGE_CFG("mcc_pwr_idx_rsvd_page", CurtPktPageNum, *total_page_num);
 			#ifdef DBG_PWR_IDX_RSVD_PAGE
 			if (1) {
 				u8 path_idx;
@@ -2311,8 +2309,9 @@ static void rtw_hal_mcc_start_prehdl(PADAPTER padapter)
 		mccadapriv->role = MCC_ROLE_MAX;
 	}
 
-#ifdef CONFIG_RTL8822C
-	if (IS_HARDWARE_TYPE_8822C(padapter)) {
+#if defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E)
+	if (IS_HARDWARE_TYPE_8822C(padapter) ||
+		IS_HARDWARE_TYPE_8822E(padapter)) {
 		HAL_DATA_TYPE *hal = GET_HAL_DATA(padapter);
 		struct dm_struct *dm = &hal->odmpriv;
 		
@@ -2485,8 +2484,9 @@ static void rtw_hal_mcc_stop_posthdl(PADAPTER padapter)
 	rtw_hal_mcc_cfg_phydm(padapter, MCC_CFG_PHYDM_STOP, NULL);
 	#endif
 
-#ifdef CONFIG_RTL8822C
-	if (IS_HARDWARE_TYPE_8822C(padapter)) {
+#if defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E)
+	if (IS_HARDWARE_TYPE_8822C(padapter) ||
+		IS_HARDWARE_TYPE_8822E(padapter)) {
 		HAL_DATA_TYPE *hal = GET_HAL_DATA(padapter);
 		struct dm_struct *dm = &hal->odmpriv;
 		
@@ -2764,7 +2764,7 @@ static u8 mcc_get_reg_hdl(PADAPTER adapter, const u8 *val)
 	_adapter *cur_iface = NULL;
 	u8 ret = _SUCCESS;
 	u8 cur_order = 0;
-	#ifdef CONFIG_RTL8822C
+	#if defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E)
 	u16 dbg_reg[DBG_MCC_REG_NUM] = {0x4d4,0x522,0x1d70};
 	#else
 	u16 dbg_reg[DBG_MCC_REG_NUM] = {0x4d4,0x522,0xc50,0xe50};

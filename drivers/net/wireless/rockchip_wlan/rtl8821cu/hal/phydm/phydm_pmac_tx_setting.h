@@ -106,6 +106,8 @@ void phydm_set_pmac_tx(void *dm_void, struct phydm_pmac_info *tx_info,
 
 void phydm_set_tmac_tx(void *dm_void);
 
+void phydm_set_cck_disable_cca_jgr3(void *dm_void, boolean value);
+
 void phydm_pmac_tx_dbg(void *dm_void, char input[][16], u32 *_used,
 		       char *output, u32 *_out_len);
 #endif
