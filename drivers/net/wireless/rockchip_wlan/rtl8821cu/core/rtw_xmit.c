@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2019 Realtek Corporation.
+ * Copyright(c) 2007 - 2021 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -101,6 +101,9 @@ s32	_rtw_init_xmit_priv(struct xmit_priv *pxmitpriv, _adapter *padapter)
 	/* _rtw_init_queue(&pxmitpriv->apsd_queue); */
 
 	_rtw_init_queue(&pxmitpriv->free_xmit_queue);
+#ifdef CONFIG_LAYER2_ROAMING
+	_rtw_init_queue(&pxmitpriv->rpkt_queue);
+#endif
 
 	/*
 	Please allocate memory with the sz = (struct xmit_frame) * NR_XMITFRAME,
@@ -423,7 +426,9 @@ void _rtw_free_xmit_priv(struct xmit_priv *pxmitpriv)
 
 	/* free xmit extension buff */
 	_rtw_spinlock_free(&pxmitpriv->free_xmit_extbuf_queue.lock);
-
+#ifdef CONFIG_LAYER2_ROAMING
+	_rtw_spinlock_free(&pxmitpriv->rpkt_queue.lock);
+#endif
 	pxmitbuf = (struct xmit_buf *)pxmitpriv->pxmit_extbuf;
 	for (i = 0; i < NR_XMIT_EXTBUFF; i++) {
 		rtw_os_xmit_resource_free(padapter, pxmitbuf, (MAX_XMIT_EXTBUF_SZ + XMITBUF_ALIGN_SZ), _TRUE);
@@ -568,7 +573,7 @@ void rtw_get_adapter_tx_rate_bmp(_adapter *adapter, u16 r_bmp_cck_ofdm[], u32 r_
 			bmp_vht |= tmp_vht;
 		}
 		if (bw == CHANNEL_WIDTH_20)
-			r_bmp_cck_ofdm[bw] = bmp_cck_ofdm;
+			r_bmp_cck_ofdm[0] = bmp_cck_ofdm;
 		if (bw <= CHANNEL_WIDTH_40)
 			r_bmp_ht[bw] = bmp_ht;
 		if (bw <= CHANNEL_WIDTH_160)
@@ -680,7 +685,7 @@ void rtw_update_tx_rate_bmp(struct dvobj_priv *dvobj)
 
 		/* TODO: per rfpath and rate section handling? */
 		if (update_ht_rs == _TRUE || update_vht_rs == _TRUE)
-			rtw_hal_update_txpwr_level(adapter);
+			rtw_update_txpwr_level(dvobj, HW_BAND_MAX);
 	}
 #endif /* CONFIG_TXPWR_LIMIT */
 }
@@ -771,7 +776,7 @@ s16 rtw_adapter_get_oper_txpwr_max_mbm(_adapter *adapter, bool eirp)
 		else if (IS_HT_HRATE(hw_rate))
 			bmp_ht |= BIT(hw_rate - DESC_RATEMCS0);
 		else if (IS_VHT_HRATE(hw_rate))
-			bmp_vht |= BIT(hw_rate - DESC_RATEVHTSS1MCS0);
+			bmp_vht |= BIT_ULL(hw_rate - DESC_RATEVHTSS1MCS0);
 
 		mbm = phy_get_txpwr_total_max_mbm(adapter
 			, bw, cch, ch, bmp_cck_ofdm, bmp_ht, bmp_vht, 0, eirp);
@@ -814,7 +819,7 @@ s16 rtw_rfctl_get_oper_txpwr_max_mbm(struct rf_ctl_t *rfctl, u8 ch, u8 bw, u8 of
 			else if (IS_HT_HRATE(hw_rate))
 				bmp_ht |= BIT(hw_rate - DESC_RATEMCS0);
 			else if (IS_VHT_HRATE(hw_rate))
-				bmp_vht |= BIT(hw_rate - DESC_RATEVHTSS1MCS0);
+				bmp_vht |= BIT_ULL(hw_rate - DESC_RATEVHTSS1MCS0);
 		}
 
 		bmp_cck_ofdm |= rfctl->rate_bmp_cck_ofdm;
@@ -843,18 +848,23 @@ s16 rtw_get_oper_txpwr_max_mbm(struct dvobj_priv *dvobj, bool eirp)
 	return mbm;
 }
 
-s16 rtw_rfctl_get_reg_max_txpwr_mbm(struct rf_ctl_t *rfctl, u8 ch, u8 bw, u8 offset, bool eirp)
+s16 rtw_rfctl_get_reg_max_txpwr_mbm(struct rf_ctl_t *rfctl, enum band_type band, u8 ch, u8 bw, u8 offset, bool eirp)
 {
 	struct dvobj_priv *dvobj = rfctl_to_dvobj(rfctl);
 	struct registry_priv *regsty = dvobj_to_regsty(dvobj);
 	_adapter *adapter = dvobj_get_primary_adapter(dvobj);
 	s16 mbm = -100 * MBM_PDBM;
-	u8 cch = rtw_get_center_ch(ch, bw, offset);
+	u8 cch = rtw_get_center_ch_by_band(band, ch, bw, offset);
 	u16 bmp_cck_ofdm = 0;
 	u32 bmp_ht = 0;
 	u64 bmp_vht = 0;
 
-	if (ch <= 14)
+#if CONFIG_IEEE80211_BAND_6GHZ
+	if (band == BAND_ON_6G) /* TODO: 6G */
+		return 1300;
+#endif
+
+	if (band == BAND_ON_2_4G)
 		bmp_cck_ofdm |= RATE_BMP_CCK;
 
 	/* TODO: NO OFDM? */
@@ -883,7 +893,7 @@ s16 rtw_rfctl_get_reg_max_txpwr_mbm(struct rf_ctl_t *rfctl, u8 ch, u8 bw, u8 off
 
 #ifdef CONFIG_80211AC_VHT
 	if (ch > 14 && REGSTY_IS_11AC_ENABLE(regsty) && is_supported_vht(regsty->wireless_mode)
-		&& (!rfctl->country_ent || COUNTRY_CHPLAN_EN_11AC(rfctl->country_ent))
+		&& RFCTL_REG_EN_11AC(rfctl)
 	) {
 		switch (GET_HAL_TX_NSS(adapter)) {
 		case 1:
@@ -1387,6 +1397,9 @@ static s32 update_attrib_sec_info(_adapter *padapter, struct pkt_attrib *pattrib
 		pattrib->bswenc = _FALSE;
 #endif
 
+	if ((pattrib->encrypt) && (eapol_type == EAPOL_4_4))
+		pattrib->bswenc = _TRUE;
+
 exit:
 
 	return res;
@@ -1424,41 +1437,74 @@ u8	qos_acm(u8 acm_mask, u8 priority)
 	return change_priority;
 }
 
-/* refer to IEEE802.11-2016 Table R-3; Comply with IETF RFC4594 */
-static u8 tos_to_up(u8 tos)
+static u8 tos_to_up(u8 tos, bool is_ipv6)
 {
 	u8 up = 0;
 	u8 dscp;
 	u8 mode = CONFIG_RTW_UP_MAPPING_RULE;
 
-
-	/* tos precedence mapping */
-	if (mode == 0) {
-		up = tos >> 5;
+	/* The default mapping as defined Section 2.3 in RFC8325: The three
+	 * Most Significant Bits (MSBs) of the DSCP are used as the
+	 * corresponding L2 markings.
+	 */
+	up = tos >> 5;
+	if (mode == 0 && !is_ipv6) /* tos precedence mapping */
 		return up;
-	}
 
-	/* refer to IEEE802.11-2016 Table R-3;
-	 * DCSP 32(CS4) comply with IETF RFC4594
+	/* Handle specific DSCP values for which the default mapping (as
+	 * described above) doesn't adhere to the intended usage of the DSCP
+	 * value. See section 4 in RFC8325. Specifically, for the following
+	 * Diffserv Service Classes no update is needed:
+	 * - Standard: DF
+	 * - Low Priority Data: CS1
+	 * - Multimedia Conferencing: AF41, AF42, AF43
+	 * - Network Control Traffic: CS7
+	 * - Real-Time Interactive: CS4
+	 * - Signaling: CS5
 	 */
 	dscp = (tos >> 2);
-
-	if ( dscp == 0 )
+	switch (dscp) {
+	case 10:
+	case 12:
+	case 14:
+		/* High throughput data: AF11, AF12, AF13 */
 		up = 0;
-	else if ( dscp >= 1 && dscp <= 9)
-		up = 1;
-	else if ( dscp >= 10 && dscp <= 16)
-		up = 2;
-	else if ( dscp >= 17 && dscp <= 23)
+		break;
+	case 16:
+		/* Operations, Administration, and Maintenance and Provisioning:
+		 * CS2
+		 */
+		up = 0;
+		break;
+	case 18:
+	case 20:
+	case 22:
+		/* Low latency data: AF21, AF22, AF23 */
 		up = 3;
-	else if ( dscp >= 24 && dscp <= 31)
+		break;
+	case 24:
+		/* Broadcasting video: CS3 */
 		up = 4;
-	else if ( dscp >= 33 && dscp <= 40)
-		up = 5;
-	else if ((dscp >= 41 && dscp <= 47) || (dscp == 32))
+		break;
+	case 26:
+	case 28:
+	case 30:
+		/* Multimedia Streaming: AF31, AF32, AF33 */
+		up = 4;
+		break;
+	case 44:
+		/* Voice Admit: VA */
 		up = 6;
-	else if ( dscp >= 48 && dscp <= 63)
+		break;
+	case 46:
+		/* Telephony traffic: EF */
+		up = 6;
+		break;
+	case 48:
+		/* Network Control Traffic: CS6 */
 		up = 7;
+		break;
+	}
 
 	return up;
 }
@@ -1471,7 +1517,7 @@ static void set_qos(_pkt *pkt, struct pkt_attrib *pattrib)
 		goto null_pkt;
 
 	/* get UserPriority from IP hdr */
-	if (pattrib->ether_type == 0x0800) {
+	if (pattrib->ether_type == ETH_P_IP) {
 		struct pkt_file ppktfile;
 		struct ethhdr etherhdr;
 		struct iphdr ip_hdr;
@@ -1480,7 +1526,18 @@ static void set_qos(_pkt *pkt, struct pkt_attrib *pattrib)
 		_rtw_pktfile_read(&ppktfile, (unsigned char *)&etherhdr, ETH_HLEN);
 		_rtw_pktfile_read(&ppktfile, (u8 *)&ip_hdr, sizeof(ip_hdr));
 		/*		UserPriority = (ntohs(ip_hdr.tos) >> 5) & 0x3; */
-		UserPriority = tos_to_up(ip_hdr.tos);
+		UserPriority = tos_to_up(ip_hdr.tos, false);
+	} else if (pattrib->ether_type == ETH_P_IPV6) {
+		struct pkt_file ppktfile;
+		struct ethhdr etherhdr;
+		struct ipv6hdr ipv6_hdr;
+		u8 traffic_class;
+
+		_rtw_open_pktfile(pkt, &ppktfile);
+		_rtw_pktfile_read(&ppktfile, (unsigned char *)&etherhdr, ETH_HLEN);
+		_rtw_pktfile_read(&ppktfile, (u8 *)&ipv6_hdr, sizeof(ipv6_hdr));
+		traffic_class = (ipv6_hdr.priority << 4) | (ipv6_hdr.flow_lbl[0] >> 4);
+		UserPriority = tos_to_up(traffic_class, true);
 	}
 	/*
 		else if (pattrib->ether_type == 0x888e) {
@@ -1597,7 +1654,7 @@ inline u8 rtw_get_hwseq_no(_adapter *padapter)
 
 #ifdef CONFIG_CONCURRENT_MODE
 	#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B) \
-	    || defined(CONFIG_RTL8723F)
+	    || defined(CONFIG_RTL8723F) || defined(CONFIG_RTL8822E)
 	hwseq_num = padapter->iface_id;
 	if (hwseq_num > 3)
 		hwseq_num = 3;
@@ -1636,7 +1693,6 @@ static u8 _rtw_lps_chk_packet_type(struct pkt_attrib *pattrib)
 #endif
 static s32 update_attrib(_adapter *padapter, _pkt *pkt, struct pkt_attrib *pattrib)
 {
-	uint i;
 	struct pkt_file pktfile;
 	struct sta_info *psta = NULL;
 	struct ethhdr etherhdr;
@@ -1655,7 +1711,7 @@ static s32 update_attrib(_adapter *padapter, _pkt *pkt, struct pkt_attrib *pattr
 	DBG_COUNTER(padapter->tx_logs.core_tx_upd_attrib);
 
 	_rtw_open_pktfile(pkt, &pktfile);
-	i = _rtw_pktfile_read(&pktfile, (u8 *)&etherhdr, ETH_HLEN);
+	_rtw_pktfile_read(&pktfile, (u8 *)&etherhdr, ETH_HLEN);
 
 	pattrib->ether_type = ntohs(etherhdr.h_proto);
 
@@ -1914,8 +1970,6 @@ get_sta_info:
 	rtw_set_tx_chksum_offload(pkt, pattrib);
 
 exit:
-
-
 	return res;
 }
 
@@ -2693,6 +2747,7 @@ u32 rtw_calculate_wlan_pkt_size_by_attribue(struct pkt_attrib *pattrib)
 s32 check_amsdu(struct xmit_frame *pxmitframe)
 {
 	struct pkt_attrib *pattrib;
+	struct sta_info *psta = NULL;
 	s32 ret = _TRUE;
 
 	if (!pxmitframe)
@@ -2700,6 +2755,11 @@ s32 check_amsdu(struct xmit_frame *pxmitframe)
 
 	pattrib = &pxmitframe->attrib;
 
+	psta = rtw_get_stainfo(&pxmitframe->padapter->stapriv, &pattrib->ra[0]);
+	if (psta) {
+		if (psta->flags & WLAN_STA_AMSDU_DISABLE)
+			ret =_FALSE;
+	}
 	if (IS_MCAST(pattrib->ra))
 		ret = _FALSE;
 
@@ -4088,7 +4148,7 @@ void rtw_free_mgmt_xmitframe_queue(struct xmit_priv *pxmitpriv, _queue *mgmt_que
 		RTW_INFO("%s seq_num = %u\n", __func__, pxmitframe->attrib.seqnum);
 		#endif
 
-		rtw_free_xmitbuf_ext(pxmitpriv, pxmitframe->pxmitbuf);
+		rtw_free_xmitbuf(pxmitpriv, pxmitframe->pxmitbuf);
 		rtw_free_xmitframe(pxmitpriv, pxmitframe);
 	}
 	_exit_critical_bh(&(mgmt_queue->lock), &irqL);
@@ -4856,305 +4916,175 @@ static void do_queue_select(_adapter	*padapter, struct pkt_attrib *pattrib)
  #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24))
 s32 rtw_monitor_xmit_entry(struct sk_buff *skb, struct net_device *ndev)
 {
-	u16 frame_ctl;
-/* nrm */
-//	struct ieee80211_radiotap_header rtap_hdr;
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(ndev);
-	struct pkt_file pktfile;
 	struct rtw_ieee80211_hdr *pwlanhdr;
-	struct pkt_attrib	*pattrib;
-	struct xmit_frame		*pmgntframe;
-	struct mlme_ext_priv	*pmlmeext = &(padapter->mlmeextpriv);
-	struct xmit_priv	*pxmitpriv = &(padapter->xmitpriv);
-	unsigned char	*pframe;
-/* nrm */
-//	u8 dummybuf[32];
-//	int len = skb->len, rtap_len;
-	int len = skb->len, rtap_len, rtap_remain, alloc_tries, ret;
-	struct ieee80211_radiotap_header *rtap_hdr; // net/ieee80211_radiotap.h
-	struct ieee80211_radiotap_iterator iterator; // net/cfg80211.h
-	u8 rtap_buf[256];
+	struct pkt_attrib *pattrib;
+	struct xmit_frame *pmgntframe;
+	struct mlme_ext_priv *pmlmeext = &(padapter->mlmeextpriv);
+	struct xmit_priv *pxmitpriv = &(padapter->xmitpriv);
+	unsigned char *pframe;
+	u16 frame_ctl;
+	u8 retry_ctrl = _FALSE;
+	u8 fixed_rate = MGN_1M;
+	u8 sgi = 0;
+	u8 bwidth = CHANNEL_WIDTH_20;
+	u8 ldpc = 0;
+	u8 stbc = 0;
+#ifndef CONFIG_CUSTOMER_ALIBABA_GENERAL
+	struct ieee80211_radiotap_header *rtap_hdr;
+	struct ieee80211_radiotap_iterator iterator;
+	int rtap_len;
+	int ret;
+#endif
 
 	rtw_mstat_update(MSTAT_TYPE_SKB, MSTAT_ALLOC_SUCCESS, skb->truesize);
 
 #ifndef CONFIG_CUSTOMER_ALIBABA_GENERAL
-/* nrm */
-//	if (unlikely(skb->len < sizeof(struct ieee80211_radiotap_header)))
-//		goto fail;
-	if (ndev->type == ARPHRD_IEEE80211_RADIOTAP) {
-		if (unlikely(skb->len < sizeof(struct ieee80211_radiotap_header)))
-			goto fail;
+	if (unlikely(skb->len < sizeof(struct ieee80211_radiotap_header)))
+		goto no_rtap_tx;
 
-/* nrm */
-//	_rtw_open_pktfile((_pkt *)skb, &pktfile);
-//	_rtw_pktfile_read(&pktfile, (u8 *)(&rtap_hdr), sizeof(struct ieee80211_radiotap_header));
-//	rtap_len = ieee80211_get_radiotap_len((u8 *)(&rtap_hdr));
-//	if (unlikely(rtap_hdr.it_version))
-//		goto fail;
-		_rtw_open_pktfile((_pkt *)skb, &pktfile);
-		_rtw_pktfile_read(&pktfile, rtap_buf, sizeof(struct ieee80211_radiotap_header));
-		rtap_hdr = (struct ieee80211_radiotap_header*)(rtap_buf);
-		rtap_len = ieee80211_get_radiotap_len(rtap_buf);
+	rtap_hdr = (struct ieee80211_radiotap_header *)skb->data;
+	if (unlikely(rtap_hdr->it_version))
+		goto no_rtap_tx;
 
-/* nrm */
-//	if (unlikely(skb->len < rtap_len))
-//		goto fail;
-		if (unlikely(rtap_hdr->it_version))
-			goto fail;
+	rtap_len = ieee80211_get_radiotap_len(skb->data);
+	if (unlikely(skb->len < rtap_len))
+		goto no_rtap_tx;
 
-/* nrm */
-//	if (rtap_len != 12) {
-//		RTW_INFO("radiotap len (should be 14): %d\n", rtap_len);
-//		goto fail;
+	ret = ieee80211_radiotap_iterator_init(&iterator, rtap_hdr, skb->len, NULL);
+	while (!ret) {
+		ret = ieee80211_radiotap_iterator_next(&iterator);
 
-		if (unlikely(rtap_len < sizeof(struct ieee80211_radiotap_header)))
-			goto fail;
+		if (ret)
+			continue;
 
-		len -= sizeof(struct ieee80211_radiotap_header);
-		rtap_remain = rtap_len - sizeof(struct ieee80211_radiotap_header);
+		/* see if this argument is something we can use */
+		switch (iterator.this_arg_index) {
+		case IEEE80211_RADIOTAP_RATE:
+			/* This rate is in units of 500kb, but we did not check
+			   if this value is in the enum MGN_RATE. */
+			fixed_rate = *iterator.this_arg;
+			break;
 
-		if (rtap_remain > 0) {
-			_rtw_pktfile_read(&pktfile, &rtap_buf[sizeof(struct ieee80211_radiotap_header)], rtap_remain);
-			len -= rtap_remain;
+		case IEEE80211_RADIOTAP_TX_FLAGS: {
+			u16 txflags;
+			txflags = get_unaligned_le16(iterator.this_arg);
+			if ((txflags & IEEE80211_RADIOTAP_F_TX_NOACK) == 0)
+				retry_ctrl = _TRUE;
+			break;
 		}
 
-		// NOTE: we process the radiotap header details later
+		case IEEE80211_RADIOTAP_MCS: {
+			u8 mcs_known = iterator.this_arg[0];
+			u8 mcs_flags = iterator.this_arg[1];
+			if (!(mcs_known & IEEE80211_RADIOTAP_MCS_HAVE_MCS))
+				break;
+
+			fixed_rate = iterator.this_arg[2] & 0x7f;
+
+			if (mcs_known & IEEE80211_RADIOTAP_MCS_HAVE_MCS) {
+				fixed_rate = iterator.this_arg[2] & 0x7f;
+				if (fixed_rate > 31)
+					fixed_rate = 0;
+				fixed_rate += MGN_MCS0;
+			}
+			if ((mcs_known & IEEE80211_RADIOTAP_MCS_HAVE_GI) &&
+			    (mcs_flags & IEEE80211_RADIOTAP_MCS_SGI))
+				sgi = 1;
+			if ((mcs_known & IEEE80211_RADIOTAP_MCS_HAVE_BW) &&
+			    (mcs_flags & IEEE80211_RADIOTAP_MCS_BW_40))
+				bwidth = CHANNEL_WIDTH_40;
+			if ((mcs_known & IEEE80211_RADIOTAP_MCS_HAVE_FEC) &&
+			    (mcs_flags & IEEE80211_RADIOTAP_MCS_FEC_LDPC))
+				ldpc = 1;
+			if ((mcs_known & IEEE80211_RADIOTAP_MCS_HAVE_STBC)) {
+				stbc = (mcs_flags &
+					IEEE80211_RADIOTAP_MCS_STBC_MASK) >>
+				       IEEE80211_RADIOTAP_MCS_STBC_SHIFT;
+			}
+			break;
+		}
+
+		case IEEE80211_RADIOTAP_VHT: {
+			u16 vht_known = get_unaligned_le16(iterator.this_arg);
+			u8 vht_flags = iterator.this_arg[2];
+			unsigned int mcs, nss;
+
+			if ((vht_known & IEEE80211_RADIOTAP_VHT_KNOWN_GI) &&
+			    (vht_flags & IEEE80211_RADIOTAP_VHT_FLAG_SGI))
+				sgi = 1;
+			if (vht_known &
+			    IEEE80211_RADIOTAP_VHT_KNOWN_BANDWIDTH) {
+				bwidth = iterator.this_arg[3] & 0x1f;
+				if(bwidth >= 1 && bwidth <= 3)
+					bwidth = CHANNEL_WIDTH_40;
+				else if(bwidth >= 4 && bwidth <= 10)
+					bwidth = CHANNEL_WIDTH_80;
+				else
+					bwidth = CHANNEL_WIDTH_20;
+			}
+			if((vht_known & IEEE80211_RADIOTAP_VHT_KNOWN_STBC) &&
+			   (vht_flags & IEEE80211_RADIOTAP_VHT_FLAG_STBC))
+				stbc = 1;
+			if (vht_known & IEEE80211_RADIOTAP_VHT_KNOWN_LDPC_EXTRA_OFDM_SYM &&
+			    vht_flags & IEEE80211_RADIOTAP_VHT_FLAG_LDPC_EXTRA_OFDM_SYM &&
+			    iterator.this_arg[8] & 0x0f)
+				ldpc = 1;
+			mcs = (iterator.this_arg[4] >> 4) & 0x0f;
+			nss = iterator.this_arg[4] & 0x0f;
+			if(nss > 0) {
+				if(nss > 4) nss = 4;
+				if(mcs > 9) mcs = 9;
+				fixed_rate = MGN_VHT1SS_MCS0 + ((nss - 1) * 10 + mcs);
+			}
+			break;
+		}
+
+		default:
+			break;
+		}
 	}
 
-/* nrm */
-//	_rtw_pktfile_read(&pktfile, dummybuf, rtap_len-sizeof(struct ieee80211_radiotap_header));
-//	len = len - rtap_len;
+	/* Skip the ratio tap header */
+	skb_pull(skb, rtap_len);
+
+no_rtap_tx:
 #endif
-
-/* nrm */
-//	pmgntframe = alloc_mgtxmitframe(pxmitpriv);
-//	if (pmgntframe == NULL) {
-//		rtw_udelay_os(500);
-//		goto fail;
-	// v5.2.20 had an allocation wrapper (monitor_alloc_mgtxmitframe) that performed a few
-	// tries to allocate an xmit frame before giving up.  This can be beneficial when there
-	// is a rapid-fire sequence of injected frames. Without it, frames can be randomly
-	// dropped.  So this recreates the same functionality.
-
-	for (alloc_tries=3; alloc_tries > 0; alloc_tries--) {
-		pmgntframe = alloc_mgtxmitframe(pxmitpriv);
-		if (pmgntframe != NULL)
-			break;
-		if (alloc_tries <= 1) {
-			rtw_udelay_os(500);
-			goto fail;
-		}
-		rtw_udelay_os(100);
+	pmgntframe = alloc_mgtxmitframe(pxmitpriv);
+	if (pmgntframe == NULL) {
+		rtw_udelay_os(500);
+		goto fail;
 	}
 
 	_rtw_memset(pmgntframe->buf_addr, 0, WLANHDR_OFFSET + TXDESC_OFFSET);
 	pframe = (u8 *)(pmgntframe->buf_addr) + TXDESC_OFFSET;
-//	_rtw_memcpy(pframe, (void *)checking, len);
-	_rtw_pktfile_read(&pktfile, pframe, len);
+
+	skb_copy_bits(skb, 0, (void*)pframe, skb->len);
+
+	pattrib = &pmgntframe->attrib;
 
 	/* Check DATA/MGNT frames */
 	pwlanhdr = (struct rtw_ieee80211_hdr *)pframe;
-/* nrm */
-//	frame_ctl = le16_to_cpu(pwlanhdr->frame_ctl);
-	if (unlikely(len < sizeof(struct rtw_ieee80211_hdr_3addr)))
-		frame_ctl = 0;
+	frame_ctl = le16_to_cpu(pwlanhdr->frame_ctl);
+	if ((frame_ctl & RTW_IEEE80211_FCTL_FTYPE) == RTW_IEEE80211_FTYPE_DATA)
+		update_monitor_frame_attrib(padapter, &pmgntframe->attrib);
 	else
-		frame_ctl = le16_to_cpu(pwlanhdr->frame_ctl);
-
-	if ((frame_ctl & RTW_IEEE80211_FCTL_FTYPE) == RTW_IEEE80211_FTYPE_DATA) {
-
-		pattrib = &pmgntframe->attrib;
-		update_monitor_frame_attrib(padapter, pattrib);
-
-/* nrm */
-//		if (is_broadcast_mac_addr(pwlanhdr->addr3) || is_broadcast_mac_addr(pwlanhdr->addr1))
-//			pattrib->rate = MGN_24M;
-		pattrib->rate = MGN_1M; // Override a more practical default rate
-
-	} else {
-
-		pattrib = &pmgntframe->attrib;
-		update_mgntframe_attrib(padapter, pattrib);
-
-	}
-	pattrib->retry_ctrl = _FALSE;
-	pattrib->pktlen = len;
+		update_mgntframe_attrib(padapter, &pmgntframe->attrib);
+	pattrib->pktlen = skb->len;
+	pattrib->rate = fixed_rate;
+	pattrib->retry_ctrl = retry_ctrl;
 	pmlmeext->mgnt_seq = GetSequence(pwlanhdr);
 	pattrib->seqnum = pmlmeext->mgnt_seq;
 	pmlmeext->mgnt_seq++;
 	pattrib->last_txcmdsz = pattrib->pktlen;
-
-/* nrm */
-#ifndef CONFIG_CUSTOMER_ALIBABA_GENERAL
-
-	if (ndev->type == ARPHRD_IEEE80211_RADIOTAP) {
-		// Parse radiotap for injection items and overwrite attribs as needed.
-		// This code should probably live in core/monitor/rtw_radiotap.c, but we would have to
-		// pass pointers to a large number of things simply for the sake of organization,
-		// and it isn't worth it at this preliminary point to get things up and running.
-		// Let's call it a possible FUTURE-TODO.
-
-		ret = ieee80211_radiotap_iterator_init(&iterator, rtap_hdr, rtap_len, NULL);
-		while (!ret) {
-			ret = ieee80211_radiotap_iterator_next(&iterator);
-			if (ret)
-				continue;
-
-			switch (iterator.this_arg_index) {
-				case IEEE80211_RADIOTAP_RATE:
-					// This is basic 802.11b/g rate; use MCS/VHT for higher rates
-					pattrib->rate = *iterator.this_arg;
-#ifdef CONFIG_80211AC_VHT
-					pattrib->raid = RATEID_IDX_BGN_40M_1SS;
-#else
-					if (pattrib->rate == IEEE80211_CCK_RATE_1MB
-							|| pattrib->rate == IEEE80211_CCK_RATE_2MB
-							|| pattrib->rate == IEEE80211_CCK_RATE_5MB
-							|| pattrib->rate == IEEE80211_CCK_RATE_11MB )
-						pattrib->raid = rtw_get_mgntframe_raid(padapter, WIRELESS_11B);
-					else
-						pattrib->raid = rtw_get_mgntframe_raid(padapter, WIRELESS_11G);
-#endif
-
-					// We have to reset other attributes that may have been set prior for MCS/VHT rates
-					pattrib->ht_en = _FALSE;
-					pattrib->ampdu_en = _FALSE;
-					pattrib->sgi = _FALSE;
-					pattrib->ldpc = _FALSE;
-					pattrib->stbc = 0;
-					pattrib->bwmode = CHANNEL_WIDTH_20;
-					pattrib->ch_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
-
-					break;
-
-				case IEEE80211_RADIOTAP_TX_FLAGS: {
-					u16 txflags = get_unaligned_le16(iterator.this_arg);
-
-					if ((txflags & IEEE80211_RADIOTAP_F_TX_NOACK) == 0)
-						pattrib->retry_ctrl = _TRUE; // Note; already _FALSE by default
-
-					if (txflags & 0x0010) { // Use preconfigured seq num
-						if (len >= sizeof(struct rtw_ieee80211_hdr_3addr)) {
-							pattrib->seqnum = GetSequence(pwlanhdr);
-						}
-					}
-
-					break;
-				}
-
-				case IEEE80211_RADIOTAP_MCS: {
-					u8 mcs_have = iterator.this_arg[0];
-
-					// Set up defaults
-					pattrib->rate = MGN_MCS0;
-					pattrib->bwmode = IEEE80211_RADIOTAP_MCS_BW_20;
-					pattrib->ch_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
-					pattrib->ht_en = _TRUE;
-					pattrib->sgi = _FALSE;
-					pattrib->ldpc = _FALSE;
-					pattrib->stbc = 0;
-
-					if (mcs_have & IEEE80211_RADIOTAP_MCS_HAVE_BW) {
-
-						u8 bw = (iterator.this_arg[1] & IEEE80211_RADIOTAP_MCS_BW_MASK);
-						if (bw == IEEE80211_RADIOTAP_MCS_BW_20L) {
-							bw = IEEE80211_RADIOTAP_MCS_BW_20;
-							pattrib->ch_offset = HAL_PRIME_CHNL_OFFSET_LOWER;
-						}
-						if (bw == IEEE80211_RADIOTAP_MCS_BW_20U) {
-							bw = IEEE80211_RADIOTAP_MCS_BW_20;
-							pattrib->ch_offset = HAL_PRIME_CHNL_OFFSET_UPPER;
-						}
-	
-						pattrib->bwmode = bw;
-					}
-	
-					if (mcs_have & IEEE80211_RADIOTAP_MCS_HAVE_MCS) {
-						u8 fixed_rate = iterator.this_arg[2] & 0x7f;
-						if(fixed_rate > 31)
-							fixed_rate = 0;
-						fixed_rate += MGN_MCS0;
-						pattrib->rate = fixed_rate;
-					}
-
-					if ((mcs_have & IEEE80211_RADIOTAP_MCS_HAVE_GI) && (iterator.this_arg[1] & IEEE80211_RADIOTAP_MCS_SGI))
-						pattrib->sgi = _TRUE;
-
-					if ((mcs_have & IEEE80211_RADIOTAP_MCS_HAVE_FEC) && (iterator.this_arg[1] & IEEE80211_RADIOTAP_MCS_FEC_LDPC))
-						pattrib->ldpc = _TRUE;
-
-					if (mcs_have & IEEE80211_RADIOTAP_MCS_HAVE_STBC) {
-						u8 stbc = (iterator.this_arg[1] & IEEE80211_RADIOTAP_MCS_STBC_MASK) >> IEEE80211_RADIOTAP_MCS_STBC_SHIFT;
-						pattrib->stbc = stbc;
-					}
-				}
-				break;
-
-#ifdef CONFIG_80211AC_VHT
-				case IEEE80211_RADIOTAP_VHT: {
-					unsigned int mcs, nss;
-
-					u8 known = iterator.this_arg[0];
-					u8 flags = iterator.this_arg[2];
-
-					// Set up defaults
-					pattrib->stbc = 0;
-					pattrib->sgi = _FALSE;
-					pattrib->bwmode = CHANNEL_WIDTH_20;
-					pattrib->ldpc = _FALSE;
-					pattrib->rate = MGN_VHT1SS_MCS0;
-					pattrib->raid = RATEID_IDX_VHT_1SS;
-
-					// NOTE: this code currently only supports 1SS for radiotap defined rates
-
-					if ((known & IEEE80211_RADIOTAP_VHT_KNOWN_STBC) && (flags & IEEE80211_RADIOTAP_VHT_FLAG_STBC))
-						pattrib->stbc = 1;
-
-					if ((known & IEEE80211_RADIOTAP_VHT_KNOWN_GI) && (flags & IEEE80211_RADIOTAP_VHT_FLAG_SGI))
-						pattrib->sgi = _TRUE;
-
-					if (known & IEEE80211_RADIOTAP_VHT_KNOWN_BANDWIDTH) {
-						u8 bw = iterator.this_arg[3] & 0x1F;
-						// NOTE: there are various L and U, but we just use straight 20/40/80
-						// since it's not clear how to set CHNL_OFFSET_LOWER/_UPPER with different
-						// sideband sizes/configurations.  TODO.
-						// Also, any 160 is treated as 80 due to lack of WIDTH_160.
-						if (bw == 0)
-							pattrib->bwmode = CHANNEL_WIDTH_20;
-						else if (bw >=1 && bw <= 3)
-							pattrib->bwmode = CHANNEL_WIDTH_40;
-						else if (bw >=4 && bw <= 10)
-							pattrib->bwmode = CHANNEL_WIDTH_80;
-						else if (bw >= 11 && bw <= 25)
-							pattrib->bwmode = CHANNEL_WIDTH_80; // Supposed to be 160Mhz, we use 80Mhz
-					}
-	
-					// User 0
-					nss = iterator.this_arg[4] & 0x0F; // Number of spatial streams
-					if (nss > 0) {
-						if (nss > 4) nss = 4;
-						mcs = (iterator.this_arg[4]>>4) & 0x0F; // MCS rate index
-						if (mcs > 8) mcs = 9;
-						pattrib->rate = MGN_VHT1SS_MCS0 + ((nss-1)*10 + mcs);
-
-						if (iterator.this_arg[8] & IEEE80211_RADIOTAP_CODING_LDPC_USER0)
-							pattrib->ldpc = _TRUE;
-					}
-
-				}
-				break;
-#endif // CONFIG_80211AC_VHT
-
-				default:
-					break;
-			}
-		}
-	}
-
-#endif // CONFIG_CUSTOMER_ALIBABA_GENERAL
+	pattrib->sgi = sgi;
+	pattrib->bwmode = bwidth;
+	pattrib->ldpc = ldpc;
+	pattrib->stbc = stbc;
 
 	dump_mgntframe(padapter, pmgntframe);
-/* nrm */
+
+	DBG_COUNTER(padapter->tx_logs.core_tx);
 	pxmitpriv->tx_pkts++;
 	pxmitpriv->tx_bytes += skb->len;
 
@@ -5362,13 +5292,22 @@ s32 rtw_xmit(_adapter *padapter, _pkt **ppkt, u16 os_qid)
 	struct xmit_priv *pxmitpriv = &padapter->xmitpriv;
 	struct xmit_frame *pxmitframe = NULL;
 	s32 res;
+#ifdef CONFIG_LAYER2_ROAMING
+	struct  mlme_priv       *pmlmepriv = &(padapter->mlmepriv);
+	struct sk_buff *skb = (struct sk_buff *)(*ppkt);
+	_irqL irqL;
+#endif
 
 	DBG_COUNTER(padapter->tx_logs.core_tx);
 
 	if (IS_CH_WAITING(adapter_to_rfctl(padapter)))
 		return -1;
 
-	if (rtw_linked_check(padapter) == _FALSE)
+	if ((rtw_linked_check(padapter) == _FALSE)
+#ifdef CONFIG_LAYER2_ROAMING
+		&&(!padapter->mlmepriv.roam_network)
+#endif
+	   )
 		return -1;
 
 	if (start == 0)
@@ -5412,46 +5351,62 @@ s32 rtw_xmit(_adapter *padapter, _pkt **ppkt, u16 os_qid)
 		}
 	}
 #endif /* CONFIG_BR_EXT */
+#ifdef CONFIG_LAYER2_ROAMING
+	if ((pmlmepriv->roam_network) && (skb->protocol != htons(0x888e))) {	/* eapol never enqueue.*/
+		pxmitframe->pkt = *ppkt;
+		rtw_list_delete(&pxmitframe->list);
+		_enter_critical_bh(&pxmitpriv->rpkt_queue.lock, &irqL);
+		rtw_list_insert_tail(&(pxmitframe->list), get_list_head(&(pxmitpriv->rpkt_queue)));
+		_exit_critical_bh(&pxmitpriv->rpkt_queue.lock, &irqL);
+		return 1;
+	}
+#endif
 
 #if defined(CONFIG_AP_MODE) || defined(CONFIG_RTW_MESH)
 	if (MLME_STATE(padapter) & (WIFI_AP_STATE | WIFI_MESH_STATE)) {
-		_list b2u_list;
+		_list f_list;
 
 		#ifdef CONFIG_RTW_MESH
 		if (MLME_IS_MESH(padapter))
-			res = rtw_mesh_addr_resolve(padapter, os_qid, pxmitframe, *ppkt, &b2u_list);
+			res = rtw_mesh_addr_resolve(padapter, os_qid, pxmitframe, *ppkt, &f_list);
 		else
 		#endif
-			res = rtw_ap_addr_resolve(padapter, os_qid, pxmitframe, *ppkt, &b2u_list);
+			res = rtw_ap_addr_resolve(padapter, os_qid, pxmitframe, *ppkt, &f_list);
 		if (res == RTW_RA_RESOLVING)
 			return 1;
 		if (res == _FAIL)
 			return -1;
 
-		#if CONFIG_RTW_DATA_BMC_TO_UC
-		if (!rtw_is_list_empty(&b2u_list)) {
-			_list *list = get_next(&b2u_list);
-			struct xmit_frame *b2uframe;
+		#if defined(CONFIG_RTW_WDS) || CONFIG_RTW_DATA_BMC_TO_UC
+		if (!rtw_is_list_empty(&f_list)) {
+			_list *list = get_next(&f_list);
+			struct xmit_frame *fframe;
 
-			while ((rtw_end_of_queue_search(&b2u_list, list)) == _FALSE) {
-				b2uframe = LIST_CONTAINOR(list, struct xmit_frame, list);
+			while ((rtw_end_of_queue_search(&f_list, list)) == _FALSE) {
+				fframe = LIST_CONTAINOR(list, struct xmit_frame, list);
 				list = get_next(list);
-				rtw_list_delete(&b2uframe->list);
+				rtw_list_delete(&fframe->list);
 
-				b2uframe->pkt = rtw_os_pkt_copy(*ppkt);
-				if (!b2uframe->pkt) {
-					if (res == RTW_BMC_NO_NEED)
+				if (res == RTW_ORI_NO_NEED && rtw_is_list_empty(&f_list)) {
+					fframe->pkt = pxmitframe->pkt; /* last frame */
+					pxmitframe->pkt = NULL;
+				} else {
+					fframe->pkt = rtw_os_pkt_copy(*ppkt);
+				}
+
+				if (!fframe->pkt) {
+					if (res == RTW_ORI_NO_NEED && IS_MCAST(pxmitframe->attrib.dst))
 						res = _SUCCESS;
-					rtw_free_xmitframe(pxmitpriv, b2uframe);
+					rtw_free_xmitframe(pxmitpriv, fframe);
 					continue;
 				}
 
-				rtw_xmit_posthandle(padapter, b2uframe, b2uframe->pkt);
+				rtw_xmit_posthandle(padapter, fframe, fframe->pkt);
 			}
 		}
 		#endif
 
-		if (res == RTW_BMC_NO_NEED) {
+		if (res == RTW_ORI_NO_NEED) {
 			rtw_free_xmitframe(&padapter->xmitpriv, pxmitframe);
 			return 0;
 		}
@@ -5587,7 +5542,7 @@ u8 mgmt_xmitframe_enqueue_for_sleeping_sta(_adapter *padapter, struct xmit_frame
 		return _FALSE;
 
 	if (psta == NULL) {
-		RTW_INFO("%s, psta==NUL, pattrib->ra:"MAC_FMT"\n",
+		RTW_INFO("%s, psta==NUL don't need enqueue, pattrib->ra:"MAC_FMT"\n",
 				    __func__, MAC_ARG(pattrib->ra));
 		return _FALSE;
 	}
@@ -5826,7 +5781,7 @@ sint xmitframe_enqueue_for_sleeping_sta(_adapter *padapter, struct xmit_frame *p
 
 			/* if(psta->sleepq_len > (NR_XMITFRAME>>3)) */
 			/* { */
-			/*	wakeup_sta_to_xmit(padapter, psta); */
+			/*	wakeup_sta_to_xmit(padapter, psta, ALL_FRAME); */
 			/* }	 */
 
 			ret = _TRUE;
@@ -5939,7 +5894,13 @@ void stop_sta_xmit(_adapter *padapter, struct sta_info *psta)
 
 }
 
-void wakeup_sta_to_xmit(_adapter *padapter, struct sta_info *psta)
+/**
+ * dequeue_type: decide which type of frame be dequeued
+ * UNI_BMC_DATA: unicast and broadcast/multicast data frame
+ * UNI_MGMT: unicast management frame
+ * ALL_FRAME: all frames
+ */
+void wakeup_sta_to_xmit(_adapter *padapter, struct sta_info *psta, u8 dequeue_type)
 {
 	_irqL irqL;
 	u8 update_mask = 0, wmmps_ac = 0;
@@ -5949,98 +5910,102 @@ void wakeup_sta_to_xmit(_adapter *padapter, struct sta_info *psta)
 	struct sta_priv *pstapriv = &padapter->stapriv;
 	struct xmit_priv *pxmitpriv = &padapter->xmitpriv;
 
-	psta_bmc = rtw_get_bcmc_stainfo(padapter);
-
-
 	/* _enter_critical_bh(&psta->sleep_q.lock, &irqL); */
 	_enter_critical_bh(&pxmitpriv->lock, &irqL);
 
 #ifdef CONFIG_RTW_MGMT_QUEUE
-	/* management queue */
-	xmitframe_phead = get_list_head(&psta->mgmt_sleep_q);
-	xmitframe_plist = get_next(xmitframe_phead);
+	if (dequeue_type == UNI_MGMT || dequeue_type == ALL_FRAME) {
+		/* management queue */
+		xmitframe_phead = get_list_head(&psta->mgmt_sleep_q);
+		xmitframe_plist = get_next(xmitframe_phead);
 
-	while ((rtw_end_of_queue_search(xmitframe_phead, xmitframe_plist)) == _FALSE) {
-		pxmitframe = LIST_CONTAINOR(xmitframe_plist, struct xmit_frame, list);
+		while ((rtw_end_of_queue_search(xmitframe_phead, xmitframe_plist)) == _FALSE) {
+			pxmitframe = LIST_CONTAINOR(xmitframe_plist, struct xmit_frame, list);
 
-		xmitframe_plist = get_next(xmitframe_plist);
+			xmitframe_plist = get_next(xmitframe_plist);
 
-		rtw_list_delete(&pxmitframe->list);
+			rtw_list_delete(&pxmitframe->list);
 
-		#ifdef DBG_MGMT_QUEUE
-		RTW_INFO("%s seq_num = %u, subtype = 0x%x\n",
-				__func__, pxmitframe->attrib.seqnum, pxmitframe->attrib.subtype);
-		#endif
+			#ifdef DBG_MGMT_QUEUE
+			RTW_INFO("%s seq_num = %u, subtype = 0x%x\n",
+					__func__, pxmitframe->attrib.seqnum, pxmitframe->attrib.subtype);
+			#endif
 
-		psta->mgmt_sleepq_len--;
+			psta->mgmt_sleepq_len--;
 
-		pxmitframe->attrib.triggered = 1;
+			if (psta->mgmt_sleepq_len > 0)
+				pxmitframe->attrib.mdata = 1;
+			else
+				pxmitframe->attrib.mdata = 0;
 
-		rtw_hal_mgmt_xmitframe_enqueue(padapter, pxmitframe);
+			pxmitframe->attrib.triggered = 1;
+
+			rtw_hal_mgmt_xmitframe_enqueue(padapter, pxmitframe);
+		}
 	}
 #endif /* CONFIG_RTW_MGMT_QUEUE */
 
-	/* AC queue */
-	xmitframe_phead = get_list_head(&psta->sleep_q);
-	xmitframe_plist = get_next(xmitframe_phead);
+	if (dequeue_type == UNI_BMC_DATA || dequeue_type == ALL_FRAME) {
+		/* AC queue */
+		xmitframe_phead = get_list_head(&psta->sleep_q);
+		xmitframe_plist = get_next(xmitframe_phead);
 
-	while ((rtw_end_of_queue_search(xmitframe_phead, xmitframe_plist)) == _FALSE) {
-		pxmitframe = LIST_CONTAINOR(xmitframe_plist, struct xmit_frame, list);
+		while ((rtw_end_of_queue_search(xmitframe_phead, xmitframe_plist)) == _FALSE) {
+			pxmitframe = LIST_CONTAINOR(xmitframe_plist, struct xmit_frame, list);
 
-		xmitframe_plist = get_next(xmitframe_plist);
+			xmitframe_plist = get_next(xmitframe_plist);
 
-		rtw_list_delete(&pxmitframe->list);
+			rtw_list_delete(&pxmitframe->list);
 
-		switch (pxmitframe->attrib.priority) {
-		case 1:
-		case 2:
-			wmmps_ac = psta->uapsd_bk & BIT(1);
-			break;
-		case 4:
-		case 5:
-			wmmps_ac = psta->uapsd_vi & BIT(1);
-			break;
-		case 6:
-		case 7:
-			wmmps_ac = psta->uapsd_vo & BIT(1);
-			break;
-		case 0:
-		case 3:
-		default:
-			wmmps_ac = psta->uapsd_be & BIT(1);
-			break;
-		}
-
-		psta->sleepq_len--;
-		if (psta->sleepq_len > 0)
-			pxmitframe->attrib.mdata = 1;
-		else
-			pxmitframe->attrib.mdata = 0;
-
-		if (wmmps_ac) {
-			psta->sleepq_ac_len--;
-			if (psta->sleepq_ac_len > 0) {
-				pxmitframe->attrib.mdata = 1;
-				pxmitframe->attrib.eosp = 0;
-			} else {
-				pxmitframe->attrib.mdata = 0;
-				pxmitframe->attrib.eosp = 1;
+			switch (pxmitframe->attrib.priority) {
+			case 1:
+			case 2:
+				wmmps_ac = psta->uapsd_bk & BIT(1);
+				break;
+			case 4:
+			case 5:
+				wmmps_ac = psta->uapsd_vi & BIT(1);
+				break;
+			case 6:
+			case 7:
+				wmmps_ac = psta->uapsd_vo & BIT(1);
+				break;
+			case 0:
+			case 3:
+			default:
+				wmmps_ac = psta->uapsd_be & BIT(1);
+				break;
 			}
-		}
 
-		pxmitframe->attrib.triggered = 1;
+			psta->sleepq_len--;
+			if (psta->sleepq_len > 0)
+				pxmitframe->attrib.mdata = 1;
+			else
+				pxmitframe->attrib.mdata = 0;
 
-		/*
-				_exit_critical_bh(&psta->sleep_q.lock, &irqL);
-				if(rtw_hal_xmit(padapter, pxmitframe) == _TRUE)
-				{
-					rtw_os_xmit_complete(padapter, pxmitframe);
+			if (wmmps_ac) {
+				psta->sleepq_ac_len--;
+				if (psta->sleepq_ac_len > 0) {
+					pxmitframe->attrib.mdata = 1;
+					pxmitframe->attrib.eosp = 0;
+				} else {
+					pxmitframe->attrib.mdata = 0;
+					pxmitframe->attrib.eosp = 1;
 				}
-				_enter_critical_bh(&psta->sleep_q.lock, &irqL);
-		*/
-		rtw_hal_xmitframe_enqueue(padapter, pxmitframe);
+			}
 
+			pxmitframe->attrib.triggered = 1;
 
+			/*
+					_exit_critical_bh(&psta->sleep_q.lock, &irqL);
+					if(rtw_hal_xmit(padapter, pxmitframe) == _TRUE)
+					{
+						rtw_os_xmit_complete(padapter, pxmitframe);
+					}
+					_enter_critical_bh(&psta->sleep_q.lock, &irqL);
+			*/
+			rtw_hal_xmitframe_enqueue(padapter, pxmitframe);
+		}
 	}
 
 	if (psta->sleepq_len == 0
@@ -6080,56 +6045,57 @@ void wakeup_sta_to_xmit(_adapter *padapter, struct sta_info *psta)
 		rtw_tim_map_clear(padapter, pstapriv->sta_dz_bitmap, psta->cmn.aid);
 	}
 
-	/* for BC/MC Frames */
-	if (!psta_bmc)
-		goto _exit;
+	if (dequeue_type == UNI_BMC_DATA || dequeue_type == ALL_FRAME) {
+		psta_bmc = rtw_get_bcmc_stainfo(padapter);
 
-	if (!(rtw_tim_map_anyone_be_set_exclude_aid0(padapter, pstapriv->sta_dz_bitmap))) { /* no any sta in ps mode */
-		xmitframe_phead = get_list_head(&psta_bmc->sleep_q);
-		xmitframe_plist = get_next(xmitframe_phead);
+		/* for BC/MC Frames */
+		if (!psta_bmc)
+			goto _exit;
 
-		while ((rtw_end_of_queue_search(xmitframe_phead, xmitframe_plist)) == _FALSE) {
-			pxmitframe = LIST_CONTAINOR(xmitframe_plist, struct xmit_frame, list);
+		if (!(rtw_tim_map_anyone_be_set_exclude_aid0(padapter, pstapriv->sta_dz_bitmap))) { /* no any sta in ps mode */
+			xmitframe_phead = get_list_head(&psta_bmc->sleep_q);
+			xmitframe_plist = get_next(xmitframe_phead);
 
-			xmitframe_plist = get_next(xmitframe_plist);
+			while ((rtw_end_of_queue_search(xmitframe_phead, xmitframe_plist)) == _FALSE) {
+				pxmitframe = LIST_CONTAINOR(xmitframe_plist, struct xmit_frame, list);
 
-			rtw_list_delete(&pxmitframe->list);
+				xmitframe_plist = get_next(xmitframe_plist);
 
-			psta_bmc->sleepq_len--;
-			if (psta_bmc->sleepq_len > 0)
-				pxmitframe->attrib.mdata = 1;
-			else
-				pxmitframe->attrib.mdata = 0;
+				rtw_list_delete(&pxmitframe->list);
 
+				psta_bmc->sleepq_len--;
+				if (psta_bmc->sleepq_len > 0)
+					pxmitframe->attrib.mdata = 1;
+				else
+					pxmitframe->attrib.mdata = 0;
 
-			pxmitframe->attrib.triggered = 1;
-			/*
-						_exit_critical_bh(&psta_bmc->sleep_q.lock, &irqL);
-						if(rtw_hal_xmit(padapter, pxmitframe) == _TRUE)
-						{
-							rtw_os_xmit_complete(padapter, pxmitframe);
-						}
-						_enter_critical_bh(&psta_bmc->sleep_q.lock, &irqL);
+				pxmitframe->attrib.triggered = 1;
+				/*
+							_exit_critical_bh(&psta_bmc->sleep_q.lock, &irqL);
+							if(rtw_hal_xmit(padapter, pxmitframe) == _TRUE)
+							{
+								rtw_os_xmit_complete(padapter, pxmitframe);
+							}
+							_enter_critical_bh(&psta_bmc->sleep_q.lock, &irqL);
 
-			*/
-			rtw_hal_xmitframe_enqueue(padapter, pxmitframe);
+				*/
+				rtw_hal_xmitframe_enqueue(padapter, pxmitframe);
 
-		}
-
-		if (psta_bmc->sleepq_len == 0) {
-			if (rtw_tim_map_is_set(padapter, pstapriv->tim_bitmap, 0)) {
-				/* RTW_INFO("wakeup to xmit, qlen==0\n"); */
-				/* RTW_INFO_DUMP("update_BCNTIM, tim=", pstapriv->tim_bitmap, pstapriv->aid_bmp_len); */
-				/* upate BCN for TIM IE */
-				/* update_BCNTIM(padapter); */
-				update_mask |= BIT(1);
 			}
-			rtw_tim_map_clear(padapter, pstapriv->tim_bitmap, 0);
-			rtw_tim_map_clear(padapter, pstapriv->sta_dz_bitmap, 0);
+
+			if (psta_bmc->sleepq_len == 0) {
+				if (rtw_tim_map_is_set(padapter, pstapriv->tim_bitmap, 0)) {
+					/* RTW_INFO("wakeup to xmit, qlen==0\n"); */
+					/* RTW_INFO_DUMP("update_BCNTIM, tim=", pstapriv->tim_bitmap, pstapriv->aid_bmp_len); */
+					/* upate BCN for TIM IE */
+					/* update_BCNTIM(padapter); */
+					update_mask |= BIT(1);
+				}
+				rtw_tim_map_clear(padapter, pstapriv->tim_bitmap, 0);
+				rtw_tim_map_clear(padapter, pstapriv->sta_dz_bitmap, 0);
+			}
 		}
-
 	}
-
 _exit:
 
 	/* _exit_critical_bh(&psta_bmc->sleep_q.lock, &irqL);	 */
@@ -6375,9 +6341,13 @@ thread_return rtw_xmit_thread(thread_context context)
 	PADAPTER padapter;
 #ifdef RTW_XMIT_THREAD_HIGH_PRIORITY
 #ifdef PLATFORM_LINUX
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0))
+	sched_set_fifo_low(current);
+#else
 	struct sched_param param = { .sched_priority = 1 };
-
+					
 	sched_setscheduler(current, SCHED_FIFO, &param);
+#endif
 #endif /* PLATFORM_LINUX */
 #endif /* RTW_XMIT_THREAD_HIGH_PRIORITY */
 
@@ -6864,3 +6834,20 @@ void rtw_ack_tx_done(struct xmit_priv *pxmitpriv, int status)
 		RTW_INFO("%s ack_tx not set\n", __func__);
 }
 #endif /* CONFIG_XMIT_ACK */
+
+void rtw_hci_flush(_adapter *padapter)
+{
+	u8 q;
+
+	if (padapter->hal_func.hci_flush) {
+		for (q = 0; q < HW_QUEUE_ENTRY; q++) {
+			if ((q == BCN_QUEUE_INX) || (q == TXCMD_QUEUE_INX))
+				continue;
+
+			padapter->hal_func.hci_flush(padapter, q);
+		}
+	}
+	else
+		RTW_WARN("hal ops: hci_flush is NULL\n");
+}
+

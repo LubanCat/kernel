@@ -384,14 +384,23 @@ int rtw_rson_isupdate_roamcan(struct mlme_priv *mlme
 	return _FALSE;
 }
 
-void rtw_rson_show_survey_info(struct seq_file *m, _list *plist, _list *phead)
+void rtw_rson_show_survey_info(void *sel, _adapter *padapter)
 {
+	struct mlme_priv *pmlmepriv = &(padapter->mlmepriv);
+	_queue *queue = &(pmlmepriv->scanned_queue);
+	_irqL irqL;
+	_list *plist, *phead;
 	struct wlan_network	*pnetwork = NULL;
 	struct rtw_rson_struct  rson_data;
 	s16 rson_score;
 	u16  index = 0;
 
-	RTW_PRINT_SEL(m, "%5s  %-17s  %3s  %5s %14s  %10s  %-3s  %5s %32s\n", "index", "bssid", "ch", "id", "hop_cnt", "loading", "RSSI", "score", "ssid");
+	RTW_PRINT_SEL(sel, "%5s  %-17s  %3s  %5s %14s  %10s  %-3s  %5s %32s\n", "index", "bssid", "ch", "id", "hop_cnt", "loading", "RSSI", "score", "ssid");
+
+	_enter_critical_bh(&(pmlmepriv->scanned_queue.lock), &irqL);
+
+	phead = get_list_head(queue);
+	plist = get_next(phead);
 	while (1) {
 		if (rtw_end_of_queue_search(phead, plist) == _TRUE)
 			break;
@@ -404,7 +413,7 @@ void rtw_rson_show_survey_info(struct seq_file *m, _list *plist, _list *phead)
 		rson_score = 0;
 		if (rtw_get_rson_struct(&(pnetwork->network), &rson_data) == _TRUE)
 			rson_score = rtw_cal_rson_score(&rson_data, pnetwork->network.Rssi);
-		RTW_PRINT_SEL(m, "%5d  "MAC_FMT" %3d  0x%08x %6d %10d   %6d %6d   %32s\n",
+		RTW_PRINT_SEL(sel, "%5d  "MAC_FMT" %3d  0x%08x %6d %10d   %6d %6d   %32s\n",
 			      ++index,
 			      MAC_ARG(pnetwork->network.MacAddress),
 			      pnetwork->network.Configuration.DSConfig,
@@ -415,8 +424,9 @@ void rtw_rson_show_survey_info(struct seq_file *m, _list *plist, _list *phead)
 			      rson_score,
 			      pnetwork->network.Ssid.Ssid);
 		plist = get_next(plist);
-		}
+	}
 
+	_exit_critical_bh(&(pmlmepriv->scanned_queue.lock), &irqL);
 }
 
 /*

@@ -54,7 +54,7 @@ u32 rtw_rson_append_ie(_adapter *padapter, unsigned char *pframe, u32 *len);
 void rtw_rson_do_disconnect(_adapter *padapter);
 void rtw_rson_join_done(_adapter *padapter);
 int rtw_rson_isupdate_roamcan(struct mlme_priv *mlme, struct wlan_network **candidate, struct wlan_network *competitor);
-void rtw_rson_show_survey_info(struct seq_file *m, _list *plist, _list *phead);
+void rtw_rson_show_survey_info(void *sel, _adapter *padapter);
 u8 rtw_rson_ap_check_sta(_adapter *padapter, u8 *pframe, uint pkt_len, unsigned short ie_offset);
 u8 rtw_rson_scan_wk_cmd(_adapter *padapter, int op);
 void rtw_rson_scan_cmd_hdl(_adapter *padapter, int op);

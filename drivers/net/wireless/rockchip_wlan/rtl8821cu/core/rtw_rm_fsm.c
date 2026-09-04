@@ -572,30 +572,31 @@ static int rm_state_idle(struct rm_obj *prm, enum RM_EV_ID evid)
 		} /* switch() */
 
 		if (prm->rmid & RM_MASTER) {
-			if (rm_issue_meas_req(prm) == _SUCCESS)
+			if (rm_issue_meas_req(prm) == _SUCCESS) {
 				rm_state_goto(prm, RM_ST_WAIT_MEAS);
-			else
+			} else {
+				issue_null_reply(prm);
 				rm_state_goto(prm, RM_ST_END);
-			return _SUCCESS;
+			}
 		} else {
 			rm_state_goto(prm, RM_ST_DO_MEAS);
 			return _SUCCESS;
 		}
 
-		if (prm->p.m_mode) {
-			issue_null_reply(prm);
-			rm_state_goto(prm, RM_ST_END);
-			return _SUCCESS;
-		}
 		if (prm->q.rand_intvl) {
 			/* get low tsf to generate random interval */
+			#ifdef CONFIG_RTL8814B
+			val32 = rtw_read32(padapter, REG_TSFTR_LOW_8814B);
+			#else
 			val32 = rtw_read32(padapter, REG_TSFTR);
+			#endif
 			val32 = val32 % prm->q.rand_intvl;
 			RTW_INFO("RM: rmid=%x rand_intval=%d, rand=%d\n",
 				prm->rmid, (int)prm->q.rand_intvl,val32);
 			rm_set_clock(prm, prm->q.rand_intvl,
 				RM_EV_delay_timer_expire);
-			return _SUCCESS;
+		} else {
+			rm_state_goto(prm, RM_ST_DO_MEAS);
 		}
 		break;
 	case RM_EV_delay_timer_expire:
@@ -629,6 +630,7 @@ static int rm_state_do_meas(struct rm_obj *prm, enum RM_EV_ID evid)
 				if (prm->q.m_mode == bcn_req_bcn_table) {
 					RTW_INFO("RM: rmid=%x Beacon table\n",
 						prm->rmid);
+					rm_get_chset(prm);
 					_rm_post_event(padapter, prm->rmid,
 						RM_EV_survey_done);
 					return _SUCCESS;
@@ -873,9 +875,9 @@ static int rm_state_recv_report(struct rm_obj *prm, enum RM_EV_ID evid)
 			if (val8) {
 				RTW_INFO("RM: rmid=%x peer reject (%s repeat=%d)\n",
 					prm->rmid,
-					val8|MEAS_REP_MOD_INCAP?"INCAP":
-					val8|MEAS_REP_MOD_REFUSE?"REFUSE":
-					val8|MEAS_REP_MOD_LATE?"LATE":"",
+					val8&MEAS_REP_MOD_INCAP?"INCAP":
+					val8&MEAS_REP_MOD_REFUSE?"REFUSE":
+					val8&MEAS_REP_MOD_LATE?"LATE":"",
 					prm->p.rpt);
 				rm_state_goto(prm, RM_ST_END);
 				return _SUCCESS;
@@ -976,9 +978,9 @@ char *rm_event_name(enum RM_EV_ID evid)
 	case RM_EV_max:
 		return "RM_EV_max";
 	default:
-		return "RM_EV_unknown";
+		break;
 	}
-	return "UNKNOWN";
+	return "RM_EV_unknown";
 }
 
 static void rm_state_initial(struct rm_obj *prm)

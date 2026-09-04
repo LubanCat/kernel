@@ -118,6 +118,8 @@
 
 extern const u16	phy_rate_table[84];
 
+extern const u16	phy_rate_table40[84];
+
 /*@============================================================*/
 /*@Definition */
 /*@============================================================*/
@@ -204,6 +206,8 @@ extern const u16	phy_rate_table[84];
 #define PHY_HIST_SIZE		12
 #define PHY_HIST_TH_SIZE	(PHY_HIST_SIZE - 1)
 
+#define	S_TO_US			1000000
+
 /*@============================================================*/
 /*structure and define*/
 /*@============================================================*/
@@ -212,6 +216,8 @@ extern const u16	phy_rate_table[84];
 #define		dm_type_by_driver	1
 
 #define		HW_IGI_TXINFO_TABLE_SIZE 64
+
+#define		PHYDM_SNPRINT_SIZE	64
 
 #ifdef BB_RAM_SUPPORT
 
@@ -304,6 +310,14 @@ struct phydm_phystatus_statistic {
 	u16			cn_sum[RF_PATH_MEM_SIZE]; /*condition number*/
 	u16			cn_hist[RF_PATH_MEM_SIZE][PHY_HIST_SIZE];
 #endif
+#ifdef PHYDM_AUTO_DEGBUG
+	u32			evm_min_sum;
+	u32			evm_max_sum;
+	u32			evm_ss_sum[PHYDM_MAX_SS];
+	u32			pkt_cnt_t;
+	u32			snr_per_path_sum[RF_PATH_MEM_SIZE];
+	u32			snr_per_path_cnt[RF_PATH_MEM_SIZE];
+#endif
 };
 
 struct phydm_phystatus_avg {
@@ -341,6 +355,13 @@ struct phydm_phystatus_avg {
 	u8			evm_4ss_avg[4];
 	u8			snr_4ss_avg[RF_PATH_MEM_SIZE];
 	#endif
+	#ifdef PHYDM_AUTO_DEGBUG
+	u8			evm_1ss_avg_all;
+	u8			evm_min_avg;
+	u8			evm_max_avg;
+	u8			evm_ss_avg[PHYDM_MAX_SS];
+	u8			snr_per_path_avg[RF_PATH_MEM_SIZE];
+	#endif
 };
 
 struct odm_phy_dbg_info {
@@ -358,6 +379,7 @@ struct odm_phy_dbg_info {
 #endif
 	u32			condi_num; /*@condition number U(18,4)*/
 	u8			condi_num_cdf[CN_CNT_MAX];
+	u8			band_idx;
 	u8			num_qry_beacon_pkt;
 	u8			beacon_cnt_in_period; /*@beacon cnt within watchdog period*/
 	u8			beacon_phy_rate;
@@ -382,6 +404,7 @@ struct odm_phy_dbg_info {
 	u8			condition_num_seg0;
 	u8			eigen_val[4];
 	s16			cfo_tail[4]; /*per-path's cfo_tail */
+	u32			cn_avg;
 	#endif
 	struct phydm_phystatus_statistic	physts_statistic_info;
 	struct phydm_phystatus_avg		phystatus_statistic_avg;
@@ -436,12 +459,18 @@ enum odm_cmninfo {
 	ODM_CMNINFO_X_CAP_SETTING,
 	ODM_CMNINFO_ADVANCE_OTA,
 	ODM_CMNINFO_HP_HWID,
+	ODM_CMNINFO_HUAWEI_HWID,
+	ODM_CMNINFO_ATHEROS_HWID,
+	ODM_CMNINFO_BROADCOM_HWID,
+	ODM_CMNINFO_RALINK_HWID,
 	ODM_CMNINFO_TSSI_ENABLE, /*also for cmn_info_update*/
 	ODM_CMNINFO_DIS_DPD,
 	ODM_CMNINFO_POWER_VOLTAGE,
 	ODM_CMNINFO_ANTDIV_GPIO,
 	ODM_CMNINFO_EN_AUTO_BW_TH,
 	ODM_CMNINFO_PEAK_DETECT_MODE,
+	ODM_CMNINFO_EN_NBI_DETECT,
+	ODM_CMNINFO_HW_SPECIAL_TYPE,
 	/*@-----------HOOK BEFORE REG INIT-----------*/
 
 	/*@Dynamic value:*/
@@ -481,6 +510,7 @@ enum odm_cmninfo {
 	ODM_CMNINFO_BF_ANTDIV_DECISION,
 	ODM_CMNINFO_MANUAL_SUPPORTABILITY,
 	ODM_CMNINFO_EN_DYM_BW_INDICATION,
+	ODM_ANTI_INTERFERENCE_EN,
 	/*@--------- POINTER REFERENCE-----------*/
 
 	/*@------------CALL BY VALUE-------------*/
@@ -568,7 +598,10 @@ enum phydm_info_query {
 	PHYDM_INFO_NHM_NOISE_PWR,
 	PHYDM_INFO_NHM_PWR,
 	PHYDM_INFO_NHM_ENV_RATIO,
-
+	PHYDM_INFO_TXEN_CCK,
+	PHYDM_INFO_TXEN_OFDM,
+	PHYDM_INFO_NHM_IDLE_RATIO,
+	PHYDM_INFO_NHM_TX_RATIO,
 };
 
 enum phydm_api {
@@ -645,6 +678,7 @@ enum phydm_dbg_comp {
 	DBG_ADPTV_SOML		= BIT(F17_ADPTV_SOML),
 	DBG_LNA_SAT_CHK		= BIT(F18_LNA_SAT_CHK),
 	/*Neet to re-arrange*/
+	DBG_CMN_OTHER		= BIT(19),
 	DBG_PHY_STATUS		= BIT(20),
 	DBG_TMP			= BIT(21),
 	DBG_FW_TRACE		= BIT(22),
@@ -760,7 +794,8 @@ struct _phydm_mcc_dm_ {
 };
 #endif
 
-#if (RTL8822C_SUPPORT || RTL8812F_SUPPORT || RTL8197G_SUPPORT || RTL8723F_SUPPORT)
+#if (RTL8822C_SUPPORT || RTL8812F_SUPPORT || RTL8197G_SUPPORT || RTL8723F_SUPPORT ||\
+	 RTL8735B_SUPPORT || RTL8730A_SUPPORT || RTL8814B_SUPPORT || RTL8822E_SUPPORT)
 struct phydm_physts {
 	u8			cck_gi_u_bnd;
 	u8			cck_gi_l_bnd;
@@ -792,9 +827,21 @@ struct dm_struct {
 	u32			last_num_qry_phy_status_all;
 	u32			rx_pwdb_ave;
 	boolean		is_init_hw_info_by_rfe;
+	boolean         is_R2R_CCA_MASKT_TIME_SHORT;
+	boolean		is_fixed_chsm_winsize_bc;
+	boolean		is_fixed_chsm_winsize_mtk;
+#if (DM_ODM_SUPPORT_TYPE & ODM_WIN)
+	u32			rts_drop_cnt;
+	u32			low_rate_tx_fail_cnt;
+	u32			low_rate_tx_ok_cnt;
+#endif
 
 	//TSSI
 	u8			en_tssi_mode;
+	#if (RTL8723F_SUPPORT || RTL8735B_SUPPORT || RTL8730A_SUPPORT)
+	//ZWDFS for 80M
+	u8			en_zwdfs_bw80;
+	#endif
 
 	/*@------ ODM HANDLE, DRIVER NEEDS NOT TO HOOK------*/
 	boolean			is_cck_high_power;
@@ -847,6 +894,7 @@ struct dm_struct {
 	/*@-------------------------------------*/
 	u32			phydm_sys_up_time;
 	u8			num_rf_path;		/*@ex: 8821C=1, 8192E=2, 8814B=4*/
+	u8			num_max_ss;
 	u32			soft_ap_special_setting;
 	boolean			boolean_dummy;
 	s8			s8_dummy;
@@ -864,11 +912,18 @@ struct dm_struct {
 	boolean			en_dis_dpd;
 	u16			dis_dpd_rate;
 	u8			en_auto_bw_th;
-	#if (RTL8822C_SUPPORT || RTL8814B_SUPPORT || RTL8197G_SUPPORT || RTL8723F_SUPPORT)
+	boolean			is_pause_dig;
+	boolean			en_nbi_detect;
+	#if (RTL8822C_SUPPORT || RTL8814B_SUPPORT || RTL8197G_SUPPORT ||\
+		RTL8730A_SUPPORT || RTL8822E_SUPPORT)
 	u8			txagc_buff[RF_PATH_MEM_SIZE][PHY_NUM_RATE_IDX];
 	u32			bp_0x9b0;
+	#elif (RTL8723F_SUPPORT || RTL8735B_SUPPORT)
+	u8			txagc_buff[2][PHY_NUM_RATE_IDX];
+	u32			bp_0x9b0;
 	#endif
-	#if (RTL8822C_SUPPORT)
+	#if (RTL8822C_SUPPORT || RTL8723F_SUPPORT || RTL8735B_SUPPORT ||\
+		RTL8730A_SUPPORT || RTL8822E_SUPPORT)
 	u8			ofdm_rxagc_l_bnd[16];
 	boolean			l_bnd_detect[16];
 	u16			agc_rf_gain_ori[16][64];/*[table][mp_gain_idx]*/
@@ -877,6 +932,22 @@ struct dm_struct {
 	boolean			is_agc_tab_pos_shift;
 	u8			agc_table_shift;
 	#endif
+	#if (RTL8822E_SUPPORT)
+	boolean			btc_rssi_processing;
+	boolean			btc_mcs_rssi_en;
+	u8			bt_cck_rssi_th;
+	#endif
+	#if (RTL8822C_SUPPORT)
+	u8			hw_special_type;
+	#endif
+	#if (RTL8822C_SUPPORT || RTL8822E_SUPPORT)
+	boolean			bt_is_linked;
+	u8			bt_iso_tbl_idx;
+	#endif
+	boolean			is_nbi_csi;
+	u8			curr_tx_rate;
+	char			dbg_buf[PHYDM_SNPRINT_SIZE];
+	u8			rx_rate_plurality;
 /*@-----------HOOK BEFORE REG INIT-----------*/
 /*@===========================================================*/
 /*@====[ CALL BY Reference ]=========================================*/
@@ -917,10 +988,11 @@ struct dm_struct {
 	u8			*bb_op_mode;
 	u32			*manual_supportability;
 	u8			*dis_dym_bw_indication;
+	u8			*anti_interference_en;
 /*@===========================================================*/
 /*@====[ CALL BY VALUE ]===========================================*/
 /*@===========================================================*/
-
+	u8			retry_cnt;
 	u8			disable_phydm_watchdog;
 	boolean			is_link_in_process;
 	boolean			is_wifi_direct;
@@ -936,6 +1008,7 @@ struct dm_struct {
 	u8			rssi_max;
 	u8			rssi_max_macid;
 	u8			rssi_min_by_path;
+	u8			is_orientation_env;
 	boolean			is_mp_chip;
 	boolean			is_one_entry_only;
 	u32			one_entry_macid;
@@ -988,6 +1061,8 @@ struct dm_struct {
 	/*@[traffic]*/
 	u8			traffic_load;
 	u8			pre_traffic_load;
+	u16			rx_utility;
+	u16			avg_phy_rate;
 	u32			tx_tp;			/*@Mbps*/
 	u32			rx_tp;			/*@Mbps*/
 	u32			total_tp;		/*@Mbps*/
@@ -1005,6 +1080,7 @@ struct dm_struct {
 	boolean			MPDIG_2G;		/*off MPDIG*/
 	u8			times_2g;		/*@for MP DIG*/
 	u8			force_igi;		/*@for debug*/
+	boolean			is_dig_low_bond;
 
 	/*@[TDMA-DIG]*/
 	u8			tdma_dig_timer_ms;
@@ -1059,6 +1135,7 @@ struct dm_struct {
 	s8			TH_L2H_default;
 	s8			th_edcca_hl_diff_default;
 	s8			th_l2h_ini;
+	s8			th_l2h_ini_custom;
 	s8			th_edcca_hl_diff;
 	boolean			carrier_sense_enable;
 	/*@-----------------------------------------------------------*/
@@ -1083,6 +1160,8 @@ struct dm_struct {
 #if (RTL8814B_SUPPORT || RTL8198F_SUPPORT)
 	u8			csi_wgt_th_db[5]; /*@wgt 4,3,2,1,0 */
 						  /*    ^ ^ ^ ^ ^  */
+	u8			psd_trials_sw_log2;
+	u8			psd_trials_hw_log2;
 #endif
 	/*@------------------------------------------*/
 
@@ -1176,7 +1255,7 @@ struct dm_struct {
 	u32			radar_detect_reg_f74;
 	/*@---For zero-wait DFS---------------------------------------*/
 	boolean			seg1_dfs_flag;
-	/*@-----------------------------------------------------------*/
+	/*@---For ETSI 302 ---------------------------------------*/
 /*@-----------------------------------------------------------*/
 #endif
 
@@ -1235,7 +1314,7 @@ struct dm_struct {
 #if (DM_ODM_SUPPORT_TYPE & ODM_WIN)
 	struct odm_phy_dbg_info		phy_dbg_info_win_bkp;
 #endif
-#ifdef PHYDM_IC_JGR3_SERIES_SUPPORT
+#if (defined (PHYDM_IC_JGR3_SERIES_SUPPORT) && defined (CONFIG_BB_TXBF_API))
 	struct phydm_bf_rate_info_jgr3 bf_rate_info_jgr3;
 #endif
 
@@ -1327,6 +1406,7 @@ struct dm_struct {
 #endif
 #ifdef PHYDM_AUTO_DEGBUG
 	struct	phydm_auto_dbg_struct	auto_dbg_table;
+	struct	phydm_auto_dbg_info	auto_dbg_i;
 #endif
 
 	struct	phydm_pause_lv		pause_lv_table;
@@ -1348,7 +1428,8 @@ struct dm_struct {
 #endif
 /*@==========================================================*/
 
-#if (RTL8822C_SUPPORT || RTL8812F_SUPPORT || RTL8197G_SUPPORT || RTL8723F_SUPPORT)
+#if (RTL8822C_SUPPORT || RTL8812F_SUPPORT || RTL8197G_SUPPORT || RTL8723F_SUPPORT ||\
+	 RTL8735B_SUPPORT || RTL8730A_SUPPORT || RTL8814B_SUPPORT || RTL8822E_SUPPORT)
 	/*@-------------------phydm_phystatus report --------------------*/
 	struct phydm_physts dm_physts_table;
 #endif

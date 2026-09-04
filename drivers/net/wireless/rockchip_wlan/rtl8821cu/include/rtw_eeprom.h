@@ -24,7 +24,11 @@
 #define	HWSET_MAX_SIZE_512		512
 #define HWSET_MAX_SIZE_1024		1024
 
+#if defined(CONFIG_RTL8822E)
+#define	EEPROM_MAX_SIZE			EFUSE_MAX_MAP_LEN
+#else
 #define	EEPROM_MAX_SIZE			HWSET_MAX_SIZE_1024
+#endif
 
 #define	CLOCK_RATE					50			/* 100us		 */
 

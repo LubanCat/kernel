@@ -72,6 +72,9 @@ struct _DFS_STATISTICS {
 	boolean		sw_trigger_mode;
 	boolean		det_print;
 	boolean		det_print2;
+	boolean		det_print_sw;
+	boolean		det_print_jar3;
+	boolean		det_jar3_en;
 	boolean		radar_type;
 	boolean		print_hist_rpt;
 	boolean		hist_cond_on;
@@ -81,6 +84,7 @@ struct _DFS_STATISTICS {
 	boolean		pri_cond3;
 	boolean		pri_cond4;
 	boolean		pri_cond5;
+	boolean		pri_cond6;
 	boolean		pw_cond1;
 	boolean		pw_cond2;
 	boolean		pw_cond3;
@@ -91,6 +95,7 @@ struct _DFS_STATISTICS {
 	boolean		pri_long_cond1;	/*@for long radar*/
 	boolean		pw_flag;
 	boolean		pri_flag;
+	boolean		loct_flag;
 	boolean		pri_type3_4_flag;	/*@for ETSI*/
 	boolean		long_radar_flag;
 	u8		pri_hold_sum[6];
@@ -98,15 +103,27 @@ struct _DFS_STATISTICS {
 	u8		pri_long_hold_sum[6];
 	u8		pw_long_hold_sum[6];
 	u8		hist_idx;
-	u8		hist_long_idx;
+	u16		hist_long_idx;
 	u8		pw_hold[4][6];
 	u8		pri_hold[4][6];
+	u8		pw_long_hold[300][6];
+	u8		pri_long_hold[300][6];
 	u8		pw_std;	/*@The std(var) of reasonable num of pw group*/
 	u8		pri_std;/*@The std(var) of reasonable num of pri group*/
 	/*@dfs histogram threshold*/
-	u8		pri_hist_th : 3;
-	u8		pri_sum_g1_th : 4;
-	u8		pri_sum_g5_th : 4;
+	u8		pri_hist_idle_th;
+	u8		pri_hist_th;
+	u8		pri_sum_g1_th;
+	u8		pri_sum_g0_idle_th;
+	u8		pri_sum_g0_th;
+	u8		pri_sum_g5_idle_th;
+	u8		pri_sum_g5_th;
+	u8		pw_sum_g0_idle_th;
+	u8		pw_sum_g0_th;
+	u8		pw_sum_g5_idle_th;
+	u8		pw_sum_g5_th;
+	u8		pw_pri_valid_set_idle_th;
+	u8		pw_pri_valid_set_th;
 	u8		pri_sum_g1_fcc_th : 3;
 	u8		pri_sum_g3_fcc_th : 3;
 	u8		pri_sum_safe_fcc_th : 7;
@@ -114,7 +131,8 @@ struct _DFS_STATISTICS {
 	u8		pri_sum_type6_th : 5;
 	u8		pri_sum_safe_th : 6;
 	u8		pri_sum_g5_under_g1_th : 3;
-	u8		pri_pw_diff_th : 3;
+	u8		pri_pw_diff_idle_th;
+	u8		pri_pw_diff_th;
 	u8		pri_pw_diff_fcc_th : 4;
 	u8		pri_pw_diff_fcc_idle_th : 2;
 	u8		pri_pw_diff_w53_th : 4;
@@ -132,6 +150,31 @@ struct _DFS_STATISTICS {
 	u8		pri_std_idle_th : 4;
 	u8		type4_pw_max_cnt : 4;
 	u8		type4_safe_pri_sum_th : 3;
+	u8		pw_rslt[12];
+	u8		pri_rslt[12];
+	s8		loct_rslt[12];
+	/*
+	u8		pw_lth[10];
+	u8		pri_lth[10];
+	u16		pw_uth[10];
+	u8		pri_uth[10];
+	*/
+	boolean		nhm_dfs_en;
+	boolean		nhm_dfs_flag;
+	u8		nhm_dfs_cnt;
+	u8		nhm_cnt_th;
+	u8		nhm_dty_th;
+	boolean		b_flag;
+	boolean 	pw_flag_en;
+	boolean 	loct_flag_en;
+	boolean 	pri_flag_en;
+	u8 		pri_var_offset;
+	u8 		pri_var_tp_offset;
+	u8 		pri_cnt_th;
+	u8 		loct_diff_th;
+	u8 		dc_cnt_th;
+	u32		fa_cnt_th;
+	u32		fa_cnt_th_backup;
 };
 
 /*@
@@ -160,6 +203,7 @@ boolean phydm_radar_detect(void *dm_void);
 void phydm_dfs_histogram_radar_distinguish(void *dm_void);
 boolean phydm_dfs_hist_log(void *dm_void, u8 index);
 void phydm_dfs_parameter_init(void *dm_void);
+void phydm_dfs_rpt_distinguish(void *dm_void);
 void phydm_dfs_hist_dbg(void *dm_void, char input[][16], u32 *_used,
 			char *output, u32 *_out_len);
 void phydm_dfs_debug(void *dm_void, char input[][16], u32 *_used,

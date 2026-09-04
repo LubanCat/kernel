@@ -20,12 +20,15 @@
 #if HALMAC_88XX_SUPPORT
 
 #define MAC_CLK_SPEED	80 /* 80M */
+#define MAC_CLK_SPEED_BW_5M_10M	20 /* 20M */
+
 #define EFUSE_PCB_INFO_OFFSET	0xCA
 
 enum mac_clock_hw_def {
 	MAC_CLK_HW_DEF_80M = 0,
 	MAC_CLK_HW_DEF_40M = 1,
 	MAC_CLK_HW_DEF_20M = 2,
+	MAC_CLK_HW_DEF_20M_BW_5 = 3,
 };
 
 static enum halmac_ret_status
@@ -588,14 +591,21 @@ cfg_bw_88xx(struct halmac_adapter *adapter, enum halmac_bw bw)
 
 	switch (bw) {
 	case HALMAC_BW_80:
+		adapter->curr_bw = HALMAC_BW_80;
 		value32 = value32 | BIT(8);
 		break;
 	case HALMAC_BW_40:
+		adapter->curr_bw = HALMAC_BW_40;
 		value32 = value32 | BIT(7);
 		break;
 	case HALMAC_BW_20:
+		adapter->curr_bw = HALMAC_BW_20;
+		break;
 	case HALMAC_BW_10:
+		adapter->curr_bw = HALMAC_BW_10;
+		break;
 	case HALMAC_BW_5:
+		adapter->curr_bw = HALMAC_BW_5;
 		break;
 	default:
 		break;
@@ -678,6 +688,7 @@ board_rf_fine_tune_88xx(struct halmac_adapter *adapter)
 	u32 size = adapter->hw_cfg_info.eeprom_size;
 	struct halmac_api *api = (struct halmac_api *)adapter->halmac_api;
 
+#if HALMAC_8822B_SUPPORT
 	if (adapter->chip_id == HALMAC_CHIP_ID_8822B) {
 		if (!adapter->efuse_map_valid || !adapter->efuse_map) {
 			PLTFM_MSG_ERR("[ERR]efuse map invalid!!\n");
@@ -704,7 +715,7 @@ board_rf_fine_tune_88xx(struct halmac_adapter *adapter)
 
 		PLTFM_FREE(map, size);
 	}
-
+#endif
 	return HALMAC_RET_SUCCESS;
 }
 
@@ -715,11 +726,22 @@ cfg_mac_clk_88xx(struct halmac_adapter *adapter)
 	struct halmac_api *api = (struct halmac_api *)adapter->halmac_api;
 
 	value32 = HALMAC_REG_R32(REG_AFE_CTRL1) & ~(BIT(20) | BIT(21));
-	value32 |= (MAC_CLK_HW_DEF_80M << BIT_SHIFT_MAC_CLK_SEL);
-	HALMAC_REG_W32(REG_AFE_CTRL1, value32);
-
-	HALMAC_REG_W8(REG_USTIME_TSF, MAC_CLK_SPEED);
-	HALMAC_REG_W8(REG_USTIME_EDCA, MAC_CLK_SPEED);
+	if (adapter->curr_bw == HALMAC_BW_5) {
+		value32 |= (MAC_CLK_HW_DEF_20M_BW_5 << BIT_SHIFT_MAC_CLK_SEL);
+		HALMAC_REG_W32(REG_AFE_CTRL1, value32);
+		HALMAC_REG_W8(REG_USTIME_TSF, MAC_CLK_SPEED_BW_5M_10M);
+		HALMAC_REG_W8(REG_USTIME_EDCA, MAC_CLK_SPEED_BW_5M_10M);
+	} else if (adapter->curr_bw == HALMAC_BW_10) {
+		value32 |= (MAC_CLK_HW_DEF_20M << BIT_SHIFT_MAC_CLK_SEL);
+		HALMAC_REG_W32(REG_AFE_CTRL1, value32);
+		HALMAC_REG_W8(REG_USTIME_TSF, MAC_CLK_SPEED_BW_5M_10M);
+		HALMAC_REG_W8(REG_USTIME_EDCA, MAC_CLK_SPEED_BW_5M_10M);
+	} else {
+		value32 |= (MAC_CLK_HW_DEF_80M << BIT_SHIFT_MAC_CLK_SEL);
+		HALMAC_REG_W32(REG_AFE_CTRL1, value32);
+		HALMAC_REG_W8(REG_USTIME_TSF, MAC_CLK_SPEED);
+		HALMAC_REG_W8(REG_USTIME_EDCA, MAC_CLK_SPEED);
+	}
 }
 
 /**

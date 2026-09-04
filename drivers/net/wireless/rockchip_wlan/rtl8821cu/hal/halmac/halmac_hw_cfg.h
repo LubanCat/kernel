@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2016 - 2018 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2016 - 2022 Realtek Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -182,6 +182,12 @@
 #define HALMAC_8812F_SUPPORT	1
 #else
 #define HALMAC_8812F_SUPPORT	0
+#endif
+
+#ifdef CONFIG_RTL8822E
+#define HALMAC_8822E_SUPPORT	1
+#else
+#define HALMAC_8822E_SUPPORT	0
 #endif
 
 

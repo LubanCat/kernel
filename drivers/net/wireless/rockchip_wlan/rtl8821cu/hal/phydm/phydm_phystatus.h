@@ -648,7 +648,7 @@ __PACK struct phy_sts_rpt_jgr3_type0 {
 	u8 gain_d : 6;
 #endif
 };
-#if(RTL8723F_SUPPORT)
+#if(RTL8723F_SUPPORT || RTL8735B_SUPPORT || RTL8730A_SUPPORT)
 __PACK struct phy_sts_rpt_jgr3_type6 {
 	/* judy_add_8723F_0512 */
 /* @DW0 : Offset 0 */

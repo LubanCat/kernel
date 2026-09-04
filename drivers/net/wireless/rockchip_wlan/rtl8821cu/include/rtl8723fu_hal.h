@@ -40,8 +40,11 @@
 				#elif defined(CONFIG_PLATFORM_HISILICON)
 				/* use 16k to workaround for HISILICON platform */
 				#define MAX_RECVBUF_SZ (16384)
-			#else
+			#elif defined(CONFIG_PLATFORM_I386_PC)
 				#define MAX_RECVBUF_SZ (32768)
+			#else
+				/* Avoid the Synopsys USB host receive buffer size limit */
+				#define MAX_RECVBUF_SZ (20480) /* 20k */
 			#endif
 		#else
 			#define MAX_RECVBUF_SZ (4000)

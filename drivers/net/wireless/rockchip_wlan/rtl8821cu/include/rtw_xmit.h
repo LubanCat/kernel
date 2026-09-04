@@ -18,7 +18,7 @@
 
 #if defined(CONFIG_SDIO_HCI) || defined(CONFIG_GSPI_HCI)
 	#ifdef CONFIG_TX_AGGREGATION
-		#ifdef CONFIG_RTL8822C
+		#if defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E)
 			#ifdef CONFIG_SDIO_TX_FORMAT_DUMMY_AUTO
 				#define MAX_XMITBUF_SZ	(51200)
 			#else
@@ -90,6 +90,8 @@
 
 #ifdef CONFIG_SINGLE_XMIT_BUF
 	#define NR_XMIT_EXTBUFF	(1)
+#elif defined(CONFIG_RTW_MGMT_QUEUE)
+	#define NR_XMIT_EXTBUFF	(64)
 #else
 	#define NR_XMIT_EXTBUFF	(32)
 #endif
@@ -98,8 +100,10 @@
 	#define MAX_CMDBUF_SZ	(512 * 18)
 #elif defined(CONFIG_RTL8723D) && defined(CONFIG_LPS_POFF)
 	#define MAX_CMDBUF_SZ	(128*70) /*(8960)*/
-#elif defined(CONFIG_RTL8822C) && defined(CONFIG_WAR_OFFLOAD)
+#elif (defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E)) && defined(CONFIG_WAR_OFFLOAD)
 	#define MAX_CMDBUF_SZ	(128*128) /*(16k) */
+#elif defined(CONFIG_RTL8723F) && defined(CONFIG_WAR_OFFLOAD)
+	#define MAX_CMDBUF_SZ	(128*64) /*(8192) */
 #else
 	#define MAX_CMDBUF_SZ	(5120)	/* (4096) */
 #endif
@@ -195,6 +199,12 @@
 #define HWXMIT_ENTRY 4
 #endif
 
+enum DEQUEUE_TYPE {
+	UNI_BMC_DATA,
+	UNI_MGMT,
+	ALL_FRAME
+};
+
 /* For Buffer Descriptor ring architecture */
 #if defined(BUF_DESC_ARCH) || defined(CONFIG_TRX_BD_ARCH)
 	#if defined(CONFIG_RTL8192E)
@@ -213,7 +223,7 @@
 	defined(CONFIG_RTL8710B) || defined(CONFIG_RTL8192F) ||\
 	defined(CONFIG_RTL8723F)
 	#define TXDESC_SIZE 40
-#elif defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8822C)
+#elif defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E)
 	#define TXDESC_SIZE 48		/* HALMAC_TX_DESC_SIZE_8822B */
 #elif defined(CONFIG_RTL8821C)
 	#define TXDESC_SIZE 48		/* HALMAC_TX_DESC_SIZE_8821C */
@@ -242,7 +252,9 @@
 #endif
 
 #ifdef CONFIG_PCI_HCI
-	#if defined(CONFIG_RTL8192E) || defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C) || defined(CONFIG_TRX_BD_ARCH)
+	#if defined(CONFIG_RTL8192E) || defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822B) \
+		|| defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C) \
+		|| defined(CONFIG_RTL8822E) || defined(CONFIG_TRX_BD_ARCH)
 		/* this section is defined for buffer descriptor ring architecture */
 		#define TX_WIFI_INFO_SIZE (TXDESC_SIZE) /* it may add 802.11 hdr or others... */
 		/* tx desc and payload are in the same buf */
@@ -281,7 +293,9 @@ struct tx_buf_desc {
 #endif
 	unsigned int dword[TX_BUFFER_SEG_SIZE * (2 << TX_BUFFER_SEG_NUM)];
 } __packed;
-#elif (defined(CONFIG_RTL8192E) || defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8822C)) && defined(CONFIG_PCI_HCI) /* 8192ee or 8814ae */
+#elif (defined(CONFIG_RTL8192E) || defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822B) \
+	|| defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E)) \
+	&& defined(CONFIG_PCI_HCI) /* 8192ee or 8814ae */
 /* 8192EE_TODO */
 struct tx_desc {
 	unsigned int txdw0;
@@ -613,6 +627,10 @@ struct xmit_buf {
 #endif
 #endif
 
+#ifdef CONFIG_PCIE_DMA_COHERENT
+	dma_addr_t dma_bpa;
+#endif
+
 #if defined(DBG_XMIT_BUF) || defined(DBG_XMIT_BUF_EXT)
 	u8 no;
 #endif
@@ -864,6 +882,9 @@ struct	xmit_priv	{
 #ifdef CONFIG_PCI_TX_POLLING
 	_timer tx_poll_timer;
 #endif
+#ifdef CONFIG_LAYER2_ROAMING
+	_queue	rpkt_queue;
+#endif
 	_lock lock_sctx;
 
 };
@@ -879,6 +900,10 @@ extern struct xmit_frame *__rtw_alloc_cmdxmitframe_8192ee(struct xmit_priv *pxmi
 extern struct xmit_frame *__rtw_alloc_cmdxmitframe_8822be(struct xmit_priv *pxmitpriv,
 		enum cmdbuf_type buf_type);
 #define rtw_alloc_bcnxmitframe(p) __rtw_alloc_cmdxmitframe_8822be(p, CMDBUF_BEACON)
+#elif defined(CONFIG_RTL8822E) && defined(CONFIG_PCI_HCI)
+extern struct xmit_frame *__rtw_alloc_cmdxmitframe_8822ee(struct xmit_priv *pxmitpriv,
+		enum cmdbuf_type buf_type);
+#define rtw_alloc_bcnxmitframe(p) __rtw_alloc_cmdxmitframe_8822ee(p, CMDBUF_BEACON)
 #elif defined(CONFIG_RTL8822C) && defined(CONFIG_PCI_HCI)
 extern struct xmit_frame *__rtw_alloc_cmdxmitframe_8822ce(struct xmit_priv *pxmitpriv,
 		enum cmdbuf_type buf_type);
@@ -985,7 +1010,7 @@ u8 mgmt_xmitframe_enqueue_for_sleeping_sta(_adapter *padapter, struct xmit_frame
 #endif
 sint xmitframe_enqueue_for_sleeping_sta(_adapter *padapter, struct xmit_frame *pxmitframe);
 void stop_sta_xmit(_adapter *padapter, struct sta_info *psta);
-void wakeup_sta_to_xmit(_adapter *padapter, struct sta_info *psta);
+void wakeup_sta_to_xmit(_adapter *padapter, struct sta_info *psta, u8 dequeue_type);
 void xmit_delivery_enabled_frames(_adapter *padapter, struct sta_info *psta);
 #endif
 
@@ -997,7 +1022,7 @@ u8 rtw_get_tx_bw_bmp_of_vht_rate(struct dvobj_priv *dvobj, u8 rate, u8 max_bw);
 s16 rtw_adapter_get_oper_txpwr_max_mbm(_adapter *adapter, bool eirp);
 s16 rtw_rfctl_get_oper_txpwr_max_mbm(struct rf_ctl_t *rfctl, u8 ch, u8 bw, u8 offset, u8 ifbmp_mod, u8 if_op, bool eirp);
 s16 rtw_get_oper_txpwr_max_mbm(struct dvobj_priv *dvobj, bool erip);
-s16 rtw_rfctl_get_reg_max_txpwr_mbm(struct rf_ctl_t *rfctl, u8 ch, u8 bw, u8 offset, bool eirp);
+s16 rtw_rfctl_get_reg_max_txpwr_mbm(struct rf_ctl_t *rfctl, enum band_type band, u8 ch, u8 bw, u8 offset, bool eirp);
 
 u8 query_ra_short_GI(struct sta_info *psta, u8 bw);
 
@@ -1064,6 +1089,7 @@ void dump_xmit_block(void *sel, _adapter *padapter);
 void rtw_set_xmit_block(_adapter *padapter, enum XMIT_BLOCK_REASON reason);
 void rtw_clr_xmit_block(_adapter *padapter, enum XMIT_BLOCK_REASON reason);
 bool rtw_is_xmit_blocked(_adapter *padapter);
+void rtw_hci_flush(_adapter *padapter);
 
 /* include after declaring struct xmit_buf, in order to avoid warning */
 #include <xmit_osdep.h>

@@ -153,6 +153,16 @@
 
 #endif
 
+/*
+ * MLD related linux kernel patch in
+ * Android Common Kernel android13-5.15
+ * refs/heads/common-android13-5.15-2023-04 (5.15.94)
+ * refs/heads/android13-5.15-lts (5.15.106)
+ */
+#if (defined(__ANDROID_COMMON_KERNEL__) && (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 94)))
+        #define CONFIG_MLD_KERNEL_PATCH
+#endif
+
 typedef struct	semaphore _sema;
 typedef	spinlock_t	_lock;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37))
@@ -293,27 +303,28 @@ __inline static void _exit_critical_ex(_lock *plock, _irqL *pirqL)
 	spin_unlock_irqrestore(plock, *pirqL);
 }
 
-__inline static void _enter_critical_bh(_lock *plock, _irqL *pirqL)
+__inline static void _rtw_spinlock_bh(_lock *plock)
 {
 	spin_lock_bh(plock);
 }
 
-__inline static void _exit_critical_bh(_lock *plock, _irqL *pirqL)
+__inline static void _rtw_spinunlock_bh(_lock *plock)
 {
 	spin_unlock_bh(plock);
 }
 
-__inline static void enter_critical_bh(_lock *plock)
+__inline static int _rtw_spin_is_locked(_lock *plock)
 {
-	spin_lock_bh(plock);
+	return spin_is_locked(plock);
 }
 
-__inline static void exit_critical_bh(_lock *plock)
-{
-	spin_unlock_bh(plock);
-}
+#define enter_critical_bh(plock) _rtw_spinlock_bh(plock)
+#define exit_critical_bh(plock) _rtw_spinunlock_bh(plock)
 
-__inline static int _enter_critical_mutex(_mutex *pmutex, _irqL *pirqL)
+#define _enter_critical_bh(plock, pirqL) _rtw_spinlock_bh(plock)
+#define _exit_critical_bh(plock, pirqL) _rtw_spinunlock_bh(plock)
+
+__inline static int _rtw_mutex_lock_interruptible(_mutex *pmutex)
 {
 	int ret = 0;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37))
@@ -325,8 +336,7 @@ __inline static int _enter_critical_mutex(_mutex *pmutex, _irqL *pirqL)
 	return ret;
 }
 
-
-__inline static int _enter_critical_mutex_lock(_mutex *pmutex, _irqL *pirqL)
+__inline static int _rtw_mutex_lock(_mutex *pmutex)
 {
 	int ret = 0;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37))
@@ -337,7 +347,7 @@ __inline static int _enter_critical_mutex_lock(_mutex *pmutex, _irqL *pirqL)
 	return ret;
 }
 
-__inline static void _exit_critical_mutex(_mutex *pmutex, _irqL *pirqL)
+__inline static void _rtw_mutex_unlock(_mutex *pmutex)
 {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 37))
 	mutex_unlock(pmutex);
@@ -346,18 +356,22 @@ __inline static void _exit_critical_mutex(_mutex *pmutex, _irqL *pirqL)
 #endif
 }
 
+#define _enter_critical_mutex(pmutex, pirqL) _rtw_mutex_lock_interruptible(pmutex)
+#define _enter_critical_mutex_lock(pmutex, pirqL) _rtw_mutex_lock(pmutex)
+#define _exit_critical_mutex(pmutex, pirqL) _rtw_mutex_unlock(pmutex)
+
 __inline static _list	*get_list_head(_queue	*queue)
 {
 	return &(queue->queue);
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
 static inline void timer_hdl(struct timer_list *in_timer)
 #else
 static inline void timer_hdl(unsigned long cntx)
 #endif
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
 	_timer *ptimer = from_timer(ptimer, in_timer, timer);
 #else
 	_timer *ptimer = (_timer *)cntx;
@@ -370,7 +384,7 @@ __inline static void _init_timer(_timer *ptimer, _nic_hdl nic_hdl, void *pfunc, 
 	ptimer->function = pfunc;
 	ptimer->arg = cntx;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
 	timer_setup(&ptimer->timer, timer_hdl, 0);
 #else
 	/* setup_timer(ptimer, pfunc,(u32)cntx);	 */
@@ -378,6 +392,11 @@ __inline static void _init_timer(_timer *ptimer, _nic_hdl nic_hdl, void *pfunc, 
 	ptimer->timer.data = (unsigned long)ptimer;
 	init_timer(&ptimer->timer);
 #endif
+}
+
+__inline static int _check_timer_is_active(_timer *ptimer)
+{
+	return timer_pending(&ptimer->timer);
 }
 
 __inline static void _set_timer(_timer *ptimer, u32 delay_time)
@@ -526,6 +545,15 @@ static inline int rtw_merge_string(char *dst, int dst_len, const char *src1, con
 /* Atomic integer operations */
 #define ATOMIC_T atomic_t
 
+
+#if defined(DBG_MEM_ERR_FREE)
+void rtw_dbg_mem_init(void);
+void rtw_dbg_mem_deinit(void);
+#else
+#define rtw_dbg_mem_init() do {} while (0)
+#define rtw_dbg_mem_deinit() do {} while (0)
+#endif /* DBG_MEM_ERR_FREE */
+
 #define rtw_netdev_priv(netdev) (((struct rtw_netdev_priv_indicator *)netdev_priv(netdev))->priv)
 
 #define NDEV_FMT "%s"
@@ -560,5 +588,48 @@ extern struct net_device *rtw_alloc_etherdev(int sizeof_priv);
 
 #define STRUCT_PACKED __attribute__ ((packed))
 
+#ifndef fallthrough
+#if __GNUC__ >= 5 || defined(__clang__)
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+#if __has_attribute(__fallthrough__)
+#define fallthrough __attribute__((__fallthrough__))
+#endif
+#endif
+#ifndef fallthrough
+#define fallthrough do {} while (0) /* fallthrough */
+#endif
+#endif
+
+#ifndef static_assert
+#define static_assert(expr, ...) __static_assert(expr, ##__VA_ARGS__, #expr)
+#define __static_assert(expr, msg, ...) _Static_assert(expr, msg)
+#endif
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 17, 0))
+#define dev_addr_mod(dev, offset, addr, len) _rtw_memcpy(&dev->dev_addr[offset], addr, len)
+#endif
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0))
+/* This defines the direction arg to the DMA mapping routines. */
+#define PCI_DMA_BIDIRECTIONAL	DMA_BIDIRECTIONAL
+#define PCI_DMA_TODEVICE	DMA_TO_DEVICE
+#define PCI_DMA_FROMDEVICE	DMA_FROM_DEVICE
+#define PCI_DMA_NONE		DMA_NONE
+
+#define pci_alloc_consistent(pcidev, size, dma_handle) \
+	dma_alloc_coherent(&(pcidev)->dev, size, dma_handle, GFP_ATOMIC)
+#define pci_free_consistent(pcidev, size, vaddr, dma_handle) \
+	dma_free_coherent(&(pcidev)->dev, size, vaddr, dma_handle)
+#define pci_map_single(pcidev, ptr, size, direction) \
+	dma_map_single(&(pcidev)->dev, ptr, size, (enum dma_data_direction)direction)
+#define pci_unmap_single(pcidev, dma_addr, size, direction) \
+	dma_unmap_single(&(pcidev)->dev, dma_addr, size, (enum dma_data_direction)direction)
+#define pci_set_dma_mask(pcidev, mask) \
+	dma_set_mask(&(pcidev)->dev, mask)
+#define pci_set_consistent_dma_mask(pcidev, mask) \
+	dma_set_coherent_mask(&(pcidev)->dev, mask)
+#endif
 
 #endif /* __OSDEP_LINUX_SERVICE_H_ */

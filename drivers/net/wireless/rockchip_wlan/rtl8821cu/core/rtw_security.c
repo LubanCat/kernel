@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2021 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -26,27 +26,24 @@ static const char *_security_type_str[] = {
 	"WEP104",
 	"SMS4",
 	"GCMP",
-};
-
-static const char *_security_type_bip_str[] = {
+#ifdef CONFIG_IEEE80211W
 	"BIP_CMAC_128",
 	"BIP_GMAC_128",
-	"BIP_GMAC_256",
-	"BIP_CMAC_256",
+#endif
 };
 
 const char *security_type_str(u8 value)
 {
-#ifdef CONFIG_IEEE80211W
-	if ((_BIP_MAX_ > value) && (value >= _BIP_CMAC_128_))
-		return _security_type_bip_str[value & ~_SEC_TYPE_BIT_];
-#endif
-
 	if (_CCMP_256_ == value)
 		return "CCMP_256";
 	if (_GCMP_256_ == value)
 		return "GCMP_256";
-
+#ifdef CONFIG_IEEE80211W
+	if (_BIP_CMAC_256_ == value)
+		return "BIP_CMAC_256";
+	if (_BIP_GMAC_256_ == value)
+		return "BIP_GMAC_256";
+#endif
 	if (_SEC_TYPE_MAX_ > value)
 		return _security_type_str[value];
 
@@ -735,7 +732,7 @@ u32	rtw_tkip_encrypt(_adapter *padapter, u8 *pxmitframe)
 	u8   hw_hdr_offset = 0;
 	struct arc4context mycontext;
 	sint			curfragnum, length;
-	u32	prwskeylen;
+	/*u32	prwskeylen;*/
 
 	u8	*pframe, *payload, *iv, *prwskey;
 	union pn48 dot11txpn;
@@ -791,7 +788,7 @@ u32	rtw_tkip_encrypt(_adapter *padapter, u8 *pxmitframe)
 				prwskey = pattrib->dot118021x_UncstKey.skey;
 			}
 
-			prwskeylen = 16;
+			/*prwskeylen = 16;*/
 
 			for (curfragnum = 0; curfragnum < pattrib->nr_frags; curfragnum++) {
 				iv = pframe + pattrib->hdrlen;
@@ -838,9 +835,7 @@ u32	rtw_tkip_encrypt(_adapter *padapter, u8 *pxmitframe)
 
 	}
 	return res;
-
 }
-
 
 /* The hlen isn't include the IV */
 u32 rtw_tkip_decrypt(_adapter *padapter, u8 *precvframe)
@@ -853,7 +848,7 @@ u32 rtw_tkip_decrypt(_adapter *padapter, u8 *precvframe)
 	u8	crc[4];
 	struct arc4context mycontext;
 	sint			length;
-	u32	prwskeylen;
+	/*u32	prwskeylen;*/
 
 	u8	*pframe, *payload, *iv, *prwskey;
 	union pn48 dot11txpn;
@@ -911,10 +906,10 @@ u32 rtw_tkip_decrypt(_adapter *padapter, u8 *precvframe)
 				/* RTW_INFO("rx bc/mc packets, to perform sw rtw_tkip_decrypt\n"); */
 				/* prwskey = psecuritypriv->dot118021XGrpKey[psecuritypriv->dot118021XGrpKeyid].skey; */
 				prwskey = psecuritypriv->dot118021XGrpKey[prxattrib->key_index].skey;
-				prwskeylen = 16;
+				/*prwskeylen = 16;*/
 			} else {
 				prwskey = &stainfo->dot118021x_UncstKey.skey[0];
-				prwskeylen = 16;
+				/*prwskeylen = 16;*/
 			}
 
 			iv = pframe + prxattrib->hdrlen;
@@ -1646,11 +1641,11 @@ u32 rtw_aes_encrypt(_adapter *padapter, u8 *pxmitframe)
 			if ((curfragnum + 1) == pattrib->nr_frags) {    /* the last fragment */
 				plen = pattrib->last_txcmdsz - pattrib->hdrlen - pattrib->iv_len - pattrib->icv_len;
 
-				_rtw_ccmp_encrypt(prwskey, prwskeylen, pattrib->hdrlen, pframe, plen);
+				_rtw_ccmp_encrypt(padapter, prwskey, prwskeylen, pattrib->hdrlen, pframe, plen);
 			} else {
 				plen = pxmitpriv->frag_len - pattrib->hdrlen - pattrib->iv_len - pattrib->icv_len;
 
-				_rtw_ccmp_encrypt(prwskey, prwskeylen, pattrib->hdrlen, pframe, plen);
+				_rtw_ccmp_encrypt(padapter, prwskey, prwskeylen, pattrib->hdrlen, pframe, plen);
 				pframe += pxmitpriv->frag_len;
 				pframe = (u8 *)RND4((SIZE_PTR)(pframe));
 
@@ -2118,7 +2113,7 @@ u32 rtw_aes_decrypt(_adapter *padapter, u8 *precvframe)
 			} else
 				prwskey = &stainfo->dot118021x_UncstKey.skey[0];
 
-			res = _rtw_ccmp_decrypt(prwskey,
+			res = _rtw_ccmp_decrypt(padapter, prwskey,
 				prxattrib->encrypt == _CCMP_256_ ? 32 : 16,
 				prxattrib->hdrlen, pframe,
 				((union recv_frame *)precvframe)->u.hdr.len);
@@ -2629,11 +2624,11 @@ u32 rtw_gcmp_encrypt(_adapter *padapter, u8 *pxmitframe)
 				/* the last fragment */
 				plen = pattrib->last_txcmdsz - pattrib->hdrlen - pattrib->iv_len - pattrib->icv_len;
 
-				_rtw_gcmp_encrypt(prwskey, prwskeylen, pattrib->hdrlen, pframe, plen);
+				_rtw_gcmp_encrypt(padapter, prwskey, prwskeylen, pattrib->hdrlen, pframe, plen);
 			} else {
 				plen = pxmitpriv->frag_len - pattrib->hdrlen - pattrib->iv_len - pattrib->icv_len;
 
-				_rtw_gcmp_encrypt(prwskey, prwskeylen, pattrib->hdrlen, pframe, plen);
+				_rtw_gcmp_encrypt(padapter, prwskey, prwskeylen, pattrib->hdrlen, pframe, plen);
 				pframe += pxmitpriv->frag_len;
 				pframe = (u8 *)RND4((SIZE_PTR)(pframe));
 			}
@@ -2718,7 +2713,7 @@ u32 rtw_gcmp_decrypt(_adapter *padapter, u8 *precvframe)
 			} else
 				prwskey = &stainfo->dot118021x_UncstKey.skey[0];
 
-			res = _rtw_gcmp_decrypt(prwskey,
+			res = _rtw_gcmp_decrypt(padapter, prwskey,
 				prxattrib->encrypt == _GCMP_256_ ? 32 : 16,
 				prxattrib->hdrlen, pframe,
 				((union recv_frame *)precvframe)->u.hdr.len);
@@ -2869,4 +2864,67 @@ BIP_exit:
 }
 
 #endif /* CONFIG_IEEE80211W */
+
+/* IV is encryption header index of packet,
+ * PN is sequence number after correct mapping.
+ */
+u8 rtw_iv_to_pn(u8 *iv, u8 *pn, u8 *key_id, u32 enc_algo)
+{
+	/* iv and pn must be Little Endian format */
+	switch (enc_algo) {
+	case _TKIP_:
+		*(pn)     = *(iv + 2);
+		*(pn + 1) = *(iv);
+		break;
+	case _AES_:
+	case _GCMP_:
+	case _CCMP_256_:
+	case _GCMP_256_:
+		*(pn)     = *(iv);
+		*(pn + 1) = *(iv + 1);
+		break;
+	default:
+		return _FAIL;
+	}
+
+	*(pn + 2) = *(iv + 4);
+	*(pn + 3) = *(iv + 5);
+	*(pn + 4) = *(iv + 6);
+	*(pn + 5) = *(iv + 7);
+
+	if (key_id)
+		*key_id = *(iv + 3) >> 6;
+
+	return _SUCCESS;
+}
+
+u8 rtw_pn_to_iv(u8 *pn, u8 *iv, u8 key_id, u32 enc_algo)
+{
+	/* iv and pn must be Little Endian format */
+	switch (enc_algo) {
+	case _TKIP_:
+		*(iv)     = *(pn + 1);
+		*(iv + 1) = (*(pn + 1) | 0x20) & 0x7F;
+		*(iv + 2) = *(pn);
+		break;
+	case _AES_:
+	case _GCMP_:
+	case _CCMP_256_:
+	case _GCMP_256_:
+		*(iv)     = *(pn);
+		*(iv + 1) = *(pn + 1);
+		*(iv + 2) = 0;
+		break;
+	default:
+		return _FAIL;
+	}
+
+	*(iv + 3) = BIT(5) | ((key_id & 0x3) << 6);
+	*(iv + 4) = *(pn + 2);
+	*(iv + 5) = *(pn + 3);
+	*(iv + 6) = *(pn + 4);
+	*(iv + 7) = *(pn + 5);
+
+	return _SUCCESS;
+}
 

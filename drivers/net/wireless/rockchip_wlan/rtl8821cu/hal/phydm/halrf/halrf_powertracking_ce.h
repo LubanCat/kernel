@@ -36,6 +36,7 @@
 /*@JJ ADD 20161014 */
 #define CCK_TABLE_SIZE_8710B 41
 #define CCK_TABLE_SIZE_8192F 41
+#define	AVG_THERMAL_NUM_LCK 2
 
 #define TXPWR_TRACK_TABLE_SIZE 30
 #define DELTA_SWINGIDX_SIZE 30
@@ -118,6 +119,7 @@ struct dm_rf_calibration_struct {
 	u8 thermal_value_avg_path[MAX_RF_PATH][AVG_THERMAL_NUM];
 	u8 thermal_value_avg_index;
 	u8 thermal_value_avg_index_path[MAX_RF_PATH];
+	u8 thermal_value_avg_pwrtrk[MAX_RF_PATH];
 	u8 thermal_value_rx_gain;
 	u8 thermal_value_crystal;
 	u8 thermal_value_dpk_store;
@@ -291,6 +293,9 @@ struct dm_rf_calibration_struct {
 	/*@Add by Yuchen for Kfree Phydm*/
 	u8 reg_rf_kfree_enable; /*for registry*/
 	u8 rf_kfree_enable; /*for efuse enable check*/
+	u8 thermal_lck[MAX_RF_PATH];
+	u8 thermal_lck_avg[MAX_RF_PATH][AVG_THERMAL_NUM_LCK];
+	u8 thermal_lck_avg_index;
 };
 
 void odm_txpowertracking_check(void *dm_void);

@@ -19,18 +19,29 @@
 #include <hal_data.h>
 
 /* Define the ICs that support wifi only cfg in coex. codes */
-#if defined(CONFIG_RTL8723B) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B) \
-|| defined(CONFIG_RTL8723F)
+#if defined(CONFIG_RTL8723B) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) \
+	|| defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8814B) \
+	|| defined(CONFIG_RTL8723F) || defined(CONFIG_RTL8822E)
 #define CONFIG_BTCOEX_SUPPORT_WIFI_ONLY_CFG 1
 #else
 #define CONFIG_BTCOEX_SUPPORT_WIFI_ONLY_CFG 0
 #endif
 
 /* Define the ICs that support hal btc common file structure */
-#if defined(CONFIG_RTL8822C) || (defined(CONFIG_RTL8192F) || defined(CONFIG_RTL8723F)&& defined(CONFIG_BT_COEXIST))
+#if (defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8192F) \
+	|| defined(CONFIG_RTL8723F) || defined(CONFIG_RTL8822E)) \
+	&& defined(CONFIG_BT_COEXIST)
 #define CONFIG_BTCOEX_SUPPORT_BTC_CMN 1
 #else
 #define CONFIG_BTCOEX_SUPPORT_BTC_CMN 0
+#endif
+
+#if defined(CONFIG_8822E)
+#define CONFIG_BTCOEX_GET_IQK_CNT_FROM_IQK_INFO 1
+#define CONFIG_BTCOEX_SUPPORT_BT_LE_AUDIO 	1
+#else
+#define CONFIG_BTCOEX_GET_IQK_CNT_FROM_IQK_INFO 0
+#define CONFIG_BTCOEX_SUPPORT_BT_LE_AUDIO 	0
 #endif
 
 #if (CONFIG_BTCOEX_SUPPORT_WIFI_ONLY_CFG == 1)

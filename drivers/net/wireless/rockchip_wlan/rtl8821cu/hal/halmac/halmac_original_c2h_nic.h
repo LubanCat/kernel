@@ -29,10 +29,10 @@
 #define CMD_ID_C2H_GPIO_WAKEUP 0X14
 #define CMD_ID_C2H_DROPID_RPT 0X2D
 #define CMD_ID_C2H_LPS_STATUS_RPT 0X32
-#define C2H_GET_CMD_ID(c2h_pkt) LE_BITS_TO_4BYTE(c2h_pkt + 0X00, 0, 8)
+#define C2H_GET_CMD_ID(c2h_pkt) LE_BITS_TO_1BYTE(c2h_pkt + 0X00, 0, 8)
 #define C2H_SET_CMD_ID(c2h_pkt, value)                                         \
 	SET_BITS_TO_LE_4BYTE(c2h_pkt + 0X00, 0, 8, value)
-#define C2H_GET_SEQ(c2h_pkt) LE_BITS_TO_4BYTE(c2h_pkt + 0X00, 8, 8)
+#define C2H_GET_SEQ(c2h_pkt) LE_BITS_TO_2BYTE(c2h_pkt + 0X00, 8, 8)
 #define C2H_SET_SEQ(c2h_pkt, value)                                            \
 	SET_BITS_TO_LE_4BYTE(c2h_pkt + 0X00, 8, 8, value)
 #define DBG_GET_CMD_ID(c2h_pkt) LE_BITS_TO_4BYTE(c2h_pkt + 0X00, 0, 8)

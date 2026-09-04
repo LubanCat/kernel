@@ -29,7 +29,9 @@ void init_hal_spec_rtl8821c(PADAPTER adapter)
 	hal_spec->macid_num = 128;
 	/* hal_spec->sec_cam_ent_num follow halmac setting */
 	hal_spec->sec_cap = SEC_CAP_CHK_BMC | SEC_CAP_CHK_EXTRA_SEC;
+	/* hal_spec->wow_cap = WOW_CAP_CSA; */
 	hal_spec->macid_cap = MACID_DROP;
+	hal_spec->txpause_cap = TXPAUSE_CAP_FW_CTRL;
 
 	hal_spec->rfpath_num_2g = 2;
 	hal_spec->rfpath_num_5g = 1;

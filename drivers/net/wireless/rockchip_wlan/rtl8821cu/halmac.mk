@@ -26,6 +26,12 @@ series := 88xx
 ic := 8822c
 endif
 
+ifeq ($(CONFIG_RTL8822E), y)
+series := 88xx
+ic := 8822e
+d2efuse := y
+endif
+
 ifeq ($(CONFIG_RTL8821C), y)
 series := 88xx
 ic := 8821c
@@ -36,10 +42,11 @@ series := 88xx_v1
 ic := 8814b
 endif
 
-ifeq ($(CONFIG_RTL8723F), y)
-series := 87xx
-ic := 8723f
+ifeq ($(CONFIG_RTL8822E), y)
+series := 88xx
+ic := 8822e
 endif
+
 ifeq ($(series), 88xx_v1)
 d2all :=
 else
@@ -73,6 +80,7 @@ halmac-y +=		$(path_hm_d2)/halmac_gpio_$(ic).o \
 			$(path_hm_d2)/halmac_init_$(ic).o \
 			$(path_hm_d2)/halmac_phy_$(ic).o \
 			$(path_hm_d2)/halmac_pwr_seq_$(ic).o
+halmac-$(d2efuse) += 	$(path_hm_d2)/halmac_efuse_$(ic).o
 halmac-$(pci) += 	$(path_hm_d2)/halmac_pcie_$(ic).o
 halmac-$(sdio) +=	$(path_hm_d2)/halmac_sdio_$(ic).o
 halmac-$(usb) += 	$(path_hm_d2)/halmac_usb_$(ic).o

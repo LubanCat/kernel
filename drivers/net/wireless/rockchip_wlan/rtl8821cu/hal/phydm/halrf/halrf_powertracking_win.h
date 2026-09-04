@@ -28,6 +28,9 @@
 #define	BAND_NUM				3
 #define	MAX_RF_PATH	4
 #define	CCK_TABLE_SIZE_88F	21
+#define	AVG_THERMAL_NUM_LCK	2
+
+
 /* JJ ADD 20161014 */
 #define	CCK_TABLE_SIZE_8710B   41
 #define	CCK_TABLE_SIZE_8192F   41
@@ -140,6 +143,7 @@ struct dm_rf_calibration_struct {
 	u8	thermal_value_avg_index;
 	u8	thermal_value_avg_index_path[MAX_RF_PATH];
 	u8	thermal_value_rx_gain;
+	u8	thermal_value_avg_pwrtrk[MAX_RF_PATH];
 
 
 	boolean	is_reloadtxpowerindex;
@@ -296,8 +300,11 @@ struct dm_rf_calibration_struct {
 	s8 modify_tx_agc_value_cck;
 
 	/*Add by Yuchen for Kfree Phydm*/
-	u8			reg_rf_kfree_enable;	/*for registry*/
-	u8			rf_kfree_enable;		/*for efuse enable check*/
+	u8	reg_rf_kfree_enable;	/*for registry*/
+	u8	rf_kfree_enable;	/*for efuse enable check*/
+	u8	thermal_lck[MAX_RF_PATH];
+	u8	thermal_lck_avg[MAX_RF_PATH][AVG_THERMAL_NUM_LCK];
+	u8	thermal_lck_avg_index;
 };
 
 

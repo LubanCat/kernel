@@ -436,6 +436,44 @@ void odm_move_memory(struct dm_struct *dm, void *dest, void *src, u32 length)
 #endif
 }
 
+u16 odm_convert_to_le16(u16 value)
+{
+#if (DM_ODM_SUPPORT_TYPE & ODM_AP)
+	return cpu_to_le16(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_CE) && defined(DM_ODM_CE_MAC80211)
+	return cpu_to_le16(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_CE) && defined(DM_ODM_CE_MAC80211_V2)
+	return cpu_to_le16(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_CE)
+	return cpu_to_le16(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_WIN)
+	return value;
+#elif (DM_ODM_SUPPORT_TYPE & ODM_IOT)
+	return cpu_to_le16(value);
+#else
+	return value;
+#endif
+}
+
+u32 odm_convert_to_le32(u32 value)
+{
+#if (DM_ODM_SUPPORT_TYPE & ODM_AP)
+	return cpu_to_le32(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_CE) && defined(DM_ODM_CE_MAC80211)
+	return cpu_to_le32(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_CE) && defined(DM_ODM_CE_MAC80211_V2)
+	return cpu_to_le32(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_CE)
+	return cpu_to_le32(value);
+#elif (DM_ODM_SUPPORT_TYPE & ODM_WIN)
+	return value;
+#elif (DM_ODM_SUPPORT_TYPE & ODM_IOT)
+	return cpu_to_le32(value);
+#else
+	return value;
+#endif
+}
+
 void odm_memory_set(struct dm_struct *dm, void *pbuf, s8 value, u32 length)
 {
 #if (DM_ODM_SUPPORT_TYPE & ODM_AP)
@@ -1355,7 +1393,9 @@ u8 phydm_get_hwrate_to_mrate(struct dm_struct *dm, u8 rate)
 void phydm_set_crystalcap(struct dm_struct *dm, u8 crystal_cap)
 {
 #if (DM_ODM_SUPPORT_TYPE == ODM_IOT)
+#if (! RTL8730A_SUPPORT)
 	ROM_odm_SetCrystalCap(dm, crystal_cap);
+#endif
 #endif
 }
 
