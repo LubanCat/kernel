@@ -18,6 +18,13 @@
 
 #ifdef CONFIG_AP_MODE
 
+#define AP_CSA_DISABLE 0
+#define AP_SWITCH_CH_CSA 1
+#define STA_RX_CSA 2
+#define CSA_STA_JOINBSS 3
+#define CSA_IE_REMOVE 0xff
+#define DEFAULT_CSA_CNT 3
+
 /* external function */
 extern void rtw_indicate_sta_assoc_event(_adapter *padapter, struct sta_info *psta);
 extern void rtw_indicate_sta_disassoc_event(_adapter *padapter, struct sta_info *psta);
@@ -66,11 +73,11 @@ void sta_info_update(_adapter *padapter, struct sta_info *psta);
 void ap_sta_info_defer_update(_adapter *padapter, struct sta_info *psta);
 u8 ap_free_sta(_adapter *padapter, struct sta_info *psta, bool active, u16 reason, bool enqueue);
 int rtw_sta_flush(_adapter *padapter, bool enqueue);
-int rtw_ap_inform_ch_switch(_adapter *padapter, u8 new_ch, u8 ch_offset);
 void start_ap_mode(_adapter *padapter);
 void stop_ap_mode(_adapter *padapter);
 #endif
 
+void rtw_csa_update_clients_ramask(_adapter *adapter);
 void rtw_ap_update_bss_chbw(_adapter *adapter, WLAN_BSSID_EX *bss, u8 ch, u8 bw, u8 offset);
 u8 rtw_ap_chbw_decision(_adapter *adapter, u8 ifbmp, u8 excl_ifbmp
 	, s16 req_ch, s8 req_bw, s8 req_offset, u8 *ch, u8 *bw, u8 *offset, u8 *chbw_allow, bool *set_u_ch);

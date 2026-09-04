@@ -93,6 +93,7 @@ void rtw_ap_parse_sta_rm_en_cap(_adapter *padapter,
 
 int rm_post_event(_adapter *padapter, u32 rmid, enum RM_EV_ID evid);
 void rm_handler(_adapter *padapter, struct rm_event *pev);
+int rm_get_chset(struct rm_obj *prm);
 
 u8 rm_add_nb_req(_adapter *padapter, struct sta_info *psta);
 
@@ -104,8 +105,8 @@ int rm_send_bcn_reqs(_adapter *padapter, u8 *sta_addr, u8 op_class, u8 ch,
 	u8 n_elem_id, u8 *elem_id_list);
 void indicate_beacon_report(u8 *sta_addr,
 	u8 n_measure_rpt, u32 elem_len, u8 *elem);
+#endif /* CONFIG_RTW_80211K */
 
-#endif /*CONFIG_RTW_80211K */
 void rm_update_cap(u8 *frame_head, _adapter *pa, u32 pktlen, int offset);
 
 #endif /* __RTW_RM_H_ */

@@ -61,6 +61,21 @@
 #define RTW_ROCH_BACK_OP
 #endif
 
+#if defined(CONFIG_DFS_MASTER) && (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0))
+#ifndef CONFIG_RTW_CFG80211_CAC_EVENT
+#define CONFIG_RTW_CFG80211_CAC_EVENT 0
+#endif
+#else
+#ifdef CONFIG_RTW_CFG80211_CAC_EVENT
+#undef CONFIG_RTW_CFG80211_CAC_EVENT
+#endif
+#define CONFIG_RTW_CFG80211_CAC_EVENT 0
+#endif
+
+#if CONFIG_RTW_CFG80211_CAC_EVENT && RTW_PER_ADAPTER_WIPHY
+#error "CONFIG_RTW_CFG80211_CAC_EVENT is not supported when enable RTW_PER_ADAPTER_WIPHY"
+#endif
+
 #if !defined(CONFIG_P2P) && RTW_P2P_GROUP_INTERFACE
 	#error "RTW_P2P_GROUP_INTERFACE can't be enabled when CONFIG_P2P is disabled\n"
 #endif
@@ -245,6 +260,20 @@ struct rtw_wiphy_data {
 	struct wireless_dev *pd_wdev; /* P2P device wdev */
 #endif
 
+	_list async_regd_change_list;
+	_mutex async_regd_change_mutex;
+	_workitem async_regd_change_work;
+
+#if CONFIG_RTW_CFG80211_CAC_EVENT
+	_list async_cac_change_list;
+	_mutex async_cac_change_mutex;
+	_workitem async_cac_change_work;
+
+	/* for DFS channel state sync */
+	struct wireless_dev *du_wdev;
+	struct cfg80211_chan_def du_chdef;
+#endif
+
 	s16 txpwr_total_lmt_mbm;	/* EIRP */
 	s16 txpwr_total_target_mbm;	/* EIRP */
 };
@@ -424,30 +453,13 @@ void rtw_cfg80211_deinit_rfkill(struct wiphy *wiphy);
 u8 rtw_cfg80211_ch_switch_notify(_adapter *adapter, u8 ch, u8 bw, u8 offset, u8 ht, bool started);
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) && (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 31))
-#define IEEE80211_CHAN_NO_HT40PLUS IEEE80211_CHAN_NO_FAT_ABOVE
-#define IEEE80211_CHAN_NO_HT40MINUS IEEE80211_CHAN_NO_FAT_BELOW
-#endif
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 26)) && (LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0))
-#define NL80211_BAND_2GHZ IEEE80211_BAND_2GHZ
-#define NL80211_BAND_5GHZ IEEE80211_BAND_5GHZ
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0))
-#define NL80211_BAND_60GHZ IEEE80211_BAND_60GHZ
-#endif
-#define NUM_NL80211_BANDS IEEE80211_NUM_BANDS
-#endif
-
-#define rtw_band_to_nl80211_band(band) \
-	(band == BAND_ON_2_4G) ? NL80211_BAND_2GHZ : \
-	(band == BAND_ON_5G) ? NL80211_BAND_5GHZ : NUM_NL80211_BANDS
-
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 36))
 #define NL80211_TX_POWER_AUTOMATIC	TX_POWER_AUTOMATIC
 #define NL80211_TX_POWER_LIMITED	TX_POWER_LIMITED
 #define NL80211_TX_POWER_FIXED		TX_POWER_FIXED
 #endif
 
+#include "os_ch_utils.h"
 #include "wifi_regd.h"
 #include "rtw_cfgvendor.h"
 

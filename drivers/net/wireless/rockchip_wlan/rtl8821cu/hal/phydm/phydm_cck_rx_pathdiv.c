@@ -127,7 +127,7 @@ void phydm_cck_rx_pathdiv_dbg(void *dm_void, char input[][16], u32 *_used,
 	u32 out_len = *_out_len;
 	u8 i = 0;
 
-	if (!(dm->support_ic_type & ODM_RTL8822C))
+	if (!(dm->support_ic_type & (ODM_RTL8822C | ODM_RTL8822E)))
 		return;
 
 	for (i = 0; i < 3; i++) {

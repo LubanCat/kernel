@@ -86,6 +86,7 @@ struct txpwrtrack_cfg {
 	u8		swing_table_size_ofdm;
 	u8		threshold_iqk;
 	u8		threshold_dpk;
+	u8		threshold_lck;
 	u8		average_thermal_num;
 	u8		rf_path_count;
 	u32		thermal_reg_addr;

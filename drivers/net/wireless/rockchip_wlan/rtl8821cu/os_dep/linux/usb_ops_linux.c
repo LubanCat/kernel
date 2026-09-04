@@ -38,7 +38,8 @@ int usbctrl_vendorreq(struct intf_hdl *pintfhdl, u8 request, u16 value, u16 inde
 	u8 *pIo_buf;
 	int vendorreq_times = 0;
 
-#if (defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C)) || defined(CONFIG_RTL8822C)
+#if (defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C)) \
+	|| defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E)
 #define REG_ON_SEC 0x00
 #define REG_OFF_SEC 0x01
 #define REG_LOCAL_SEC 0x02
@@ -168,7 +169,8 @@ int usbctrl_vendorreq(struct intf_hdl *pintfhdl, u8 request, u16 value, u16 inde
 
 	}
 
-#if (defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C)) || defined(CONFIG_RTL8822C)
+#if (defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C)) \
+	|| defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E)
 	if (value < 0xFE00) {
 		if (value <= 0xff)
 			current_reg_sec = REG_ON_SEC;
@@ -746,7 +748,7 @@ void usb_init_recvbuf(_adapter *padapter, struct recv_buf *precvbuf)
 int recvbuf2recvframe(PADAPTER padapter, void *ptr);
 
 #ifdef CONFIG_USE_USB_BUFFER_ALLOC_RX
-void usb_recv_tasklet(void *priv)
+void usb_recv_tasklet(unsigned long priv)
 {
 	struct recv_buf *precvbuf = NULL;
 	_adapter	*padapter = (_adapter *)priv;
@@ -884,7 +886,7 @@ u32 usb_read_port(struct intf_hdl *pintfhdl, u32 addr, u32 cnt, u8 *rmem)
 }
 #else	/* CONFIG_USE_USB_BUFFER_ALLOC_RX */
 
-void usb_recv_tasklet(void *priv)
+void usb_recv_tasklet(unsigned long priv)
 {
 	_pkt			*pskb;
 	_adapter		*padapter = (_adapter *)priv;

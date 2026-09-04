@@ -22,10 +22,6 @@
 #define RTL871X_MODULE_NAME "8821CU"
 #define DRV_NAME "rtl8821cu"
 
-/* nrm  - don't activate, kills AP mode
- * #define CONFIG_REGD_SRC_FROM_OS
- */
-
 /* Set CONFIG_RTL8821C from Makefile */
 #ifndef CONFIG_RTL8821C
 #define CONFIG_RTL8821C
@@ -46,8 +42,7 @@
 #endif
 
 #ifdef CONFIG_80211N_HT
-	/* nrm - activate beamforming */
-	#define CONFIG_BEAMFORMING
+	/* #define CONFIG_BEAMFORMING */
 #endif
 
 /* set CONFIG_IOCTL_CFG80211 from Makefile */
@@ -89,9 +84,10 @@
 #ifdef CONFIG_POWER_SAVING
 #define CONFIG_IPS
 #ifdef CONFIG_IPS
-/* #define CONFIG_IPS_LEVEL_2*/ /*enable this to set default IPS mode to IPS_LEVEL_2*/
-#define CONFIG_IPS_CHECK_IN_WD /* Do IPS Check in WatchDog.	*/
-#endif
+	#define CONFIG_IPS_CHECK_IN_WD /* Do IPS Check in WatchDog.	*/
+	/* #define CONFIG_FWLPS_IN_IPS */
+#endif /* CONFIG_IPS */
+
 /* #define SUPPORT_HW_RFOFF_DETECTED*/
 
 #define CONFIG_LPS
@@ -172,8 +168,7 @@
 
 #define CONFIG_RTW_LED
 #ifdef CONFIG_RTW_LED
-/* nrm */
-//	#define CONFIG_RTW_SW_LED
+	#define CONFIG_RTW_SW_LED
 	#ifdef CONFIG_RTW_SW_LED
 		/* #define CONFIG_RTW_LED_HANDLED_BY_CMD_THREAD */
 	#endif
@@ -181,8 +176,7 @@
 
 #define CONFIG_GLOBAL_UI_PID
 
-/* nrm */
-#define CONFIG_RTW_80211K
+/*#define CONFIG_RTW_80211K*/
 
 /*#define CONFIG_ADAPTOR_INFO_CACHING_FILE */ /* now just applied on 8192cu only, should make it general... */
 /*#define CONFIG_RESUME_IN_WORKQUEUE */
@@ -249,7 +243,7 @@
 /*
  * HAL  Related Config
  */
-/*#define CONFIG_RX_PACKET_APPEND_FCS*/
+#define CONFIG_RX_PACKET_APPEND_FCS
 
 /*#define CONFIG_ADHOC_WORKAROUND_SETTING*/
 

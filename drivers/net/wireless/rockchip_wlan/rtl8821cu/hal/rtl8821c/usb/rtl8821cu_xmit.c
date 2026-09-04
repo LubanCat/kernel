@@ -314,8 +314,7 @@ static s32 update_txdesc(struct xmit_frame *pxmitframe, u8 *pmem, s32 sz, u8 bag
 			if (pattrib->retry_ctrl == _TRUE)
 				SET_TX_DESC_RTS_DATA_RTY_LMT_8821C(ptxdesc, 6);
 			else
-/* nrm */
-				SET_TX_DESC_RTS_DATA_RTY_LMT_8821C(ptxdesc, 0);
+				SET_TX_DESC_RTS_DATA_RTY_LMT_8821C(ptxdesc, 12);
 		}
 
 #ifdef CONFIG_XMIT_ACK
@@ -931,12 +930,7 @@ s32	rtl8821cu_init_xmit_priv(PADAPTER padapter)
 	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(padapter);
 
 #ifdef PLATFORM_LINUX
-	tasklet_init(&pxmitpriv->xmit_tasklet,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 17, 0))
-		     (void(*)(unsigned long))rtl8821cu_xmit_tasklet,
-#else
-		     (void *)rtl8821cu_xmit_tasklet,
-#endif
+	tasklet_init(&pxmitpriv->xmit_tasklet, rtl8821cu_xmit_tasklet,
 		     (unsigned long)padapter);
 #endif
 #ifdef CONFIG_TX_EARLY_MODE
@@ -1043,6 +1037,7 @@ s32 rtl8821cu_hal_mgmt_xmitframe_enqueue(PADAPTER padapter, struct xmit_frame *p
 
 	err = rtw_mgmt_xmitframe_enqueue(padapter, pxmitframe);
 	if (err != _SUCCESS) {
+		rtw_free_xmitbuf(pxmitpriv, pxmitframe->pxmitbuf);
 		rtw_free_xmitframe(pxmitpriv, pxmitframe);
 		pxmitpriv->tx_drop++;
 	} else {

@@ -36,6 +36,7 @@
 #define HALMAC_GPIO14		14
 #define HALMAC_GPIO15		15
 #define HALMAC_GPIO_NUM		16
+#define HALMAC_EECS		17
 
 /* GPIO type */
 #define HALMAC_GPIO_IN		0

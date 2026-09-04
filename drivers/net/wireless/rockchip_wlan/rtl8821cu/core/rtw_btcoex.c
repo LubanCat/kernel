@@ -200,6 +200,17 @@ void rtw_btcoex_BtInfoNotify(PADAPTER padapter, u8 length, u8 *tmpBuf)
 	hal_btcoex_BtInfoNotify(padapter, length, tmpBuf);
 }
 
+void rtw_btcoex_le_audio_info_notify(PADAPTER padapter, u8 length, u8 *tmpBuf)
+{
+	PHAL_DATA_TYPE	pHalData;
+
+	pHalData = GET_HAL_DATA(padapter);
+	if (_FALSE == pHalData->EEPROMBluetoothCoexist)
+		return;
+
+	hal_btcoex_le_audio_info_notify(padapter, length, tmpBuf);
+}
+
 void rtw_btcoex_BtMpRptNotify(PADAPTER padapter, u8 length, u8 *tmpBuf)
 {
 	PHAL_DATA_TYPE	pHalData;
@@ -257,11 +268,6 @@ void rtw_btcoex_switchband_notify(u8 under_scan, u8 band_type)
 void rtw_btcoex_WlFwDbgInfoNotify(PADAPTER padapter, u8* tmpBuf, u8 length)
 {
 	hal_btcoex_WlFwDbgInfoNotify(padapter, tmpBuf, length);
-}
-
-void rtw_btcoex_rx_rate_change_notify(PADAPTER padapter, u8 is_data_frame, u8 rate_id)
-{
-	hal_btcoex_rx_rate_change_notify(padapter, is_data_frame, rate_id);
 }
 
 void rtw_btcoex_SwitchBtTRxMask(PADAPTER padapter)

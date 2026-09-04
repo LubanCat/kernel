@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2021 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -115,7 +115,7 @@ static void _get_sta_beamform_cap(PADAPTER adapter, struct sta_info *sta,
 	mlme = &adapter->mlmepriv;
 
 	if (is_supported_ht(sta->wireless_mode) == _FALSE)
-		goto get_bfcap_next;
+		return;
 
 	/* HT */
 	if (check_fwstate(mlme, WIFI_AP_STATE)) {
@@ -154,7 +154,6 @@ static void _get_sta_beamform_cap(PADAPTER adapter, struct sta_info *sta,
 		}
 	}
 
-get_bfcap_next:
 #ifdef CONFIG_80211AC_VHT
 	if (is_supported_vht(sta->wireless_mode) == _FALSE)
 		return;
@@ -386,7 +385,7 @@ static u8 _send_vht_ndpa_packet(PADAPTER adapter, u8 *ra, u16 aid, enum channel_
 	set_frame_sub_type(pframe, attrib->subtype);
 
 	/* Duration */
-	if (is_supported_5g(pmlmeext->cur_wireless_mode) || is_supported_ht(pmlmeext->cur_wireless_mode))
+	if (is_supported_5g(pmlmeext->cur_wireless_mode) || is_highest_support_ht(pmlmeext->cur_wireless_mode))
 		aSifsTime = 16;
 	else
 		aSifsTime = 10;
@@ -503,7 +502,7 @@ static u8 _send_vht_mu_ndpa_packet(PADAPTER adapter, enum channel_width bw)
 	set_frame_sub_type(pframe, attrib->subtype);
 
 	/* Duration */
-	if (is_supported_5g(pmlmeext->cur_wireless_mode) || is_supported_ht(pmlmeext->cur_wireless_mode))
+	if (is_supported_5g(pmlmeext->cur_wireless_mode) || is_highest_support_ht(pmlmeext->cur_wireless_mode))
 		aSifsTime = 16;
 	else
 		aSifsTime = 10;
@@ -1066,7 +1065,6 @@ static struct beamformer_entry *_bfer_get_entry_by_addr(PADAPTER adapter, u8 *ra
 static struct beamformer_entry *_bfer_add_entry(PADAPTER adapter,
 	struct sta_info *sta, u8 bf_cap, u8 sounding_dim, u8 comp_steering)
 {
-	struct mlme_priv *mlme;
 	struct beamforming_info *info;
 	struct beamformer_entry *bfer;
 	u8 *bssid;
@@ -1074,7 +1072,6 @@ static struct beamformer_entry *_bfer_add_entry(PADAPTER adapter,
 	u8 i;
 
 
-	mlme = &adapter->mlmepriv;
 	info = GET_BEAMFORM_INFO(adapter);
 
 	bfer = _bfer_get_entry_by_addr(adapter, sta->cmn.mac_addr);
@@ -1251,7 +1248,6 @@ static u8 _bfee_get_first_mu_entry_idx(PADAPTER adapter, struct beamformee_entry
 static struct beamformee_entry *_bfee_add_entry(PADAPTER adapter,
 	struct sta_info *sta, u8 bf_cap, u8 sounding_dim, u8 comp_steering)
 {
-	struct mlme_priv *mlme;
 	struct beamforming_info *info;
 	struct beamformee_entry *bfee;
 	u8 *bssid;
@@ -1259,7 +1255,6 @@ static struct beamformee_entry *_bfee_add_entry(PADAPTER adapter,
 	u8 i;
 
 
-	mlme = &adapter->mlmepriv;
 	info = GET_BEAMFORM_INFO(adapter);
 
 	bfee = _bfee_get_entry_by_addr(adapter, sta->cmn.mac_addr);
@@ -1429,7 +1424,6 @@ static void _beamforming_enter(PADAPTER adapter, void *p)
 #ifdef CONFIG_80211AC_VHT
 	struct vht_priv *vhtpriv;
 #endif
-	struct mlme_ext_priv *mlme_ext;
 	struct sta_info *sta, *sta_copy;
 	struct beamforming_info *info;
 	struct beamformer_entry *bfer = NULL;
@@ -1445,7 +1439,6 @@ static void _beamforming_enter(PADAPTER adapter, void *p)
 #ifdef CONFIG_80211AC_VHT
 	vhtpriv = &mlme->vhtpriv;
 #endif
-	mlme_ext = &adapter->mlmeextpriv;
 	info = GET_BEAMFORM_INFO(adapter);
 
 	sta_copy = (struct sta_info *)p;
@@ -1466,8 +1459,8 @@ static void _beamforming_enter(PADAPTER adapter, void *p)
 
 	/* The current setting does not support Beaforming */
 	wireless_mode = sta->wireless_mode;
-	if ((is_supported_ht(wireless_mode) == _FALSE)
-	    && (is_supported_vht(wireless_mode) == _FALSE)) {
+	if ((is_highest_support_ht(wireless_mode) == _FALSE)
+	    && (is_highest_support_vht(wireless_mode) == _FALSE)) {
 		RTW_WARN("%s: Not support HT or VHT mode\n", __FUNCTION__);
 		return;
 	}
@@ -1679,20 +1672,21 @@ u32 rtw_bf_get_report_packet(PADAPTER adapter, union recv_frame *precv_frame)
 	struct beamforming_info *info;
 	struct beamformee_entry *bfee = NULL;
 	u8 *pframe;
-	u32 frame_len;
+	/*u32 frame_len;*/
 	u8 *ta;
 	u8 *frame_body;
 	u8 category, action;
-	u8 *pMIMOCtrlField, *pCSIMatrix;
+	u8 *pMIMOCtrlField;
+	/*u8 *pCSIMatrix;*/
 	u8 Nc = 0, Nr = 0, CH_W = 0, Ng = 0, CodeBook = 0;
-	u16 CSIMatrixLen = 0;
+	/*u16 CSIMatrixLen = 0;*/
 
 
 	RTW_INFO("+%s\n", __FUNCTION__);
 
 	info = GET_BEAMFORM_INFO(adapter);
 	pframe = precv_frame->u.hdr.rx_data;
-	frame_len = precv_frame->u.hdr.len;
+	/*frame_len = precv_frame->u.hdr.len;*/
 
 	/* Memory comparison to see if CSI report is the same with previous one */
 	ta = get_addr2_ptr(pframe);
@@ -1716,8 +1710,8 @@ u32 rtw_bf_get_report_packet(PADAPTER adapter, union recv_frame *precv_frame)
 		 * 24+(1+1+3)+2
 		 * ==> MAC header+(Category+ActionCode+MIMOControlField)+SNR(Nc=2)
 		 */
-		pCSIMatrix = pMIMOCtrlField + 3 + Nc;
-		CSIMatrixLen = frame_len - 26 - 3 - Nc;
+		/*pCSIMatrix = pMIMOCtrlField + 3 + Nc;*/
+		/*CSIMatrixLen = frame_len - 26 - 3 - Nc;*/
 		info->TargetCSIInfo.bVHT = _TRUE;
 	} else if ((category == RTW_WLAN_CATEGORY_HT)
 		   && (action == RTW_WLAN_ACTION_HT_COMPRESS_BEAMFORMING)) {
@@ -1731,8 +1725,8 @@ u32 rtw_bf_get_report_packet(PADAPTER adapter, union recv_frame *precv_frame)
 		 * 24+(1+1+6)+2
 		 * ==> MAC header+(Category+ActionCode+MIMOControlField)+SNR(Nc=2)
 		 */
-		pCSIMatrix = pMIMOCtrlField + 6 + Nr;
-		CSIMatrixLen = frame_len  - 26 - 6 - Nr;
+		/*pCSIMatrix = pMIMOCtrlField + 6 + Nr;*/
+		/*CSIMatrixLen = frame_len  - 26 - 6 - Nr;*/
 		info->TargetCSIInfo.bVHT = _FALSE;
 	}
 
@@ -1992,7 +1986,7 @@ void rtw_bf_c2h_handler(PADAPTER adapter, u8 id, u8 *buf, u8 buf_len)
 void rtw_bf_update_traffic(PADAPTER adapter)
 {
 	struct beamforming_info	*info;
-	struct sounding_info *sounding;
+	/*struct sounding_info *sounding;*/
 	struct beamformee_entry *bfee;
 	struct sta_info *sta;
 	u8 bfee_cnt, sounding_idx, i;
@@ -2005,7 +1999,7 @@ void rtw_bf_update_traffic(PADAPTER adapter)
 
 
 	info = GET_BEAMFORM_INFO(adapter);
-	sounding = &info->sounding_info;
+	/*sounding = &info->sounding_info;*/
 
 	/* Check any bfee exist? */
 	bfee_cnt = info->beamformee_su_cnt + info->beamformee_mu_cnt;

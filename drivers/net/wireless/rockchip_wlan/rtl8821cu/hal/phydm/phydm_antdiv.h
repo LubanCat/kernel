@@ -87,8 +87,9 @@
 			ODM_RTL8197F | ODM_RTL8721D | ODM_RTL8710C)
 #define ODM_AC_ANTDIV_SUPPORT (ODM_RTL8821 | ODM_RTL8881A | ODM_RTL8812 |\
 			ODM_RTL8821C | ODM_RTL8822B | ODM_RTL8814B |\
-			ODM_RTL8195B)
-#define ODM_JGR3_ANTDIV_SUPPORT ODM_RTL8197G
+			ODM_RTL8195B | ODM_RTL8814C)
+#define ODM_JGR3_ANTDIV_SUPPORT (ODM_RTL8197G | ODM_RTL8723F | ODM_RTL8735B |\
+			ODM_RTL8730A)
 #define ODM_ANTDIV_SUPPORT	(ODM_N_ANTDIV_SUPPORT | ODM_AC_ANTDIV_SUPPORT |\
 			ODM_JGR3_ANTDIV_SUPPORT)
 #define ODM_SMART_ANT_SUPPORT	(ODM_RTL8188E | ODM_RTL8192E)
@@ -96,9 +97,11 @@
 
 #define ODM_ANTDIV_2G_SUPPORT_IC (ODM_RTL8188E | ODM_RTL8192E | ODM_RTL8723B |\
 			ODM_RTL8881A | ODM_RTL8188F | ODM_RTL8723D |\
-			ODM_RTL8197F | ODM_RTL8197G)
+			ODM_RTL8197F | ODM_RTL8197G | ODM_RTL8723F |\
+			ODM_RTL8735B | ODM_RTL8730A)
 #define ODM_ANTDIV_5G_SUPPORT_IC (ODM_RTL8821 | ODM_RTL8881A | ODM_RTL8812 |\
-			ODM_RTL8821C | ODM_RTL8822B | ODM_RTL8195B)
+			ODM_RTL8821C | ODM_RTL8822B | ODM_RTL8195B |\
+			ODM_RTL8723F | ODM_RTL8735B | ODM_RTL8730A)
 
 #define ODM_ANTDIV_SUPPORT_IC (ODM_ANTDIV_2G_SUPPORT_IC | ODM_ANTDIV_5G_SUPPORT_IC)
 
@@ -125,6 +128,7 @@
 #define EVM_METHOD		1
 #define CRC32_METHOD	2
 #define TP_METHOD		3
+#define TP_METHOD2	4
 
 #define INIT_ANTDIV_TIMMER		0
 #define CANCEL_ANTDIV_TIMMER	1
@@ -263,6 +267,9 @@ struct phydm_fat_struct {
 	u32	ant_sum_rssi[7];
 	u32	ant_rssi_cnt[7];
 	u32	ant_ave_rssi[7];
+	u32	pre_evm;
+	u32	pre_rssi;
+	u32	pre_rssi_cck;
 	u8	fat_state;
 	u8	fat_state_cnt;
 	u32	train_idx;
@@ -293,7 +300,7 @@ struct phydm_fat_struct {
 	u8	idx_ant_div_counter_5g;
 	u8	ant_div_2g_5g;
 
-#ifdef ODM_EVM_ENHANCE_ANTDIV
+
 	/*@For 1SS RX phy rate*/
 	u32	main_evm_sum[ODM_ASSOCIATE_ENTRY_NUM];
 	u32	aux_evm_sum[ODM_ASSOCIATE_ENTRY_NUM];
@@ -306,6 +313,25 @@ struct phydm_fat_struct {
 	u32	main_evm_2ss_cnt[ODM_ASSOCIATE_ENTRY_NUM];
 	u32	aux_evm_2ss_cnt[ODM_ASSOCIATE_ENTRY_NUM];
 
+	/* TP method for Roku 8733BU issue */
+	u32	main_tp_sum[ODM_ASSOCIATE_ENTRY_NUM];
+	u32	aux_tp_sum[ODM_ASSOCIATE_ENTRY_NUM];
+	u32	main_tp_cnt_entry[ODM_ASSOCIATE_ENTRY_NUM];
+	u32	aux_tp_cnt_entry[ODM_ASSOCIATE_ENTRY_NUM];
+	u32	pre_tp;
+	u16	main_tp_hist[16];
+	u16	aux_tp_hist[16];
+	u32	pre_ht_crc32_ok;
+	u32	main_ht_crc32_ok;
+	u32	aux_ht_crc32_ok;
+	u32	pre_ht_crc32_error;
+	u32	main_ht_crc32_error;
+	u32	aux_ht_crc32_error;
+	u32	ht_crc32_ok_before;
+	u32	ht_crc32_error_before;
+	u32	ht_crc32_ok_after;
+	u32	ht_crc32_error_after;
+#ifdef ODM_EVM_ENHANCE_ANTDIV
 	boolean	evm_method_enable;
 	u8	target_ant_evm;
 	u8	target_ant_crc32;

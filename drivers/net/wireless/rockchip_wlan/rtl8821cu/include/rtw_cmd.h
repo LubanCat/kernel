@@ -40,6 +40,8 @@ struct cmd_obj {
 	_list	list;
 };
 
+#define CMD_OBJ_SET_HWBAND(cmdobj, hwband) do { /* dummy macro because this driver has only one hwband */ } while (0)
+
 /* cmd flags */
 enum {
 	RTW_CMDF_DIRECTLY = BIT0,
@@ -217,6 +219,7 @@ enum rtw_drvextra_cmd_id {
 	NONE_WK_CID,
 	STA_MSTATUS_RPT_WK_CID,
 	DYNAMIC_CHK_WK_CID,
+	DYNAMIC_CHK_IDLE_WK_CID,
 	DM_CTRL_WK_CID,
 	PBC_POLLING_WK_CID,
 	POWER_SAVING_CTRL_WK_CID,/* IPS,AUTOSuspend */
@@ -261,6 +264,13 @@ enum rtw_drvextra_cmd_id {
 	TBTX_CONTROL_TX_WK_CID,
 #endif
 	MAX_WK_CID
+};
+
+enum IPS_CTRL_TYPE {
+	IPS_CTRL_ENTER = 0,
+	IPS_CTRL_LEAVE_SET_MODE = 1,
+	IPS_CTRL_LEAVE_SRESET = 2,
+	IPS_CTRL_MAX,
 };
 
 enum LPS_CTRL_TYPE {
@@ -364,6 +374,7 @@ struct sitesurvey_parm {
 	u8 bw;		/* 0: use default */
 
 	bool acs; /* aim to trigger channel selection when scan done */
+	u8 reason;
 };
 
 /*
@@ -538,16 +549,6 @@ struct set_ch_parm {
 	u8 ch_offset;
 };
 
-struct SetChannelPlan_param {
-	enum regd_src_t regd_src;
-	const struct country_chplan *country_ent;
-	u8 channel_plan;
-};
-
-struct get_channel_plan_param {
-	struct get_chplan_resp **resp;
-};
-
 struct LedBlink_param {
 	void *pLed;
 };
@@ -562,6 +563,19 @@ struct RunInThread_param {
 	void *context;
 };
 
+#ifdef CONFIG_WRITE_BCN_LEN_TO_FW
+struct write_bcnlen_param {
+	u16 bcn_len;
+};
+#endif
+
+struct reqtxrpt_param {
+	u8 macid;
+};
+
+struct bcn_control_param {
+	u8 control; /* 0: stop beaon, 1: resume beacon */
+};
 
 #define GEN_CMD_CODE(cmd)	cmd ## _CMD_
 
@@ -590,6 +604,7 @@ Result:
 #define H2C_ENQ_HEAD			0x08
 #define H2C_ENQ_HEAD_FAIL		0x09
 #define H2C_CMD_FAIL			0x0A
+#define H2C_MEMORY			0x0B
 
 void rtw_init_sitesurvey_parm(_adapter *padapter, struct sitesurvey_parm *pparm);
 u8 rtw_sitesurvey_cmd(_adapter *padapter, struct sitesurvey_parm *pparm);
@@ -598,10 +613,11 @@ u8 rtw_create_ibss_cmd(_adapter *adapter, int flags);
 u8 rtw_startbss_cmd(_adapter *adapter, int flags);
 #endif
 
-#define REQ_CH_NONE		-1
+#define REQ_BAND_NONE	-1
+#define REQ_CH_NONE	-1
 #define REQ_CH_INT_INFO	-2
-#define REQ_BW_NONE		-1
-#define REQ_BW_ORI		-2
+#define REQ_BW_NONE	-1
+#define REQ_BW_ORI	-2
 #define REQ_OFFSET_NONE	-1
 
 struct sta_info;
@@ -613,6 +629,8 @@ u8 rtw_disassoc_cmd(_adapter *padapter, u32 deauth_timeout_ms, int flags);
 #ifdef CONFIG_AP_MODE
 u8 rtw_change_bss_chbw_cmd(_adapter *adapter, int flags
 	, u8 ifbmp, u8 excl_ifbmp, s16 req_ch, s8 req_bw, s8 req_offset);
+u8 rtw_change_bss_bchbw_cmd(_adapter *adapter, int flags
+	, u32 iflbmp, u32 excl_iflbmp, s8 req_band, s16 req_ch, s8 req_bw, s8 req_offset);
 u8 rtw_stop_ap_cmd(_adapter *adapter, u8 flags);
 #endif
 #ifdef CONFIG_RTW_TOKEN_BASED_XMIT
@@ -626,6 +644,7 @@ extern u8 rtw_addbarsp_cmd(_adapter *padapter, u8 *addr, u16 tid, u8 status, u8 
 extern u8 rtw_reset_securitypriv_cmd(_adapter *padapter);
 extern u8 rtw_free_assoc_resources_cmd(_adapter *padapter, u8 lock_scanned_queue, int flags);
 extern u8 rtw_dynamic_chk_wk_cmd(_adapter *adapter);
+u8 rtw_dynamic_chk_idle_wk_cmd(struct dvobj_priv *dvobj, bool direct);
 
 u8 rtw_lps_ctrl_wk_cmd(_adapter *padapter, u8 lps_ctrl_type, u8 flags);
 u8 rtw_lps_ctrl_leave_set_level_cmd(_adapter *adapter, u8 lps_level, u8 flags);
@@ -645,7 +664,7 @@ extern  u8 rtw_antenna_select_cmd(_adapter *padapter, u8 antenna, u8 enqueue);
 
 u8 rtw_dm_ra_mask_wk_cmd(_adapter *padapter, u8 *psta);
 
-extern u8 rtw_ps_cmd(_adapter *padapter);
+u8 rtw_ips_ctrl_wk_cmd(_adapter *padapter, u8 ips_ctrl_type, u8 ips_mode, u8 flags);
 
 #if CONFIG_DFS
 void rtw_dfs_ch_switch_hdl(struct dvobj_priv *dvobj);
@@ -653,12 +672,6 @@ void rtw_dfs_ch_switch_hdl(struct dvobj_priv *dvobj);
 
 #ifdef CONFIG_AP_MODE
 u8 rtw_chk_hi_queue_cmd(_adapter *padapter);
-#ifdef CONFIG_DFS_MASTER
-u8 rtw_dfs_rd_cmd(_adapter *adapter, bool enqueue);
-void rtw_dfs_rd_timer_hdl(void *ctx);
-void rtw_dfs_rd_en_decision(_adapter *adapter, u8 mlme_act, u8 excl_ifbmp);
-u8 rtw_dfs_rd_en_decision_cmd(_adapter *adapter);
-#endif /* CONFIG_DFS_MASTER */
 #endif /* CONFIG_AP_MODE */
 
 #ifdef CONFIG_BT_COEXIST
@@ -674,15 +687,14 @@ u8 rtw_periodic_tsf_update_end_cmd(_adapter *adapter);
 u8 rtw_set_chbw_cmd(_adapter *padapter, u8 ch, u8 bw, u8 ch_offset, u8 flags);
 u8 rtw_iqk_cmd(_adapter *padapter, u8 flags);
 
-u8 rtw_set_chplan_cmd(_adapter *adapter, int flags, u8 chplan, u8 swconfig);
-u8 rtw_set_country_cmd(_adapter *adapter, int flags, const char *country_code, u8 swconfig);
-#ifdef CONFIG_REGD_SRC_FROM_OS
-u8 rtw_sync_os_regd_cmd(_adapter *adapter, int flags, const char *country_code, u8 dfs_region);
-#endif
-u8 rtw_get_chplan_cmd(_adapter *adapter, int flags, struct get_chplan_resp **resp);
-
+#ifdef CONFIG_RTW_LED_HANDLED_BY_CMD_THREAD
 extern u8 rtw_led_blink_cmd(_adapter *padapter, void *pLed);
+#endif
+
 extern u8 rtw_set_csa_cmd(_adapter *adapter);
+extern u8 rtw_set_ap_csa_cmd(_adapter *adapter);
+u8 bcn_control_cmd(_adapter *adapter, u8 control);
+u8 rtw_csa_sta_update_cap_cmd(_adapter *adapter);
 extern u8 rtw_tdls_cmd(_adapter *padapter, u8 *addr, u8 option);
 
 u8 rtw_mp_cmd(_adapter *adapter, u8 mp_cmd_id, u8 flags);
@@ -727,6 +739,13 @@ u8 rtw_req_per_cmd(_adapter * adapter);
 u8 rtw_tbtx_chk_cmd(_adapter *adapter);
 u8 rtw_tbtx_token_dispatch_cmd(_adapter *adapter);
 #endif
+
+#ifdef CONFIG_WRITE_BCN_LEN_TO_FW
+u8 rtw_write_bcnlen_to_fw_cmd(_adapter *padapter, u16 bcn_len);
+#endif
+
+u8 rtw_reqtxrpt_cmd(_adapter *adapter, u8 macid);
+
 #ifdef CONFIG_CTRL_TXSS_BY_TP
 struct txss_cmd_parm {
 	struct sta_info *sta;
@@ -746,7 +765,6 @@ u8 rtw_drvextra_cmd_hdl(_adapter *padapter, unsigned char *pbuf);
 
 extern void rtw_survey_cmd_callback(_adapter  *padapter, struct cmd_obj *pcmd);
 extern void rtw_disassoc_cmd_callback(_adapter  *padapter, struct cmd_obj *pcmd);
-extern void rtw_joinbss_cmd_callback(_adapter  *padapter, struct cmd_obj *pcmd);
 void rtw_create_ibss_post_hdl(_adapter *padapter, int status);
 extern void rtw_readtssi_cmdrsp_callback(_adapter	*padapter,  struct cmd_obj *pcmd);
 
@@ -778,6 +796,11 @@ enum rtw_cmd_id {
 	CMD_SET_MESH_PLINK_STATE, /* 21 */
 	CMD_DO_IQK, /* 22 */
 	CMD_GET_CHANPLAN, /*23*/
+	CMD_WRITE_BCN_LEN, /*24 */
+	CMD_AP_CHANSWITCH, /* 25 AP switch channel */
+	CMD_REQ_TXRPT, /* 26 */
+	CMD_BCN_CONTROL, /* 27, stop/resume beacon */
+	CMD_STA_CSA_UPDATE_CAP, /* 28, update capabilities of STA mode */
 	CMD_ID_MAX
 };
 

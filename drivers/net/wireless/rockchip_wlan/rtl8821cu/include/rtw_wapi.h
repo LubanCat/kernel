@@ -201,7 +201,7 @@ void rtw_build_beacon_wapi_ie(_adapter *padapter, unsigned char *pframe, struct 
 
 void rtw_build_assoc_req_wapi_ie(_adapter *padapter, unsigned char *pframe, struct pkt_attrib *pattrib);
 
-void rtw_wapi_on_assoc_ok(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs pIE);
+void rtw_wapi_on_assoc_ok(_adapter *padapter);
 
 void rtw_wapi_return_one_sta_info(_adapter *padapter, u8 *MacAddr);
 

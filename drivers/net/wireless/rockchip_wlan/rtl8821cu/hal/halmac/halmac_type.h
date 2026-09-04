@@ -547,6 +547,7 @@ enum halmac_ret_status {
 	HALMAC_RET_PINMUX_NOT_SUPPORT = 0x77,
 	HALMAC_RET_FWFF_NO_EMPTY = 0x78,
 	HALMAC_RET_ADR_NOT_ALIGN = 0x79,
+	HALMAC_RET_EFUSE_VER_ERR = 0x7A,
 };
 
 enum halmac_chip_id {
@@ -556,6 +557,7 @@ enum halmac_chip_id {
 	HALMAC_CHIP_ID_8197F = 3,
 	HALMAC_CHIP_ID_8822C = 4,
 	HALMAC_CHIP_ID_8812F = 5,
+	HALMAC_CHIP_ID_8822E = 6,
 	HALMAC_CHIP_ID_UNDEFINE = 0x7F,
 };
 
@@ -566,6 +568,13 @@ enum halmac_chip_ver {
 	HALMAC_CHIP_VER_D_CUT = 0x03,
 	HALMAC_CHIP_VER_E_CUT = 0x04,
 	HALMAC_CHIP_VER_F_CUT = 0x05,
+	HALMAC_CHIP_VER_G_CUT = 0x06,
+	HALMAC_CHIP_VER_H_CUT = 0x07,
+	HALMAC_CHIP_VER_I_CUT = 0x08,
+	HALMAC_CHIP_VER_J_CUT = 0x09,
+	HALMAC_CHIP_VER_K_CUT = 0x0A,
+	HALMAC_CHIP_VER_L_CUT = 0x0B,
+	HALMAC_CHIP_VER_M_CUT = 0x0C,
 	HALMAC_CHIP_VER_TEST = 0xFF,
 	HALMAC_CHIP_VER_UNDEFINE = 0x7FFF,
 };
@@ -1298,6 +1307,9 @@ enum halmac_drv_rsvd_pg_num {
 	HALMAC_RSVD_PG_NUM64,   /* 8K */
 	HALMAC_RSVD_PG_NUM128,  /* 16K */
 	HALMAC_RSVD_PG_NUM256,  /* 32K */
+	HALMAC_RSVD_PG_NUM512,  /* 64K */
+	HALMAC_RSVD_PG_NUM1024,  /* 128K */
+	HALMAC_RSVD_PG_NUM1460,  /* 182K */
 };
 
 enum halmac_pcie_cfg {
@@ -1497,6 +1509,7 @@ struct halmac_ver {
 	u8 major_ver;
 	u8 prototype_ver;
 	u8 minor_ver;
+	u8 patch_ver;
 };
 
 enum halmac_api_id {
@@ -1804,6 +1817,12 @@ enum halmac_gpio_func {
 	HALMAC_GPIO_FUNC_S1_TRSWB = 25,
 	HALMAC_GPIO_FUNC_ANTSW = 26,
 	HALMAC_GPIO_FUNC_ANTSWB = 27,
+	HALMAC_GPIO_FUNC_RFE_CTRL_3 = 28,
+	HALMAC_GPIO_FUNC_RFE_CTRL_5 = 29,
+	HALMAC_GPIO_FUNC_RFE_CTRL_7 = 30,
+	HALMAC_GPIO_FUNC_RFE_CTRL_8 = 31,
+	HALMAC_GPIO_FUNC_RFE_CTRL_9 = 32,
+	HALMAC_GPIO_FUNC_RFE_CTRL_11 = 33,
 	HALMAC_GPIO_FUNC_UNDEFINE = 0X7F,
 };
 
@@ -2037,6 +2056,7 @@ struct halmac_sdio_hw_info {
 	u8 tx_seq;
 	u8 io_indir_flag; /* Halmac internal use */
 	u8 io_warn_flag; /* SW */
+	u8 tx_512_by_byte_mode;
 };
 
 struct halmac_edca_para {
@@ -2103,6 +2123,13 @@ struct halmac_pinmux_info {
 	u8 s1_trswb:1;
 	u8 antswb:1;
 	u8 antsw:1;
+	/* byte4 */
+	u8 rfe_ctrl_3:1;
+	u8 rfe_ctrl_5:1;
+	u8 rfe_ctrl_7:1;
+	u8 rfe_ctrl_8:1;
+	u8 rfe_ctrl_9:1;
+	u8 rfe_ctrl_11:1;
 };
 
 struct halmac_ofld_func_info {
@@ -2173,6 +2200,7 @@ struct halmac_adapter {
 	u8 pcie_refautok_en;
 	u8 pwr_off_flow_flag;
 	u8 nlo_flag;
+	enum halmac_bw curr_bw;
 	struct halmac_rx_ignore_info rx_ignore_info;
 	struct halmac_watcher watcher;
 #if HALMAC_PLATFORM_TESTPROGRAM

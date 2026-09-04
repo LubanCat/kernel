@@ -120,6 +120,11 @@ void configure_txpower_track(void *dm_void, struct txpwrtrack_cfg *config)
 		configure_txpower_track_8723f(config);
 #endif
 
+#if RTL8822E_SUPPORT
+	if (dm->support_ic_type == ODM_RTL8822E)
+		configure_txpower_track_8822e(config);
+#endif
+
 }
 
 /*@ **********************************************************************
@@ -191,6 +196,9 @@ void odm_get_tracking_table(void *dm_void, u8 thermal_value, u8 delta)
 	s8 *xtal_tab_down = NULL;
 
 	configure_txpower_track(dm, &c);
+
+	if (c.get_delta_swing_table == NULL)
+		return;
 
 	(*c.get_delta_swing_table)(dm,
 				   (u8 **)&pwrtrk_tab_up_a,
@@ -376,6 +384,9 @@ void odm_pwrtrk_method(void *dm_void)
 	struct txpwrtrack_cfg c = {0};
 
 	configure_txpower_track(dm, &c);
+
+	if (c.odm_tx_pwr_track_set_pwr == NULL)
+		return;
 
 	if (dm->support_ic_type &
 		(ODM_RTL8188E | ODM_RTL8192E | ODM_RTL8821 | ODM_RTL8812 |
@@ -852,7 +863,7 @@ void odm_txpowertracking_callback_thermal_meter(void *adapter)
 	cali_info->tx_powercount = 0;
 }
 
-#if (RTL8822C_SUPPORT == 1 || RTL8814B_SUPPORT == 1)
+#if (RTL8822C_SUPPORT == 1 || RTL8814B_SUPPORT == 1  || RTL8723F_SUPPORT == 1 || RTL8822E_SUPPORT == 1)
 void
 odm_txpowertracking_new_callback_thermal_meter(void *dm_void)
 {
@@ -862,8 +873,6 @@ odm_txpowertracking_new_callback_thermal_meter(void *dm_void)
 	struct _hal_rf_ *rf = &dm->rf_table;
 	struct _halrf_tssi_data *tssi = &rf->halrf_tssi_data;
 	u8 thermal_value[MAX_RF_PATH] = {0}, delta[MAX_RF_PATH] = {0};
-	u8 delta_swing_table_idx_tup[DELTA_SWINGIDX_SIZE] = {0};
-	u8 delta_swing_table_idx_tdown[DELTA_SWINGIDX_SIZE] = {0};
 	u8 delta_LCK = 0, delta_IQK = 0, i = 0, j = 0, p;
 	u8 thermal_value_avg_count[MAX_RF_PATH] = {0};
 	u32 thermal_value_avg[MAX_RF_PATH] = {0};
@@ -902,7 +911,7 @@ odm_txpowertracking_new_callback_thermal_meter(void *dm_void)
 		"cali_info->txpowertrack_control=%d, tssi->thermal[RF_PATH_A]=%d tssi->thermal[RF_PATH_B]=%d\n",
 		cali_info->txpowertrack_control,  tssi->thermal[RF_PATH_A], tssi->thermal[RF_PATH_B]);
 
-	if (dm->support_ic_type == ODM_RTL8822C) {
+	if (dm->support_ic_type & (ODM_RTL8822C | ODM_RTL8822E)) {
 		for (i = 0; i < c.rf_path_count; i++)
 			thermal_value[i] = (u8)odm_get_rf_reg(dm, i, c.thermal_reg_addr, 0x7e); /* 0x42: RF Reg[6:1] Thermal Trim*/
 	} else {
@@ -952,6 +961,7 @@ odm_txpowertracking_new_callback_thermal_meter(void *dm_void)
 
 		if (thermal_value_avg_count[j]) {            /* Calculate Average thermal_value after average enough times */
 			thermal_value[j] = (u8)(thermal_value_avg[j] / thermal_value_avg_count[j]);
+			cali_info->thermal_value_avg_pwrtrk[j] = thermal_value[j];
 			RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
 				"AVG Thermal Meter = 0x%X, tssi->thermal[%d] = 0x%x\n",
 				thermal_value[j], j, tssi->thermal[j]);
@@ -973,11 +983,13 @@ odm_txpowertracking_new_callback_thermal_meter(void *dm_void)
 	if( (*dm->is_scan_in_process == false) && (!iqk_info->rfk_forbidden)) {
 		/* Delta temperature is equal to or larger than 20 centigrade.*/
 		if (delta_LCK >= c.threshold_iqk) {
-			RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "delta_LCK(%d) >= threshold_iqk(%d)\n", delta_LCK, c.threshold_iqk);
+			RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "delta_LCK(%d) >= c.threshold_iqk(%d)\n", delta_LCK, c.threshold_iqk);
 			cali_info->thermal_value_lck = thermal_value[RF_PATH_A];
 
 			/*Use RTLCK, so close power tracking driver LCK*/
-			if ((!(dm->support_ic_type & ODM_RTL8814A)) && (!(dm->support_ic_type & ODM_RTL8822B))) {
+			if ((!(dm->support_ic_type & ODM_RTL8814A)) &&
+				(!(dm->support_ic_type & ODM_RTL8822B)) &&
+				(!(dm->support_ic_type & ODM_RTL8822E))) {
 				if (c.phy_lc_calibrate)
 					(*c.phy_lc_calibrate)(dm);
 			} else
@@ -987,20 +999,6 @@ odm_txpowertracking_new_callback_thermal_meter(void *dm_void)
 
 	/*3 7. If necessary, move the index of swing table to adjust Tx power.*/
 	for (i = 0; i < c.rf_path_count; i++) {
-		if (i == RF_PATH_B) {
-			odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_b, DELTA_SWINGIDX_SIZE);
-			odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_b, DELTA_SWINGIDX_SIZE);
-		} else if (i == RF_PATH_C) {
-			odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_c, DELTA_SWINGIDX_SIZE);
-			odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_c, DELTA_SWINGIDX_SIZE);
-		} else if (i == RF_PATH_D) {
-			odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_d, DELTA_SWINGIDX_SIZE);
-			odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_d, DELTA_SWINGIDX_SIZE);
-		} else {
-			odm_move_memory(dm, delta_swing_table_idx_tup, delta_swing_table_idx_tup_a, DELTA_SWINGIDX_SIZE);
-			odm_move_memory(dm, delta_swing_table_idx_tdown, delta_swing_table_idx_tdown_a, DELTA_SWINGIDX_SIZE);
-		}
-
 		cali_info->delta_power_index_last[i] = cali_info->delta_power_index[i];	/*recording poer index offset*/
 		delta[i] = thermal_value[i] > tssi->thermal[i] ? (thermal_value[i] - tssi->thermal[i]) : (tssi->thermal[i] - thermal_value[i]);
 				
@@ -1008,18 +1006,69 @@ odm_txpowertracking_new_callback_thermal_meter(void *dm_void)
 			delta[i] = TXPWR_TRACK_TABLE_SIZE - 1;
 
 		if (thermal_value[i] > tssi->thermal[i]) {
+			if (i == RF_PATH_B) {
+				if (delta_swing_table_idx_tup_b) {
+					RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+						"delta_swing_table_idx_tup_b[%d]=%d Path=%d\n", delta[i], delta_swing_table_idx_tup_b[delta[i]], i);
+					cali_info->delta_power_index[i] = delta_swing_table_idx_tup_b[delta[i]];
+					cali_info->absolute_ofdm_swing_idx[i] =  delta_swing_table_idx_tup_b[delta[i]];	    /*Record delta swing for mix mode power tracking*/
+				}
+			} else if (i == RF_PATH_C) {
+				if (delta_swing_table_idx_tup_c) {
+					RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+						"delta_swing_table_idx_tup_c[%d]=%d Path=%d\n", delta[i], delta_swing_table_idx_tup_c[delta[i]], i);
+					cali_info->delta_power_index[i] = delta_swing_table_idx_tup_c[delta[i]];
+					cali_info->absolute_ofdm_swing_idx[i] =  delta_swing_table_idx_tup_c[delta[i]];	    /*Record delta swing for mix mode power tracking*/
+				}
+			} else if (i == RF_PATH_D) {
+				if (delta_swing_table_idx_tup_d) {
+					RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+						"delta_swing_table_idx_tup_d[%d]=%d Path=%d\n", delta[i], delta_swing_table_idx_tup_d[delta[i]], i);
+					cali_info->delta_power_index[i] = delta_swing_table_idx_tup_d[delta[i]];
+					cali_info->absolute_ofdm_swing_idx[i] =  delta_swing_table_idx_tup_d[delta[i]];	    /*Record delta swing for mix mode power tracking*/
+				}
+			} else {
+				if (delta_swing_table_idx_tup_a) {
+					RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+						"delta_swing_table_idx_tup_a[%d]=%d Path=%d\n", delta[i], delta_swing_table_idx_tup_a[delta[i]], i);	
+					cali_info->delta_power_index[i] = delta_swing_table_idx_tup_a[delta[i]];
+					cali_info->absolute_ofdm_swing_idx[i] =  delta_swing_table_idx_tup_a[delta[i]];	    /*Record delta swing for mix mode power tracking*/
+				}
+			}
+
 			RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
-				"delta_swing_table_idx_tup[%d]=%d Path=%d\n", delta[i], delta_swing_table_idx_tup[delta[i]], i);
-				
-			cali_info->delta_power_index[i] = delta_swing_table_idx_tup[delta[i]];
-			cali_info->absolute_ofdm_swing_idx[i] =  delta_swing_table_idx_tup[delta[i]];	    /*Record delta swing for mix mode power tracking*/
-			RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
-				"******Temp is higher and cali_info->absolute_ofdm_swing_idx[%d]=%d Path=%d\n", delta[i], cali_info->absolute_ofdm_swing_idx[i], i);
+					"******Temp is higher and cali_info->absolute_ofdm_swing_idx[%d]=%d Path=%d\n", delta[i], cali_info->absolute_ofdm_swing_idx[i], i);
 		} else {
-			RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
-				"delta_swing_table_idx_tdown[%d]=%d Path=%d\n", delta[i], delta_swing_table_idx_tdown[delta[i]], i);
-			cali_info->delta_power_index[i] = -1 * delta_swing_table_idx_tdown[delta[i]];
-			cali_info->absolute_ofdm_swing_idx[i] = -1 * delta_swing_table_idx_tdown[delta[i]];        /*Record delta swing for mix mode power tracking*/
+			if (i == RF_PATH_B) {
+				if (delta_swing_table_idx_tdown_b) {
+					RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+						"delta_swing_table_idx_tdown_b[%d]=%d Path=%d\n", delta[i], delta_swing_table_idx_tdown_b[delta[i]], i);
+					cali_info->delta_power_index[i] = -1 * delta_swing_table_idx_tdown_b[delta[i]];
+					cali_info->absolute_ofdm_swing_idx[i] = -1 * delta_swing_table_idx_tdown_b[delta[i]];        /*Record delta swing for mix mode power tracking*/
+				}
+			} else if (i == RF_PATH_C) {
+				if (delta_swing_table_idx_tdown_c) {
+					RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+						"delta_swing_table_idx_tdown_c[%d]=%d Path=%d\n", delta[i], delta_swing_table_idx_tdown_c[delta[i]], i);
+					cali_info->delta_power_index[i] = -1 * delta_swing_table_idx_tdown_c[delta[i]];
+					cali_info->absolute_ofdm_swing_idx[i] = -1 * delta_swing_table_idx_tdown_c[delta[i]];        /*Record delta swing for mix mode power tracking*/
+				}
+			} else if (i == RF_PATH_D) {
+				if (delta_swing_table_idx_tdown_d) {
+					RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+						"delta_swing_table_idx_tdown_d[%d]=%d Path=%d\n", delta[i], delta_swing_table_idx_tdown_d[delta[i]], i);
+					cali_info->delta_power_index[i] = -1 * delta_swing_table_idx_tdown_d[delta[i]];
+					cali_info->absolute_ofdm_swing_idx[i] = -1 * delta_swing_table_idx_tdown_d[delta[i]];        /*Record delta swing for mix mode power tracking*/
+				}
+			} else {
+				if (delta_swing_table_idx_tdown_a) {
+					RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+						"delta_swing_table_idx_tdown_a[%d]=%d Path=%d\n", delta[i], delta_swing_table_idx_tdown_a[delta[i]], i);
+					cali_info->delta_power_index[i] = -1 * delta_swing_table_idx_tdown_a[delta[i]];
+					cali_info->absolute_ofdm_swing_idx[i] = -1 * delta_swing_table_idx_tdown_a[delta[i]];        /*Record delta swing for mix mode power tracking*/
+				}
+			}
+
 			RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
 				"******Temp is lower and cali_info->absolute_ofdm_swing_idx[%d]=%d Path=%d\n", delta[i], cali_info->absolute_ofdm_swing_idx[i], i);
 		}
@@ -1052,7 +1101,7 @@ odm_txpowertracking_new_callback_thermal_meter(void *dm_void)
 			tracking_method = TSSI_MODE;
 		}
 	} else {
-		if (rf->power_track_type >= 0 && rf->power_track_type <= 3) {
+		if (rf->power_track_type <= 3) {
 			RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "**********Enter POWER Tracking MIX_MODE**********\n");
 			tracking_method = MIX_MODE;
 		} else if (rf->power_track_type >= 4 && rf->power_track_type <= 7) {
@@ -1061,7 +1110,7 @@ odm_txpowertracking_new_callback_thermal_meter(void *dm_void)
 		}
 	}
 
-	if (dm->support_ic_type == ODM_RTL8822C || dm->support_ic_type == ODM_RTL8814B)
+	if (dm->support_ic_type & (ODM_RTL8822C | ODM_RTL8814B | ODM_RTL8822E))
 		for (p = RF_PATH_A; p < c.rf_path_count; p++)
 			(*c.odm_tx_pwr_track_set_pwr)(dm, tracking_method, p, 0);
 

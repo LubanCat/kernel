@@ -57,6 +57,14 @@ void configure_txpower_track(
 	if (dm->support_ic_type == ODM_RTL8721D)
 		configure_txpower_track_8721d(config);
 #endif
+#if RTL8730A_SUPPORT
+	if (dm->support_ic_type == ODM_RTL8730A)
+		configure_txpower_track_8730a(config);
+#endif
+#if RTL8735B_SUPPORT
+	if (dm->support_ic_type == ODM_RTL8735B)
+		configure_txpower_track_8735b(config);
+#endif
 
 }
 
@@ -77,6 +85,8 @@ odm_clear_txpowertracking_state(
 	struct _hal_rf_ *rf = &dm->rf_table;
 	u8			p = 0;
 	struct dm_rf_calibration_struct	*cali_info = &dm->rf_calibrate_info;
+
+	RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "======>%s\n", __func__);
 
 	cali_info->bb_swing_idx_cck_base = cali_info->default_cck_index;
 	cali_info->bb_swing_idx_cck = cali_info->default_cck_index;
@@ -126,6 +136,7 @@ odm_txpowertracking_callback_thermal_meter(
 	u8 xtal_offset_eanble = 0;
 	s8 thermal_value_temp = 0;
 	u8 xtal_track_efuse = 0;
+	u8 tracking_method = TSSI_MODE;
 
 	struct txpwrtrack_cfg	c = {0};
 
@@ -143,6 +154,8 @@ odm_txpowertracking_callback_thermal_meter(
 	/*for Xtal Offset by James.Tung*/
 	s8 *delta_swing_table_xtal_up = NULL;
 	s8 *delta_swing_table_xtal_down = NULL;
+
+	RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "======>%s\n", __func__);
 
 	/* 4 2. Initialization ( 7 steps in total ) */
 	indexforchannel = odm_get_right_chnl_place_for_iqk(*dm->channel);
@@ -163,7 +176,8 @@ odm_txpowertracking_callback_thermal_meter(
 	xtal_track_efuse = xtal_track_efuse & 0x3;
 	if (dm->support_ic_type == ODM_RTL8195B ||
 	    dm->support_ic_type == ODM_RTL8721D ||
-	    (dm->support_ic_type == ODM_RTL8710C && xtal_track_efuse == 0x2))
+	    (dm->support_ic_type == ODM_RTL8710C && xtal_track_efuse == 0x2) ||
+	    dm->support_ic_type == ODM_RTL8735B)
 		(*c.get_delta_swing_xtal_table)(dm,
 		 (s8 **)&delta_swing_table_xtal_up,
 		 (s8 **)&delta_swing_table_xtal_down);
@@ -186,7 +200,14 @@ odm_txpowertracking_callback_thermal_meter(
 		thermal_value = (u8)odm_get_rf_reg(dm, RF_PATH_A,
 						   c.thermal_reg_addr, 0x7e0);
 		/* 0x42: RF Reg[10:5] 8721D */
-	else
+	else if (dm->support_ic_type == ODM_RTL8735B) {
+		thermal_value = (u8)odm_get_rf_reg(dm, RF_PATH_A,
+						   c.thermal_reg_addr, 0x1f8);
+		if (thermal_value == 0) {
+			RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+			       "Get Current Thermal == 0, Return !!!\n");
+		}
+	} else
 		thermal_value = (u8)odm_get_rf_reg(dm, RF_PATH_A,
 						   c.thermal_reg_addr, 0xfc00);
 		/* 0x42: RF Reg[15:10] 88E */
@@ -232,6 +253,7 @@ odm_txpowertracking_callback_thermal_meter(
 	if (thermal_value_avg_count) {			  /* Calculate Average thermal_value after average enough times */
 		thermal_value = (u8)(thermal_value_avg / thermal_value_avg_count);
 		cali_info->thermal_value_delta = thermal_value - rf->eeprom_thermal;
+		cali_info->thermal_current_avg_value = thermal_value;
 		RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
 		       "AVG Thermal Meter = 0x%X, EFUSE Thermal base = 0x%X\n", thermal_value, rf->eeprom_thermal);
 	}
@@ -259,7 +281,7 @@ odm_txpowertracking_callback_thermal_meter(
 	}
 
 	/*3 7. If necessary, move the index of swing table to adjust Tx power.*/
-	if (delta > 0 && cali_info->txpowertrack_control) {
+	if (cali_info->txpowertrack_control) {
 		/* "delta" here is used to record the absolute value of difference. */
 		delta = thermal_value > rf->eeprom_thermal ? (thermal_value - rf->eeprom_thermal) : (rf->eeprom_thermal - thermal_value);
 
@@ -285,11 +307,9 @@ odm_txpowertracking_callback_thermal_meter(
 					       cali_info->absolute_cck_swing_idx[p]);
 #endif
 					cali_info->delta_power_index[p] =
-						delta_swing_table_idx_tup_b
-						[delta];
+						delta_swing_table_idx_tup_b[delta];
 					cali_info->absolute_ofdm_swing_idx[p] =
-						delta_swing_table_idx_tup_b
-						[delta];
+						delta_swing_table_idx_tup_b[delta];
 					/*Record delta swing for mix mode*/
 					RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
 					       "******Temp is higher and cali_info->absolute_ofdm_swing_idx[RF_PATH_B] = %d\n", cali_info->absolute_ofdm_swing_idx[p]);
@@ -307,9 +327,10 @@ odm_txpowertracking_callback_thermal_meter(
 					RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
 					       "******Temp is higher and cali_info->absolute_cck_swing_idx[RF_PATH_A] = %d\n", cali_info->absolute_cck_swing_idx[p]);
 #endif
-					cali_info->delta_power_index[p] = delta_swing_table_idx_tup_a[delta];
+					cali_info->delta_power_index[p] =
+						delta_swing_table_idx_tup_a[delta];
 					cali_info->absolute_ofdm_swing_idx[p] =
-					delta_swing_table_idx_tup_a[delta];
+						delta_swing_table_idx_tup_a[delta];
 					/*Record delta swing*/
 					/*for mix mode power tracking*/
 					RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
@@ -320,7 +341,8 @@ odm_txpowertracking_callback_thermal_meter(
 			/* JJ ADD 20161014 */
 			if (dm->support_ic_type == ODM_RTL8195B ||
 			    dm->support_ic_type == ODM_RTL8721D ||
-			    (dm->support_ic_type == ODM_RTL8710C && xtal_track_efuse == 0x2)) {
+			    (dm->support_ic_type == ODM_RTL8710C && xtal_track_efuse == 0x2) ||
+			    dm->support_ic_type == ODM_RTL8735B) {
 				/*Save xtal_offset from Xtal table*/
 				cali_info->xtal_offset_last = cali_info->xtal_offset;	/*recording last Xtal offset*/
 				RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
@@ -375,7 +397,8 @@ odm_txpowertracking_callback_thermal_meter(
 
 			if (dm->support_ic_type == ODM_RTL8195B ||
 			    dm->support_ic_type == ODM_RTL8721D ||
-			    (dm->support_ic_type == ODM_RTL8710C && xtal_track_efuse == 0x2)) {
+			    (dm->support_ic_type == ODM_RTL8710C && xtal_track_efuse == 0x2) ||
+			    dm->support_ic_type == ODM_RTL8735B) {
 				/*Save xtal_offset from Xtal table*/
 				cali_info->xtal_offset_last = cali_info->xtal_offset;	/*recording last Xtal offset*/
 				RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
@@ -384,48 +407,6 @@ odm_txpowertracking_callback_thermal_meter(
 				xtal_offset_eanble = (cali_info->xtal_offset_last != cali_info->xtal_offset);
 			}
 		}
-#if 0
-		for (p = RF_PATH_A; p < c.rf_path_count; p++) {
-			RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
-			       "\n\n=========================== [path-%d] Calculating power_index_offset===========================\n", p);
-
-			if (cali_info->delta_power_index[p] == cali_info->delta_power_index_last[p])		 /*If Thermal value changes but lookup table value still the same*/
-				cali_info->power_index_offset[p] = 0;
-			else
-				cali_info->power_index_offset[p] = cali_info->delta_power_index[p] - cali_info->delta_power_index_last[p];		/*Power index diff between 2 times Power Tracking*/
-
-			RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
-			       "[path-%d] power_index_offset(%d) = delta_power_index(%d) - delta_power_index_last(%d)\n", p, cali_info->power_index_offset[p], cali_info->delta_power_index[p], cali_info->delta_power_index_last[p]);
-
-			cali_info->OFDM_index[p] = cali_info->bb_swing_idx_ofdm_base[p] + cali_info->power_index_offset[p];
-			cali_info->CCK_index = cali_info->bb_swing_idx_cck_base + cali_info->power_index_offset[p];
-
-			cali_info->bb_swing_idx_cck = cali_info->CCK_index;
-			cali_info->bb_swing_idx_ofdm[p] = cali_info->OFDM_index[p];
-
-			/*************Print BB Swing base and index Offset*************/
-
-			RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
-			       "The 'CCK' final index(%d) = BaseIndex(%d) + power_index_offset(%d)\n", cali_info->bb_swing_idx_cck, cali_info->bb_swing_idx_cck_base, cali_info->power_index_offset[p]);
-			RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
-			       "The 'OFDM' final index(%d) = BaseIndex[%d](%d) + power_index_offset(%d)\n", cali_info->bb_swing_idx_ofdm[p], p, cali_info->bb_swing_idx_ofdm_base[p], cali_info->power_index_offset[p]);
-
-			/*4 7.1 Handle boundary conditions of index.*/
-
-			if (cali_info->OFDM_index[p] > c.swing_table_size_ofdm - 1)
-				cali_info->OFDM_index[p] = c.swing_table_size_ofdm - 1;
-			else if (cali_info->OFDM_index[p] <= OFDM_min_index)
-				cali_info->OFDM_index[p] = OFDM_min_index;
-		}
-
-		RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
-		       "\n\n========================================================================================================\n");
-
-		if (cali_info->CCK_index > c.swing_table_size_cck - 1)
-			cali_info->CCK_index = c.swing_table_size_cck - 1;
-		else if (cali_info->CCK_index <= 0)
-			cali_info->CCK_index = 0;
-#endif
 	} else {
 		RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
 		       "The thermal meter is unchanged or TxPowerTracking OFF(%d): thermal_value: %d, cali_info->thermal_value: %d\n",
@@ -434,17 +415,6 @@ odm_txpowertracking_callback_thermal_meter(
 		for (p = RF_PATH_A; p < c.rf_path_count; p++)
 			cali_info->power_index_offset[p] = 0;
 	}
-#if 0
-	RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
-	       "TxPowerTracking: [CCK] Swing Current index: %d, Swing base index: %d\n",
-	       cali_info->CCK_index, cali_info->bb_swing_idx_cck_base);	   /*Print Swing base & current*/
-
-	for (p = RF_PATH_A; p < c.rf_path_count; p++) {
-		RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
-		       "TxPowerTracking: [OFDM] Swing Current index: %d, Swing base index[%d]: %d\n",
-		       cali_info->OFDM_index[p], p, cali_info->bb_swing_idx_ofdm_base[p]);
-	}
-#endif
 
 #if (RTL8721D_SUPPORT == 1)
 	if (thermal_value != cali_info->thermal_value) {
@@ -460,8 +430,7 @@ odm_txpowertracking_callback_thermal_meter(
 		RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
 		       "**********Enter POWER Tracking MIX_MODE**********\n");
 		for (p = RF_PATH_A; p < c.rf_path_count; p++)
-			(*c.odm_tx_pwr_track_set_pwr)(dm, MIX_MODE, p,
-						      indexforchannel);
+			(*c.odm_tx_pwr_track_set_pwr)(dm, MIX_MODE, p, 0);
 
 		/*Record last time Power Tracking result as base.*/
 		cali_info->bb_swing_idx_cck_base = cali_info->bb_swing_idx_cck;
@@ -473,10 +442,36 @@ odm_txpowertracking_callback_thermal_meter(
 		       "cali_info->thermal_value = %d thermal_value= %d\n",
 		       cali_info->thermal_value, thermal_value);
 		/*Record last Power Tracking Thermal value*/
-		cali_info->thermal_value = thermal_value;
+		if(!dm->mp_mode)
+			cali_info->thermal_value = thermal_value;
 	}
 
 #else
+
+	if (dm->support_ic_type == ODM_RTL8735B) {
+		if (*dm->mp_mode == 1) {
+			if (cali_info->txpowertrack_control == 1) {
+				RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+					"**********Enter POWER Tracking MIX_MODE**********\n");
+				tracking_method = MIX_MODE;
+			} else if (cali_info->txpowertrack_control == 3) {
+				RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+					"**********Enter POWER Tracking TSSI_MODE**********\n");
+				tracking_method = TSSI_MODE;
+			}	
+		} else {
+			if (rf->power_track_type >= 0 && rf->power_track_type <= 3) {
+				RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+					"**********Enter POWER Tracking MIX_MODE**********\n");
+				tracking_method = MIX_MODE;
+			} else if (rf->power_track_type >= 4 && rf->power_track_type <= 7) {
+				RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
+					"**********Enter POWER Tracking TSSI_MODE**********\n");
+				tracking_method = TSSI_MODE;
+			}	
+		}
+	}
+
 	if (thermal_value > rf->eeprom_thermal) {
 		RF_DBG(dm, DBG_RF_TX_PWR_TRACK,
 		       "Temperature(%d) higher than PG value(%d)\n", thermal_value, rf->eeprom_thermal);
@@ -499,6 +494,11 @@ odm_txpowertracking_callback_thermal_meter(
 			RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "**********Enter POWER Tracking MIX_MODE**********\n");
 			for (p = RF_PATH_A; p < c.rf_path_count; p++)
 				(*c.odm_tx_pwr_track_set_pwr)(dm, MIX_MODE, p, 0);
+		} else if (dm->support_ic_type == ODM_RTL8735B) {
+			for (p = RF_PATH_A; p < c.rf_path_count; p++) {
+				(*c.odm_tx_pwr_track_set_pwr)(dm, tracking_method, p, 0);
+				(*c.halrf_pa_dynamic_bias)(dm, p, (s8)(thermal_value - rf->eeprom_thermal));
+			}
 		} else {
 			RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "**********Enter POWER Tracking BBSWING_MODE**********\n");
 			for (p = RF_PATH_A; p < c.rf_path_count; p++)
@@ -526,6 +526,10 @@ odm_txpowertracking_callback_thermal_meter(
 			RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "**********Enter POWER Tracking MIX_MODE**********\n");
 			for (p = RF_PATH_A; p < c.rf_path_count; p++)
 				(*c.odm_tx_pwr_track_set_pwr)(dm, MIX_MODE, p, indexforchannel);
+		} else if (dm->support_ic_type == ODM_RTL8735B) {
+			for (p = RF_PATH_A; p < c.rf_path_count; p++)
+				(*c.odm_tx_pwr_track_set_pwr)(dm, tracking_method, p, 0);
+				(*c.halrf_pa_dynamic_bias)(dm, p, (s8)(thermal_value - rf->eeprom_thermal));
 		} else {
 			RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "**********Enter POWER Tracking BBSWING_MODE**********\n");
 			for (p = RF_PATH_A; p < c.rf_path_count; p++)
@@ -552,8 +556,9 @@ odm_txpowertracking_callback_thermal_meter(
 			xtal_offset_eanble, cali_info->txpowertrack_control, rf->eeprom_thermal, xtal_track_efuse);
 
 	if (dm->support_ic_type == ODM_RTL8195B ||
-	    dm->support_ic_type == ODM_RTL8721D ||
-	    (dm->support_ic_type == ODM_RTL8710C && xtal_track_efuse == 0x2)) {
+		dm->support_ic_type == ODM_RTL8721D ||
+		(dm->support_ic_type == ODM_RTL8710C && xtal_track_efuse == 0x2) ||
+		dm->support_ic_type == ODM_RTL8735B) {
 		if (xtal_offset_eanble != 0 && cali_info->txpowertrack_control && (rf->eeprom_thermal != 0xff)) {
 			RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "**********Enter Xtal Tracking**********\n");
 
@@ -577,7 +582,8 @@ odm_txpowertracking_callback_thermal_meter(
 			cali_info->thermal_value_iqk = thermal_value;
 			RF_DBG(dm, DBG_RF_TX_PWR_TRACK, "delta_IQK(%d) >= threshold_iqk(%d)\n", delta_IQK, c.threshold_iqk);
 			if (!cali_info->is_iqk_in_progress)
-				(*c.do_iqk)(dm, delta_IQK, thermal_value, 8);
+				if (dm->support_ic_type != ODM_RTL8735B)
+					(*c.do_iqk)(dm, delta_IQK, thermal_value, 8);
 		}
 	}
 #endif

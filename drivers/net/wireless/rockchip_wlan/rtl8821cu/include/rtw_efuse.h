@@ -42,10 +42,14 @@ enum _EFUSE_DEF_TYPE {
 	TYPE_EFUSE_PROTECT_BYTES_BANK		= 5,
 	TYPE_EFUSE_CONTENT_LEN_BANK			= 6,
 };
-
+#if defined(CONFIG_RTL8822E)
+#define EFUSE_VER_LEN 7
+#define		EFUSE_MAX_MAP_LEN		(2048)
+#else
+#define EFUSE_VER_LEN 0
 #define		EFUSE_MAX_MAP_LEN		1024
-
-#define		EFUSE_MAX_HW_SIZE		1024
+#endif
+#define		EFUSE_MAX_HW_SIZE		1536
 #define		EFUSE_MAX_SECTION_BASE	16
 #define		EFUSE_MAX_SECTION_NUM	128
 #define		EFUSE_MAX_BANK_SIZE		512
@@ -53,7 +57,7 @@ enum _EFUSE_DEF_TYPE {
 /*RTL8822B 8821C BT EFUSE Define 1 BANK 128 size logical map 1024*/
 #ifdef RTW_HALMAC
 #define BANK_NUM		1
-#if defined(CONFIG_RTL8723F)
+#if defined(CONFIG_RTL8723F) || defined(CONFIG_RTL8822E)
 #define EFUSE_BT_REAL_BANK_CONTENT_LEN		512
 #else
 #define EFUSE_BT_REAL_BANK_CONTENT_LEN		128
@@ -63,7 +67,7 @@ enum _EFUSE_DEF_TYPE {
 #define EFUSE_BT_MAP_LEN				1024	/* 1k bytes */
 #define EFUSE_BT_MAX_SECTION			(EFUSE_BT_MAP_LEN / 8)
 
-#if defined(CONFIG_RTL8822C)
+#if defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E)
 #define EFUSE_PROTECT_BYTES_BANK		54
 #elif defined(CONFIG_RTL8723F)
 #define EFUSE_PROTECT_BYTES_BANK		40
@@ -85,11 +89,14 @@ enum _EFUSE_DEF_TYPE {
 #define GET_MASK_ARRAY_LEN_TC(ic, txt) (EFUSE_GetArrayLen_TC_##ic##txt())
 #define GET_MASK_ARRAY_MP(ic, txt, offset) (EFUSE_GetMaskArray_MP_##ic##txt(offset))
 #define GET_MASK_ARRAY_TC(ic, txt, offset) (EFUSE_GetMaskArray_TC_##ic##txt(offset))
-
+#define GET_VER_ARRAY_MP(ic, txt, offset) (EFUSE_Ver_GetArray_MP_##ic##txt(offset))
+#define GET_VER_ARRAY_LEN_MP(ic, txt) (EFUSE_Ver_GetArrayLen_MP_##ic##txt())
 
 #define IS_MASKED(ic, txt, offset) (IS_MASKED_MP(ic, txt, offset))
 #define GET_MASK_ARRAY_LEN(ic, txt) (GET_MASK_ARRAY_LEN_MP(ic, txt))
 #define GET_MASK_ARRAY(ic, txt, out) do { GET_MASK_ARRAY_MP(ic, txt, out); } while (0)
+#define GET_VER_ARRAY(ic, txt, out) do { GET_VER_ARRAY_MP(ic, txt, out); } while (0)
+#define GET_VER_ARRAY_LEN(ic, txt) (GET_VER_ARRAY_LEN_MP(ic, txt))
 
 #ifdef CONFIG_BT_EFUSE_MASK
 #define IS_BT_MASKED_MP(ic, txt, offset) (EFUSE_IsBTAddressMasked_MP_##ic##txt(offset))
@@ -143,6 +150,8 @@ typedef struct _EFUSE_HAL {
 	u8	fakeEfuseModifiedMap[EFUSE_MAX_MAP_LEN];
 	u32	EfuseUsedBytes;
 	u8	EfuseUsedPercentage;
+	u32	EfuseMaskUsedBytes;
+	BOOLEAN EfuseVerCompare;
 
 	u16	BTEfuseUsedBytes;
 	u8	BTEfuseUsedPercentage;
@@ -179,8 +188,8 @@ typedef struct _EFUSE_HAL {
 
 } EFUSE_HAL, *PEFUSE_HAL;
 
-extern u8 maskfileBuffer[64];
-extern u8 btmaskfileBuffer[64];
+extern u8 maskfileBuffer[192];
+extern u8 btmaskfileBuffer[192];
 
 /*------------------------Export global variable----------------------------*/
 extern u8 fakeEfuseBank;
@@ -238,7 +247,7 @@ int	Efuse_PgPacketWrite(PADAPTER pAdapter, u8 offset, u8 word_en, u8 *data, BOOL
 void	efuse_WordEnableDataRead(u8 word_en, u8 *sourdata, u8 *targetdata);
 u8	Efuse_WordEnableDataWrite(PADAPTER pAdapter, u16 efuse_addr, u8 word_en, u8 *data, BOOLEAN bPseudoTest);
 void	EFUSE_ShadowMapUpdate(PADAPTER pAdapter, u8 efuseType, BOOLEAN bPseudoTest);
-void	EFUSE_ShadowRead(PADAPTER pAdapter, u8 Type, u16 Offset, u32 *Value);
+void	EFUSE_ShadowRead(PADAPTER pAdapter, u8 Type, u16 Offset, void *Value);
 #define efuse_logical_map_read(adapter, type, offset, value) EFUSE_ShadowRead((adapter), (type), (offset), (value))
 
 BOOLEAN rtw_file_efuse_IsMasked(PADAPTER pAdapter, u16 Offset, u8 *maskbuf);
@@ -274,7 +283,7 @@ extern const u8 _mac_hidden_proto_to_hal_proto_cap[];
 u8 mac_hidden_wl_func_to_hal_wl_func(u8 func);
 
 #ifdef PLATFORM_LINUX
-u8 rtw_efuse_file_read(PADAPTER padapter, u8 *filepath, u8 *buf, u32 len);
+u32 rtw_efuse_file_read(PADAPTER padapter, u8 *filepath, u8 *buf, u32 len);
 #if !defined(CONFIG_RTW_ANDROID_GKI)
 u8 rtw_efuse_file_store(PADAPTER padapter, u8 *filepath, u8 *buf, u32 len);
 #endif /* !defined(CONFIG_RTW_ANDROID_GKI) */

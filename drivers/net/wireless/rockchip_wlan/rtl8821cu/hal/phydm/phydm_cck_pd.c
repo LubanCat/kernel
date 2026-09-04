@@ -85,29 +85,49 @@ void phydm_cckpd_type1(void *dm_void)
 
 	if (dm->is_linked) {
 	#if (DM_ODM_SUPPORT_TYPE & (ODM_WIN | ODM_CE))
-		if (dm->rssi_min > 60) {
-			lv = CCK_PD_LV_3;
-		} else if (dm->rssi_min > 35) {
-			lv = CCK_PD_LV_2;
-		} else if (dm->rssi_min > 20) {
-			if (cckpd_t->cck_fa_ma > 500)
+		if (dm->support_ic_type & ODM_RTL8822B) {
+			if (dm->rssi_min > 35) {
 				lv = CCK_PD_LV_2;
-			else if (cckpd_t->cck_fa_ma < 250)
+			} else if (dm->rssi_min > 20) {
+				if (cckpd_t->cck_fa_ma > 500)
+					lv = CCK_PD_LV_2;
+				else if (cckpd_t->cck_fa_ma < 250)
+					lv = CCK_PD_LV_1;
+				else
+					is_update = false;
+			} else { /*RSSI < 20*/
 				lv = CCK_PD_LV_1;
-			else
-				is_update = false;
-		} else { /*RSSI < 20*/
-			lv = CCK_PD_LV_1;
+			}
+		} else {
+			if (dm->rssi_min > 60) {
+				lv = CCK_PD_LV_3;
+			} else if (dm->rssi_min > 35) {
+				lv = CCK_PD_LV_2;
+			} else if (dm->rssi_min > 20) {
+				if (cckpd_t->cck_fa_ma > 500)
+					lv = CCK_PD_LV_2;
+				else if (cckpd_t->cck_fa_ma < 250)
+					lv = CCK_PD_LV_1;
+				else
+					is_update = false;
+			} else { /*RSSI < 20*/
+				lv = CCK_PD_LV_1;
+			}
 		}
 	#else /*ODM_AP*/
-		if (dig_t->cur_ig_value > 0x32)
+		if (dig_t->cur_ig_value > 0x32) {
 			lv = CCK_PD_LV_4;
-		else if (dig_t->cur_ig_value > 0x2a)
+			// remove lv4 only for 8822b
+			if (dm->support_ic_type & ODM_RTL8822B) {
+				lv = CCK_PD_LV_3;
+			}
+		} else if (dig_t->cur_ig_value > 0x2a) {
 			lv = CCK_PD_LV_3;
-		else if (dig_t->cur_ig_value > 0x24)
+		} else if (dig_t->cur_ig_value > 0x24) {
 			lv = CCK_PD_LV_2;
-		else
+		} else {
 			lv = CCK_PD_LV_1;
+		}
 	#endif
 	} else {
 		if (cckpd_t->cck_fa_ma > 1000)
@@ -539,6 +559,19 @@ void phydm_cckpd_type3(void *dm_void)
 			else
 				is_update = false;
 		}
+		if ((dm->anti_interference_en != NULL) && (*dm->anti_interference_en == 1)) {
+        	if (igi >= 0x20 && dm->rssi_min >= 27 && (igi - dm->rssi_min < 10)) {
+				//printf(">>>>>TUYA CCK FA CNT = %d, RSSI = %d, IGI =%d \n", cckpd_t->cck_fa_ma, dm->rssi_min, igi);
+				is_update = false;
+				odm_set_bb_reg(dm, R_0xa08, BIT(21) | BIT(20), 0x2);
+				//odm_set_bb_reg(dm, R_0xac8, 0xff, 0x18);
+			}
+			else {
+				//printf("CCK FA CNT = %d, RSSI = %d, IGI =%d \n", cckpd_t->cck_fa_ma, dm->rssi_min, igi);
+				odm_set_bb_reg(dm, R_0xa08, BIT(21) | BIT(20), cckpd_t->cck_din_shift_opt);
+				//odm_set_bb_reg(dm, R_0xac8, 0xff, cckpd_t->cck_pd_20m_1r);
+			}
+		}
 	} else {
 		if (cckpd_t->cck_fa_ma > 1000)
 			lv = CCK_PD_LV_1;
@@ -585,6 +618,7 @@ void phydm_cck_pd_init_type3(void *dm_void)
 	cckpd_t->cck_pd_20m_2r = (u8)odm_get_bb_reg(dm, R_0xac8, 0xff00);
 	cckpd_t->cck_pd_40m_1r = (u8)odm_get_bb_reg(dm, R_0xacc, 0xff);
 	cckpd_t->cck_pd_40m_2r = (u8)odm_get_bb_reg(dm, R_0xacc, 0xff00);
+    cckpd_t->cck_din_shift_opt = (u8)odm_get_bb_reg(dm, R_0xa08, BIT(21) | BIT(20));
 
 	reg_tmp = odm_get_bb_reg(dm, R_0xad0, MASKDWORD);
 	cckpd_t->cck_cs_ratio_20m_1r = (u8)(reg_tmp & 0x1f);
@@ -776,6 +810,10 @@ void phydm_read_cckpd_para_type4(void *dm_void)
 	reg1 = odm_get_bb_reg(dm, R_0x1acc, MASKDWORD);
 	reg2 = odm_get_bb_reg(dm, R_0x1ad0, MASKDWORD);
 	reg3 = odm_get_bb_reg(dm, R_0x1ad4, MASKDWORD);
+
+	PHYDM_DBG(dm, DBG_CCKPD, "reg={0x%x,0x%x,0x%x,0x%x}\n",
+		  reg0, reg1, reg2, reg3);
+
 	curr_cck_pd_t[0][0][0] = (u8)(reg0 & 0x000000ff);
 	curr_cck_pd_t[1][0][0] = (u8)(reg1 & 0x000000ff);
 	curr_cck_pd_t[0][0][1] = (u8)(reg2 & 0x0000001f);
@@ -955,6 +993,9 @@ void phydm_cck_pd_init_type4(void *dm_void)
 	reg2 = odm_get_bb_reg(dm, R_0x1ad0, MASKDWORD);
 	reg3 = odm_get_bb_reg(dm, R_0x1ad4, MASKDWORD);
 
+	PHYDM_DBG(dm, DBG_CCKPD, "reg={0x%x,0x%x,0x%x,0x%x}\n",
+		  reg0, reg1, reg2, reg3);
+
 	for (i = 0 ; i < CCK_PD_LV_MAX ; i++) {
 		pw_step = i * 2;
 		cs_step = i * 2;
@@ -970,8 +1011,8 @@ void phydm_cck_pd_init_type4(void *dm_void)
 		}
 		#endif
 
-		#if (RTL8822C_SUPPORT)
-		if (dm->support_ic_type & ODM_RTL8822C) {
+		#if (RTL8822C_SUPPORT || RTL8822E_SUPPORT)
+		if (dm->support_ic_type & (ODM_RTL8822C | ODM_RTL8822E)) {
 			if (i == CCK_PD_LV_1) {
 				pw_step = 9; /*IGI-19.2:0x11=d'17*/
 				cs_step = 0;
@@ -1254,9 +1295,6 @@ void phydm_set_cck_pd_lv_type5(void *dm_void, enum cckpd_lv lv)
 			cck_mode = CCK_BW40_4R;
 	} break;
 	#endif
-	default:
-		/*@pr_debug("[%s] warning!\n", __func__);*/
-		break;
 	}
 
 
@@ -1444,6 +1482,40 @@ void phydm_cck_pd_init_type5(void *dm_void)
 
 		#if (RTL8723F_SUPPORT)
 		if (dm->support_ic_type & ODM_RTL8723F) {
+			if (i == CCK_PD_LV_1) {
+				pw_step = 9; /*IGI-19.2:0x11=d'17*/
+				cs_step = 0;
+			} else if (i == CCK_PD_LV_2) {
+				pw_step = 12; /*IGI-15.5:0x14=d'20*/
+				cs_step = 1;
+			} else if (i == CCK_PD_LV_3) {
+				pw_step = 14; /*IGI-14:0x16=d'22*/
+				cs_step = 1;
+			} else if (i == CCK_PD_LV_4) {
+				pw_step = 17; /*IGI-12:0x19=d'25*/
+				cs_step = 1;
+			}
+		}
+		#endif
+		#if (RTL8735B_SUPPORT)
+		if (dm->support_ic_type & ODM_RTL8735B) {
+			if (i == CCK_PD_LV_1) {
+				pw_step = 9; /*IGI-19.2:0x11=d'17*/
+				cs_step = 0;
+			} else if (i == CCK_PD_LV_2) {
+				pw_step = 12; /*IGI-15.5:0x14=d'20*/
+				cs_step = 1;
+			} else if (i == CCK_PD_LV_3) {
+				pw_step = 14; /*IGI-14:0x16=d'22*/
+				cs_step = 1;
+			} else if (i == CCK_PD_LV_4) {
+				pw_step = 17; /*IGI-12:0x19=d'25*/
+				cs_step = 1;
+			}
+		}
+		#endif
+		#if (RTL8730A_SUPPORT)
+		if (dm->support_ic_type & ODM_RTL8730A) {
 			if (i == CCK_PD_LV_1) {
 				pw_step = 9; /*IGI-19.2:0x11=d'17*/
 				cs_step = 0;

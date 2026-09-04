@@ -63,10 +63,10 @@ cfg_txbf_88xx(struct halmac_adapter *adapter, u8 userid, enum halmac_bw bw,
 		switch (bw) {
 		case HALMAC_BW_80:
 			tmp42c |= BIT_R_TXBF0_80M;
-			/* fall through */
+			fallthrough;
 		case HALMAC_BW_40:
 			tmp42c |= BIT_R_TXBF0_40M;
-			/* fall through */
+			fallthrough;
 		case HALMAC_BW_20:
 			tmp42c |= BIT_R_TXBF0_20M;
 			break;
@@ -254,8 +254,10 @@ cfg_sounding_88xx(struct halmac_adapter *adapter, enum halmac_snd_role role,
 		HALMAC_REG_W8(REG_SND_PTCL_CTRL + 3, 0x3A);
 		HALMAC_REG_W8_CLR(REG_RXFLTMAP1, BIT(4));
 		HALMAC_REG_W8_CLR(REG_RXFLTMAP4, BIT(4));
-		#if (HALMAC_8822C_SUPPORT || HALMAC_8812F_SUPPORT)
-		if (adapter->chip_id == HALMAC_CHIP_ID_8822C)
+		#if (HALMAC_8822C_SUPPORT || HALMAC_8812F_SUPPORT || \
+		     HALMAC_8822E_SUPPORT)
+		if (adapter->chip_id == HALMAC_CHIP_ID_8822C ||
+		    adapter->chip_id == HALMAC_CHIP_ID_8822E)
 			HALMAC_REG_W32(REG_CSI_RRSR,
 				       BIT_CSI_RRSC_BITMAP(CSI_RATE_MAP) |
 				       BIT_OFDM_LEN_TH(0));
@@ -333,8 +335,9 @@ su_bfee_entry_init_88xx(struct halmac_adapter *adapter, u8 userid, u16 paid)
 				BIT_R_TXBF0_40M | BIT_R_TXBF0_80M);
 		HALMAC_REG_W16(REG_TXBF_CTRL, tmp42c | paid);
 		HALMAC_REG_W16(REG_ASSOCIATED_BFMEE_SEL, paid);
-		#if HALMAC_8822C_SUPPORT
-		if (adapter->chip_id == HALMAC_CHIP_ID_8822C)
+		#if HALMAC_8822C_SUPPORT || HALMAC_8822E_SUPPORT
+		if (adapter->chip_id == HALMAC_CHIP_ID_8822C ||
+		    adapter->chip_id == HALMAC_CHIP_ID_8822E)
 			HALMAC_REG_W16(REG_ASSOCIATED_BFMEE_SEL, paid | BIT(9));
 		#endif
 		break;
@@ -645,9 +648,10 @@ cfg_csi_rate_88xx(struct halmac_adapter *adapter, u8 rssi, u8 cur_rate,
 	csi_cfg = HALMAC_REG_R32(REG_BBPSF_CTRL) & ~BITS_WMAC_CSI_RATE;
 #endif
 
-#if (HALMAC_8822C_SUPPORT || HALMAC_8812F_SUPPORT)
+#if (HALMAC_8822C_SUPPORT || HALMAC_8812F_SUPPORT || HALMAC_8822E_SUPPORT)
 	if (adapter->chip_id == HALMAC_CHIP_ID_8822C ||
-	    adapter->chip_id == HALMAC_CHIP_ID_8812F)
+	    adapter->chip_id == HALMAC_CHIP_ID_8812F ||
+	    adapter->chip_id == HALMAC_CHIP_ID_8822E)
 		HALMAC_REG_W32_SET(REG_BBPSF_CTRL, BIT(15));
 #endif
 

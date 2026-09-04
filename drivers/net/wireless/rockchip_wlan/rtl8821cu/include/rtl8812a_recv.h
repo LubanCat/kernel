@@ -21,8 +21,11 @@
 		#ifndef CONFIG_MINIMAL_MEMORY_USAGE
 			#ifdef CONFIG_PREALLOC_RX_SKB_BUFFER
 				#define MAX_RECVBUF_SZ (rtw_rtkm_get_buff_size()) /*depend rtkm*/
-			#else
+			#elif defined(CONFIG_PLATFORM_I386_PC)
 				#define MAX_RECVBUF_SZ (32768)  /*32k*/
+			#else
+				/* Avoid the Synopsys USB host receive buffer size limit */
+				#define MAX_RECVBUF_SZ (20480) /* 20k */
 			#endif
 			/* #define MAX_RECVBUF_SZ (24576) */ /* 24k */
 			/* #define MAX_RECVBUF_SZ (20480) */ /* 20K */

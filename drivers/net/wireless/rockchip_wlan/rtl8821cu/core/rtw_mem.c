@@ -50,6 +50,8 @@ MODULE_VERSION("DRIVERVERSION");
 #include <rtl8814a_hal.h>
 #elif defined(CONFIG_RTL8814B)
 #include <rtl8814b_hal.h>
+#elif defined(CONFIG_RTL8822E)
+#include <rtl8822e_hal.h>
 #endif
 
 #if defined(CONFIG_SDIO_HCI) || defined(CONFIG_GSPI_HCI)

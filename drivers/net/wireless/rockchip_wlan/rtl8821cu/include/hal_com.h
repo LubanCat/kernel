@@ -173,6 +173,7 @@ typedef enum _WAKEUP_REASON{
 	RX_DISASSOC						= 0x04,
 	RX_DEAUTH						= 0x08,
 	RX_ARP_REQUEST					= 0x09,
+	RX_EAPREQ_IDENTIFY			= 0x0B,
 	FW_DECISION_DISCONNECT			= 0x10,
 	RX_MAGIC_PKT					= 0x21,
 	RX_UNICAST_PKT					= 0x22,
@@ -190,6 +191,12 @@ typedef enum _WAKEUP_REASON{
 	WOW_KEEPALIVE_WAKE 			= 0x61,
 	#endif/*CONFIG_WOW_KEEP_ALIVE_PATTERN*/
 	AP_OFFLOAD_WAKEUP				= 0x66,
+	NO_WAKE_RX_PAIRWISEKEY			= 0xB0,
+	NO_WAKE_RX_GTK				= 0xB1,
+	NO_WAKE_RX_DISASSOC			= 0xB2,
+	NO_WAKE_RX_DEAUTH			= 0xB3,
+	NO_WAKE_RX_EAPREQ_IDENTIFY		= 0xB4,
+	NO_WAKE_FW_DECISION_DISCONNECT		= 0xB5,
 	CLK_32K_UNLOCK					= 0xFD,
 	CLK_32K_LOCK					= 0xFE
 }WAKEUP_REASON;
@@ -280,7 +287,8 @@ void dump_chip_info(HAL_VERSION	ChipVersion);
 
 #define BAND_CAP_2G			BIT0
 #define BAND_CAP_5G			BIT1
-#define BAND_CAP_BIT_NUM	2
+#define BAND_CAP_6G			BIT2
+#define BAND_CAP_BIT_NUM	3
 
 #define BW_CAP_5M		BIT0
 #define BW_CAP_10M		BIT1
@@ -321,12 +329,11 @@ u8 hal_largest_bw(_adapter *adapter, u8 in_bw);
 
 bool hal_chk_wl_func(_adapter *adapter, u8 func);
 
-void hal_com_config_channel_plan(
+void hal_com_parse_channel_plan(
 		PADAPTER padapter,
-		char *hw_alpha2,
+		const char *hw_alpha2,
 		u8 hw_chplan,
-		char *sw_alpha2,
-		u8 sw_chplan,
+		u8 hw_chplan_6g,
 		BOOLEAN AutoLoadFail
 );
 
@@ -392,6 +399,7 @@ void rtw_sec_read_cam_ent(_adapter *adapter, u8 id, u8 *ctrl, u8 *mac, u8 *key);
 void rtw_sec_write_cam_ent(_adapter *adapter, u8 id, u16 ctrl, u8 *mac, u8 *key);
 void rtw_sec_clr_cam_ent(_adapter *adapter, u8 id);
 bool rtw_sec_read_cam_is_gk(_adapter *adapter, u8 id);
+u8 rtw_sec_search_camid(_adapter *adapter, u8 key_id, u8 is_gtk);
 
 u8 rtw_hal_rcr_check(_adapter *adapter, u32 check_bit);
 
@@ -428,11 +436,15 @@ void rtw_hal_update_tx_aclt(_adapter *adapter);
 #endif
 
 void hw_var_port_switch(_adapter *adapter);
+#ifdef CONFIG_FW_MULTI_PORT_SUPPORT
+u8 rtw_hal_set_ap_bcn_imr_cmd(struct _ADAPTER *adapter, u8 enable);
+#endif
 void rtw_var_set_basic_rate(PADAPTER padapter, u8 *val);
 u8 SetHwReg(PADAPTER padapter, u8 variable, u8 *val);
 void GetHwReg(PADAPTER padapter, u8 variable, u8 *val);
 void rtw_hal_check_rxfifo_full(_adapter *adapter);
 void rtw_hal_reqtxrpt(_adapter *padapter, u8 macid);
+int rtw_get_sta_tx_stat(_adapter *adapter, u8 mac_id, u8 *macaddr);
 
 u8 SetHalDefVar(_adapter *adapter, HAL_DEF_VARIABLE variable, void *value);
 u8 GetHalDefVar(_adapter *adapter, HAL_DEF_VARIABLE variable, void *value);
@@ -566,6 +578,16 @@ void update_IOT_info(_adapter *padapter);
 void rtw_set_rts_bw(_adapter *padapter);
 #endif/*CONFIG_RTS_FULL_BW*/
 
+enum ctrl_tx_bcn_reason {
+	CTRL_TX_BCN_BY_OTHERS		= 0,
+	CTRL_TX_BCN_BY_SCAN		= 1,
+	CTRL_TX_BCN_BY_JOIN		= 2,
+	CTRL_TX_BCN_BY_CORRECT_TSF	= 3,
+};
+
+void ResumeTxBeacon_with_reason(_adapter *padapter, enum ctrl_tx_bcn_reason reason);
+void StopTxBeacon_with_reason(_adapter *padapter,enum ctrl_tx_bcn_reason reason);
+
 void ResumeTxBeacon(_adapter *padapter);
 void StopTxBeacon(_adapter *padapter);
 
@@ -622,6 +644,12 @@ void rtw_wow_pattern_cam_dump(_adapter *adapter);
 void rtw_dump_wow_pattern(void *sel, struct rtl_wow_pattern *pwow_pattern, u8 idx);
 #ifdef CONFIG_WOW_PATTERN_HW_CAM
 void rtw_wow_pattern_read_cam_ent(_adapter *adapter, u8 id, struct  rtl_wow_pattern *context);
+#endif
+
+#ifdef CONFIG_PNO_SUPPORT
+struct pno_ssid;
+void rtw_hal_construct_ProbeReq(_adapter *padapter, u8 *pframe,
+                                u32 *pLength, struct pno_ssid *ssid);
 #endif
 
 struct rtw_ndp_info {
@@ -734,4 +762,9 @@ static inline void rtw_enter_protsel_macsleep(_adapter *padapter, u8 port_sel) {
 static inline bool rtw_assert_protsel_macsleep(_adapter *padapter, u32 addr, u8 len) {return true; }
 static inline void rtw_leave_protsel_macsleep(_adapter *padapter) {}
 #endif
+
+#ifndef RTW_HALMAC
+void rtw_hal_init_sifs_backup(_adapter *adapter);
+#endif
+
 #endif /* __HAL_COMMON_H__ */

@@ -3490,4 +3490,391 @@
 
 #endif
 
+#if (HALMAC_8822E_SUPPORT)
+
+/*TXDESC_WORD0*/
+
+#define SET_TX_DESC_DISQSELSEQ_8822E(txdesc, value)                            \
+	SET_TX_DESC_DISQSELSEQ(txdesc, value)
+#define GET_TX_DESC_DISQSELSEQ_8822E(txdesc) GET_TX_DESC_DISQSELSEQ(txdesc)
+#define SET_TX_DESC_GF_8822E(txdesc, value) SET_TX_DESC_GF(txdesc, value)
+#define GET_TX_DESC_GF_8822E(txdesc) GET_TX_DESC_GF(txdesc)
+#define SET_TX_DESC_NO_ACM_8822E(txdesc, value)                                \
+	SET_TX_DESC_NO_ACM(txdesc, value)
+#define GET_TX_DESC_NO_ACM_8822E(txdesc) GET_TX_DESC_NO_ACM(txdesc)
+#define SET_TX_DESC_BCNPKT_TSF_CTRL_8822E(txdesc, value)                       \
+	SET_TX_DESC_BCNPKT_TSF_CTRL(txdesc, value)
+#define GET_TX_DESC_BCNPKT_TSF_CTRL_8822E(txdesc)                              \
+	GET_TX_DESC_BCNPKT_TSF_CTRL(txdesc)
+#define SET_TX_DESC_AMSDU_PAD_EN_8822E(txdesc, value)                          \
+	SET_TX_DESC_AMSDU_PAD_EN(txdesc, value)
+#define GET_TX_DESC_AMSDU_PAD_EN_8822E(txdesc) GET_TX_DESC_AMSDU_PAD_EN(txdesc)
+#define SET_TX_DESC_LS_8822E(txdesc, value) SET_TX_DESC_LS(txdesc, value)
+#define GET_TX_DESC_LS_8822E(txdesc) GET_TX_DESC_LS(txdesc)
+#define SET_TX_DESC_HTC_8822E(txdesc, value) SET_TX_DESC_HTC(txdesc, value)
+#define GET_TX_DESC_HTC_8822E(txdesc) GET_TX_DESC_HTC(txdesc)
+#define SET_TX_DESC_BMC_8822E(txdesc, value) SET_TX_DESC_BMC(txdesc, value)
+#define GET_TX_DESC_BMC_8822E(txdesc) GET_TX_DESC_BMC(txdesc)
+#define SET_TX_DESC_OFFSET_8822E(txdesc, value)                                \
+	SET_TX_DESC_OFFSET(txdesc, value)
+#define GET_TX_DESC_OFFSET_8822E(txdesc) GET_TX_DESC_OFFSET(txdesc)
+#define SET_TX_DESC_TXPKTSIZE_8822E(txdesc, value)                             \
+	SET_TX_DESC_TXPKTSIZE(txdesc, value)
+#define GET_TX_DESC_TXPKTSIZE_8822E(txdesc) GET_TX_DESC_TXPKTSIZE(txdesc)
+
+/*WORD1*/
+
+#define SET_TX_DESC_MOREDATA_8822E(txdesc, value)                              \
+	SET_TX_DESC_MOREDATA(txdesc, value)
+#define GET_TX_DESC_MOREDATA_8822E(txdesc) GET_TX_DESC_MOREDATA(txdesc)
+#define SET_TX_DESC_PKT_OFFSET_8822E(txdesc, value)                            \
+	SET_TX_DESC_PKT_OFFSET(txdesc, value)
+#define GET_TX_DESC_PKT_OFFSET_8822E(txdesc) GET_TX_DESC_PKT_OFFSET(txdesc)
+#define SET_TX_DESC_SEC_TYPE_8822E(txdesc, value)                              \
+	SET_TX_DESC_SEC_TYPE(txdesc, value)
+#define GET_TX_DESC_SEC_TYPE_8822E(txdesc) GET_TX_DESC_SEC_TYPE(txdesc)
+#define SET_TX_DESC_EN_DESC_ID_8822E(txdesc, value)                            \
+	SET_TX_DESC_EN_DESC_ID(txdesc, value)
+#define GET_TX_DESC_EN_DESC_ID_8822E(txdesc) GET_TX_DESC_EN_DESC_ID(txdesc)
+#define SET_TX_DESC_RATE_ID_8822E(txdesc, value)                               \
+	SET_TX_DESC_RATE_ID(txdesc, value)
+#define GET_TX_DESC_RATE_ID_8822E(txdesc) GET_TX_DESC_RATE_ID(txdesc)
+#define SET_TX_DESC_PIFS_8822E(txdesc, value) SET_TX_DESC_PIFS(txdesc, value)
+#define GET_TX_DESC_PIFS_8822E(txdesc) GET_TX_DESC_PIFS(txdesc)
+#define SET_TX_DESC_LSIG_TXOP_EN_8822E(txdesc, value)                          \
+	SET_TX_DESC_LSIG_TXOP_EN(txdesc, value)
+#define GET_TX_DESC_LSIG_TXOP_EN_8822E(txdesc) GET_TX_DESC_LSIG_TXOP_EN(txdesc)
+#define SET_TX_DESC_RD_NAV_EXT_8822E(txdesc, value)                            \
+	SET_TX_DESC_RD_NAV_EXT(txdesc, value)
+#define GET_TX_DESC_RD_NAV_EXT_8822E(txdesc) GET_TX_DESC_RD_NAV_EXT(txdesc)
+#define SET_TX_DESC_QSEL_8822E(txdesc, value) SET_TX_DESC_QSEL(txdesc, value)
+#define GET_TX_DESC_QSEL_8822E(txdesc) GET_TX_DESC_QSEL(txdesc)
+#define SET_TX_DESC_MACID_8822E(txdesc, value) SET_TX_DESC_MACID(txdesc, value)
+#define GET_TX_DESC_MACID_8822E(txdesc) GET_TX_DESC_MACID(txdesc)
+
+/*TXDESC_WORD2*/
+
+#define SET_TX_DESC_HW_AES_IV_8822E(txdesc, value)                             \
+	SET_TX_DESC_HW_AES_IV(txdesc, value)
+#define GET_TX_DESC_HW_AES_IV_8822E(txdesc) GET_TX_DESC_HW_AES_IV(txdesc)
+#define SET_TX_DESC_FTM_EN_8822E(txdesc, value)                                \
+	SET_TX_DESC_FTM_EN(txdesc, value)
+#define GET_TX_DESC_FTM_EN_8822E(txdesc) GET_TX_DESC_FTM_EN(txdesc)
+#define SET_TX_DESC_G_ID_8822E(txdesc, value) SET_TX_DESC_G_ID(txdesc, value)
+#define GET_TX_DESC_G_ID_8822E(txdesc) GET_TX_DESC_G_ID(txdesc)
+#define SET_TX_DESC_BT_NULL_8822E(txdesc, value)                               \
+	SET_TX_DESC_BT_NULL(txdesc, value)
+#define GET_TX_DESC_BT_NULL_8822E(txdesc) GET_TX_DESC_BT_NULL(txdesc)
+#define SET_TX_DESC_AMPDU_DENSITY_8822E(txdesc, value)                         \
+	SET_TX_DESC_AMPDU_DENSITY(txdesc, value)
+#define GET_TX_DESC_AMPDU_DENSITY_8822E(txdesc)                                \
+	GET_TX_DESC_AMPDU_DENSITY(txdesc)
+#define SET_TX_DESC_SPE_RPT_8822E(txdesc, value)                               \
+	SET_TX_DESC_SPE_RPT(txdesc, value)
+#define GET_TX_DESC_SPE_RPT_8822E(txdesc) GET_TX_DESC_SPE_RPT(txdesc)
+#define SET_TX_DESC_RAW_8822E(txdesc, value) SET_TX_DESC_RAW(txdesc, value)
+#define GET_TX_DESC_RAW_8822E(txdesc) GET_TX_DESC_RAW(txdesc)
+#define SET_TX_DESC_MOREFRAG_8822E(txdesc, value)                              \
+	SET_TX_DESC_MOREFRAG(txdesc, value)
+#define GET_TX_DESC_MOREFRAG_8822E(txdesc) GET_TX_DESC_MOREFRAG(txdesc)
+#define SET_TX_DESC_BK_8822E(txdesc, value) SET_TX_DESC_BK(txdesc, value)
+#define GET_TX_DESC_BK_8822E(txdesc) GET_TX_DESC_BK(txdesc)
+#define SET_TX_DESC_NULL_1_8822E(txdesc, value)                                \
+	SET_TX_DESC_NULL_1(txdesc, value)
+#define GET_TX_DESC_NULL_1_8822E(txdesc) GET_TX_DESC_NULL_1(txdesc)
+#define SET_TX_DESC_NULL_0_8822E(txdesc, value)                                \
+	SET_TX_DESC_NULL_0(txdesc, value)
+#define GET_TX_DESC_NULL_0_8822E(txdesc) GET_TX_DESC_NULL_0(txdesc)
+#define SET_TX_DESC_RDG_EN_8822E(txdesc, value)                                \
+	SET_TX_DESC_RDG_EN(txdesc, value)
+#define GET_TX_DESC_RDG_EN_8822E(txdesc) GET_TX_DESC_RDG_EN(txdesc)
+#define SET_TX_DESC_AGG_EN_8822E(txdesc, value)                                \
+	SET_TX_DESC_AGG_EN(txdesc, value)
+#define GET_TX_DESC_AGG_EN_8822E(txdesc) GET_TX_DESC_AGG_EN(txdesc)
+#define SET_TX_DESC_CCA_RTS_8822E(txdesc, value)                               \
+	SET_TX_DESC_CCA_RTS(txdesc, value)
+#define GET_TX_DESC_CCA_RTS_8822E(txdesc) GET_TX_DESC_CCA_RTS(txdesc)
+#define SET_TX_DESC_TRI_FRAME_8822E(txdesc, value)                             \
+	SET_TX_DESC_TRI_FRAME(txdesc, value)
+#define GET_TX_DESC_TRI_FRAME_8822E(txdesc) GET_TX_DESC_TRI_FRAME(txdesc)
+#define SET_TX_DESC_P_AID_8822E(txdesc, value) SET_TX_DESC_P_AID(txdesc, value)
+#define GET_TX_DESC_P_AID_8822E(txdesc) GET_TX_DESC_P_AID(txdesc)
+
+/*TXDESC_WORD3*/
+
+#define SET_TX_DESC_AMPDU_MAX_TIME_8822E(txdesc, value)                        \
+	SET_TX_DESC_AMPDU_MAX_TIME(txdesc, value)
+#define GET_TX_DESC_AMPDU_MAX_TIME_8822E(txdesc)                               \
+	GET_TX_DESC_AMPDU_MAX_TIME(txdesc)
+#define SET_TX_DESC_NDPA_8822E(txdesc, value) SET_TX_DESC_NDPA(txdesc, value)
+#define GET_TX_DESC_NDPA_8822E(txdesc) GET_TX_DESC_NDPA(txdesc)
+#define SET_TX_DESC_MAX_AGG_NUM_8822E(txdesc, value)                           \
+	SET_TX_DESC_MAX_AGG_NUM(txdesc, value)
+#define GET_TX_DESC_MAX_AGG_NUM_8822E(txdesc) GET_TX_DESC_MAX_AGG_NUM(txdesc)
+#define SET_TX_DESC_USE_MAX_TIME_EN_8822E(txdesc, value)                       \
+	SET_TX_DESC_USE_MAX_TIME_EN(txdesc, value)
+#define GET_TX_DESC_USE_MAX_TIME_EN_8822E(txdesc)                              \
+	GET_TX_DESC_USE_MAX_TIME_EN(txdesc)
+#define SET_TX_DESC_NAVUSEHDR_8822E(txdesc, value)                             \
+	SET_TX_DESC_NAVUSEHDR(txdesc, value)
+#define GET_TX_DESC_NAVUSEHDR_8822E(txdesc) GET_TX_DESC_NAVUSEHDR(txdesc)
+#define SET_TX_DESC_CHK_EN_8822E(txdesc, value)                                \
+	SET_TX_DESC_CHK_EN(txdesc, value)
+#define GET_TX_DESC_CHK_EN_8822E(txdesc) GET_TX_DESC_CHK_EN(txdesc)
+#define SET_TX_DESC_HW_RTS_EN_8822E(txdesc, value)                             \
+	SET_TX_DESC_HW_RTS_EN(txdesc, value)
+#define GET_TX_DESC_HW_RTS_EN_8822E(txdesc) GET_TX_DESC_HW_RTS_EN(txdesc)
+#define SET_TX_DESC_RTSEN_8822E(txdesc, value) SET_TX_DESC_RTSEN(txdesc, value)
+#define GET_TX_DESC_RTSEN_8822E(txdesc) GET_TX_DESC_RTSEN(txdesc)
+#define SET_TX_DESC_CTS2SELF_8822E(txdesc, value)                              \
+	SET_TX_DESC_CTS2SELF(txdesc, value)
+#define GET_TX_DESC_CTS2SELF_8822E(txdesc) GET_TX_DESC_CTS2SELF(txdesc)
+#define SET_TX_DESC_DISDATAFB_8822E(txdesc, value)                             \
+	SET_TX_DESC_DISDATAFB(txdesc, value)
+#define GET_TX_DESC_DISDATAFB_8822E(txdesc) GET_TX_DESC_DISDATAFB(txdesc)
+#define SET_TX_DESC_DISRTSFB_8822E(txdesc, value)                              \
+	SET_TX_DESC_DISRTSFB(txdesc, value)
+#define GET_TX_DESC_DISRTSFB_8822E(txdesc) GET_TX_DESC_DISRTSFB(txdesc)
+#define SET_TX_DESC_USE_RATE_8822E(txdesc, value)                              \
+	SET_TX_DESC_USE_RATE(txdesc, value)
+#define GET_TX_DESC_USE_RATE_8822E(txdesc) GET_TX_DESC_USE_RATE(txdesc)
+#define SET_TX_DESC_HW_SSN_SEL_8822E(txdesc, value)                            \
+	SET_TX_DESC_HW_SSN_SEL(txdesc, value)
+#define GET_TX_DESC_HW_SSN_SEL_8822E(txdesc) GET_TX_DESC_HW_SSN_SEL(txdesc)
+#define SET_TX_DESC_WHEADER_LEN_8822E(txdesc, value)                           \
+	SET_TX_DESC_WHEADER_LEN(txdesc, value)
+#define GET_TX_DESC_WHEADER_LEN_8822E(txdesc) GET_TX_DESC_WHEADER_LEN(txdesc)
+
+/*TXDESC_WORD4*/
+
+#define SET_TX_DESC_PCTS_MASK_IDX_8822E(txdesc, value)                         \
+	SET_TX_DESC_PCTS_MASK_IDX(txdesc, value)
+#define GET_TX_DESC_PCTS_MASK_IDX_8822E(txdesc)                                \
+	GET_TX_DESC_PCTS_MASK_IDX(txdesc)
+#define SET_TX_DESC_PCTS_EN_8822E(txdesc, value)                               \
+	SET_TX_DESC_PCTS_EN(txdesc, value)
+#define GET_TX_DESC_PCTS_EN_8822E(txdesc) GET_TX_DESC_PCTS_EN(txdesc)
+#define SET_TX_DESC_RTSRATE_8822E(txdesc, value)                               \
+	SET_TX_DESC_RTSRATE(txdesc, value)
+#define GET_TX_DESC_RTSRATE_8822E(txdesc) GET_TX_DESC_RTSRATE(txdesc)
+#define SET_TX_DESC_RTS_DATA_RTY_LMT_8822E(txdesc, value)                      \
+	SET_TX_DESC_RTS_DATA_RTY_LMT(txdesc, value)
+#define GET_TX_DESC_RTS_DATA_RTY_LMT_8822E(txdesc)                             \
+	GET_TX_DESC_RTS_DATA_RTY_LMT(txdesc)
+#define SET_TX_DESC_RTY_LMT_EN_8822E(txdesc, value)                            \
+	SET_TX_DESC_RTY_LMT_EN(txdesc, value)
+#define GET_TX_DESC_RTY_LMT_EN_8822E(txdesc) GET_TX_DESC_RTY_LMT_EN(txdesc)
+#define SET_TX_DESC_RTS_RTY_LOWEST_RATE_8822E(txdesc, value)                   \
+	SET_TX_DESC_RTS_RTY_LOWEST_RATE(txdesc, value)
+#define GET_TX_DESC_RTS_RTY_LOWEST_RATE_8822E(txdesc)                          \
+	GET_TX_DESC_RTS_RTY_LOWEST_RATE(txdesc)
+#define SET_TX_DESC_DATA_RTY_LOWEST_RATE_8822E(txdesc, value)                  \
+	SET_TX_DESC_DATA_RTY_LOWEST_RATE(txdesc, value)
+#define GET_TX_DESC_DATA_RTY_LOWEST_RATE_8822E(txdesc)                         \
+	GET_TX_DESC_DATA_RTY_LOWEST_RATE(txdesc)
+#define SET_TX_DESC_TRY_RATE_8822E(txdesc, value)                              \
+	SET_TX_DESC_TRY_RATE(txdesc, value)
+#define GET_TX_DESC_TRY_RATE_8822E(txdesc) GET_TX_DESC_TRY_RATE(txdesc)
+#define SET_TX_DESC_DATARATE_8822E(txdesc, value)                              \
+	SET_TX_DESC_DATARATE(txdesc, value)
+#define GET_TX_DESC_DATARATE_8822E(txdesc) GET_TX_DESC_DATARATE(txdesc)
+
+/*TXDESC_WORD5*/
+
+#define SET_TX_DESC_POLLUTED_8822E(txdesc, value)                              \
+	SET_TX_DESC_POLLUTED(txdesc, value)
+#define GET_TX_DESC_POLLUTED_8822E(txdesc) GET_TX_DESC_POLLUTED(txdesc)
+#define SET_TX_DESC_ANTSEL_EN_8822E(txdesc, value)                             \
+	SET_TX_DESC_ANTSEL_EN_V1(txdesc, value)
+#define GET_TX_DESC_ANTSEL_EN_8822E(txdesc) GET_TX_DESC_ANTSEL_EN_V1(txdesc)
+#define SET_TX_DESC_TXPWR_OFSET_TYPE_8822E(txdesc, value)                      \
+	SET_TX_DESC_TXPWR_OFSET_TYPE(txdesc, value)
+#define GET_TX_DESC_TXPWR_OFSET_TYPE_8822E(txdesc)                             \
+	GET_TX_DESC_TXPWR_OFSET_TYPE(txdesc)
+#define SET_TX_DESC_TX_ANT_8822E(txdesc, value)                                \
+	SET_TX_DESC_TX_ANT(txdesc, value)
+#define GET_TX_DESC_TX_ANT_8822E(txdesc) GET_TX_DESC_TX_ANT(txdesc)
+#define SET_TX_DESC_PORT_ID_8822E(txdesc, value)                               \
+	SET_TX_DESC_PORT_ID(txdesc, value)
+#define GET_TX_DESC_PORT_ID_8822E(txdesc) GET_TX_DESC_PORT_ID(txdesc)
+#define SET_TX_DESC_MULTIPLE_PORT_8822E(txdesc, value)                         \
+	SET_TX_DESC_MULTIPLE_PORT(txdesc, value)
+#define GET_TX_DESC_MULTIPLE_PORT_8822E(txdesc)                                \
+	GET_TX_DESC_MULTIPLE_PORT(txdesc)
+#define SET_TX_DESC_SIGNALING_TAPKT_EN_8822E(txdesc, value)                    \
+	SET_TX_DESC_SIGNALING_TAPKT_EN(txdesc, value)
+#define GET_TX_DESC_SIGNALING_TAPKT_EN_8822E(txdesc)                           \
+	GET_TX_DESC_SIGNALING_TAPKT_EN(txdesc)
+#define SET_TX_DESC_SIGNALING_TA_PKT_SC_8822E(txdesc, value)                   \
+	SET_TX_DESC_SIGNALING_TA_PKT_SC(txdesc, value)
+#define GET_TX_DESC_SIGNALING_TA_PKT_SC_8822E(txdesc)                          \
+	GET_TX_DESC_SIGNALING_TA_PKT_SC(txdesc)
+#define SET_TX_DESC_RTS_SHORT_8822E(txdesc, value)                             \
+	SET_TX_DESC_RTS_SHORT(txdesc, value)
+#define GET_TX_DESC_RTS_SHORT_8822E(txdesc) GET_TX_DESC_RTS_SHORT(txdesc)
+#define SET_TX_DESC_VCS_STBC_8822E(txdesc, value)                              \
+	SET_TX_DESC_VCS_STBC(txdesc, value)
+#define GET_TX_DESC_VCS_STBC_8822E(txdesc) GET_TX_DESC_VCS_STBC(txdesc)
+#define SET_TX_DESC_DATA_STBC_8822E(txdesc, value)                             \
+	SET_TX_DESC_DATA_STBC(txdesc, value)
+#define GET_TX_DESC_DATA_STBC_8822E(txdesc) GET_TX_DESC_DATA_STBC(txdesc)
+#define SET_TX_DESC_DATA_LDPC_8822E(txdesc, value)                             \
+	SET_TX_DESC_DATA_LDPC(txdesc, value)
+#define GET_TX_DESC_DATA_LDPC_8822E(txdesc) GET_TX_DESC_DATA_LDPC(txdesc)
+#define SET_TX_DESC_DATA_BW_8822E(txdesc, value)                               \
+	SET_TX_DESC_DATA_BW(txdesc, value)
+#define GET_TX_DESC_DATA_BW_8822E(txdesc) GET_TX_DESC_DATA_BW(txdesc)
+#define SET_TX_DESC_DATA_SHORT_8822E(txdesc, value)                            \
+	SET_TX_DESC_DATA_SHORT(txdesc, value)
+#define GET_TX_DESC_DATA_SHORT_8822E(txdesc) GET_TX_DESC_DATA_SHORT(txdesc)
+#define SET_TX_DESC_DATA_SC_8822E(txdesc, value)                               \
+	SET_TX_DESC_DATA_SC(txdesc, value)
+#define GET_TX_DESC_DATA_SC_8822E(txdesc) GET_TX_DESC_DATA_SC(txdesc)
+
+/*TXDESC_WORD6*/
+
+#define SET_TX_DESC_ANTSEL_D_8822E(txdesc, value)                              \
+	SET_TX_DESC_ANTSEL_D(txdesc, value)
+#define GET_TX_DESC_ANTSEL_D_8822E(txdesc) GET_TX_DESC_ANTSEL_D(txdesc)
+#define SET_TX_DESC_ANT_MAPD_8822E(txdesc, value)                              \
+	SET_TX_DESC_ANT_MAPD(txdesc, value)
+#define GET_TX_DESC_ANT_MAPD_8822E(txdesc) GET_TX_DESC_ANT_MAPD(txdesc)
+#define SET_TX_DESC_ANT_MAPC_8822E(txdesc, value)                              \
+	SET_TX_DESC_ANT_MAPC(txdesc, value)
+#define GET_TX_DESC_ANT_MAPC_8822E(txdesc) GET_TX_DESC_ANT_MAPC(txdesc)
+#define SET_TX_DESC_ANT_MAPB_8822E(txdesc, value)                              \
+	SET_TX_DESC_ANT_MAPB(txdesc, value)
+#define GET_TX_DESC_ANT_MAPB_8822E(txdesc) GET_TX_DESC_ANT_MAPB(txdesc)
+#define SET_TX_DESC_ANT_MAPA_8822E(txdesc, value)                              \
+	SET_TX_DESC_ANT_MAPA(txdesc, value)
+#define GET_TX_DESC_ANT_MAPA_8822E(txdesc) GET_TX_DESC_ANT_MAPA(txdesc)
+#define SET_TX_DESC_ANTSEL_C_8822E(txdesc, value)                              \
+	SET_TX_DESC_ANTSEL_C(txdesc, value)
+#define GET_TX_DESC_ANTSEL_C_8822E(txdesc) GET_TX_DESC_ANTSEL_C(txdesc)
+#define SET_TX_DESC_ANTSEL_B_8822E(txdesc, value)                              \
+	SET_TX_DESC_ANTSEL_B(txdesc, value)
+#define GET_TX_DESC_ANTSEL_B_8822E(txdesc) GET_TX_DESC_ANTSEL_B(txdesc)
+#define SET_TX_DESC_ANTSEL_A_8822E(txdesc, value)                              \
+	SET_TX_DESC_ANTSEL_A(txdesc, value)
+#define GET_TX_DESC_ANTSEL_A_8822E(txdesc) GET_TX_DESC_ANTSEL_A(txdesc)
+#define SET_TX_DESC_MBSSID_8822E(txdesc, value)                                \
+	SET_TX_DESC_MBSSID(txdesc, value)
+#define GET_TX_DESC_MBSSID_8822E(txdesc) GET_TX_DESC_MBSSID(txdesc)
+#define SET_TX_DESC_SW_DEFINE_8822E(txdesc, value)                             \
+	SET_TX_DESC_SW_DEFINE(txdesc, value)
+#define GET_TX_DESC_SW_DEFINE_8822E(txdesc) GET_TX_DESC_SW_DEFINE(txdesc)
+
+/*TXDESC_WORD7*/
+
+#define SET_TX_DESC_DMA_TXAGG_NUM_8822E(txdesc, value)                         \
+	SET_TX_DESC_DMA_TXAGG_NUM(txdesc, value)
+#define GET_TX_DESC_DMA_TXAGG_NUM_8822E(txdesc)                                \
+	GET_TX_DESC_DMA_TXAGG_NUM(txdesc)
+#define SET_TX_DESC_FINAL_DATA_RATE_8822E(txdesc, value)                       \
+	SET_TX_DESC_FINAL_DATA_RATE(txdesc, value)
+#define GET_TX_DESC_FINAL_DATA_RATE_8822E(txdesc)                              \
+	GET_TX_DESC_FINAL_DATA_RATE(txdesc)
+#define SET_TX_DESC_NTX_MAP_8822E(txdesc, value)                               \
+	SET_TX_DESC_NTX_MAP(txdesc, value)
+#define GET_TX_DESC_NTX_MAP_8822E(txdesc) GET_TX_DESC_NTX_MAP(txdesc)
+#define SET_TX_DESC_TX_BUFF_SIZE_8822E(txdesc, value)                          \
+	SET_TX_DESC_TX_BUFF_SIZE(txdesc, value)
+#define GET_TX_DESC_TX_BUFF_SIZE_8822E(txdesc) GET_TX_DESC_TX_BUFF_SIZE(txdesc)
+#define SET_TX_DESC_TXDESC_CHECKSUM_8822E(txdesc, value)                       \
+	SET_TX_DESC_TXDESC_CHECKSUM(txdesc, value)
+#define GET_TX_DESC_TXDESC_CHECKSUM_8822E(txdesc)                              \
+	GET_TX_DESC_TXDESC_CHECKSUM(txdesc)
+#define SET_TX_DESC_TIMESTAMP_8822E(txdesc, value)                             \
+	SET_TX_DESC_TIMESTAMP(txdesc, value)
+#define GET_TX_DESC_TIMESTAMP_8822E(txdesc) GET_TX_DESC_TIMESTAMP(txdesc)
+
+/*TXDESC_WORD8*/
+
+#define SET_TX_DESC_TXWIFI_CP_8822E(txdesc, value)                             \
+	SET_TX_DESC_TXWIFI_CP(txdesc, value)
+#define GET_TX_DESC_TXWIFI_CP_8822E(txdesc) GET_TX_DESC_TXWIFI_CP(txdesc)
+#define SET_TX_DESC_MAC_CP_8822E(txdesc, value)                                \
+	SET_TX_DESC_MAC_CP(txdesc, value)
+#define GET_TX_DESC_MAC_CP_8822E(txdesc) GET_TX_DESC_MAC_CP(txdesc)
+#define SET_TX_DESC_STW_PKTRE_DIS_8822E(txdesc, value)                         \
+	SET_TX_DESC_STW_PKTRE_DIS(txdesc, value)
+#define GET_TX_DESC_STW_PKTRE_DIS_8822E(txdesc)                                \
+	GET_TX_DESC_STW_PKTRE_DIS(txdesc)
+#define SET_TX_DESC_STW_RB_DIS_8822E(txdesc, value)                            \
+	SET_TX_DESC_STW_RB_DIS(txdesc, value)
+#define GET_TX_DESC_STW_RB_DIS_8822E(txdesc) GET_TX_DESC_STW_RB_DIS(txdesc)
+#define SET_TX_DESC_STW_RATE_DIS_8822E(txdesc, value)                          \
+	SET_TX_DESC_STW_RATE_DIS(txdesc, value)
+#define GET_TX_DESC_STW_RATE_DIS_8822E(txdesc) GET_TX_DESC_STW_RATE_DIS(txdesc)
+#define SET_TX_DESC_STW_ANT_DIS_8822E(txdesc, value)                           \
+	SET_TX_DESC_STW_ANT_DIS(txdesc, value)
+#define GET_TX_DESC_STW_ANT_DIS_8822E(txdesc) GET_TX_DESC_STW_ANT_DIS(txdesc)
+#define SET_TX_DESC_STW_EN_8822E(txdesc, value)                                \
+	SET_TX_DESC_STW_EN(txdesc, value)
+#define GET_TX_DESC_STW_EN_8822E(txdesc) GET_TX_DESC_STW_EN(txdesc)
+#define SET_TX_DESC_SMH_EN_8822E(txdesc, value)                                \
+	SET_TX_DESC_SMH_EN(txdesc, value)
+#define GET_TX_DESC_SMH_EN_8822E(txdesc) GET_TX_DESC_SMH_EN(txdesc)
+#define SET_TX_DESC_TAILPAGE_L_8822E(txdesc, value)                            \
+	SET_TX_DESC_TAILPAGE_L(txdesc, value)
+#define GET_TX_DESC_TAILPAGE_L_8822E(txdesc) GET_TX_DESC_TAILPAGE_L(txdesc)
+#define SET_TX_DESC_SDIO_DMASEQ_8822E(txdesc, value)                           \
+	SET_TX_DESC_SDIO_DMASEQ(txdesc, value)
+#define GET_TX_DESC_SDIO_DMASEQ_8822E(txdesc) GET_TX_DESC_SDIO_DMASEQ(txdesc)
+#define SET_TX_DESC_NEXTHEADPAGE_L_8822E(txdesc, value)                        \
+	SET_TX_DESC_NEXTHEADPAGE_L(txdesc, value)
+#define GET_TX_DESC_NEXTHEADPAGE_L_8822E(txdesc)                               \
+	GET_TX_DESC_NEXTHEADPAGE_L(txdesc)
+#define SET_TX_DESC_EN_HWSEQ_8822E(txdesc, value)                              \
+	SET_TX_DESC_EN_HWSEQ(txdesc, value)
+#define GET_TX_DESC_EN_HWSEQ_8822E(txdesc) GET_TX_DESC_EN_HWSEQ(txdesc)
+#define SET_TX_DESC_EN_HWEXSEQ_8822E(txdesc, value)                            \
+	SET_TX_DESC_EN_HWEXSEQ(txdesc, value)
+#define GET_TX_DESC_EN_HWEXSEQ_8822E(txdesc) GET_TX_DESC_EN_HWEXSEQ(txdesc)
+#define SET_TX_DESC_DATA_RC_8822E(txdesc, value)                               \
+	SET_TX_DESC_DATA_RC(txdesc, value)
+#define GET_TX_DESC_DATA_RC_8822E(txdesc) GET_TX_DESC_DATA_RC(txdesc)
+#define SET_TX_DESC_BAR_RTY_TH_8822E(txdesc, value)                            \
+	SET_TX_DESC_BAR_RTY_TH(txdesc, value)
+#define GET_TX_DESC_BAR_RTY_TH_8822E(txdesc) GET_TX_DESC_BAR_RTY_TH(txdesc)
+#define SET_TX_DESC_RTS_RC_8822E(txdesc, value)                                \
+	SET_TX_DESC_RTS_RC(txdesc, value)
+#define GET_TX_DESC_RTS_RC_8822E(txdesc) GET_TX_DESC_RTS_RC(txdesc)
+
+/*TXDESC_WORD9*/
+
+#define SET_TX_DESC_TAILPAGE_H_8822E(txdesc, value)                            \
+	SET_TX_DESC_TAILPAGE_H(txdesc, value)
+#define GET_TX_DESC_TAILPAGE_H_8822E(txdesc) GET_TX_DESC_TAILPAGE_H(txdesc)
+#define SET_TX_DESC_NEXTHEADPAGE_H_8822E(txdesc, value)                        \
+	SET_TX_DESC_NEXTHEADPAGE_H(txdesc, value)
+#define GET_TX_DESC_NEXTHEADPAGE_H_8822E(txdesc)                               \
+	GET_TX_DESC_NEXTHEADPAGE_H(txdesc)
+#define SET_TX_DESC_SW_SEQ_8822E(txdesc, value)                                \
+	SET_TX_DESC_SW_SEQ(txdesc, value)
+#define GET_TX_DESC_SW_SEQ_8822E(txdesc) GET_TX_DESC_SW_SEQ(txdesc)
+#define SET_TX_DESC_TXBF_PATH_8822E(txdesc, value)                             \
+	SET_TX_DESC_TXBF_PATH(txdesc, value)
+#define GET_TX_DESC_TXBF_PATH_8822E(txdesc) GET_TX_DESC_TXBF_PATH(txdesc)
+#define SET_TX_DESC_PADDING_LEN_8822E(txdesc, value)                           \
+	SET_TX_DESC_PADDING_LEN(txdesc, value)
+#define GET_TX_DESC_PADDING_LEN_8822E(txdesc) GET_TX_DESC_PADDING_LEN(txdesc)
+#define SET_TX_DESC_GROUP_BIT_IE_OFFSET_8822E(txdesc, value)                   \
+	SET_TX_DESC_GROUP_BIT_IE_OFFSET(txdesc, value)
+#define GET_TX_DESC_GROUP_BIT_IE_OFFSET_8822E(txdesc)                          \
+	GET_TX_DESC_GROUP_BIT_IE_OFFSET(txdesc)
+
+/*WORD10*/
+
+#define SET_TX_DESC_MU_DATARATE_8822E(txdesc, value)                           \
+	SET_TX_DESC_MU_DATARATE(txdesc, value)
+#define GET_TX_DESC_MU_DATARATE_8822E(txdesc) GET_TX_DESC_MU_DATARATE(txdesc)
+#define SET_TX_DESC_MU_RC_8822E(txdesc, value) SET_TX_DESC_MU_RC(txdesc, value)
+#define GET_TX_DESC_MU_RC_8822E(txdesc) GET_TX_DESC_MU_RC(txdesc)
+#define SET_TX_DESC_SND_PKT_SEL_8822E(txdesc, value)                           \
+	SET_TX_DESC_SND_PKT_SEL(txdesc, value)
+#define GET_TX_DESC_SND_PKT_SEL_8822E(txdesc) GET_TX_DESC_SND_PKT_SEL(txdesc)
+
+#endif
+
 #endif

@@ -1729,7 +1729,7 @@ static int rtw_cfgvendor_set_country(struct wiphy *wiphy,
 
 	RTW_INFO("%s country_code:\"%c%c\" \n", __func__, country_code[0], country_code[1]);
 
-	rtw_set_country(padapter, country_code);
+	rtw_set_country(padapter, country_code, RTW_REGD_SET_BY_USER);
 
 	return err;
 }

@@ -61,6 +61,9 @@ void phydm_rssi_monitor_h2c(void *dm_void, u8 macid)
 	stbc_en = (sta->stbc_en) ? 1 : 0;
 	ldpc_en = (sta->ldpc_en) ? 1 : 0;
 
+	PHYDM_DBG(dm, DBG_RSSI_MNTR, "is_rx/tx=%d/%d, stbc_en=%d, ldpc_en=%d\n",
+		  is_rx, is_tx, stbc_en, ldpc_en);
+
 	#ifdef CONFIG_BEAMFORMING
 	bf = &sta->bf_info;
 

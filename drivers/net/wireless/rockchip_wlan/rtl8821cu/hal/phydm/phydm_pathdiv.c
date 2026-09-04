@@ -687,6 +687,7 @@ void phydm_tx_path_by_mac_or_reg(void *dm_void, enum phydm_path_ctrl ctrl)
 	case ODM_RTL8822C:
 	case ODM_RTL8812F:
 	case ODM_RTL8197G:
+	case ODM_RTL8822E:
 		if (ctrl == TX_PATH_BY_REG) {
 			odm_set_bb_reg(dm, R_0x1e24, BIT(16), 0); /*OFDM*/
 			odm_set_bb_reg(dm, R_0x1a84, 0xe0, 0); /*CCK*/
@@ -811,6 +812,13 @@ void phydm_set_tx_path_by_bb_reg(void *dm_void, enum bb_path tx_path_sel_1ss)
 		phydm_update_tx_path_8812a(dm, tx_path_sel_1ss);
 		break;
 	#endif
+
+	#if RTL8822E_SUPPORT
+	case ODM_RTL8822E:
+		phydm_config_tx_path_8822e(dm, dm->tx_2ss_status,
+					   tx_path_sel_1ss, tx_path_sel_cck);
+		break;
+	#endif
 	default:
 		break;
 	}
@@ -921,6 +929,7 @@ void phydm_tx_path_diversity(void *dm_void)
 	case ODM_RTL8192F:
 	case ODM_RTL8812F:
 	case ODM_RTL8197G:
+	case ODM_RTL8822E:
 		if (dm->rx_ant_status != BB_PATH_AB) {
 			PHYDM_DBG(dm, DBG_PATH_DIV,
 				  "[Return] tx_Path_en=%d, rx_Path_en=%d\n",
@@ -984,6 +993,7 @@ void phydm_tx_path_diversity_init(void *dm_void)
 	case ODM_RTL8192F:
 	case ODM_RTL8812F:
 	case ODM_RTL8197G:
+	case ODM_RTL8822E:
 	phydm_tx_path_diversity_init_v2(dm); /*@ After 8822B*/
 	break;
 	#endif

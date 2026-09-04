@@ -242,9 +242,14 @@ typedef struct _WLAN_BSSID_EX {
 	WLAN_PHY_INFO	PhyInfo;
 	u32  IELength;
 	u8  IEs[MAX_IE_SZ];	/* (timestamp, beacon interval, and capability information) */
+#ifdef	CONFIG_LAYER2_ROAMING
+	u64 tsf;
+#endif
 }
 __attribute__((packed)) WLAN_BSSID_EX, *PWLAN_BSSID_EX;
 
+#define BSS_EX_OP_CH(bss_ex) ((bss_ex)->Configuration.DSConfig)
+#define BSS_EX_OP_BAND(bss_ex) (rtw_is_2g_ch(BSS_EX_OP_CH(bss_ex)) ? BAND_ON_24G : BAND_ON_5G)
 #define BSS_EX_IES(bss_ex) ((bss_ex)->IEs)
 #define BSS_EX_IES_LEN(bss_ex) ((bss_ex)->IELength)
 #define BSS_EX_FIXED_IE_OFFSET(bss_ex) ((bss_ex)->Reserved[0] == BSS_TYPE_PROB_REQ ? 0 : 12)
@@ -268,27 +273,11 @@ struct beacon_keys {
 	int encryp_protocol;
 	int pairwise_cipher;
 	int group_cipher;
+	int gmcs;
 	u32 akm;
 };
 
-struct	wlan_network {
-	_list	list;
-	int	network_type;	/* refer to ieee80211.h for WIRELESS_11A/B/G */
-	int	fixed;			/* set to fixed when not to be removed as site-surveying */
-	systime last_scanned; /* timestamp for the network */
-	systime last_non_hidden_ssid_ap;
-#ifdef CONFIG_RTW_MESH
-#if CONFIG_RTW_MESH_ACNODE_PREVENT
-	systime acnode_stime;
-	systime acnode_notify_etime;
-#endif
-#endif
-	int	aid;			/* will only be valid when a BSS is joinned. */
-	int	join_res;
-	struct beacon_keys bcn_keys;
-	bool bcn_keys_valid;
-	WLAN_BSSID_EX	network; /* must be the last item */
-};
+struct wlan_network;
 
 enum VRTL_CARRIER_SENSE {
 	DISABLE_VCS,

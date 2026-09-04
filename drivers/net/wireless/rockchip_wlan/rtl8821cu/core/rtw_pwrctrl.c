@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2021 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -40,7 +40,8 @@ int rtw_fw_ps_state(PADAPTER padapter)
 			 , rtw_is_drv_stopped(padapter) ? "True" : "False");
 		goto exit_fw_ps_state;
 	}
-	#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C)
+	#if defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C) \
+		|| defined(CONFIG_RTL8822E)
 	rtw_hal_get_hwreg(padapter, HW_VAR_FW_PS_STATE, (u8 *)&fw_ps_state);
 	if ((fw_ps_state & BIT_LPS_STATUS) == 0)
 		ret = _SUCCESS;
@@ -89,13 +90,9 @@ void _ips_enter(_adapter *padapter)
 
 	if (rf_off == pwrpriv->change_rfpwrstate) {
 		pwrpriv->bpower_saving = _TRUE;
-		/* nrm */
-		// RTW_PRINT("nolinked power save enter\n");
+		RTW_PRINT("nolinked power save enter\n");
 
-		if (pwrpriv->ips_mode == IPS_LEVEL_2)
-			pwrpriv->bkeepfwalive = _TRUE;
-
-#ifdef CONFIG_RTW_CFGVENDOR_LLSTATS
+#ifdef CONFIG_RTW_CFGVENDOR_LLSTATS		
 		pwrpriv->pwr_saving_start_time = rtw_get_current_time();
 #endif /* CONFIG_RTW_CFGVENDOR_LLSTATS */
 
@@ -138,13 +135,12 @@ int _ips_leave(_adapter *padapter)
 		result = rtw_ips_pwr_up(padapter);
 		if (result == _SUCCESS)
 			pwrpriv->rf_pwrstate = rf_on;
-
-#ifdef CONFIG_RTW_CFGVENDOR_LLSTATS
+		
+#ifdef CONFIG_RTW_CFGVENDOR_LLSTATS	
 		pwrpriv->pwr_saving_time += rtw_get_passing_time_ms(pwrpriv->pwr_saving_start_time);
 #endif /* CONFIG_RTW_CFGVENDOR_LLSTATS */
 
-		/* nrm */
-		// RTW_PRINT("nolinked power save leave\n");
+		RTW_PRINT("nolinked power save leave\n");
 
 		RTW_INFO("==> ips_leave.....LED(0x%08x)...\n", rtw_read32(padapter, 0x4c));
 		pwrpriv->bips_processing = _FALSE;
@@ -206,9 +202,6 @@ bool rtw_pwr_unassociated_idle(_adapter *adapter)
 	struct dvobj_priv *dvobj = adapter_to_dvobj(adapter);
 	struct xmit_priv *pxmit_priv = &adapter->xmitpriv;
 	struct mlme_priv *pmlmepriv;
-#ifdef CONFIG_P2P
-	struct wifidirect_info	*pwdinfo;
-#endif
 
 	bool ret = _FALSE;
 
@@ -226,25 +219,19 @@ bool rtw_pwr_unassociated_idle(_adapter *adapter)
 		iface = dvobj->padapters[i];
 		if ((iface) && rtw_is_adapter_up(iface)) {
 			pmlmepriv = &(iface->mlmepriv);
-#ifdef CONFIG_P2P
-			pwdinfo = &(iface->wdinfo);
-#endif
+
 			if (check_fwstate(pmlmepriv, WIFI_ASOC_STATE | WIFI_UNDER_SURVEY)
 				|| check_fwstate(pmlmepriv, WIFI_UNDER_LINKING | WIFI_UNDER_WPS)
 				|| MLME_IS_AP(iface)
 				|| MLME_IS_MESH(iface)
-/* nrm */
-#ifdef CONFIG_WIFI_MONITOR
-				|| MLME_IS_MONITOR(iface)
-#endif
 				|| check_fwstate(pmlmepriv, WIFI_ADHOC_MASTER_STATE | WIFI_ADHOC_STATE)
 				#if defined(CONFIG_IOCTL_CFG80211)
 				|| rtw_cfg80211_get_is_roch(iface) == _TRUE
 				|| (rtw_cfg80211_is_ro_ch_once(adapter)
 					&& rtw_cfg80211_get_last_ro_ch_passing_ms(adapter) < 3000)
 				#elif defined(CONFIG_P2P)
-				|| rtw_p2p_chk_state(pwdinfo, P2P_STATE_IDLE)
-				|| rtw_p2p_chk_state(pwdinfo, P2P_STATE_LISTEN)
+				|| rtw_p2p_chk_state(&iface->wdinfo, P2P_STATE_IDLE)
+				|| rtw_p2p_chk_state(&iface->wdinfo, P2P_STATE_LISTEN)
 				#endif
 			)
 				goto exit;
@@ -312,7 +299,7 @@ void rtw_ps_processor(_adapter *padapter)
 
 	/* RTW_INFO("==> fw report state(0x%x)\n",rtw_read8(padapter,0x1ca));	 */
 	if (pwrpriv->bHWPwrPindetect) {
-
+		
 		rfpwrstate = RfOnOffDetect(padapter);
 		RTW_INFO("@@@@- #2  %s==> rfstate:%s\n", __FUNCTION__, (rfpwrstate == rf_on) ? "rf_on" : "rf_off");
 
@@ -327,7 +314,7 @@ void rtw_ps_processor(_adapter *padapter)
 			}
 			RTW_INFO("current rf_pwrstate(%s)\n", (pwrpriv->rf_pwrstate == rf_off) ? "rf_off" : "rf_on");
 		}
-
+		
 		pwrpriv->pwr_state_check_cnts++;
 	}
 #endif /* SUPPORT_HW_RFOFF_DETECTED */
@@ -340,7 +327,7 @@ void rtw_ps_processor(_adapter *padapter)
 
 	if ((pwrpriv->rf_pwrstate == rf_on) && ((pwrpriv->pwr_state_check_cnts % 4) == 0)) {
 		RTW_INFO("==>%s .fw_state(%x)\n", __FUNCTION__, get_fwstate(pmlmepriv));
-		pwrpriv->change_rfpwrstate = rf_off;
+		pwrpriv->change_rfpwrstate = rf_off;	
 
 #ifdef CONFIG_IPS
 			ips_enter(padapter);
@@ -358,7 +345,7 @@ exit:
 void pwr_state_check_handler(void *ctx)
 {
 	_adapter *padapter = (_adapter *)ctx;
-	rtw_ps_cmd(padapter);
+	rtw_ips_ctrl_wk_cmd(padapter, IPS_CTRL_ENTER, -1, 0);
 }
 
 #ifdef CONFIG_LPS
@@ -669,10 +656,7 @@ u8 PS_RDY_CHECK(_adapter *padapter)
 		|| check_fwstate(pmlmepriv, WIFI_UNDER_LINKING | WIFI_UNDER_WPS)
 		|| MLME_IS_AP(padapter)
 		|| MLME_IS_MESH(padapter)
-/* nrm */
-#ifdef CONFIG_WIFI_MONITOR
 		|| MLME_IS_MONITOR(padapter)
-#endif
 		|| check_fwstate(pmlmepriv, WIFI_ADHOC_MASTER_STATE | WIFI_ADHOC_STATE)
 		#if defined(CONFIG_IOCTL_CFG80211)
 		|| rtw_cfg80211_get_is_roch(padapter) == _TRUE
@@ -701,19 +685,130 @@ u8 PS_RDY_CHECK(_adapter *padapter)
 	return _TRUE;
 }
 
+#ifdef CONFIG_LPS_LCLK
+void rtw_set_lps_lclk(_adapter *padapter, u8 enable)
+{
+	struct pwrctrl_priv *pwrctl = adapter_to_pwrctl(padapter);
+	struct hal_spec_t *hal_spec = GET_HAL_SPEC(padapter);
+	u8 val8 = 0;
+	u8 polling_cnt = 0;
+	u8 cpwm_orig = 0;
+	u8 cpwm_now = 0;
+	u8 result = _FAIL;
+	systime start_time;
+	u8 is_mac_off_access = _TRUE; /* check the off area of mac can be access */
+
+	if (enable) {
+		/* set rpwm to enter 32k */
+		rtw_hal_get_hwreg(padapter, HW_VAR_RPWM_TOG, &val8);
+		RTW_INFO("%s: read rpwm=%02x\n", __func__, val8);
+		val8 += PS_TOGGLE;
+		val8 |= PS_LCLK;
+		rtw_hal_set_hwreg(padapter, HW_VAR_SET_RPWM, (u8 *)(&val8));
+		RTW_INFO("%s: write rpwm=%02x\n", __func__, val8);
+		pwrctl->tog = (val8 + PS_TOGGLE) & PS_TOGGLE;
+
+		/* When using PNO, the FW may scan first, so polling register 100
+		 * may not see 0xEA at this point.
+		 */
+		if (!pwrctl->wowlan_pno_enable) {
+#ifdef CONFIG_USB_HCI
+			if (hal_spec->mac_off_access_limit_in_low_clock == _FALSE)
+				is_mac_off_access = _TRUE;
+			else
+				is_mac_off_access = _FALSE;
+#endif /* CONFIG_USB_HCI */
+
+			if (is_mac_off_access == _TRUE) {
+				do {
+					val8 = rtw_read8(padapter, REG_CR);
+					polling_cnt++;
+					RTW_DBG("%s  polling 0x100=0x%x, cnt=%d\n",
+						__func__, val8, polling_cnt);
+					RTW_DBG("%s 0x08:%02x, 0x03:%02x\n",
+						__func__,
+						rtw_read8(padapter, 0x08),
+						rtw_read8(padapter, 0x03));
+					rtw_mdelay_os(10);
+				} while (polling_cnt < 20 && (val8 != 0xEA));
+			} else {
+				do {
+					/* polling mac register 0x8[4]=1 to check that mac */
+					/* switches clock to 32K. It was an alternative method */
+					/* by RS suggested. */
+					val8 = rtw_read8(padapter, REG_SYS_CLK_CTRL);
+					polling_cnt++;
+					RTW_DBG("%s  polling 0x8=0x%x, cnt=%d\n",
+						 __func__, val8, polling_cnt);
+					rtw_mdelay_os(10);
+				} while (polling_cnt < 20 && ((val8 & BIT(4)) > 0));
+			}
+		}
+	} else {
+		/* for polling cpwm */
+		rtw_hal_get_hwreg(padapter, HW_VAR_CPWM, &cpwm_orig);
+
+		/* set rpwm to leave 32k */
+		rtw_hal_get_hwreg(padapter, HW_VAR_RPWM_TOG, &val8);
+		RTW_INFO("%s: read rpwm=%02x\n", __func__, val8);
+		val8 += PS_TOGGLE;
+		val8 |= PS_ACK;
+		rtw_hal_set_hwreg(padapter, HW_VAR_SET_RPWM, (u8 *)(&val8));
+		RTW_INFO("%s: write rpwm=%02x\n", __func__, val8);
+		pwrctl->tog = (val8 + PS_TOGGLE) & PS_TOGGLE;
+
+		/* do polling cpwm */
+		start_time = rtw_get_current_time();
+		do {
+			rtw_mdelay_os(1);
+
+			rtw_hal_get_hwreg(padapter, HW_VAR_CPWM, &cpwm_now);
+			if ((cpwm_orig ^ cpwm_now) & PS_TOGGLE)
+				break;
+
+			if (rtw_get_passing_time_ms(start_time) > 100) {
+				RTW_INFO("%s: polling cpwm timeout\n",
+					__func__);
+				break;
+			}
+		} while (1);
+
+#ifdef CONFIG_PNO_SUPPORT
+		if (pwrctl->wowlan_pno_enable) {
+			do {
+				rtw_mdelay_os(1);
+
+				val8 = rtw_read8(padapter, REG_CR);
+				if (val8 != 0xEA) {
+					result = _SUCCESS;
+					break;
+				}
+
+				polling_cnt++;
+			} while (polling_cnt < 100);
+
+			if (result == _FAIL )
+				RTW_INFO("%s: It is not finished to leave 32K\n",
+					__func__);
+		}
+#endif
+	}
+}
+#endif
+
 #if defined(CONFIG_FWLPS_IN_IPS)
 void rtw_set_fw_in_ips_mode(PADAPTER padapter, u8 enable)
 {
 	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
 	int cnt = 0;
-	systime start_time;
 	u8 val8 = 0;
-	u8 cpwm_orig = 0, cpwm_now = 0;
 	u8 parm[H2C_INACTIVE_PS_LEN] = {0};
 
-	if (padapter->netif_up == _FALSE) {
-		RTW_INFO("%s: ERROR, netif is down\n", __func__);
-		return;
+	if (pwrpriv->wowlan_pno_enable) {
+		if (padapter->netif_up == _FALSE) {
+			RTW_INFO("%s: ERROR, netif is down\n", __func__);
+			return;
+		}
 	}
 
 	/* u8 cmd_param; */ /* BIT0:enable, BIT1:NoConnect32k */
@@ -726,9 +821,11 @@ void rtw_set_fw_in_ips_mode(PADAPTER padapter, u8 enable)
 
 		parm[0] = 0x1;/* suggest by Isaac.Hsu*/
 #ifdef CONFIG_PNO_SUPPORT
-		if (pwrpriv->pno_inited) {
-			parm[1] = pwrpriv->pnlo_info->fast_scan_iterations;
-			parm[2] = pwrpriv->pnlo_info->slow_scan_period;
+		if (pwrpriv->wowlan_pno_enable) {
+			if (pwrpriv->pno_inited) {
+				parm[1] = pwrpriv->pnlo_info->fast_scan_iterations;
+				parm[2] = pwrpriv->pnlo_info->slow_scan_period;
+			}
 		}
 #endif
 
@@ -739,36 +836,15 @@ void rtw_set_fw_in_ips_mode(PADAPTER padapter, u8 enable)
 		do {
 			val8 = rtw_read8(padapter, REG_HMETFR);
 			cnt++;
-			RTW_INFO("%s  polling REG_HMETFR=0x%x, cnt=%d\n",
+			RTW_DBG("%s  polling REG_HMETFR=0x%x, cnt=%d\n",
 				 __func__, val8, cnt);
 			rtw_mdelay_os(10);
 		} while (cnt < 100 && (val8 != 0));
 
 #ifdef CONFIG_LPS_LCLK
-		/* H2C done, enter 32k */
-		if (val8 == 0) {
-			/* ser rpwm to enter 32k */
-			rtw_hal_get_hwreg(padapter, HW_VAR_RPWM_TOG, &val8);
-			RTW_INFO("%s: read rpwm=%02x\n", __FUNCTION__, val8);
-			val8 += 0x80;
-			val8 |= BIT(0);
-			rtw_hal_set_hwreg(padapter, HW_VAR_SET_RPWM, (u8 *)(&val8));
-			RTW_INFO("%s: write rpwm=%02x\n", __FUNCTION__, val8);
-			adapter_to_pwrctl(padapter)->tog = (val8 + 0x80) & 0x80;
-			cnt = val8 = 0;
-			if (parm[1] == 0 || parm[2] == 0) {
-				do {
-					val8 = rtw_read8(padapter, REG_CR);
-					cnt++;
-					RTW_INFO("%s  polling 0x100=0x%x, cnt=%d\n",
-						 __func__, val8, cnt);
-					RTW_INFO("%s 0x08:%02x, 0x03:%02x\n",
-						 __func__,
-						 rtw_read8(padapter, 0x08),
-						 rtw_read8(padapter, 0x03));
-					rtw_mdelay_os(10);
-				} while (cnt < 20 && (val8 != 0xEA));
-			}
+		if (rtw_is_fw_ips_lclk_mode(padapter) == _TRUE) {
+			if (val8 == 0)
+				rtw_set_lps_lclk(padapter, _TRUE);
 		}
 #endif
 	} else {
@@ -776,34 +852,8 @@ void rtw_set_fw_in_ips_mode(PADAPTER padapter, u8 enable)
 		RTW_INFO("%s: Leaving IPS in FWLPS state\n", __func__);
 
 #ifdef CONFIG_LPS_LCLK
-		/* for polling cpwm */
-		cpwm_orig = 0;
-		rtw_hal_get_hwreg(padapter, HW_VAR_CPWM, &cpwm_orig);
-
-		/* ser rpwm */
-		rtw_hal_get_hwreg(padapter, HW_VAR_RPWM_TOG, &val8);
-		val8 += 0x80;
-		val8 |= BIT(6);
-		rtw_hal_set_hwreg(padapter, HW_VAR_SET_RPWM, (u8 *)(&val8));
-		RTW_INFO("%s: write rpwm=%02x\n", __FUNCTION__, val8);
-		adapter_to_pwrctl(padapter)->tog = (val8 + 0x80) & 0x80;
-
-		/* do polling cpwm */
-		start_time = rtw_get_current_time();
-		do {
-
-			rtw_mdelay_os(1);
-
-			rtw_hal_get_hwreg(padapter, HW_VAR_CPWM, &cpwm_now);
-			if ((cpwm_orig ^ cpwm_now) & 0x80)
-				break;
-
-			if (rtw_get_passing_time_ms(start_time) > 100) {
-				RTW_INFO("%s: polling cpwm timeout when leaving IPS in FWLPS state\n", __FUNCTION__);
-				break;
-			}
-		} while (1);
-
+		if (rtw_is_fw_ips_lclk_mode(padapter) == _TRUE)
+			rtw_set_lps_lclk(padapter, _FALSE);
 #endif
 		parm[0] = 0x0;
 		parm[1] = 0x0;
@@ -815,7 +865,91 @@ void rtw_set_fw_in_ips_mode(PADAPTER padapter, u8 enable)
 #endif
 	}
 }
-#endif /* CONFIG_PNO_SUPPORT */
+
+u8 rtw_fw_ips_init(_adapter *padapter)
+{
+	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(padapter);
+#ifdef DBG_CONFIG_ERROR_DETECT
+	struct sreset_priv *psrtpriv = &pHalData->srestpriv;
+#endif /* DBG_CONFIG_ERROR_DETECT */
+	struct debug_priv *pdbgpriv = &adapter_to_dvobj(padapter)->drv_dbg;
+	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
+	u8 bMacPwrCtrlOn = _TRUE;
+
+	if (pwrpriv->bips_processing == _TRUE &&
+#ifdef DBG_CONFIG_ERROR_DETECT
+	    psrtpriv->silent_reset_inprogress == _FALSE &&
+#endif /* DBG_CONFIG_ERROR_DETECT */
+	    pHalData->bFWReady == _TRUE &&
+	    pwrpriv->pre_ips_type == 0) {
+
+		rtw_set_fw_in_ips_mode(padapter, _FALSE);
+		rtw_hal_set_hwreg(padapter, HW_VAR_APFM_ON_MAC, &bMacPwrCtrlOn);
+#ifdef CONFIG_LPS_LCLK
+#ifdef DBG_CHECK_FW_PS_STATE
+		if (rtw_fw_ps_state(padapter) == _FAIL) {
+			RTW_INFO("after hal init, fw ps state in 32k\n");
+			pdbgpriv->dbg_ips_drvopen_fail_cnt++;
+		}
+#endif /* DBG_CHECK_FW_PS_STATE */
+#endif /* CONFIG_LPS_LCLK */
+
+		return _SUCCESS;
+	}
+
+	return _FAIL;
+}
+
+u8 rtw_fw_ips_deinit(_adapter *padapter)
+{
+	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(padapter);
+#ifdef DBG_CONFIG_ERROR_DETECT
+	struct sreset_priv *psrtpriv = &pHalData->srestpriv;
+#endif /* DBG_CONFIG_ERROR_DETECT */
+	struct debug_priv *pdbgpriv = &adapter_to_dvobj(padapter)->drv_dbg;
+	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
+	struct hal_spec_t *hal_spec = GET_HAL_SPEC(padapter);
+	u8 is_mac_off_access = _TRUE; /* check the off area of mac can be access */
+
+	if (pwrpriv->bips_processing == _TRUE &&
+#ifdef DBG_CONFIG_ERROR_DETECT
+	    psrtpriv->silent_reset_inprogress == _FALSE &&
+#endif /* DBG_CONFIG_ERROR_DETECT */
+	    pHalData->bFWReady == _TRUE &&
+	    padapter->netif_up == _TRUE) {
+
+		rtw_set_fw_in_ips_mode(padapter, _TRUE);
+
+#ifdef CONFIG_LPS_LCLK
+		if(rtw_is_fw_ips_lclk_mode(padapter) == _TRUE) {
+#ifdef CONFIG_USB_HCI
+			if (hal_spec->mac_off_access_limit_in_low_clock == _FALSE)
+				is_mac_off_access = _TRUE;
+			else
+				is_mac_off_access = _FALSE;
+#endif /* CONFIG_USB_HCI */
+
+			if (is_mac_off_access == _TRUE) {
+				RTW_INFO("polling done when entering FW_IPS_LCLK, check result : 0x100=0x%x\n",
+					 rtw_read8(padapter, REG_CR));
+			} else {
+				RTW_INFO("polling done when entering FW_IPS_LCLK, check result : 0x8[4]=%d\n",
+					 (rtw_read8(padapter, REG_SYS_CLK_CTRL) & BIT(4)) ? 1 : 0);
+			}
+
+			pwrpriv->pre_ips_type = 0;
+		}
+#endif /* CONFIG_LPS_LCLK */
+
+		return _SUCCESS;
+	}
+
+	pdbgpriv->dbg_carddisable_cnt++;
+	pwrpriv->pre_ips_type = 1;
+
+	return _FAIL;
+}
+#endif /* CONFIG_FWLPS_IN_IPS */
 
 void rtw_exec_lps(_adapter *padapter, u8 ps_mode)
 {
@@ -876,7 +1010,7 @@ void rtw_lps_rfon_ctrl(_adapter *padapter, u8 rfon_ctrl)
 				} while (1);
 
 				if (ready == _FAIL)
-					RTW_INFO(FUNC_ADPT_FMT": It is not ready to leave 32K !!!\n",
+					RTW_INFO(FUNC_ADPT_FMT": It is not ready to leave 32K !!!\n", 
 						FUNC_ADPT_ARG(padapter));
 			}
 #endif /* CONFIG_LPS_LCLK */
@@ -897,7 +1031,7 @@ void rtw_lps_rfon_ctrl(_adapter *padapter, u8 rfon_ctrl)
 #ifdef CONFIG_LPS_PG
 				if (pwrpriv->lps_level == LPS_PG) {
 						 if (rtw_hal_set_lps_pg_info_cmd(padapter) == _FAIL)
-						 	RTW_INFO(FUNC_ADPT_FMT": Send PG H2C command Fail! \n",
+						 	RTW_INFO(FUNC_ADPT_FMT": Send PG H2C command Fail! \n", 
 						 			    FUNC_ADPT_ARG(padapter));
 				}
 #endif /* CONFIG_LPS_PG */
@@ -927,14 +1061,14 @@ void rtw_lps_rfon_ctrl(_adapter *padapter, u8 rfon_ctrl)
 					} while (polling_cnt < 100);
 
 					if (result == _FAIL )
-						RTW_INFO(FUNC_ADPT_FMT": It is not finished to enter 32K !!!\n",
+						RTW_INFO(FUNC_ADPT_FMT": It is not finished to enter 32K !!!\n", 
 							FUNC_ADPT_ARG(padapter));
 				}
 			}
 #endif /* CONFIG_LPS_LCLK */
 		}
 	} else {
-		RTW_INFO(FUNC_ADPT_FMT": RFON can't work due to ps state is not in LPS !\n",
+		RTW_INFO(FUNC_ADPT_FMT": RFON can't work due to ps state is not in LPS !\n", 
 							FUNC_ADPT_ARG(padapter));
 	}
 }
@@ -947,7 +1081,7 @@ void rtw_set_ps_mode(PADAPTER padapter, u8 ps_mode, u8 smart_ps, u8 bcn_ant_mode
 	struct dvobj_priv *psdpriv = padapter->dvobj;
 	struct debug_priv *pdbgpriv = &psdpriv->drv_dbg;
 #endif
-#ifdef CONFIG_WMMPS_STA
+#ifdef CONFIG_WMMPS_STA	
 	struct registry_priv *pregistrypriv = &padapter->registrypriv;
 #endif
 #ifdef CONFIG_P2P
@@ -975,7 +1109,7 @@ void rtw_set_ps_mode(PADAPTER padapter, u8 ps_mode, u8 smart_ps, u8 bcn_ant_mode
 			return;
 
 #ifndef CONFIG_BT_COEXIST
-#ifdef CONFIG_WMMPS_STA
+#ifdef CONFIG_WMMPS_STA	
 		if (!rtw_is_wmmps_mode(padapter))
 #endif /* CONFIG_WMMPS_STA */
 			if ((pwrpriv->smart_ps == smart_ps) &&
@@ -1080,8 +1214,12 @@ void rtw_set_ps_mode(PADAPTER padapter, u8 ps_mode, u8 smart_ps, u8 bcn_ant_mode
 			}
 #endif
 #ifdef CONFIG_WOWLAN
-			if (pwrpriv->wowlan_mode == _TRUE)
-				rtw_hal_set_hwreg(padapter, HW_VAR_H2C_INACTIVE_IPS, (u8 *)(&ps_mode));
+#ifdef CONFIG_FWLPS_IN_IPS
+			if (rtw_is_fw_ips_mode(padapter) == _TRUE) {
+				if (pwrpriv->wowlan_mode == _TRUE)
+					rtw_hal_set_hwreg(padapter, HW_VAR_H2C_INACTIVE_IPS, (u8 *)(&ps_mode));
+			}
+#endif /* CONFIG_FWLPS_IN_IPS */
 #endif /* CONFIG_WOWLAN */
 
 			rtw_exec_lps(padapter, ps_mode);
@@ -1161,15 +1299,19 @@ void rtw_set_ps_mode(PADAPTER padapter, u8 ps_mode, u8 smart_ps, u8 bcn_ant_mode
 			}
 #endif
 
-#ifdef CONFIG_WMMPS_STA
+#ifdef CONFIG_WMMPS_STA	
 			pwrpriv->wmm_smart_ps = pregistrypriv->wmm_smart_ps;
 #endif /* CONFIG_WMMPS_STA */
-
+			
 			rtw_exec_lps(padapter, ps_mode);
-
+			
 #ifdef CONFIG_WOWLAN
-			if (pwrpriv->wowlan_mode == _TRUE)
-				rtw_hal_set_hwreg(padapter, HW_VAR_H2C_INACTIVE_IPS, (u8 *)(&ps_mode));
+#ifdef CONFIG_FWLPS_IN_IPS
+			if (rtw_is_fw_ips_mode(padapter) == _TRUE) {
+				if (pwrpriv->wowlan_mode == _TRUE)
+					rtw_hal_set_hwreg(padapter, HW_VAR_H2C_INACTIVE_IPS, (u8 *)(&ps_mode));
+			}
+#endif /* CONFIG_FWLPS_IN_IPS */
 #endif /* CONFIG_WOWLAN */
 
 #ifdef CONFIG_P2P_PS
@@ -1275,10 +1417,10 @@ void LPS_Enter(PADAPTER padapter, const char *msg)
 				if (rtw_is_wmmps_mode(padapter))
 					msg = "WMMPS_IDLE";
 #endif /* CONFIG_WMMPS_STA */
-
+				
 				sprintf(buf, "WIFI-%s", msg);
 				pwrpriv->bpower_saving = _TRUE;
-
+				
 #ifdef CONFIG_RTW_CFGVENDOR_LLSTATS
 				pwrpriv->pwr_saving_start_time = rtw_get_current_time();
 #endif /* CONFIG_RTW_CFGVENDOR_LLSTATS */
@@ -1331,11 +1473,11 @@ void LPS_Leave(PADAPTER padapter, const char *msg)
 			if (rtw_is_wmmps_mode(padapter))
 				msg = "WMMPS_BUSY";
 #endif /* CONFIG_WMMPS_STA */
-
+			
 			sprintf(buf, "WIFI-%s", msg);
 			rtw_set_ps_mode(padapter, PS_MODE_ACTIVE, 0, 0, buf);
 
-#ifdef CONFIG_RTW_CFGVENDOR_LLSTATS
+#ifdef CONFIG_RTW_CFGVENDOR_LLSTATS	
 			pwrpriv->pwr_saving_time += rtw_get_passing_time_ms(pwrpriv->pwr_saving_start_time);
 #endif /* CONFIG_RTW_CFGVENDOR_LLSTATS */
 		}
@@ -1383,8 +1525,8 @@ void LeaveAllPowerSaveModeDirect(PADAPTER Adapter)
 #ifdef CONFIG_LPS_LCLK
 #ifndef CONFIG_DETECT_CPWM_BY_POLLING
 	u8 cpwm_orig;
-#endif /* CONFIG_DETECT_CPWM_BY_POLLING */
 	u8 rpwm;
+#endif /* CONFIG_DETECT_CPWM_BY_POLLING */
 #endif
 	int i;
 
@@ -1405,16 +1547,15 @@ void LeaveAllPowerSaveModeDirect(PADAPTER Adapter)
 #ifdef CONFIG_LPS_LCLK
 		_enter_pwrlock(&pwrpriv->lock);
 
-#ifndef CONFIG_DETECT_CPWM_BY_POLLING
+#ifdef CONFIG_DETECT_CPWM_BY_POLLING
+		rtw_set_rpwm(Adapter, PS_STATE_S4);
+#else /* !CONFIG_DETECT_CPWM_BY_POLLING */
 		cpwm_orig = 0;
 		rtw_hal_get_hwreg(Adapter, HW_VAR_CPWM, &cpwm_orig);
-#endif /* CONFIG_DETECT_CPWM_BY_POLLING */
 		rpwm = rtw_set_rpwm(Adapter, PS_STATE_S4);
-
-#ifndef CONFIG_DETECT_CPWM_BY_POLLING
 		if (rpwm != 0xFF && rpwm & PS_ACK)
 			rtw_cpwm_polling(Adapter, rpwm, cpwm_orig);
-#endif /* CONFIG_DETECT_CPWM_BY_POLLING */
+#endif /* !CONFIG_DETECT_CPWM_BY_POLLING */
 
 		_exit_pwrlock(&pwrpriv->lock);
 #endif/*CONFIG_LPS_LCLK*/
@@ -1435,13 +1576,14 @@ void LeaveAllPowerSaveModeDirect(PADAPTER Adapter)
 	} else {
 		if (pwrpriv->rf_pwrstate == rf_off) {
 
-#if defined(CONFIG_FWLPS_IN_IPS) || defined(CONFIG_SWLPS_IN_IPS) || defined(CONFIG_RTL8188E)
 #ifdef CONFIG_IPS
-			if (_FALSE == ips_leave(pri_padapter))
-				RTW_INFO("======> ips_leave fail.............\n");
+#if defined(CONFIG_FWLPS_IN_IPS) || defined(CONFIG_SWLPS_IN_IPS)
+			if (rtw_is_fw_ips_mode(Adapter) == _TRUE) {
+				if (_FALSE == ips_leave(pri_padapter))
+					RTW_INFO("======> ips_leave fail.............\n");
+			}
 #endif
-#endif /* CONFIG_SWLPS_IN_IPS || (CONFIG_PLATFORM_SPRD && CONFIG_RTL8188E) */
-
+#endif
 		}
 	}
 
@@ -1497,14 +1639,16 @@ void LeaveAllPowerSaveMode(PADAPTER Adapter)
 #endif
 	} else {
 		if (adapter_to_pwrctl(Adapter)->rf_pwrstate == rf_off) {
-
-#if defined(CONFIG_FWLPS_IN_IPS) || defined(CONFIG_SWLPS_IN_IPS) || (defined(CONFIG_PLATFORM_SPRD) && defined(CONFIG_RTL8188E))
+			
 #ifdef CONFIG_IPS
-			if (_FALSE == ips_leave(Adapter))
-				RTW_INFO("======> ips_leave fail.............\n");
+#if defined(CONFIG_FWLPS_IN_IPS) || defined(CONFIG_SWLPS_IN_IPS)
+			if (rtw_is_fw_ips_mode(Adapter) == _TRUE) {
+				if (_FALSE == ips_leave(Adapter))
+					RTW_INFO("======> ips_leave fail.............\n");
+			}
 #endif
-#endif /* CONFIG_SWLPS_IN_IPS || (CONFIG_PLATFORM_SPRD && CONFIG_RTL8188E) */
-
+#endif
+			
 		}
 	}
 
@@ -1631,7 +1775,7 @@ static void dma_event_callback(struct work_struct *work)
 
 #define DBG_CPWM_CHK_FAIL
 #if defined(DBG_CPWM_CHK_FAIL) && (defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C) \
-				   || defined(CONFIG_RTL8723F))
+				   || defined(CONFIG_RTL8723F) || defined(CONFIG_RTL8822E))
 #define CPU_EXCEPTION_CODE 0xFAFAFAFA
 static void rtw_cpwm_chk_fail_debug(_adapter *padapter)
 {
@@ -1701,7 +1845,7 @@ static void rpwmtimeout_workitem_callback(struct work_struct *work)
 	_exit_pwrlock(&pwrpriv->lock);
 
 #if defined(DBG_CPWM_CHK_FAIL) && (defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C) \
-				   || defined(CONFIG_RTL8723F))
+				   || defined(CONFIG_RTL8723F) || defined(CONFIG_RTL8822E))
 	RTW_INFO("+%s: rpwm=0x%02X cpwm=0x%02X\n", __func__, pwrpriv->rpwm, pwrpriv->cpwm);
 	rtw_cpwm_chk_fail_debug(padapter);
 #endif
@@ -2259,7 +2403,7 @@ void rtw_init_pwrctrl_priv(PADAPTER padapter)
 	pwrctrlpriv->tog = 0x80;
 	pwrctrlpriv->rpwm_retry = 0;
 
-	RTW_INFO("%s: IPS_mode=%d, LPS_mode=%d, LPS_level=%d"LPS_1T1R_FMT"\n",
+	RTW_INFO("%s: IPS_mode=%d, LPS_mode=%d, LPS_level=%d"LPS_1T1R_FMT"\n", 
 		__func__, pwrctrlpriv->ips_mode, pwrctrlpriv->power_mgnt, pwrctrlpriv->lps_level
 		LPS_1T1R_ARG
 	);
@@ -2280,7 +2424,7 @@ void rtw_init_pwrctrl_priv(PADAPTER padapter)
 
 #ifdef CONFIG_LPS_PG
 	pwrctrlpriv->lpspg_info.name = "LPSPG_INFO";
-	#ifdef CONFIG_RTL8822C
+	#if (defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E))
 	pwrctrlpriv->lpspg_dpk_info.name = "LPSPG_DPK_INFO";
 	pwrctrlpriv->lpspg_iqk_info.name = "LPSPG_IQK_INFO";
 	#endif
@@ -2306,7 +2450,7 @@ void rtw_init_pwrctrl_priv(PADAPTER padapter)
 
 #ifdef CONFIG_GPIO_WAKEUP
 	pwrctrlpriv->wowlan_gpio_index = WAKEUP_GPIO_IDX;
-	/* set output low state in initial */
+	/* driver always sets output low state except it gets into wowlan mode. */
 	pwrctrlpriv->wowlan_gpio_output_state = GPIO_OUTPUT_LOW;
 	/*default low active*/
 	pwrctrlpriv->is_high_active = HIGH_ACTIVE_DEV2HST;
@@ -2334,7 +2478,7 @@ void rtw_init_pwrctrl_priv(PADAPTER padapter)
 		, pwrctrlpriv->wowlan_gpio_output_state);
 	rtw_hal_switch_gpio_wl_ctrl(padapter, pwrctrlpriv->wowlan_gpio_index, _TRUE);
 	RTW_INFO("%s: set GPIO_%d to OUTPUT %s state in initial and %s_ACTIVE.\n",
-		 __func__, pwrctrlpriv->wowlan_gpio_index,
+		 __func__, pwrctrlpriv->wowlan_gpio_index, 
 		 pwrctrlpriv->wowlan_gpio_output_state ? "HIGH" : "LOW",
 		 pwrctrlpriv->is_high_active ? "HIGI" : "LOW");
 	#endif /*CONFIG_WAKEUP_GPIO_INPUT_MODE*/
@@ -2350,14 +2494,15 @@ void rtw_init_pwrctrl_priv(PADAPTER padapter)
 #define WOW_LPS_1T1R_ARG
 #endif
 
+	pwrctrlpriv->wowlan_ips_mode = padapter->registrypriv.wow_ips_mode;
 	pwrctrlpriv->wowlan_power_mgmt = padapter->registrypriv.wow_power_mgnt;
 	pwrctrlpriv->wowlan_lps_level = padapter->registrypriv.wow_lps_level;
 #ifdef CONFIG_LPS_1T1R
 	pwrctrlpriv->wowlan_lps_1t1r = padapter->registrypriv.wow_lps_1t1r;
 #endif
 
-	RTW_INFO("%s: WOW_LPS_mode=%d, WOW_LPS_level=%d"WOW_LPS_1T1R_FMT"\n",
-		__func__, pwrctrlpriv->wowlan_power_mgmt, pwrctrlpriv->wowlan_lps_level
+	RTW_INFO("%s: WOW_IPS_mode=%d, WOW_LPS_mode=%d, WOW_LPS_level=%d"WOW_LPS_1T1R_FMT"\n",
+		__func__, pwrctrlpriv->wowlan_ips_mode, pwrctrlpriv->wowlan_power_mgmt, pwrctrlpriv->wowlan_lps_level
 		WOW_LPS_1T1R_ARG
 	);
 
@@ -2370,7 +2515,9 @@ void rtw_init_pwrctrl_priv(PADAPTER padapter)
 #ifdef CONFIG_PNO_SUPPORT
 	pwrctrlpriv->pno_inited = _FALSE;
 	pwrctrlpriv->pnlo_info = NULL;
+	#ifndef RTW_HALMAC
 	pwrctrlpriv->pscan_info = NULL;
+	#endif
 	pwrctrlpriv->pno_ssid_list = NULL;
 #endif /* CONFIG_PNO_SUPPORT */
 #ifdef CONFIG_WOW_PATTERN_HW_CAM
@@ -2434,7 +2581,7 @@ void rtw_free_pwrctrl_priv(PADAPTER adapter)
 
 #ifdef CONFIG_LPS_PG
 	rsvd_page_cache_free(&pwrctrlpriv->lpspg_info);
-	#ifdef CONFIG_RTL8822C
+	#if (defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E))
 	rsvd_page_cache_free(&pwrctrlpriv->lpspg_dpk_info);
 	rsvd_page_cache_free(&pwrctrlpriv->lpspg_iqk_info);
 	#endif
@@ -2445,8 +2592,10 @@ void rtw_free_pwrctrl_priv(PADAPTER adapter)
 	if (pwrctrlpriv->pnlo_info != NULL)
 		printk("****** pnlo_info memory leak********\n");
 
+	#ifndef RTW_HALMAC
 	if (pwrctrlpriv->pscan_info != NULL)
 		printk("****** pscan_info memory leak********\n");
+	#endif
 
 	if (pwrctrlpriv->pno_ssid_list != NULL)
 		printk("****** pno_ssid_list memory leak********\n");
@@ -2628,6 +2777,45 @@ u8 rtw_interface_ps_func(_adapter *padapter, HAL_INTF_PS_FUNC efunc_id, u8 *val)
 	return bResult;
 }
 
+#ifdef CONFIG_FWLPS_IN_IPS
+BOOLEAN rtw_is_fw_ips_mode(_adapter *padapter)
+{
+	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
+	u8 ips_mode;
+
+#ifdef CONFIG_WOWLAN
+	if (pwrpriv->wowlan_mode == _TRUE)
+		ips_mode = pwrpriv->wowlan_ips_mode;
+	else
+#endif
+		ips_mode = pwrpriv->ips_mode_req;
+
+	if (ips_mode == IPS_FWIPS || ips_mode == IPS_FWIPS_LCLK)
+		return _TRUE;
+
+	return _FALSE;
+}
+
+#ifdef CONFIG_LPS_LCLK
+BOOLEAN rtw_is_fw_ips_lclk_mode(_adapter *padapter)
+{
+	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(padapter);
+	u8 ips_mode;
+
+#ifdef CONFIG_WOWLAN
+	if (pwrpriv->wowlan_mode == _TRUE)
+		ips_mode = pwrpriv->wowlan_ips_mode;
+	else
+#endif
+		ips_mode = pwrpriv->ips_mode_req;
+
+	if (ips_mode == IPS_FWIPS_LCLK)
+		return _TRUE;
+
+	return _FALSE;
+}
+#endif /* CONFIG_LPS_LCLK */
+#endif /* CONFIG_FWLPS_IN_IPS */
 
 inline void rtw_set_ips_deny(_adapter *padapter, u32 ms)
 {
@@ -2709,7 +2897,7 @@ int _rtw_pwr_wakeup(_adapter *padapter, u32 ips_deffer_ms, const char *caller)
 	}
 
 	if (rf_off == pwrpriv->rf_pwrstate) {
-
+		
 #ifdef CONFIG_IPS
 		RTW_INFO("%s call ips_leave....\n", __FUNCTION__);
 		if (_FAIL ==  ips_leave(padapter)) {
@@ -2718,7 +2906,7 @@ int _rtw_pwr_wakeup(_adapter *padapter, u32 ips_deffer_ms, const char *caller)
 			goto exit;
 		}
 #endif
-
+		
 	}
 
 	/* TODO: the following checking need to be merged... */
@@ -2804,13 +2992,48 @@ inline void rtw_set_lps_deny(_adapter *adapter, u32 ms)
 }
 
 #ifdef CONFIG_WOWLAN
+int rtw_pm_set_wow_ips(_adapter *padapter, u8 mode)
+{
+	struct pwrctrl_priv *pwrctrlpriv = adapter_to_pwrctl(padapter);
+	int	ret = 0;
+	char str[80] = {0};
+
+	if (mode >= IPS_NONE && mode < IPS_NUM) {
+		if (pwrctrlpriv->wowlan_ips_mode != mode) {
+			pwrctrlpriv->wowlan_ips_mode = mode;
+
+			if (mode == IPS_NONE)
+				strcpy(str, "IPS_NONE");
+			else if (mode == IPS_NORMAL)
+				strcpy(str, "IPS_NORMAL");
+#ifdef CONFIG_FWLPS_IN_IPS
+			else if (mode == IPS_FWIPS)
+				strcpy(str, "IPS_FWIPS");
+#ifdef CONFIG_LPS_LCLK
+			else if (mode == IPS_FWIPS_LCLK)
+				strcpy(str, "IPS_FWIPS_LCLK");
+#endif /* CONFIG_LPS_LCLK */
+#endif /* CONFIG_FWLPS_IN_IPS */
+			else
+				strcpy(str, "Invalid");
+		}
+	} else {
+		sprintf(str, "Invalid value(%d)", mode);
+		ret = -EINVAL;
+	}
+
+	RTW_INFO("%s WOW IPS mode: %s\n", __func__, str);
+
+	return ret;
+}
+
 int rtw_pm_set_wow_lps(_adapter *padapter, u8 mode)
 {
 	int	ret = 0;
 	struct pwrctrl_priv *pwrctrlpriv = adapter_to_pwrctl(padapter);
 
 	if (mode < PS_MODE_NUM) {
-		if (pwrctrlpriv->wowlan_power_mgmt != mode)
+		if (pwrctrlpriv->wowlan_power_mgmt != mode) 
 			pwrctrlpriv->wowlan_power_mgmt = mode;
 	} else
 		ret = -EINVAL;
@@ -2846,20 +3069,65 @@ int rtw_pm_set_wow_lps_1t1r(_adapter *padapter, u8 en)
 
 int rtw_pm_set_ips(_adapter *padapter, u8 mode)
 {
+	struct dvobj_priv *pdvobj = adapter_to_dvobj(padapter);
 	struct pwrctrl_priv *pwrctrlpriv = adapter_to_pwrctl(padapter);
+	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+	int ret = 0;
+	u8 flags = 0;
+	char str[80] = {0};
 
-	if (mode == IPS_NORMAL || mode == IPS_LEVEL_2) {
-		rtw_ips_mode_req(pwrctrlpriv, mode);
-		RTW_INFO("%s %s\n", __FUNCTION__, mode == IPS_NORMAL ? "IPS_NORMAL" : "IPS_LEVEL_2");
-		return 0;
-	} else if (mode == IPS_NONE) {
-		rtw_ips_mode_req(pwrctrlpriv, mode);
-		RTW_INFO("%s %s\n", __FUNCTION__, "IPS_NONE");
-		if (!rtw_is_surprise_removed(padapter) && (_FAIL == rtw_pwr_wakeup(padapter)))
+	if (mode >= IPS_NONE && mode < IPS_NUM) {
+		if (rtw_is_surprise_removed(padapter)) {
+			RTW_ERR("%s: Surprise Removed occured !\n", __func__);
 			return -EFAULT;
-	} else
-		return -EINVAL;
-	return 0;
+		}
+
+		if (pwrctrlpriv->ips_mode_req != mode) {
+			if ((pwrctrlpriv->ips_mode_req != IPS_NONE) &&
+				(ATOMIC_READ(&(pcmdpriv->cmdthd_running)) == _TRUE)) {
+				if (pdvobj->processing_dev_remove == _TRUE
+#ifdef CONFIG_MP_INCLUDED
+					|| rtw_mp_mode_check(padapter)
+#endif
+					)
+					flags |= RTW_CMDF_DIRECTLY;
+				else
+					flags |= RTW_CMDF_WAIT_ACK;
+
+				if (rtw_ips_ctrl_wk_cmd(padapter, IPS_CTRL_LEAVE_SET_MODE,
+						mode, flags) != _SUCCESS) {
+					RTW_INFO("Set IPS mode Fail!\n");
+					return -EFAULT;
+				}
+			} else {
+				rtw_ips_mode_req(pwrctrlpriv, mode);
+			}
+
+			if (mode == IPS_NONE)
+				strcpy(str, "IPS_NONE");
+			else if (mode == IPS_NORMAL)
+				strcpy(str, "IPS_NORMAL");
+#ifdef CONFIG_FWLPS_IN_IPS
+			else if (mode == IPS_FWIPS)
+				strcpy(str, "IPS_FWIPS");
+#ifdef CONFIG_LPS_LCLK
+			else if (mode == IPS_FWIPS_LCLK)
+				strcpy(str, "IPS_FWIPS_LCLK");
+#endif /* CONFIG_LPS_LCLK */
+#endif /* CONFIG_FWLPS_IN_IPS */
+			else
+				strcpy(str, "Invalid");
+		} else {
+			strcpy(str, "the input is the same with current ips_mode !");
+		}
+	} else {
+		sprintf(str, "Invalid value(%d)", mode);
+		ret = -EINVAL;
+	}
+
+	RTW_INFO("%s IPS mode: %s\n", __func__, str);
+
+	return ret;
 }
 
 /*

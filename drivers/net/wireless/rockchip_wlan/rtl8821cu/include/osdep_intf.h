@@ -79,11 +79,6 @@ uint loadparam(_adapter *adapter);
 #ifdef PLATFORM_LINUX
 int rtw_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
 
-#if ((LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)) && defined(CONFIG_MP_INCLUDED))
-int rtw_siocdevprivate(struct net_device *dev, struct ifreq *ifr,
-                       void __user *data, int cmd);
-#endif
-
 int rtw_init_netdev_name(struct net_device *pnetdev, const char *ifname);
 struct net_device *rtw_init_netdev(_adapter *padapter);
 
@@ -138,7 +133,7 @@ void rtw_drv_free_vir_ifaces(struct dvobj_priv *dvobj);
 #endif
 
 void rtw_ndev_destructor(_nic_hdl ndev);
-#ifdef CONFIG_ARP_KEEP_ALIVE
+#ifdef CONFIG_ARP_KEEP_ALIVE_GW
 int rtw_gw_addr_query(_adapter *padapter);
 #endif
 
