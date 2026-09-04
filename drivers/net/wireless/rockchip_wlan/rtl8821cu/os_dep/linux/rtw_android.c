@@ -322,7 +322,7 @@ int rtw_android_cfg80211_pno_setup(struct net_device *net,
 #ifdef CONFIG_PNO_SET_DEBUG
 	rtw_dev_pno_debug(net);
 #endif
-exit_proc:
+
 	return res;
 }
 
@@ -343,10 +343,13 @@ int rtw_android_pno_enable(struct net_device *net, int pno_enable)
 				rtw_mfree((u8 *)pwrctl->pno_ssid_list, sizeof(pno_ssid_list_t));
 				pwrctl->pno_ssid_list = NULL;
 			}
+			#ifndef RTW_HALMAC
 			if (pwrctl->pscan_info != NULL) {
 				rtw_mfree((u8 *)pwrctl->pscan_info, sizeof(pno_scan_info_t));
 				pwrctl->pscan_info = NULL;
 			}
+			#endif
+			pwrctl->pno_inited = _FALSE;
 		}
 		return 0;
 	} else
@@ -405,7 +408,7 @@ int rtw_android_set_country(struct net_device *net, char *command, int total_len
 	char *country_code = command + strlen(android_wifi_cmd_str[ANDROID_WIFI_CMD_COUNTRY]) + 1;
 	int ret = _FAIL;
 
-	ret = rtw_set_country(adapter, country_code);
+	ret = rtw_set_country(adapter, country_code, RTW_REGD_SET_BY_USER);
 
 	return (ret == _SUCCESS) ? 0 : -1;
 }
@@ -832,6 +835,7 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 	case ANDROID_WIFI_CMD_SET_AP_WPS_P2P_IE: {
 		int skip = strlen(android_wifi_cmd_str[ANDROID_WIFI_CMD_SET_AP_WPS_P2P_IE]) + 3;
 		bytes_written = rtw_cfg80211_set_mgnt_wpsp2pie(net, command + skip, priv_cmd.total_len - skip, *(command + skip - 2) - '0');
+		adapter_to_dvobj(padapter)->wpas_type = RTW_WPAS_ANDROID;
 		break;
 	}
 	#endif
@@ -1160,7 +1164,8 @@ static void shutdown_card(void)
 	}
 
 #ifdef CONFIG_FWLPS_IN_IPS
-	LeaveAllPowerSaveMode(g_test_adapter);
+	if (rtw_is_fw_ips_mode(g_test_adapter) == _TRUE)
+		LeaveAllPowerSaveMode(g_test_adapter);
 #endif /* CONFIG_FWLPS_IN_IPS */
 
 #ifdef CONFIG_WOWLAN

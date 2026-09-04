@@ -216,6 +216,7 @@ struct ra_table {
 			       struct cmn_sta_info *sta, u64 ra_mask);
 	u8	ra_mask_rpt_stamp;
 	u8 	ra_mask_buf[8];
+	u8	ra_ramask_byrssi;
 };
 
 struct ra_mask_rpt_trig {
@@ -320,6 +321,8 @@ void phydm_ra_registed(void *dm_void, u8 macid, u8 rssi_from_assoc);
 void phydm_ra_offline(void *dm_void, u8 macid);
 
 void phydm_ra_mask_watchdog(void *dm_void);
+
+void phydm_set_ramask_byrssi(void *dm_void, u8 en);
 
 #if (DM_ODM_SUPPORT_TYPE == ODM_WIN)
 void odm_refresh_basic_rate_mask(

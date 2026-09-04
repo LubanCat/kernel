@@ -25,6 +25,166 @@
 
 #endif
 
+#ifdef CONFIG_FWLPS_IN_IPS
+u8 rtl8821cu_fw_ips_init(_adapter *padapter)
+{
+	struct sreset_priv *psrtpriv = &GET_HAL_DATA(padapter)->srestpriv;
+	struct debug_priv *pdbgpriv = &adapter_to_dvobj(padapter)->drv_dbg;
+	struct pwrctrl_priv *pwrctl = adapter_to_pwrctl(padapter);
+
+	if (pwrctl->bips_processing == _TRUE &&
+	    psrtpriv->silent_reset_inprogress == _FALSE &&
+	    GET_HAL_DATA(padapter)->bFWReady == _TRUE &&
+	    pwrctl->pre_ips_type == 0) {
+		systime start_time;
+		u8 cpwm_orig, cpwm_now, rpwm;
+		u8 bMacPwrCtrlOn = _TRUE;
+
+		RTW_INFO("%s: Leaving FW_IPS\n", __func__);
+#ifdef CONFIG_LPS_LCLK
+		if (rtw_is_fw_ips_lclk_mode(padapter) == _FALSE)
+			goto send_fwips_h2c;
+
+		/* for polling cpwm */
+		cpwm_orig = 0;
+		rtw_hal_get_hwreg(padapter, HW_VAR_CPWM, &cpwm_orig);
+
+		/* set rpwm */
+		rtw_hal_get_hwreg(padapter, HW_VAR_RPWM_TOG, &rpwm);
+		rpwm += 0x80;
+		rpwm |= PS_ACK;
+		rtw_hal_set_hwreg(padapter, HW_VAR_SET_RPWM, (u8 *)(&rpwm));
+
+		RTW_INFO("%s: write rpwm=%02x\n", __func__, rpwm);
+
+		pwrctl->tog = (rpwm + 0x80) & 0x80;
+
+		/* do polling cpwm */
+		start_time = rtw_get_current_time();
+		do {
+
+			rtw_mdelay_os(1);
+
+			rtw_hal_get_hwreg(padapter, HW_VAR_CPWM, &cpwm_now);
+			if ((cpwm_orig ^ cpwm_now) & 0x80) {
+				#ifdef DBG_CHECK_FW_PS_STATE
+				RTW_INFO("%s: polling cpwm ok when leaving IPS in FWLPS state, cpwm_orig=%02x, cpwm_now=%02x, 0x100=0x%x\n",
+					 __func__, cpwm_orig, cpwm_now,
+					 rtw_read8(padapter, REG_CR));
+				#endif /* DBG_CHECK_FW_PS_STATE */
+				break;
+			}
+
+			if (rtw_get_passing_time_ms(start_time) > 100) {
+				RTW_INFO("%s: polling cpwm timeout when leaving IPS in FWLPS state, cpwm_orig=%02x, cpwm_now=%02x, 0x100=0x%x\n",
+					 __func__, cpwm_orig, cpwm_now,
+					 rtw_read8(padapter, REG_CR));
+				break;
+			}
+		} while (1);
+
+send_fwips_h2c:
+#endif /* CONFIG_LPS_LCLK */
+		rtl8821c_set_FwPwrModeInIPS_cmd(padapter, 0);
+
+		rtw_hal_set_hwreg(padapter, HW_VAR_APFM_ON_MAC, &bMacPwrCtrlOn);
+#ifdef CONFIG_LPS_LCLK
+		#ifdef DBG_CHECK_FW_PS_STATE
+		if (rtw_is_fw_ips_lclk_mode(padapter) == _TRUE) {
+			if (rtw_fw_ps_state(padapter) == _FAIL) {
+				RTW_INFO("after hal init, fw ps state in 32k\n");
+				pdbgpriv->dbg_ips_drvopen_fail_cnt++;
+			}
+		}
+		#endif /* DBG_CHECK_FW_PS_STATE */
+#endif /* CONFIG_LPS_LCLK */
+		return _SUCCESS;
+	}
+	return _FAIL;
+}
+
+u8 rtl8821cu_fw_ips_deinit(_adapter *padapter)
+{
+	struct sreset_priv *psrtpriv =  &GET_HAL_DATA(padapter)->srestpriv;
+	struct debug_priv *pdbgpriv = &adapter_to_dvobj(padapter)->drv_dbg;
+	struct pwrctrl_priv *pwrctl = adapter_to_pwrctl(padapter);
+
+	if (pwrctl->bips_processing == _TRUE &&
+	    psrtpriv->silent_reset_inprogress == _FALSE &&
+	    GET_HAL_DATA(padapter)->bFWReady == _TRUE &&
+	    padapter->netif_up == _TRUE) {
+		int cnt = 0;
+		u8 val8 = 0, rpwm;
+
+		RTW_INFO("%s: issue H2C to FW when entering IPS\n", __func__);
+
+		rtl8821c_set_FwPwrModeInIPS_cmd(padapter, 0x1);
+#ifdef CONFIG_LPS_LCLK
+		if (rtw_is_fw_ips_lclk_mode(padapter) == _FALSE)
+			return _SUCCESS;
+
+		/* poll 0x1cc to make sure H2C command already finished by FW; MAC_0x1cc=0 means H2C done by FW. */
+		do {
+			val8 = rtw_read8(padapter, REG_HMETFR);
+			cnt++;
+			RTW_DBG("%s  polling REG_HMETFR=0x%x, cnt=%d\n",
+				__func__, val8, cnt);
+			rtw_mdelay_os(10);
+		} while (cnt < 100 && (val8 != 0));
+
+		/* H2C done, enter 32k */
+		if (val8 == 0) {
+			/* set rpwm to enter 32k */
+			rtw_hal_get_hwreg(padapter, HW_VAR_RPWM_TOG, &rpwm);
+			rpwm += 0x80;
+			rpwm |= BIT_CUR_PS_8821C;
+			rtw_hal_set_hwreg(padapter, HW_VAR_SET_RPWM, (u8 *)(&rpwm));
+			RTW_INFO("%s: write rpwm=%02x\n", __func__, rpwm);
+			pwrctl->tog = (val8 + 0x80) & 0x80;
+
+			cnt = val8 = 0;
+			do {
+				val8 = rtw_read8(padapter, REG_CR);
+				cnt++;
+				RTW_DBG("%s polling 0x100=0x%x, cnt=%d\n",
+					__func__, val8, cnt);
+				rtw_mdelay_os(10);
+			} while (cnt < 100 && (val8 != 0xEA));
+
+			#ifdef DBG_CHECK_FW_PS_STATE
+			if (val8 != 0xEA) {
+				RTW_INFO("MAC_1C0=%08x, MAC_1C4=%08x, MAC_1C8=%08x, MAC_1CC=%08x\n",
+					 rtw_read32(padapter, 0x1c0),
+					 rtw_read32(padapter, 0x1c4),
+					 rtw_read32(padapter, 0x1c8),
+					 rtw_read32(padapter, REG_HMETFR));
+			}
+			#endif /* DBG_CHECK_FW_PS_STATE */
+		} else {
+			RTW_INFO("MAC_1C0=%08x, MAC_1C4=%08x, MAC_1C8=%08x, MAC_1CC=%08x\n",
+				 rtw_read32(padapter, 0x1c0),
+				 rtw_read32(padapter, 0x1c4),
+				 rtw_read32(padapter, 0x1c8),
+				 rtw_read32(padapter, REG_HMETFR));
+		}
+
+		RTW_INFO("polling done when entering IPS, check result : 0x100=0x%x, cnt=%d, MAC_1cc=0x%02x\n",
+			 rtw_read8(padapter, REG_CR), cnt,
+			 rtw_read8(padapter, REG_HMETFR));
+
+		pwrctl->pre_ips_type = 0;
+#endif /* CONFIG_LPS_LCLK */
+		return _SUCCESS;
+	}
+
+	pdbgpriv->dbg_carddisable_cnt++;
+	pwrctl->pre_ips_type = 1;
+
+	return _FAIL;
+
+}
+#endif
+
 #ifdef CONFIG_RTW_LED
 static void init_hwled(PADAPTER adapter, u8 enable)
 {
@@ -57,11 +217,21 @@ u32 rtl8821cu_hal_init(PADAPTER padapter)
 	u8 status = _SUCCESS;
 	systime init_start_time = rtw_get_current_time();
 
+#ifdef CONFIG_FWLPS_IN_IPS
+		if (rtw_is_fw_ips_mode(padapter) == _TRUE) {
+			if (_SUCCESS == rtl8821cu_fw_ips_init(padapter))
+				goto exit;
+		}
+#endif
+
 	if (_FALSE == rtl8821c_hal_init(padapter))
 		return _FAIL;
 
 	hal_init_misc(padapter);
 
+#ifdef CONFIG_FWLPS_IN_IPS
+exit:
+#endif
 	RTW_INFO("%s in %dms\n", __func__, rtw_get_passing_time_ms(init_start_time));
 
 	return status;
@@ -89,6 +259,12 @@ u32 rtl8821cu_hal_deinit(PADAPTER padapter)
 
 	RTW_INFO("==> %s\n", __func__);
 
+#ifdef CONFIG_FWLPS_IN_IPS
+		if (rtw_is_fw_ips_mode(padapter) == _TRUE) {
+			if (_SUCCESS == rtl8821cu_fw_ips_deinit(padapter))
+				goto exit;
+		}
+#endif
 
 	hal_deinit_misc(padapter);
 	status = rtl8821c_hal_deinit(padapter);
@@ -97,6 +273,9 @@ u32 rtl8821cu_hal_deinit(PADAPTER padapter)
 		return _FAIL;
 	}
 
+#ifdef CONFIG_FWLPS_IN_IPS
+exit:
+#endif
 	RTW_INFO("%s <==\n", __func__);
 	return _SUCCESS;
 }
@@ -116,6 +295,17 @@ u32 rtl8821cu_inirp_init(PADAPTER padapter)
 	u32(*_read_interrupt)(struct intf_hdl *pintfhdl, u32 addr);
 #endif
 
+#ifdef CONFIG_FWLPS_IN_IPS
+		/* Do not sumbit urb repeat */
+		struct pwrctrl_priv *pwrctl = adapter_to_pwrctl(padapter);
+
+		if (rtw_is_fw_ips_mode(padapter) == _TRUE) {
+			if (pwrctl->bips_processing == _TRUE) {
+				status = _SUCCESS;
+				goto exit;
+			}
+		}
+#endif /* CONFIG_FWLPS_IN_IPS */
 
 	_read_port = pintfhdl->io_ops._read_port;
 
@@ -159,9 +349,19 @@ exit:
 
 u32 rtl8821cu_inirp_deinit(PADAPTER padapter)
 {
+	struct recv_priv	*precvpriv = &padapter->recvpriv;
+	_pkt			*pskb;
 
 	rtw_read_port_cancel(padapter);
 
+	while (NULL != (pskb = skb_dequeue(&precvpriv->rx_skb_queue))) {
+		skb_reset_tail_pointer(pskb);
+		pskb->len = 0;
+		skb_queue_tail(&precvpriv->free_recv_skb_queue, pskb);
+	}
+
+	/* Clean pending recv buf */
+	while (rtw_dequeue_recvbuf(&precvpriv->recv_buf_pending_queue));
 
 	return _SUCCESS;
 }

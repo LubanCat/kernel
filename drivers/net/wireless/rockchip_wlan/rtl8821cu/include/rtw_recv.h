@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2021 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -77,6 +77,7 @@ extern u8 rtw_rfc1042_header[];
 
 enum addba_rsp_ack_state {
 	RTW_RECV_ACK_OR_TIMEOUT,
+	RTW_RECV_REORDER_WOW
 };
 
 /* for Rx reordering buffer control */
@@ -225,8 +226,15 @@ struct rx_pkt_attrib	{
 /* #define REORDER_ENTRY_NUM	128 */
 #define REORDER_WAIT_TIME	(50) /* (ms) */
 
-#if defined(CONFIG_PLATFORM_RTK390X) && defined(CONFIG_USB_HCI)
+#ifdef CONFIG_USB_HCI
+#ifdef CONFIG_PLATFORM_I386_PC
+	#define RECVBUFF_ALIGN_SZ 8
+#elif defined(CONFIG_PLATFORM_RTK390X)
 	#define RECVBUFF_ALIGN_SZ 32
+#else
+	/* Avoid the Synopsys USB host receive buffer size limit */
+	#define RECVBUFF_ALIGN_SZ 4096
+#endif
 #else
 	#define RECVBUFF_ALIGN_SZ 8
 #endif
@@ -259,7 +267,10 @@ struct recv_stat {
 
 	unsigned int rxdw1;
 
-#if !((defined(CONFIG_RTL8192E) || defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822B) || defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C)) && defined(CONFIG_PCI_HCI))  /* exclude 8192ee, 8814ae, 8822be, 8821ce */
+#if !((defined(CONFIG_RTL8192E) || defined(CONFIG_RTL8814A) || defined(CONFIG_RTL8822B) \
+	|| defined(CONFIG_RTL8821C) || defined(CONFIG_RTL8822C) \
+	|| defined(CONFIG_RTL8822E)) && defined(CONFIG_PCI_HCI))
+	/* exclude 8192ee, 8814ae, 8822be, 8821ce */
 	unsigned int rxdw2;
 
 	unsigned int rxdw3;
@@ -300,7 +311,86 @@ struct rtw_rx_ring {
 };
 #endif
 
+struct rtw_ip_dbg_cnt_statistic {
+	u8 enabled;
+	u8 ip[4];
+	u16 dst_port;
+	u32 ip_cnt;
+	u32 tcp_cnt;
+	u32 udp_cnt;
+	u32 frag_cnt;
+	u8 iperf_ver;	/* bit7 for debug enable */
+	u32 iperf_seq;
+	u32 iperf_err_cnt;
+	u32 iperf_out_of_order_cnt;
 
+	u32 ip_seq_chk;
+	u16 frag_offset_chk, max_frag_offset_chk;
+	u8 defrag_done;
+
+#define need_to_chk_iudp_cnt(p, s) \
+	((GET_IPV4_PROTOCOL((p)) == 0x11) && \
+	((((struct rtw_ip_dbg_cnt_statistic *)(s))->iperf_ver & 0x7f) > 0))
+#define ip_cnt_inc(s)	\
+	((struct rtw_ip_dbg_cnt_statistic *)(s))->ip_cnt++
+#define frag_cnt_inc(s)	\
+	((struct rtw_ip_dbg_cnt_statistic *)(s))->frag_cnt++
+#define tcp_udp_cnt_inc(p, s)	\
+	do {	\
+		if (GET_IPV4_PROTOCOL(p) == 0x06)	\
+			((struct rtw_ip_dbg_cnt_statistic *)(s))->tcp_cnt++;	\
+		else if (GET_IPV4_PROTOCOL(p) == 0x11)	\
+			((struct rtw_ip_dbg_cnt_statistic *)(s))->udp_cnt++;	\
+	} while(0)
+#define iudp_err_cnt_inc(s, str)	\
+	do {	\
+		struct rtw_ip_dbg_cnt_statistic *ps = \
+			(struct rtw_ip_dbg_cnt_statistic *)(s);	\
+			ps->iperf_err_cnt++;	\
+		if (((ps->iperf_ver & 0xf0) >> 7) > 0)	\
+			RTW_INFO("%s : %s-err iperf_err_cnt(%u), iperf_seq(%u)\n"\
+			,__func__, (const u8 *)(str), ps->iperf_err_cnt, ps->iperf_seq);	\
+	} while(0)
+#define iudp_err_cnt_update(s, c)	\
+	do {	\
+		struct rtw_ip_dbg_cnt_statistic *ps = \
+			(struct rtw_ip_dbg_cnt_statistic *)(s);	\
+		ps->iperf_err_cnt += ((c - 1) - ps->iperf_seq);	\
+		if (((ps->iperf_ver & 0xf0) >> 7) > 0)	\
+			RTW_INFO("%s : iperf_err_cnt(%u), cur_iperf_seq(%u), last_iperf_seq(%u)\n"\
+			,__func__, ps->iperf_err_cnt, (c), ps->iperf_seq);	\
+	} while(0)
+#define iperf_out_of_order_cnt_inc(s, c)	\
+	do {	\
+		struct rtw_ip_dbg_cnt_statistic *ps = \
+			(struct rtw_ip_dbg_cnt_statistic *)(s);	\
+		ps->iperf_out_of_order_cnt++;	\
+		if (((ps->iperf_ver & 0xf0) >> 7) > 0)	\
+			RTW_INFO("%s : iperf_out_of_order_cnt(%u), cur_iperf_seq(%u), last_iperf_seq(%u)\n"\
+			,__func__, ps->iperf_out_of_order_cnt, (c), ps->iperf_seq);	\
+	} while(0)
+
+#define iudp_ip_seq_set(s, v)	\
+	(((struct rtw_ip_dbg_cnt_statistic *)(s))->iperf_seq = (v))
+#define iudp_ip_seq_get(s)	\
+	((struct rtw_ip_dbg_cnt_statistic *)(s))->iperf_seq
+#define iudp_defrag_done_set(s, v)	\
+	(((struct rtw_ip_dbg_cnt_statistic *)(s))->defrag_done = (v))
+#define iudp_defrag_done_get(s)	\
+	((struct rtw_ip_dbg_cnt_statistic *)(s))->defrag_done
+#define iudp_ip_seq_chk_set(s, v)	\
+	(((struct rtw_ip_dbg_cnt_statistic *)(s))->ip_seq_chk = (v))
+#define iudp_ip_seq_chk_get(s)	\
+	((struct rtw_ip_dbg_cnt_statistic *)(s))->ip_seq_chk
+#define iudp_frag_offset_chk_set(s, v)	\
+	(((struct rtw_ip_dbg_cnt_statistic *)(s))->frag_offset_chk = (v))
+#define iudp_frag_offset_chk_get(s)	\
+	((struct rtw_ip_dbg_cnt_statistic *)(s))->frag_offset_chk
+#define iudp_max_frag_offset_chk_set(s, v)	\
+	(((struct rtw_ip_dbg_cnt_statistic *)(s))->max_frag_offset_chk = (v))
+#define iudp_max_frag_offset_chk_get(s)	\
+	((struct rtw_ip_dbg_cnt_statistic *)(s))->max_frag_offset_chk
+};	/* end of struct rtw_ip_dbg_cnt_statistic */
 
 /*
 accesser of recv_priv: rtw_recv_entry(dispatch / passive level); recv_thread(passive) ; returnpkt(dispatch)
@@ -364,11 +454,16 @@ struct recv_priv {
 	uint  rx_smallpacket_crcerr;
 	uint  rx_middlepacket_crcerr;
 
+	struct rtw_ip_dbg_cnt_statistic ip_statistic;
+
 #ifdef CONFIG_USB_HCI
 	/* u8 *pallocated_urb_buf; */
 	_sema allrxreturnevt;
 	uint	ff_hwaddr;
 	ATOMIC_T	rx_pending_cnt;
+#ifdef CONFIG_USB_PROTECT_RX_CLONED_SKB
+	struct sk_buff_head rx_cloned_skb_queue;
+#endif
 
 #ifdef CONFIG_USB_INTERRUPT_IN_PIPE
 #ifdef PLATFORM_LINUX
@@ -580,7 +675,7 @@ struct recv_frame_hdr {
 	u8 fragcnt;
 
 	int frame_tag;
-
+	int keytrack;
 	struct rx_pkt_attrib attrib;
 
 	uint  len;
@@ -752,14 +847,11 @@ __inline static u8 *recvframe_put(union recv_frame *precvframe, sint sz)
 
 	/* used for append sz bytes from ptr to rx_tail, update rx_tail and return the updated rx_tail to the caller */
 	/* after putting, rx_tail must be still larger than rx_end. */
-	unsigned char *prev_rx_tail;
 
 	/* RTW_INFO("recvframe_put: len=%d\n", sz); */
 
 	if (precvframe == NULL)
 		return NULL;
-
-	prev_rx_tail = precvframe->u.hdr.rx_tail;
 
 	precvframe->u.hdr.rx_tail += sz;
 
@@ -771,10 +863,7 @@ __inline static u8 *recvframe_put(union recv_frame *precvframe, sint sz)
 	precvframe->u.hdr.len += sz;
 
 	return precvframe->u.hdr.rx_tail;
-
 }
-
-
 
 __inline static u8 *recvframe_pull_tail(union recv_frame *precvframe, sint sz)
 {
@@ -799,6 +888,7 @@ __inline static u8 *recvframe_pull_tail(union recv_frame *precvframe, sint sz)
 
 }
 
+#if 0
 __inline static union recv_frame *rxmem_to_recvframe(u8 *rxmem)
 {
 	/* due to the design of 2048 bytes alignment of recv_frame, we can reference the union recv_frame */
@@ -838,6 +928,7 @@ __inline static u8 *pkt_to_recvdata(_pkt *pkt)
 	return	precv_frame->u.hdr.rx_data;
 
 }
+#endif
 
 
 __inline static sint get_recvframe_len(union recv_frame *precvframe)

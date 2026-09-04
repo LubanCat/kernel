@@ -691,6 +691,18 @@ static inline void _init_timer(_timer *ptimer, _nic_hdl padapter, void *pfunc, v
 	callout_init(&ptimer->callout, CALLOUT_MPSAFE);
 }
 
+__inline static int _check_timer_is_active(_timer *ptimer)
+{
+	rtw_mtx_lock(NULL);
+	if (callout_pending(&ptimer->callout)) {
+		/* callout was reset */
+		rtw_mtx_unlock(NULL);
+		return _TRUE;
+	}
+	rtw_mtx_unlock(NULL);
+		return _FALSE;
+}
+
 __inline static void _set_timer(_timer *ptimer,u32 delay_time)
 {	
 	if (ptimer->function && ptimer->arg) {

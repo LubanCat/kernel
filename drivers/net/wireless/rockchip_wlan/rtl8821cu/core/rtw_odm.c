@@ -64,68 +64,60 @@ void rtw_odm_init_ic_type(_adapter *adapter)
 	odm_cmn_info_init(odm, ODM_CMNINFO_IC_TYPE, ic_type);
 }
 
+static bool rtw_edcca_hal_mode_supported(struct dvobj_priv* dvobj, enum rtw_edcca_mode_t mode)
+{
+	return mode <= RTW_EDCCA_ADAPT;
+}
+
+void rtw_edcca_hal_update(struct dvobj_priv *dvobj)
+{
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(dvobj_get_primary_adapter(dvobj));
+	struct rf_ctl_t *rfctl = dvobj_to_rfctl(dvobj);
+	struct dm_struct *odm = dvobj_to_phydm(dvobj);
+	u8 mode;
+	BAND_TYPE band;
+	u8 uch;
+
+#ifndef CONFIG_DIRECT_EDCCA_MODE_SETTING
+	if (rtw_mi_get_ch_setting_union(dvobj_get_primary_adapter(dvobj), &uch, NULL, NULL)) {
+		band = uch > 14 ? BAND_ON_5G : BAND_ON_2_4G;
+		rfctl->last_edcca_mode_op_band = band;
+	} else if (rfctl->last_edcca_mode_op_band != BAND_MAX)
+		band = rfctl->last_edcca_mode_op_band;
+	else
+#endif
+		band = hal_data->current_band_type;
+
+	mode = rtw_get_edcca_mode(dvobj, band);
+	/*
+	* may get band not existing in current channel plan
+	* then edcca mode RTW_EDCCA_MODE_NUM is got
+	* this is not a real problem because this band is not used for TX
+	* change to RTW_EDCCA_NORM to avoid warning calltrace below
+	*/
+	if (mode == RTW_EDCCA_MODE_NUM)
+		mode = RTW_EDCCA_NORM;
+
+	if (!rtw_edcca_hal_mode_supported(dvobj, mode)) {
+		RTW_WARN("%s %s edcca mode %s is not supported by HAL, set to %s\n", __func__
+			, band_str(band), rtw_edcca_mode_str(mode), rtw_edcca_mode_str(RTW_EDCCA_NORM));
+		mode = RTW_EDCCA_NORM;
+	}
+
+	rfctl->adaptivity_en = mode == RTW_EDCCA_NORM ? false : true;
+	phydm_adaptivity_info_init(odm, PHYDM_ADAPINFO_CARRIER_SENSE_ENABLE, mode == RTW_EDCCA_CS ? true : false);
+}
+
 void rtw_odm_adaptivity_ver_msg(void *sel, _adapter *adapter)
 {
 	RTW_PRINT_SEL(sel, "ADAPTIVITY_VERSION "ADAPTIVITY_VERSION"\n");
-}
-
-#define RTW_ADAPTIVITY_EN_DISABLE 0
-#define RTW_ADAPTIVITY_EN_ENABLE 1
-
-void rtw_odm_adaptivity_en_msg(void *sel, _adapter *adapter)
-{
-	struct registry_priv *regsty = &adapter->registrypriv;
-
-	RTW_PRINT_SEL(sel, "RTW_ADAPTIVITY_EN_");
-
-	if (regsty->adaptivity_en == RTW_ADAPTIVITY_EN_DISABLE)
-		_RTW_PRINT_SEL(sel, "DISABLE\n");
-	else if (regsty->adaptivity_en == RTW_ADAPTIVITY_EN_ENABLE)
-		_RTW_PRINT_SEL(sel, "ENABLE\n");
-	else
-		_RTW_PRINT_SEL(sel, "INVALID\n");
-}
-
-#define RTW_ADAPTIVITY_MODE_NORMAL 0
-#define RTW_ADAPTIVITY_MODE_CARRIER_SENSE 1
-
-void rtw_odm_adaptivity_mode_msg(void *sel, _adapter *adapter)
-{
-	struct registry_priv *regsty = &adapter->registrypriv;
-
-	RTW_PRINT_SEL(sel, "RTW_ADAPTIVITY_MODE_");
-
-	if (regsty->adaptivity_mode == RTW_ADAPTIVITY_MODE_NORMAL)
-		_RTW_PRINT_SEL(sel, "NORMAL\n");
-	else if (regsty->adaptivity_mode == RTW_ADAPTIVITY_MODE_CARRIER_SENSE)
-		_RTW_PRINT_SEL(sel, "CARRIER_SENSE\n");
-	else
-		_RTW_PRINT_SEL(sel, "INVALID\n");
-}
-
-void rtw_odm_adaptivity_config_msg(void *sel, _adapter *adapter)
-{
-	rtw_odm_adaptivity_ver_msg(sel, adapter);
-	rtw_odm_adaptivity_en_msg(sel, adapter);
-	rtw_odm_adaptivity_mode_msg(sel, adapter);
-}
-
-bool rtw_odm_adaptivity_needed(_adapter *adapter)
-{
-	struct registry_priv *regsty = &adapter->registrypriv;
-	bool ret = _FALSE;
-
-	if (regsty->adaptivity_en == RTW_ADAPTIVITY_EN_ENABLE)
-		ret = _TRUE;
-
-	return ret;
 }
 
 void rtw_odm_adaptivity_parm_msg(void *sel, _adapter *adapter)
 {
 	struct dm_struct *odm = adapter_to_phydm(adapter);
 
-	rtw_odm_adaptivity_config_msg(sel, adapter);
+	rtw_cfg_adaptivity_config_msg(sel, adapter);
 
 	RTW_PRINT_SEL(sel, "%10s %16s\n"
 		, "th_l2h_ini", "th_edcca_hl_diff");
@@ -160,6 +152,7 @@ void rtw_odm_acquirespinlock(_adapter *adapter,	enum rt_spinlock_type type)
 	switch (type) {
 	case RT_IQK_SPINLOCK:
 		_enter_critical_bh(&pHalData->IQKSpinLock, &irqL);
+		break;
 	default:
 		break;
 	}
@@ -173,6 +166,7 @@ void rtw_odm_releasespinlock(_adapter *adapter,	enum rt_spinlock_type type)
 	switch (type) {
 	case RT_IQK_SPINLOCK:
 		_exit_critical_bh(&pHalData->IQKSpinLock, &irqL);
+		break;
 	default:
 		break;
 	}
@@ -183,29 +177,63 @@ s16 rtw_odm_get_tx_power_mbm(struct dm_struct *dm, u8 rfpath, u8 rate, u8 bw, u8
 	return phy_get_txpwr_single_mbm(dm->adapter, rfpath, mgn_rate_to_rs(rate), rate, bw, cch, 0, 0, 0, NULL);
 }
 
+#if CONFIG_TXPWR_LIMIT
+enum txpwr_lmt_reg_exc_match rtw_txpwr_hal_lmt_reg_exc_search(struct dvobj_priv* dvobj, const char *country, u8 domain, const char **reg_name)
+{
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(dvobj_get_primary_adapter(dvobj));
+	struct lmt_reg_exc *exc;
+
+	exc = hal_txpwr_lmt_reg_exc_search(hal_data, country, domain);
+	if (exc) {
+		*reg_name = exc->reg_name;
+		if ((exc->country[0] != '\0' || exc->country[1] != '\0')
+			&& _rtw_memcmp(country, exc->country, 2) ==  _TRUE)
+			return TXPWR_LMT_REG_EXC_MATCH_COUNTRY;
+		else if (exc->domain != 0xFF && domain == exc->domain)
+			return TXPWR_LMT_REG_EXC_MATCH_DOMAIN;
+		rtw_warn_on(1);
+	}
+	return TXPWR_LMT_REG_EXC_MATCH_NONE;
+}
+
+bool rtw_txpwr_hal_lmt_reg_search(struct dvobj_priv* dvobj, enum band_type band, const char *name)
+{
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(dvobj_get_primary_adapter(dvobj));
+	struct lmt_reg *ent = hal_txpwr_lmt_reg_get_by_name(hal_data, name);
+
+	if (ent) {
+		if (band == BAND_ON_24G && ent->lmt_2g)
+			return true;
+		#if CONFIG_IEEE80211_BAND_5GHZ
+		if (band == BAND_ON_5G && ent->lmt_5g)
+			return true;
+		#endif
+	}
+	return false;
+}
+
+void rtw_txpwr_hal_set_current_lmt_regs_by_name(struct dvobj_priv* dvobj, char *names_of_band[], int names_len_of_band[])
+{
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(dvobj_get_primary_adapter(dvobj));
+	enum band_type band;
+
+	for (band = 0; band < BAND_MAX; band++)
+		hal_txpwr_set_current_lmt_regs(hal_data, band, names_of_band[band], names_len_of_band[band]);
+}
+
+void rtw_txpwr_hal_get_current_lmt_regs_name(struct dvobj_priv* dvobj, char *names_of_band[], int names_len_of_band[])
+{
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(dvobj_get_primary_adapter(dvobj));
+	enum band_type band;
+
+	for (band = 0; band < BAND_MAX; band++)
+		hal_txpwr_get_current_lmt_regs(hal_data, band, &names_of_band[band], &names_len_of_band[band]);
+}
+#endif
+
 #ifdef CONFIG_DFS_MASTER
-inline void rtw_odm_radar_detect_reset(_adapter *adapter)
-{
-	phydm_radar_detect_reset(adapter_to_phydm(adapter));
-}
-
-inline void rtw_odm_radar_detect_disable(_adapter *adapter)
-{
-	phydm_radar_detect_disable(adapter_to_phydm(adapter));
-}
-
-/* called after ch, bw is set */
-inline void rtw_odm_radar_detect_enable(_adapter *adapter)
-{
-	phydm_radar_detect_enable(adapter_to_phydm(adapter));
-}
-
-inline BOOLEAN rtw_odm_radar_detect(_adapter *adapter)
-{
-	return phydm_radar_detect(adapter_to_phydm(adapter));
-}
-
-static enum phydm_dfs_region_domain _rtw_dfs_regd_to_phydm[] = {
+static const enum phydm_dfs_region_domain _rtw_dfs_regd_to_phydm[RTW_DFS_REGD_NUM] = {
+	/* elements not listed here will get PHYDM_DFS_DOMAIN_UNKNOWN(0) */
 	[RTW_DFS_REGD_NONE]	= PHYDM_DFS_DOMAIN_UNKNOWN,
 	[RTW_DFS_REGD_FCC]	= PHYDM_DFS_DOMAIN_FCC,
 	[RTW_DFS_REGD_MKK]	= PHYDM_DFS_DOMAIN_MKK,
@@ -214,12 +242,71 @@ static enum phydm_dfs_region_domain _rtw_dfs_regd_to_phydm[] = {
 
 #define rtw_dfs_regd_to_phydm(region) (((region) >= RTW_DFS_REGD_NUM) ? _rtw_dfs_regd_to_phydm[RTW_DFS_REGD_NONE] : _rtw_dfs_regd_to_phydm[(region)])
 
-void rtw_odm_update_dfs_region(struct dvobj_priv *dvobj)
+bool rtw_dfs_hal_region_supported(struct dvobj_priv* dvobj, enum rtw_dfs_regd domain)
 {
-	odm_cmn_info_init(dvobj_to_phydm(dvobj), ODM_CMNINFO_DFS_REGION_DOMAIN, rtw_dfs_regd_to_phydm(rtw_rfctl_get_dfs_domain(dvobj_to_rfctl(dvobj))));
+	return domain == RTW_DFS_REGD_NONE
+		|| rtw_dfs_regd_to_phydm(domain) != PHYDM_DFS_DOMAIN_UNKNOWN;
 }
 
-inline u8 rtw_odm_radar_detect_polling_int_ms(struct dvobj_priv *dvobj)
+void rtw_dfs_hal_update_region(struct dvobj_priv *dvobj, u8 band_idx, enum rtw_dfs_regd domain)
+{
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(dvobj_get_primary_adapter(dvobj));
+
+	rtw_hal_dfs_change_domain(hal_data, band_idx, rtw_dfs_regd_to_phydm(domain));
+}
+
+void rtw_dfs_hal_radar_detect_disable(struct dvobj_priv *dvobj, u8 band_idx)
+{
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(dvobj_get_primary_adapter(dvobj));
+
+	rtw_hal_dfs_rd_disable(hal_data, band_idx);
+}
+
+void rtw_dfs_hal_radar_detect_enable(struct dvobj_priv *dvobj, u8 band_idx, bool cac, u32 rd_freq_hi, u32 rd_freq_lo)
+{
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(dvobj_get_primary_adapter(dvobj));
+
+	rtw_hal_dfs_rd_enable_with_sp_freq_range(hal_data, band_idx, cac, rd_freq_hi, rd_freq_lo);
+}
+
+void rtw_dfs_hal_set_cac_status(struct dvobj_priv *dvobj, u8 band_idx, bool cac)
+{
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(dvobj_get_primary_adapter(dvobj));
+
+	rtw_hal_dfs_rd_set_cac_status(hal_data, band_idx, cac);
+}
+
+void rtw_dfs_hal_radar_detect_result_polling(struct dvobj_priv *dvobj, u8 band_idx, u8 *radar_cch, u8 *radar_bw)
+{
+	struct rf_ctl_t *rfctl = dvobj_to_rfctl(dvobj);
+	u32 cur_hi, cur_lo;
+
+	*radar_cch = 0;
+	*radar_bw = CHANNEL_WIDTH_MAX;
+
+	if (!rfctl->radar_detect_enabled || rfctl->radar_detect_hwband != band_idx)
+		return;
+
+	if (rtw_chbw_to_freq_range(dvobj->oper_channel, dvobj->oper_bwmode, dvobj->oper_ch_offset
+		, &cur_hi, &cur_lo) == _FALSE)
+		return;
+
+	if (!rtw_is_range_overlap(cur_hi, cur_lo
+		, rfctl->radar_detect_freq_hi[band_idx], rfctl->radar_detect_freq_lo[band_idx])
+		|| rtw_get_passing_time_ms(rtw_get_on_oper_ch_time(dvobj_get_primary_adapter(dvobj))) < 300
+	) {
+		/* offchannel, bypass radar detect */
+		return;
+	}
+
+	if (phydm_radar_detect(dvobj_to_phydm(dvobj))) {
+		/* TODO: PHYDM info for specific band and range */
+		*radar_cch = rfctl->radar_detect_cch[band_idx];
+		*radar_bw = rfctl->radar_detect_bw[band_idx];
+	}
+}
+
+u8 rtw_dfs_hal_radar_detect_polling_int_ms(struct dvobj_priv *dvobj)
 {
 	return phydm_dfs_polling_time(dvobj_to_phydm(dvobj));
 }

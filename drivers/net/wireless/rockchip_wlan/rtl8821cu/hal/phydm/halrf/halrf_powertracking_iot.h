@@ -99,7 +99,7 @@ odm_txpowertracking_init(
 
 struct iqk_matrix_regs_setting {
 	boolean	is_iqk_done;
-	s32		value[3][iqk_matrix_reg_num];
+	s32		value[1][iqk_matrix_reg_num];
 	boolean	is_bw_iqk_result_saved[3];
 };
 
@@ -131,6 +131,7 @@ struct dm_rf_calibration_struct {
 	u8	thermal_value_crystal;
 	u8	thermal_value_dpk_store;
 	u8	thermal_value_dpk_track;
+	u8	thermal_current_avg_value;
 	boolean	txpowertracking_in_progress;
 
 	boolean	is_reloadtxpowerindex;
@@ -148,9 +149,12 @@ struct dm_rf_calibration_struct {
 	boolean is_tx_power_changed;
 	s8	xtal_offset;
 	s8	xtal_offset_last;
+	u8	xtal_final;
 
-#if (RTL8710B_SUPPORT == 1 || RTL8721D_SUPPORT == 1)
+#if (RTL8710B_SUPPORT == 1)
 	struct iqk_matrix_regs_setting iqk_matrix_reg_setting[IQK_MATRIX_SETTINGS_NUM];
+#elif  (RTL8721D_SUPPORT == 1)
+	struct iqk_matrix_regs_setting iqk_matrix_reg_setting[1];
 #endif
 	u8	delta_lck;
 	s8  bb_swing_diff_2g, bb_swing_diff_5g; /* Unit: dB */
@@ -158,50 +162,19 @@ struct dm_rf_calibration_struct {
 	u8  delta_swing_table_idx_2g_cck_a_n[DELTA_SWINGIDX_SIZE];
 	u8  delta_swing_table_idx_2g_cck_b_p[DELTA_SWINGIDX_SIZE];
 	u8  delta_swing_table_idx_2g_cck_b_n[DELTA_SWINGIDX_SIZE];
-#if !(DM_ODM_SUPPORT_TYPE & ODM_IOT)
-	u8  delta_swing_table_idx_2g_cck_c_p[DELTA_SWINGIDX_SIZE];
-	u8  delta_swing_table_idx_2g_cck_c_n[DELTA_SWINGIDX_SIZE];
-	u8  delta_swing_table_idx_2g_cck_d_p[DELTA_SWINGIDX_SIZE];
-	u8  delta_swing_table_idx_2g_cck_d_n[DELTA_SWINGIDX_SIZE];
-#endif
+
 	u8  delta_swing_table_idx_2ga_p[DELTA_SWINGIDX_SIZE];
 	u8  delta_swing_table_idx_2ga_n[DELTA_SWINGIDX_SIZE];
 	u8  delta_swing_table_idx_2gb_p[DELTA_SWINGIDX_SIZE];
 	u8  delta_swing_table_idx_2gb_n[DELTA_SWINGIDX_SIZE];
-#if !(DM_ODM_SUPPORT_TYPE & ODM_IOT)
-	u8  delta_swing_table_idx_2gc_p[DELTA_SWINGIDX_SIZE];
-	u8  delta_swing_table_idx_2gc_n[DELTA_SWINGIDX_SIZE];
-	u8  delta_swing_table_idx_2gd_p[DELTA_SWINGIDX_SIZE];
-	u8  delta_swing_table_idx_2gd_n[DELTA_SWINGIDX_SIZE];
-#endif
 
-#if (RTL8195B_SUPPORT == 1)
+#if (RTL8195B_SUPPORT == 1 || RTL8721D_SUPPORT == 1 || RTL8730A_SUPPORT == 1 || RTL8735B_SUPPORT)
 	u8  delta_swing_table_idx_5ga_p[BAND_NUM][DELTA_SWINGIDX_SIZE];
 	u8  delta_swing_table_idx_5ga_n[BAND_NUM][DELTA_SWINGIDX_SIZE];
 	u8  delta_swing_table_idx_5gb_p[BAND_NUM][DELTA_SWINGIDX_SIZE];
 	u8  delta_swing_table_idx_5gb_n[BAND_NUM][DELTA_SWINGIDX_SIZE];
 #endif
 
-#if !(DM_ODM_SUPPORT_TYPE & ODM_IOT)
-	u8  delta_swing_table_idx_5gc_p[BAND_NUM][DELTA_SWINGIDX_SIZE];
-	u8  delta_swing_table_idx_5gc_n[BAND_NUM][DELTA_SWINGIDX_SIZE];
-	u8  delta_swing_table_idx_5gd_p[BAND_NUM][DELTA_SWINGIDX_SIZE];
-	u8  delta_swing_table_idx_5gd_n[BAND_NUM][DELTA_SWINGIDX_SIZE];
-#endif
-#if !(DM_ODM_SUPPORT_TYPE & ODM_IOT)
-	u8  delta_swing_tssi_table_2g_cck_a[DELTA_SWINTSSI_SIZE];
-	u8  delta_swing_tssi_table_2g_cck_b[DELTA_SWINTSSI_SIZE];
-	u8  delta_swing_tssi_table_2g_cck_c[DELTA_SWINTSSI_SIZE];
-	u8  delta_swing_tssi_table_2g_cck_d[DELTA_SWINTSSI_SIZE];
-	u8  delta_swing_tssi_table_2ga[DELTA_SWINTSSI_SIZE];
-	u8  delta_swing_tssi_table_2gb[DELTA_SWINTSSI_SIZE];
-	u8  delta_swing_tssi_table_2gc[DELTA_SWINTSSI_SIZE];
-	u8  delta_swing_tssi_table_2gd[DELTA_SWINTSSI_SIZE];
-	u8  delta_swing_tssi_table_5ga[BAND_NUM][DELTA_SWINTSSI_SIZE];
-	u8  delta_swing_tssi_table_5gb[BAND_NUM][DELTA_SWINTSSI_SIZE];
-	u8  delta_swing_tssi_table_5gc[BAND_NUM][DELTA_SWINTSSI_SIZE];
-	u8  delta_swing_tssi_table_5gd[BAND_NUM][DELTA_SWINTSSI_SIZE];
-#endif
 	s8  delta_swing_table_xtal_p[DELTA_SWINGIDX_SIZE];
 	s8  delta_swing_table_xtal_n[DELTA_SWINGIDX_SIZE];
 	u8  delta_swing_table_idx_2ga_p_8188e[DELTA_SWINGIDX_SIZE];
@@ -209,11 +182,8 @@ struct dm_rf_calibration_struct {
 
 	u8			bb_swing_idx_ofdm[MAX_RF_PATH];
 	u8			bb_swing_idx_ofdm_current;
-#if (DM_ODM_SUPPORT_TYPE & (ODM_WIN | ODM_CE | ODM_IOT))
 	u8			bb_swing_idx_ofdm_base[MAX_RF_PATH];
-#else
-	u8			bb_swing_idx_ofdm_base;
-#endif
+
 	boolean		default_bb_swing_index_flag;
 	boolean			bb_swing_flag_ofdm;
 	u8			bb_swing_idx_cck;
@@ -261,17 +231,12 @@ struct dm_rf_calibration_struct {
 	u32	IQK_MAC_backup[IQK_MAC_REG_NUM];
 	u32	IQK_BB_backup_recover[9];
 	u32	IQK_BB_backup[IQK_BB_REG_NUM];
-#if !(DM_ODM_SUPPORT_TYPE & ODM_IOT)
-	u32 	tx_iqc_8723b[2][3][2]; /* { {S1: 0xc94, 0xc80, 0xc4c} , {S0: 0xc9c, 0xc88, 0xc4c}} */
-	u32 	rx_iqc_8723b[2][2][2]; /* { {S1: 0xc14, 0xca0} ,           {S0: 0xc14, 0xca0}} */
-	u32	tx_iqc_8703b[3][2];	/* { {S1: 0xc94, 0xc80, 0xc4c} , {S0: 0xc9c, 0xc88, 0xc4c}}*/
-	u32	rx_iqc_8703b[2][2];	/* { {S1: 0xc14, 0xca0} ,           {S0: 0xc14, 0xca0}}*/
-	u32	tx_iqc_8723d[2][3][2];	/* { {S1: 0xc94, 0xc80, 0xc4c} , {S0: 0xc9c, 0xc88, 0xc4c}}*/
-	u32	rx_iqc_8723d[2][2][2];	/* { {S1: 0xc14, 0xca0} ,           {S0: 0xc14, 0xca0}}*/
-#endif
+
 	/* JJ ADD 20161014 */
+#if (RTL8710B_SUPPORT == 1)
 	u32	tx_iqc_8710b[2][3][2];	/* { {S1: 0xc94, 0xc80, 0xc4c} , {S0: 0xc9c, 0xc88, 0xc4c}}*/
 	u32	rx_iqc_8710b[2][2][2];	/* { {S1: 0xc14, 0xca0} ,           {S0: 0xc14, 0xca0}}*/
+#endif
 
 	u8	iqk_step;
 	u8	kcount;
@@ -309,6 +274,7 @@ struct dm_rf_calibration_struct {
 	/*Add by Yuchen for Kfree Phydm*/
 	u8			reg_rf_kfree_enable;	/*for registry*/
 	u8			rf_kfree_enable;		/*for efuse enable check*/
+	boolean pa_dynamic_bias_enable;
 
 };
 

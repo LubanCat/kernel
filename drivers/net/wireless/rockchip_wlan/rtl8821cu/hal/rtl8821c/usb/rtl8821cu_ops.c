@@ -52,9 +52,15 @@ static u8 sethwreg(PADAPTER padapter, u8 variable, u8 *val)
 			pHalData->rxagg_usb_size = 0;
 
 		} else {
+#ifdef CONFIG_PLATFORM_I386_PC
 			/* default setting */
 			pHalData->rxagg_usb_timeout = 0x20;
 			pHalData->rxagg_usb_size = 0x05;
+#else
+			/* Avoid the Synopsys USB host receive buffer size limit */
+			pHalData->rxagg_usb_timeout = 0x20;
+			pHalData->rxagg_usb_size = 0x04;
+#endif
 		}
 		rtw_halmac_rx_agg_switch(pdvobjpriv, _TRUE);
 #if 0
@@ -128,6 +134,12 @@ static void gethwreg(PADAPTER padapter, u8 variable, u8 *val)
 		*val = rtw_read8(padapter, REG_USB_HCPWM_8821C);
 #endif /* CONFIG_LPS_LCLK */
 		break;
+	case HW_VAR_RPWM_TOG:
+#ifdef CONFIG_LPS_LCLK
+		*val = rtw_read8(padapter, REG_USB_HRPWM_8821C);
+		*val &= BIT_TOGGLE_8821C;
+#endif /* CONFIG_LPS_LCLK */
+			break;
 	default:
 		rtl8821c_gethwreg(padapter, variable, val);
 		break;

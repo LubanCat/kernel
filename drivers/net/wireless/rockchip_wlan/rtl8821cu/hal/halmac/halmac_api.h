@@ -20,13 +20,14 @@
 
 #define HALMAC_MAJOR_VER        1
 #define HALMAC_PROTOTYPE_VER    6
-#define HALMAC_MINOR_VER        6
-#define HALMAC_PATCH_VER        22
+#define HALMAC_MINOR_VER        7
+#define HALMAC_PATCH_VER        15
 
 #define HALMAC_88XX_SUPPORT	(HALMAC_8821C_SUPPORT || \
 				 HALMAC_8822B_SUPPORT || \
 				 HALMAC_8822C_SUPPORT || \
-				 HALMAC_8812F_SUPPORT)
+				 HALMAC_8812F_SUPPORT || \
+				 HALMAC_8822E_SUPPORT)
 
 #define HALMAC_88XX_V1_SUPPORT	HALMAC_8814B_SUPPORT
 
@@ -74,6 +75,11 @@
 #if HALMAC_8812F_SUPPORT
 #include "halmac_reg_8812f.h"
 #include "halmac_bit_8812f.h"
+#endif
+
+#if HALMAC_8822E_SUPPORT
+#include "halmac_reg_8822e.h"
+#include "halmac_bit_8822e.h"
 #endif
 
 #if (HALMAC_PLATFORM_WINDOWS || HALMAC_PLATFORM_LINUX)

@@ -105,6 +105,18 @@ void halrf_basic_profile(void *dm_void, u32 *_used, char *output, u32 *_out_len)
 		rf_release_ver = RF_RELEASE_VERSION_8195B;
 		break;
 #endif
+#if (RTL8735B_SUPPORT)
+	case ODM_RTL8735B:
+		rf_release_ver = RF_RELEASE_VERSION_8735B;
+		break;
+#endif
+
+#if (RTL8822E_SUPPORT)
+	case ODM_RTL8822E:
+		rf_release_ver = RF_RELEASE_VERSION_8822E;
+		break;
+#endif
+
 	}
 
 	PDM_SNPF(out_len, used, output + used, out_len - used, "  %-35s: %d\n",
@@ -128,7 +140,13 @@ void halrf_basic_profile(void *dm_void, u32 *_used, char *output, u32 *_out_len)
 	PDM_SNPF(out_len, used, output + used, out_len - used, "  %-35s: %s\n",
 		 "TSSI", HALRF_TSSI_VER);
 	PDM_SNPF(out_len, used, output + used, out_len - used, "  %-35s: %s\n",
+		 "RXDCK", HALRF_RXDCK_VER);
+	PDM_SNPF(out_len, used, output + used, out_len - used, "  %-35s: %s\n",
+		 "RCK", HALRF_RCK_VER);
+	PDM_SNPF(out_len, used, output + used, out_len - used, "  %-35s: %s\n",
 		 "KFREE", HALRF_KFREE_VER);
+	PDM_SNPF(out_len, used, output + used, out_len - used, "  %-35s: %s\n",
+		 "RX Spur K", HALRF_RXSPURK_VER);
 	PDM_SNPF(out_len, used, output + used, out_len - used, "  %-35s: %s\n",
 		 "TX 2G Current Calibration", HALRF_PABIASK_VER);
 	PDM_SNPF(out_len, used, output + used, out_len - used, "  %-35s: %s\n",
@@ -151,8 +169,7 @@ void halrf_debug_trace(void *dm_void, char input[][16], u32 *_used,
 	u8 i;
 
 	for (i = 0; i < 5; i++)
-		if (input[i + 1])
-			PHYDM_SSCANF(input[i + 2], DCMD_DECIMAL, &rf_var[i]);
+		PHYDM_SSCANF(input[i + 2], DCMD_DECIMAL, &rf_var[i]);
 
 	if (rf_var[0] == 100) {
 		PDM_SNPF(out_len, used, output + used, out_len - used,
@@ -176,6 +193,15 @@ void halrf_debug_trace(void *dm_void, char input[][16], u32 *_used,
 		PDM_SNPF(out_len, used, output + used, out_len - used,
 			 "06. (( %s ))DPK_TRACK\n",
 			 ((rf->rf_dbg_comp & DBG_RF_DPK_TRACK) ? ("V") : (".")));
+		PDM_SNPF(out_len, used, output + used, out_len - used,
+			 "08. (( %s ))RX_DCK\n",
+			 ((rf->rf_dbg_comp & DBG_RF_RXDCK) ? ("V") : (".")));
+		PDM_SNPF(out_len, used, output + used, out_len - used,
+			 "09. (( %s ))RFK\n",
+			 ((rf->rf_dbg_comp & DBG_RF_RFK) ? ("V") : (".")));
+		PDM_SNPF(out_len, used, output + used, out_len - used,
+			 "11. (( %s ))RX Spur K\n",
+			 ((rf->rf_dbg_comp & DBG_RF_RXSPURK) ? ("V") : (".")));
 		PDM_SNPF(out_len, used, output + used, out_len - used,
 			 "29. (( %s ))MP\n",
 			 ((rf->rf_dbg_comp & DBG_RF_MP) ? ("V") : (".")));
@@ -211,8 +237,7 @@ void halrf_dack_debug_cmd(void *dm_void, char input[][16])
 	u8 i;
 
 	for (i = 0; i < 7; i++)
-		if (input[i + 1])
-			PHYDM_SSCANF(input[i + 2], DCMD_DECIMAL, &dm_value[i]);
+		PHYDM_SSCANF(input[i + 2], DCMD_DECIMAL, &dm_value[i]);
 
 	if (dm_value[0] == 1)
 		halrf_dack_trigger(dm, true);
@@ -236,10 +261,18 @@ enum halrf_CMD_ID {
 	HALRF_DPK,
 	HALRF_DACK,
 	HALRF_DACK_DEBUG,
+	HALRF_RX_DCK,
 	HALRF_DUMP_RFK_REG,
 #ifdef CONFIG_2G_BAND_SHIFT
 	HAL_BAND_SHIFT,
 #endif
+	HALRF_PWR_TABLE,
+	HALRF_TXGAPK,
+	HALRF_XTAL_TRK,
+	HALRF_TSSI,
+	HALRF_RX_SPURK,
+	HALRF_POWER_TRACKING,
+	HALRF_DZ_DBG,
 };
 
 struct halrf_command halrf_cmd_ary[] = {
@@ -253,10 +286,18 @@ struct halrf_command halrf_cmd_ary[] = {
 	{"dpk", HALRF_DPK},
 	{"dack", HALRF_DACK},
 	{"dack_dbg", HALRF_DACK_DEBUG},
+	{"rx_dck", HALRF_RX_DCK},
 	{"dump_rfk_reg", HALRF_DUMP_RFK_REG},
 #ifdef CONFIG_2G_BAND_SHIFT
 	{"band_shift", HAL_BAND_SHIFT},
 #endif
+	{"pwr_table", HALRF_PWR_TABLE},
+	{"txgapk", HALRF_TXGAPK},
+	{"xtal_trk", HALRF_XTAL_TRK},
+	{"tssi", HALRF_TSSI},
+	{"rxspurk", HALRF_RX_SPURK},
+	{"pwr_trk", HALRF_POWER_TRACKING},
+	{"dz_dbg",HALRF_DZ_DBG},
 };
 
 void halrf_cmd_parser(void *dm_void, char input[][16], u32 *_used, char *output,
@@ -272,6 +313,7 @@ void halrf_cmd_parser(void *dm_void, char input[][16], u32 *_used, char *output,
 	u32 used = *_used;
 	u32 out_len = *_out_len;
 
+	input[input_num-1][strlen(input[input_num-1]) - 1] = '\0';
 	/* Parsing Cmd ID */
 	for (i = 0; i < halrf_ary_size; i++) {
 		if (strcmp(halrf_cmd_ary[i].name, input[1]) == 0) {
@@ -329,11 +371,8 @@ void halrf_cmd_parser(void *dm_void, char input[][16], u32 *_used, char *output,
 		PDM_SNPF(out_len, used, output + used, out_len - used,
 			 "IQK DEBUG!!!!!\n");
 		for (i = 0; i < 5; i++) {
-			if (input[i + 1]) {
-				PHYDM_SSCANF(input[i + 2], DCMD_HEX,
-					     &rf_var[i]);
-				input_idx++;
-			}
+			PHYDM_SSCANF(input[i + 2], DCMD_HEX, &rf_var[i]);
+			input_idx++;
 		}
 
 		if (input_idx >= 1) {
@@ -357,8 +396,34 @@ void halrf_cmd_parser(void *dm_void, char input[][16], u32 *_used, char *output,
 			 "DACK DEBUG\n");
 		halrf_dack_dbg(dm);
 		break;
+	case HALRF_RX_DCK:
+		halrf_rx_dck_debug_cmd(dm, input, &used, output, &out_len);
+		break;
 	case HALRF_DUMP_RFK_REG:
 		halrf_dump_rfk_reg(dm, input, &used, output, &out_len);
+		break;
+	case HALRF_PWR_TABLE:
+		halrf_pwr_table_debug_cmd(dm, input, &used, output, &out_len);
+		break;
+	case HALRF_TXGAPK:
+		halrf_txgapk_debug_cmd(dm, input, &used, output, &out_len);
+		break;
+	case HALRF_XTAL_TRK:
+		halrf_xtal_trk_debug_cmd(dm, input, &used, output, &out_len);
+		break;
+	case HALRF_TSSI:
+		halrf_tssi_debug_cmd(dm, input, &used, output, &out_len);
+		break;
+	case HALRF_RX_SPURK:
+		halrf_rxspurk_debug_cmd(dm, input, &used, output, &out_len);
+		break;
+	case HALRF_POWER_TRACKING:
+		halrf_pwr_trk_debug_cmd(dm, input, &used, output, &out_len);
+		break;
+	case HALRF_DZ_DBG:
+#ifdef  HALRF_DZ_LOG
+		halrf_dz_dbg_cmd(dm, input, &used, output, &out_len);
+#endif
 		break;
 	default:
 		break;
@@ -376,9 +441,8 @@ void halrf_init_debug_setting(void *dm_void)
 
 	rf->rf_dbg_comp =
 
-	DBG_RF_RFK		|
 #if DBG
-#if 0
+#if 1
 	/*DBG_RF_TX_PWR_TRACK	| */
 	/*DBG_RF_IQK		| */
 	/*DBG_RF_LCK		| */
@@ -386,9 +450,16 @@ void halrf_init_debug_setting(void *dm_void)
 	/*DBG_RF_TXGAPK		| */
 	/*DBG_RF_DACK		| */
 	/*DBG_RF_DPK_TRACK	| */ 
+	/*DBG_RF_RXDCK		| */
+	/*DBG_RF_RFK		| */
 	/*DBG_RF_MP		| */
 	/*DBG_RF_TMP		| */
 	/*DBG_RF_INIT		| */
+	/*DBG_RF_RXSPURK	| */
+	/*DBG_RF_PABIAS_TRACK	| */
+#ifdef  HALRF_DZ_LOG
+	DBG_RF_DZ_LOG		|
+#endif
 #endif
 #endif
 	0;

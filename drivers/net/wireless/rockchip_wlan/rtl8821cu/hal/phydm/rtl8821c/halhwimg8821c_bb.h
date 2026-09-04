@@ -23,7 +23,7 @@
  *
  *****************************************************************************/
 
-/*Image2HeaderVersion: R3 1.5.10.1*/
+/*Image2HeaderVersion: R3 1.5.11.6*/
 #if (RTL8821C_SUPPORT == 1)
 #ifndef __INC_MP_BB_HW_IMG_8821C_H
 #define __INC_MP_BB_HW_IMG_8821C_H

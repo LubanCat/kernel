@@ -133,7 +133,7 @@ void rtw_drv_free_vir_ifaces(struct dvobj_priv *dvobj);
 #endif
 
 void rtw_ndev_destructor(_nic_hdl ndev);
-#ifdef CONFIG_ARP_KEEP_ALIVE
+#ifdef CONFIG_ARP_KEEP_ALIVE_GW
 int rtw_gw_addr_query(_adapter *padapter);
 #endif
 

@@ -48,6 +48,7 @@ void rtw_dyn_soml_config(_adapter *adapter);
 #endif
 void rtw_phydm_set_rrsr(_adapter *adapter, u32 rrsr_value, bool write_rrsr);
 void rtw_phydm_dyn_rrsr_en(_adapter *adapter, bool en_rrsr);
+void rtw_phydm_update_ap_vendor_ie(_adapter *adapter);
 void rtw_phydm_watchdog(_adapter *adapter, bool in_lps);
 
 void rtw_hal_update_iqk_fw_offload_cap(_adapter *adapter);
@@ -95,8 +96,8 @@ enum phy_cnt {
 	CRC32_ERROR_CCK,
 };
 u32 rtw_phydm_get_phy_cnt(_adapter *adapter, enum phy_cnt cnt);
-#if ((RTL8822B_SUPPORT == 1) || (RTL8821C_SUPPORT == 1) || (RTL8814B_SUPPORT == 1) || (RTL8822C_SUPPORT == 1) \
-	|| (RTL8723F_SUPPORT == 1))
+#if ((RTL8822B_SUPPORT == 1) || (RTL8821C_SUPPORT == 1) || (RTL8814B_SUPPORT == 1) \
+	|| (RTL8822C_SUPPORT == 1) || (RTL8723F_SUPPORT == 1) || (RTL8822E_SUPPORT == 1))
 void rtw_phydm_iqk_trigger(_adapter *adapter);
 #endif
 void rtw_phydm_read_efuse(_adapter *adapter);

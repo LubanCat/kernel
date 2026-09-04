@@ -146,29 +146,28 @@ u8 phy_get_pg_txpwr_idx(_adapter *pAdapter
 
 #if CONFIG_TXPWR_LIMIT
 s8 phy_get_txpwr_lmt(_adapter *adapter
-	, const char *regd_name
+	, const char *lmt_name
 	, BAND_TYPE band, enum channel_width bw
 	, u8 tlrs, u8 ntx_idx, u8 cch, u8 lock
 );
 
 s8 phy_get_txpwr_lmt_diff(_adapter *adapter
-	, const char *regd_name
+	, const char *lmt_name
 	, BAND_TYPE band, enum channel_width bw
 	, u8 rfpath, u8 rs, u8 tlrs, u8 ntx_idx, u8 cch, u8 lock
 );
 
 s8 phy_get_txpwr_lmt_sub_chs(_adapter *adapter
-	, const char *regd_name
+	, const char *lmt_name
 	, BAND_TYPE band, enum channel_width bw
 	, u8 rfpath, u8 rate, u8 ntx_idx, u8 cch, u8 opch, bool reg_max
 );
 #else
-#define phy_get_txpwr_lmt(adapter, regd_name, band, bw, tlrs, ntx_idx, cch, lock) (GET_HAL_SPEC(adapter)->txgi_max)
-#define phy_get_txpwr_lmt_diff(adapter, regd_name, band, bw, rfpath, rs, tlrs, ntx_idx, cch, lock) (GET_HAL_SPEC(adapter)->txgi_max)
-#define phy_get_txpwr_lmt_sub_chs(adapter, regd_name, band, bw, rfpath, rate, ntx_idx, cch, opch, reg_max) (GET_HAL_SPEC(adapter)->txgi_max)
+#define phy_get_txpwr_lmt(adapter, lmt_name, band, bw, tlrs, ntx_idx, cch, lock) (GET_HAL_SPEC(adapter)->txgi_max)
+#define phy_get_txpwr_lmt_diff(adapter, lmt_name, band, bw, rfpath, rs, tlrs, ntx_idx, cch, lock) (GET_HAL_SPEC(adapter)->txgi_max)
+#define phy_get_txpwr_lmt_sub_chs(adapter, lmt_name, band, bw, rfpath, rate, ntx_idx, cch, opch, reg_max) (GET_HAL_SPEC(adapter)->txgi_max)
 #endif /* CONFIG_TXPWR_LIMIT */
 
-void dump_txpwr_tpc_settings(void *sel, _adapter *adapter);
 void dump_txpwr_antenna_gain(void *sel, _adapter *adapter);
 
 s8 phy_get_txpwr_target(_adapter *adapter, u8 rfpath, RATE_SECTION rs, u8 rate, u8 ntx_idx
@@ -196,6 +195,8 @@ s16 phy_get_txpwr_total_max_mbm(_adapter *adapter
 s8
 phy_get_tx_power_final_absolute_value(_adapter *adapter, u8 rfpath, u8 rate,
 				      enum channel_width bw, u8 channel);
+
+void rtw_txpwr_hal_update_pwr(struct dvobj_priv *dvobj, enum phl_band_idx band_idx);
 
 s8
 PHY_GetTxPowerTrackingOffset(
@@ -288,8 +289,11 @@ void dump_hal_txpwr_info_5g(void *sel, _adapter *adapter, u8 rfpath_num, u8 max_
 void hal_load_txpwr_info(_adapter *adapter);
 #endif
 
+void rtw_txpwr_hal_dump_target_info(void *sel, struct dvobj_priv *dvobj);
+struct tx_power_ext_info;
+bool rtw_txpwr_hal_get_ext_info(struct dvobj_priv *dvobj, struct tx_power_ext_info *info);
+
 #ifdef CONFIG_PROC_DEBUG
-void dump_tx_power_ext_info(void *sel, _adapter *adapter);
 void dump_target_tx_power(void *sel, _adapter *adapter);
 void dump_tx_power_by_rate(void *sel, _adapter *adapter);
 #endif

@@ -106,6 +106,9 @@ void halwifionly_phy_set_bb_reg(void *pwifionlyContext, u32 RegAddr, u32 BitMask
 
 void hal_btcoex_wifionly_switchband_notify(PADAPTER padapter)
 {
+#ifdef CONFIG_RTL8723B
+	return;
+#else
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(padapter);
 	u8 is_5g = _FALSE;
 
@@ -137,10 +140,20 @@ void hal_btcoex_wifionly_switchband_notify(PADAPTER padapter)
 	else if (IS_HARDWARE_TYPE_8723F(padapter))
 		ex_hal8723f_wifi_only_switchbandnotify(&GLBtCoexistWifiOnly, is_5g);
 #endif
+
+#ifdef CONFIG_RTL8822E
+	else if (IS_HARDWARE_TYPE_8822E(padapter))
+		ex_hal8822e_wifi_only_switchbandnotify(&GLBtCoexistWifiOnly, is_5g);
+#endif
+
+#endif
 }
 
 void hal_btcoex_wifionly_scan_notify(PADAPTER padapter)
 {
+#ifdef CONFIG_RTL8723B
+	return;
+#else
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(padapter);
 	u8 is_5g = _FALSE;
 
@@ -167,10 +180,25 @@ void hal_btcoex_wifionly_scan_notify(PADAPTER padapter)
 	else if (IS_HARDWARE_TYPE_8814B(padapter))
 		ex_hal8814b_wifi_only_scannotify(&GLBtCoexistWifiOnly, is_5g);
 #endif
+
+#ifdef CONFIG_RTL8723F
+	else if (IS_HARDWARE_TYPE_8723F(padapter))
+		ex_hal8723f_wifi_only_scannotify(&GLBtCoexistWifiOnly, is_5g);
+#endif
+
+#ifdef CONFIG_RTL8822E
+	else if (IS_HARDWARE_TYPE_8822E(padapter))
+		ex_hal8822e_wifi_only_scannotify(&GLBtCoexistWifiOnly, is_5g);
+#endif
+
+#endif
 }
 
 void hal_btcoex_wifionly_connect_notify(PADAPTER padapter)
 {
+#ifdef CONFIG_RTL8723B
+	return;
+#else
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(padapter);
 	u8 is_5g = _FALSE;
 
@@ -201,6 +229,13 @@ void hal_btcoex_wifionly_connect_notify(PADAPTER padapter)
 #ifdef CONFIG_RTL8723F
 	else if (IS_HARDWARE_TYPE_8723F(padapter))
 		ex_hal8723f_wifi_only_connectnotify(&GLBtCoexistWifiOnly, is_5g);
+#endif
+
+#ifdef CONFIG_RTL8822E
+	else if (IS_HARDWARE_TYPE_8822E(padapter))
+		ex_hal8822e_wifi_only_connectnotify(&GLBtCoexistWifiOnly, is_5g);
+#endif
+
 #endif
 }
 
@@ -237,6 +272,11 @@ void hal_btcoex_wifionly_hw_config(PADAPTER padapter)
 #ifdef CONFIG_RTL8723F
 	else if (IS_HARDWARE_TYPE_8723F(padapter))
 		ex_hal8723f_wifi_only_hw_config(pwifionlycfg);
+#endif
+
+#ifdef CONFIG_RTL8822E
+	else if (IS_HARDWARE_TYPE_8822E(padapter))
+		ex_hal8822e_wifi_only_hw_config(pwifionlycfg);
 #endif
 }
 

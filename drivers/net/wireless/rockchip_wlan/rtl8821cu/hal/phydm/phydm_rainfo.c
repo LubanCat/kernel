@@ -176,7 +176,7 @@ void phydm_fw_fix_rate(void *dm_void, u8 en, u8 macid, u8 bw, u8 rate)
 			reg_u32_tmp = BYTE_2_DWORD(0x60, macid, bw, rate);
 		else
 			reg_u32_tmp = 0x40000000;
-		if (dm->support_ic_type & ODM_RTL8814B)
+		if (dm->support_ic_type & (ODM_RTL8814B | ODM_RTL8814C))
 			odm_set_mac_reg(dm, R_0x448, MASKDWORD, reg_u32_tmp);
 		else
 			odm_set_mac_reg(dm, R_0x450, MASKDWORD, reg_u32_tmp);
@@ -189,6 +189,21 @@ void phydm_fw_fix_rate(void *dm_void, u8 en, u8 macid, u8 bw, u8 rate)
 	} else {
 		PHYDM_DBG(dm, ODM_COMP_API, "Auto Rate\n");
 	}
+}
+
+void phydm_set_ramask_byrssi(void *dm_void, u8 en)
+{
+	struct dm_struct *dm = (struct dm_struct *)dm_void;
+	struct ra_table *ra_t = &dm->dm_ra_table;
+
+	PHYDM_DBG(dm, DBG_RA_MASK, "%s ======>\n", __func__);
+
+	if (en)
+            ra_t->ra_ramask_byrssi = 1;
+	else
+            ra_t->ra_ramask_byrssi = 0;
+
+	PHYDM_DBG(dm, DBG_RA_MASK, "User Enable RaMask by RSSI: %x\n", en);
 }
 
 void phydm_ra_debug(void *dm_void, char input[][16], u32 *_used, char *output,
@@ -309,7 +324,8 @@ void phydm_ra_mask_report_h2c_trigger(void *dm_void,
 
 	phydm_fw_trace_en_h2c(dm, true, 1, 2, trig_rpt->macid);
 
-	trig_rpt->ra_mask_rpt_stamp = ra_tab->ra_mask_rpt_stamp;
+	/*Avoid the problem that the trigger's stamp is always less then result's stamp*/
+	trig_rpt->ra_mask_rpt_stamp = ra_tab->ra_mask_rpt_stamp + 1;
 }
 void phydm_ra_mask_report_c2h_result(void *dm_void, struct ra_mask_rpt *rpt)
 {
@@ -764,6 +780,7 @@ void phydm_rate_adaptive_mask_init(void *dm_void)
 	ra_t->ldpc_thres = 35;
 	ra_t->up_ramask_cnt = 0;
 	ra_t->up_ramask_cnt_tmp = 0;
+	ra_t->ra_ramask_byrssi = 1;
 }
 
 void phydm_refresh_rate_adaptive_mask(void *dm_void)
@@ -939,6 +956,7 @@ u64 phydm_get_bb_mod_ra_mask(void *dm_void, u8 sta_idx)
 	struct phydm_iot_center	*iot_table = &dm->iot_table;
 	struct cmn_sta_info *sta = dm->phydm_sta_info[sta_idx];
 	struct ra_sta_info *ra = NULL;
+	struct ra_table *ra_t = &dm->dm_ra_table;
 	enum channel_width bw = 0;
 	enum wireless_set wrls_mode = 0;
 #if (DM_ODM_SUPPORT_TYPE == ODM_AP)
@@ -947,6 +965,7 @@ u64 phydm_get_bb_mod_ra_mask(void *dm_void, u8 sta_idx)
 	u8 tx_stream_num = 1;
 	u8 rssi_lv = 0;
 	u64 ra_mask_bitmap = 0;
+	u64 ra_mask_before_rssi_lv = 0;
 
 	if (is_sta_active(sta)) {
 		ra = &sta->ra_info;
@@ -1061,6 +1080,9 @@ u64 phydm_get_bb_mod_ra_mask(void *dm_void, u8 sta_idx)
 		return ra_mask_bitmap;
 	}
 #endif
+
+	ra_mask_before_rssi_lv = ra_mask_bitmap;
+
 	/*@[Modify RA Mask by RSSI level]*/
 	if (wrls_mode != WIRELESS_CCK) {
 		if (iot_table->patch_id_40010700) {
@@ -1070,7 +1092,9 @@ u64 phydm_get_bb_mod_ra_mask(void *dm_void, u8 sta_idx)
 			return ra_mask_bitmap;
 		}
 
-		if (rssi_lv == 0)
+		if (!ra_t->ra_ramask_byrssi)
+			ra_mask_bitmap &= 0xffffffffffffffff;
+		else if (rssi_lv == 0)
 			ra_mask_bitmap &= 0xffffffffffffffff;
 		else if (rssi_lv == 1)
 			ra_mask_bitmap &= 0xfffffffffffffff0;
@@ -1083,6 +1107,21 @@ u64 phydm_get_bb_mod_ra_mask(void *dm_void, u8 sta_idx)
 		else if (rssi_lv >= 5)
 			ra_mask_bitmap &= 0xffffffffffff0f00;
 	}
+
+	/*Avoid empty HT/VHT ramask when HT/VHT mode is enabled*/
+	if ((ra_mask_bitmap >> 12) == 0x0) {
+		ra_mask_bitmap |= (ra_mask_before_rssi_lv & 0xfffffffffffff000);
+		PHYDM_DBG(dm, DBG_RA,
+			 "Empty HT/VHT ramask! Bypass HT/VHT ramask_by_rssi\n");
+	}
+
+	/*Avoid empty legacy ramask after foolproof of HT/VHT mode*/
+	if (ra_mask_bitmap == 0x0) {
+		ra_mask_bitmap |= (ra_mask_before_rssi_lv & 0xfff);
+		PHYDM_DBG(dm, DBG_RA,
+			 "Empty ramask! Bypass a/b/g ramask_by_rssi\n");
+	}
+
 	PHYDM_DBG(dm, DBG_RA, "Mod by RSSI=0x%llx\n", ra_mask_bitmap);
 
 	return ra_mask_bitmap;
@@ -1168,6 +1207,8 @@ u8 phydm_get_rate_id(void *dm_void, u8 sta_idx)
 			rate_id_idx = PHYDM_GN_N2SS;
 		else if (tx_stream_num == 3)
 			rate_id_idx = PHYDM_ARFR5_N_3SS;
+		else if (tx_stream_num == 4)
+			rate_id_idx = PHYDM_ARFR7_N_4SS;
 	} else if (wrls_mode == (WIRELESS_CCK | WIRELESS_OFDM | WIRELESS_HT)) {
 	 /*@BGN mode*/
 		if (bw == CHANNEL_WIDTH_40) {
@@ -1287,6 +1328,7 @@ void phydm_ra_h2c(void *dm_void, u8 sta_idx, u8 dis_ra, u8 dis_pt,
 	PHYDM_DBG(dm, DBG_RA, "%s ======>\n", __func__);
 	PHYDM_DBG(dm, DBG_RA, "MACID=%d\n", sta->mac_id);
 	
+
 #ifdef PHYDM_POWER_TRAINING_SUPPORT
 	if ((dm->support_ability & ODM_BB_PWR_TRAIN) && !dm->is_disable_power_training)
 		dis_pt = false;

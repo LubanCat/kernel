@@ -956,6 +956,9 @@ odm_txpowertracking_check_iot(
 	if (!(rf->rf_supportability & HAL_RF_TX_PWR_TRACK))
 		return;
 
+	if (dm->support_ic_type == ODM_RTL8735B && rf->is_tssi_in_progress == 1)
+		return;
+
 	if (!dm->rf_calibrate_info.tm_trigger) {
 		if (dm->support_ic_type == ODM_RTL8195B)
 			odm_set_rf_reg(dm, RF_PATH_A, RF_T_METER_NEW, (BIT(17) | BIT(16)), 0x03);
@@ -963,10 +966,17 @@ odm_txpowertracking_check_iot(
 			dm->support_ic_type == ODM_RTL8710C)
 			odm_set_rf_reg(dm, RF_PATH_A, RF_T_METER_NEW,
 				       (BIT(12) | BIT(11)), 0x03);
+		 else if (dm->support_ic_type == ODM_RTL8735B) {
+			odm_set_rf_reg(dm, RF_PATH_A, RF_0x42, BIT(19), 0x0);
+			odm_set_rf_reg(dm, RF_PATH_A, RF_0x42, BIT(19), 0x1);
+			odm_set_rf_reg(dm, RF_PATH_A, RF_0x42, BIT(19), 0x0);
+			ODM_delay_us(100);
+		}
 
 		dm->rf_calibrate_info.tm_trigger = 1;
 		return;
 	}
+
 	odm_txpowertracking_callback_thermal_meter(dm);
 	dm->rf_calibrate_info.tm_trigger = 0;
 }

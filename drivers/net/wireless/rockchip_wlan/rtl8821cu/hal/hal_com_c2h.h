@@ -67,6 +67,7 @@ typedef enum _C2H_EVT {
 	C2H_MAC_HIDDEN_RPT = 0x19,
 	C2H_MAC_HIDDEN_RPT_2 = 0x1A,
 	C2H_BCN_EARLY_RPT = 0x1E,
+	C2H_TX_PAUSE_RPT = 0x20,
 	C2H_DEFEATURE_DBG = 0x22,
 	C2H_CUSTOMER_STR_RPT = 0x24,
 	C2H_CUSTOMER_STR_RPT_2 = 0x25,
@@ -75,6 +76,7 @@ typedef enum _C2H_EVT {
 	C2H_PER_RATE_RPT = 0x2c,
 #endif
 	C2H_LPS_STATUS_RPT = 0x32,
+	C2H_BT_LE_AUDIO_INFO = 0x46,
 	C2H_SET_TXPWR_FINISH = 0x70,
 	C2H_DEFEATURE_RSVD = 0xFD,
 	C2H_EXTEND = 0xff,
@@ -104,6 +106,12 @@ int hal_read_mac_hidden_rpt(_adapter *adapter);
 #else
 #define hal_read_mac_hidden_rpt(adapter) _SUCCESS
 #endif /* CONFIG_RTW_MAC_HIDDEN_RPT */
+
+#ifdef CONFIG_TX_PAUSE_FW_CTRL
+/* C2H_TX_PAUSE_RPT, 0x20 */
+#define TX_PAUSE_RPT_LEN 3
+int c2h_tx_pause_rpt_hdl(_adapter *adapter, u8 *data, u8 len);
+#endif
 
 /* C2H_DEFEATURE_DBG, 0x22 */
 #define DEFEATURE_DBG_LEN 1

@@ -1077,7 +1077,7 @@ void phydm_adsl_decision_state(void *dm_void)
 	PHYDM_DBG(dm, DBG_ADPTV_SOML,
 		  "[  rate_per_pkt_on = %d ; rate_per_pkt_off = %d ]\n",
 		  rate_per_pkt_on, rate_per_pkt_off);
-	#if (DM_ODM_SUPPORT_TYPE == ODM_AP)
+	#if 0 // (DM_ODM_SUPPORT_TYPE == ODM_AP)
 	if (max_idx_on == max_idx_off && max_idx_on != 0) {
 		PHYDM_DBG(dm, DBG_ADPTV_SOML,
 			  "[ max_idx_on == max_idx_off ]\n");

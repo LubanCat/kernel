@@ -54,7 +54,7 @@
 #define MCC_SINGLE_TX_CRITERIA 5 /* Mbps */
 
 #define MAX_MCC_NUM 2
-#ifdef CONFIG_RTL8822C
+#if defined(CONFIG_RTL8822C) || defined(CONFIG_RTL8822E)
 #define DBG_MCC_REG_NUM 3
 #else
 #define DBG_MCC_REG_NUM 4

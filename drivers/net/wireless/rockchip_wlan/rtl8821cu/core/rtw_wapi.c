@@ -284,7 +284,7 @@ u8 WapiWriteOneCamEntry(
 			usConfig |= (0x01 << 5);
 	}
 
-	write_cam(padapter, EntryId, usConfig, pMacAddr, pKey);
+	write_cam(padapter, EntryId, usConfig, pMacAddr, pKey, false);
 
 	WAPI_TRACE(WAPI_API, "===========> %s\n", __FUNCTION__);
 	return 1;
@@ -296,7 +296,7 @@ void rtw_wapi_init(_adapter *padapter)
 	int				i;
 
 	WAPI_TRACE(WAPI_INIT, "===========> %s\n", __FUNCTION__);
-	RT_ASSERT_RET(padapter);
+	RT_WAPI_ASSERT_RET(padapter);
 
 	if (!padapter->WapiSupport) {
 		WAPI_TRACE(WAPI_INIT, "<========== %s, WAPI not supported!\n", __FUNCTION__);
@@ -330,7 +330,7 @@ void rtw_wapi_init(_adapter *padapter)
 void rtw_wapi_free(_adapter *padapter)
 {
 	WAPI_TRACE(WAPI_INIT, "===========> %s\n", __FUNCTION__);
-	RT_ASSERT_RET(padapter);
+	RT_WAPI_ASSERT_RET(padapter);
 
 	if (!padapter->WapiSupport) {
 		WAPI_TRACE(WAPI_INIT, "<========== %s, WAPI not supported!\n", __FUNCTION__);
@@ -345,7 +345,7 @@ void rtw_wapi_free(_adapter *padapter)
 void rtw_wapi_disable_tx(_adapter *padapter)
 {
 	WAPI_TRACE(WAPI_INIT, "===========> %s\n", __FUNCTION__);
-	RT_ASSERT_RET(padapter);
+	RT_WAPI_ASSERT_RET(padapter);
 
 	if (!padapter->WapiSupport) {
 		WAPI_TRACE(WAPI_INIT, "<========== %s, WAPI not supported!\n", __FUNCTION__);
@@ -476,14 +476,7 @@ u8 rtw_wapi_check_for_drop(
 
 	if (precv_hdr->bIsWaiPacket != 0) {
 		if (precv_hdr->bIsWaiPacket == 0x8) {
-
-			RTW_INFO("rtw_wapi_check_for_drop: dump packet\n");
-			for (i = 0; i < 50; i++) {
-				RTW_INFO("%02X  ", ptr[i]);
-				if ((i + 1) % 8 == 0)
-					RTW_INFO("\n");
-			}
-			RTW_INFO("\n rtw_wapi_check_for_drop: dump packet\n");
+			WAPI_DATA(WAPI_RX, "rtw_wapi_check_for_drop() dump packet", ptr, 50);
 
 			for (i = 0; i < 16; i++) {
 				if (ptr[i + 27] != 0)
@@ -635,7 +628,7 @@ void rtw_build_assoc_req_wapi_ie(_adapter *padapter, unsigned char *pframe, stru
 	WAPI_TRACE(WAPI_MLME, "<========== %s\n", __FUNCTION__);
 }
 
-void rtw_wapi_on_assoc_ok(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs pIE)
+void rtw_wapi_on_assoc_ok(_adapter *padapter)
 {
 	PRT_WAPI_T pWapiInfo = &(padapter->wapiInfo);
 	PRT_WAPI_STA_INFO pWapiSta;
