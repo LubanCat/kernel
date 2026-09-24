@@ -107,4 +107,12 @@
 			status = "okay";
 		};
 	};
+	
+	fragment@12 {
+		target = <&dphy2_dw9714>;
+
+		__overlay__ {
+			status = "okay";
+		};
+	};
 };
