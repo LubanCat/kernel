@@ -27,6 +27,7 @@ if_enabled_echo() {
 create_package() {
 	local pname="$1" pdir="$2"
 	local dpkg_deb_opts
+	KDEB_COMPRESS=xz
 
 	mkdir -m 755 -p "$pdir/DEBIAN"
 	mkdir -p "$pdir/usr/share/doc/$pname"
