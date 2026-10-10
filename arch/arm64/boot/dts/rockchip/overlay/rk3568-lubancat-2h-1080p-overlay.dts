@@ -99,14 +99,14 @@
 			disp_timings: display-timings {
 				native-mode = <&dsi1_timing>;
 				dsi1_timing: timing {
-					clock-frequency = <131376000>;
+					clock-frequency = <130368000>;
 					hactive = <1080>;
 					vactive = <1920>;
 					hsync-len = <10>;
 					hback-porch = <20>;
 					hfront-porch = <10>;
 					vsync-len = <5>;
-					vback-porch = <20>;
+					vback-porch = <5>;
 					vfront-porch = <10>;
 					hsync-active = <0>;
 					vsync-active = <0>;
