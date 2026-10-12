@@ -94,14 +94,14 @@
 				disp_timings0: display-timings {
 					native-mode = <&dsi_timing0>;
 					dsi_timing0: timing0 {
-						clock-frequency = <131376000>;
+						clock-frequency = <130368000>;
 						hactive = <1080>;
 						vactive = <1920>;
 						hsync-len = <10>;
 						hback-porch = <20>;
 						hfront-porch = <10>;
 						vsync-len = <5>;
-						vback-porch = <20>;
+						vback-porch = <5>;
 						vfront-porch = <10>;
 						hsync-active = <0>;
 						vsync-active = <0>;
