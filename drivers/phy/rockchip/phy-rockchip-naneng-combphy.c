@@ -176,12 +176,6 @@ static int rockchip_combphy_usb3_init(struct rockchip_combphy_priv *priv)
 		}
 	}
 
-	if (priv->cfg->force_det_out) {
-		u32 val = readl(priv->mmio + (0x19 << 2));
-		val |= BIT(5);
-		writel(val, priv->mmio + (0x19 << 2));
-	}
-
 	return ret;
 }
 
