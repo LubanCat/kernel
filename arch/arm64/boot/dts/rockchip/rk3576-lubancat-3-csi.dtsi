@@ -532,7 +532,7 @@
 		dovdd-supply= <&cam0_dovdd>; /* 1.8v */
 		avdd-supply = <&cam0_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam0_dvdd>;  /* 1.2v */
-		reset-gpios = <&gpio1 RK_PD3 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio1 RK_PD3 GPIO_ACTIVE_HIGH>;
 		pwdn-gpios = <&gpio1 RK_PD2 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
@@ -701,7 +701,7 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		reset-gpios = <&gpio2 RK_PB3 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio2 RK_PB3 GPIO_ACTIVE_HIGH>;
 		pwdn-gpios = <&gpio2 RK_PB0 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
@@ -848,7 +848,7 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		reset-gpios = <&gpio2 RK_PB5 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio2 RK_PB5 GPIO_ACTIVE_HIGH>;
 		pwdn-gpios = <&gpio2 RK_PB4 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
@@ -995,7 +995,7 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		reset-gpios = <&gpio3 RK_PC7 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio3 RK_PC7 GPIO_ACTIVE_HIGH>;
 		pwdn-gpios = <&gpio3 RK_PC6 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
@@ -1142,7 +1142,7 @@
 		dovdd-supply= <&cam_dovdd>; /* 1.8v */
 		avdd-supply = <&cam_avdd>;  /* 2.8v */
 		dvdd-supply = <&cam_dvdd>;  /* 1.2v */
-		reset-gpios = <&gpio3 RK_PC0 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio3 RK_PC0 GPIO_ACTIVE_HIGH>;
 		pwdn-gpios = <&gpio1 RK_PD4 GPIO_ACTIVE_HIGH>;
 		rotation = <180>;
 
