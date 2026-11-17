@@ -56,7 +56,7 @@ CONFIG_SDIO_HCI = n
 CONFIG_GSPI_HCI = n
 ########################## Features ###########################
 CONFIG_MP_INCLUDED = y
-CONFIG_CONCURRENT_MODE = n
+CONFIG_CONCURRENT_MODE = y
 CONFIG_POWER_SAVE = y
 CONFIG_IPS_MODE = default
 CONFIG_LPS_MODE = default
