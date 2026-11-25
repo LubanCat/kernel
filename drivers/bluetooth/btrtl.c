@@ -170,6 +170,13 @@ static const struct id_table ic_id_table[] = {
 	  .fw_name  = "rtl_bt/rtl8852bu_fw.bin",
 	  .cfg_name = "rtl_bt/rtl8852bu_config" },
 
+	/* 8852C */
+	{ IC_INFO(RTL_ROM_LMP_8852A, 0xc),
+	  .config_needed = false,
+	  .has_rom_version = true,
+	  .fw_name  = "rtl_bt/rtl8852cu_fw.bin",
+	  .cfg_name = "rtl_bt/rtl8852cu_config" },
+
 	/* 8851B */
 	{ IC_INFO(RTL_ROM_LMP_8851B, 0xb),
 	  .config_needed = false,
@@ -504,6 +511,7 @@ static int rtlbt_parse_firmware(struct hci_dev *hdev,
 		{ RTL_ROM_LMP_8821A, 10 },	/* 8821C */
 		{ RTL_ROM_LMP_8822B, 13 },	/* 8822C */
 		{ RTL_ROM_LMP_8852A, 20 },	/* 8852B */
+		{ RTL_ROM_LMP_8852A, 25 },	/* 8852C */
 		{ RTL_ROM_LMP_8851B, 36 },	/* 8851B */
 	};
 
@@ -1094,3 +1102,5 @@ MODULE_FIRMWARE("rtl_bt/rtl8852bu_fw.bin");
 MODULE_FIRMWARE("rtl_bt/rtl8852bu_config.bin");
 MODULE_FIRMWARE("rtl_bt/rtl8851bu_fw.bin");
 MODULE_FIRMWARE("rtl_bt/rtl8851bu_config.bin");
+MODULE_FIRMWARE("rtl_bt/rtl8852cu_fw.bin");
+MODULE_FIRMWARE("rtl_bt/rtl8852cu_config.bin");
